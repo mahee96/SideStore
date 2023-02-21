@@ -41,7 +41,7 @@ Next, make and test your changes. Then, commit and push your changes using git a
 
 ## Prebuilt binary information
 
-minimuxer (and soon em_proxy) uses prebuilt static library binaries built by GitHub Actions to speed up builds and remove the need for Rust to be installed when working on SideStore.
+minimuxer and em_proxy use prebuilt static library binaries built by GitHub Actions to speed up builds and remove the need for Rust to be installed when working on SideStore.
 [`Dependencies/fetch-prebuilt.sh`](./Dependencies/fetch-prebuilt.sh) will be run before each build by Xcode, and it will check if the downloaded binaries are up-to-date once every 6 hours. If you want
 to force it to check for new binaries, run `bash ./Dependencies/fetch-prebuilt.sh force`.
 
