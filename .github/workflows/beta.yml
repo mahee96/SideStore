@@ -69,13 +69,7 @@ jobs:
           prerelease: true
           files: SideStore.ipa
           body: |
-            This is an ⚠️ **EXPERIMENTAL** ⚠️ beta build for commit [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}).
-            
-            Beta builds are hand-picked builds from development commits that will allow you to try out new features earlier than normal, but with a lower chance of bugs than if you used nightly builds. However, since these changes are newer and less tested, they still have a good chance of bugs, so **use at your own risk**.
-            
-            If you want to be on the bleeding edge and use the latest development builds, you can look at [SideStore Nightly](https://github.com/${{ github.repository }}/releases/tag/nightly). **Please be aware that these builds have a much higher chance of bugs than beta or stable**.
-            
-            If you use the `SideStore (Beta)` app, it will use the latest beta build (make sure to update it in "My Apps").
+            Beta builds are hand-picked builds from development commits that will allow you to try out new features earlier than normal. However, **they might contain bugs and other issues. Use at your own risk!**
 
             ## Changelog
             

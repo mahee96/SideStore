@@ -79,11 +79,9 @@ jobs:
           body: |
             This is an ⚠️ **EXPERIMENTAL** ⚠️ nightly build for commit [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}).
             
-            Nightly builds are built from the most recent commit which means you'll be able to try out new features very early. However, since these changes are much newer and less tested, they have a much higher chance of bugs, so **use at your own risk**.
+            Nightly builds are **extremely experimental builds only meant to be used by developers and alpha testers. They often contain bugs and experimental features. Use at your own risk!**
             
-            If you want to try out new features early but want a lower chance of bugs, you can look at [SideStore Beta](https://github.com/${{ github.repository }}/releases/tag/beta).
-            
-            If you use the `SideStore (Nightly)` app, it will use the latest nightly build (make sure to update it in "My Apps").
+            If you want to try out new features early but want a lower chance of bugs, you can look at [SideStore Beta](https://github.com/${{ github.repository }}/releases?q=beta).
             
             ## Build Info
             
