@@ -37,7 +37,7 @@ xcuserdata
 
 Payload/
 SideStore.ipa
-Dependencies/.*-prebuilt-fetch*
+Dependencies/.*-prebuilt-fetch-*
 Dependencies/minimuxer/*
 Dependencies/em_proxy/*
 !Dependencies/**/.gitkeep
