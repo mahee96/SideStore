@@ -31,29 +31,13 @@ jobs:
           xcode-version: ${{ matrix.version }}
 
       - name: Build SideStore
-        run: |
-          xcodebuild -project AltStore.xcodeproj \
-          -scheme AltStore \
-          -sdk iphoneos \
-          archive -archivePath ./archive \
-          CODE_SIGNING_REQUIRED=NO \
-          AD_HOC_CODE_SIGNING_ALLOWED=YES \
-          CODE_SIGNING_ALLOWED=NO \
-          DEVELOPMENT_TEAM=XYZ0123456 \
-          ORG_IDENTIFIER=com.SideStore \
-          | xcpretty && exit ${PIPESTATUS[0]}
+        run: make build | xcpretty && exit ${PIPESTATUS[0]}
 
       - name: Fakesign app
-        run: |
-          rm -rf archive.xcarchive/Products/Applications/SideStore.app/Frameworks/AltStoreCore.framework/Frameworks/
-          ldid -SAltStore/Resources/tempEnt.plist archive.xcarchive/Products/Applications/SideStore.app/SideStore
+        run: make fakesign
 
       - name: Convert to IPA
-        run: |
-          mkdir Payload
-          mkdir Payload/SideStore.app
-          cp -R archive.xcarchive/Products/Applications/SideStore.app/ Payload/SideStore.app/
-          zip -r SideStore.ipa Payload
+        run: make ipa
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3.1.0
