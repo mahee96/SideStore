@@ -43,7 +43,9 @@ check_for_update() {
 # Allow for Xcode to check minimuxer and em_proxy separately by skipping the update check if the other one is specified as an argument
 if [[ "$1" != "em_proxy" ]]; then
     check_for_update minimuxer "$1"
-    echo
+    if [[ "$1" != "minimuxer" ]]; then
+        echo
+    fi
 fi
 if [[ "$1" != "minimuxer" ]]; then
     check_for_update em_proxy "$1"
