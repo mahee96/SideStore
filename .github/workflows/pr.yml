@@ -22,13 +22,6 @@ jobs:
       - name: Install dependencies
         run: brew install ldid
 
-      - name: Install rustup
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          target: aarch64-apple-ios
-
       - name: Add PR suffix to version
         run: sed -e '/MARKETING_VERSION = .*/s/$/-pr.${{ github.event.pull_request.number }}/' -i '' Build.xcconfig
 

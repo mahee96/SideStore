@@ -24,13 +24,6 @@ jobs:
       - name: Install dependencies
         run: brew install ldid
 
-      - name: Install rustup
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          target: aarch64-apple-ios
-
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1.4.1
         with:

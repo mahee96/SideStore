@@ -28,13 +28,6 @@ jobs:
       - name: Install dependencies
         run: brew install ldid
 
-      - name: Install rustup
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          target: aarch64-apple-ios
-
       - name: Add beta suffix to version
         run: sed -e '/MARKETING_VERSION = .*/s/$/-beta.${{ github.run_number }}/' -i '' Build.xcconfig
 
