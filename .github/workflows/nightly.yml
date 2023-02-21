@@ -2,7 +2,7 @@ name: Nightly SideStore build
 on:
   push:
     branches:
-      - actions-improvements
+      - develop
 
 jobs:
   build:
@@ -73,7 +73,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           release: "Nightly"
-          tag: "nightly-test"
+          tag: "nightly"
           prerelease: true
           files: SideStore.ipa
           body: |
