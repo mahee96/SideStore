@@ -68,6 +68,7 @@ jobs:
           draft: true
           files: SideStore.ipa
           body: |
+            <!-- NOTE: to reset SideSource cache, go to `https://apps.sidestore.io/reset-cache/nightly/<sidesource key>`. This is not included in the GitHub Action since it makes draft releases so they can be edited and have a changelog. -->
             ## Changelog
             
             - TODO

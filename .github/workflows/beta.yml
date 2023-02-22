@@ -69,6 +69,7 @@ jobs:
           prerelease: true
           files: SideStore.ipa
           body: |
+            <!-- NOTE: to reset SideSource cache, go to `https://apps.sidestore.io/reset-cache/nightly/<sidesource key>`. This is not included in the GitHub Action since it makes draft releases so they can be edited and have a changelog. -->
             Beta builds are hand-picked builds from development commits that will allow you to try out new features earlier than normal. However, **they might contain bugs and other issues. Use at your own risk!**
 
             ## Changelog
