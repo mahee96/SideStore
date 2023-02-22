@@ -47,7 +47,14 @@ to force it to check for new binaries, run `bash ./Dependencies/fetch-prebuilt.s
 
 ## Building an IPA for distribution
 
-It is recommended to follow the build steps GitHub Actions uses: [`.github/workflows/stable.yml`](./.github/workflows/stable.yml) (in particular, the `Build SideStore`, `Fakesign app` and `Convert to IPA` build steps)
+You can use the Makefile: `make build fakesign ipa`
+
+This will create SideStore.ipa.
+
+> **Warning**
+>
+> The binary created will contain paths to Xcode's DerivedData, and if you built minimuxer on your machine, paths to $HOME/.cargo. This will include your username. If you want to keep your user's
+> username private, you might want to get GitHub Actions to build the IPA instead.
 
 ## Developing minimuxer alongside SideStore
 
