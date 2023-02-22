@@ -70,8 +70,7 @@ help:
 
 ## Install dependencies.
 setup: \
-	pre_setup \
-	build_rust_dependencies
+	pre_setup
 
 # check_for_homebrew \
 # update_homebrew \
