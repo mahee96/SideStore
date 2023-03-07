@@ -37,6 +37,8 @@ xcuserdata
 
 Payload/
 SideStore.ipa
+*.dSYM
+
 Dependencies/.*-prebuilt-fetch-*
 Dependencies/minimuxer/*
 Dependencies/em_proxy/*
