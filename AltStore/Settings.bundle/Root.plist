@@ -16,7 +16,7 @@
 			<key>Key</key>
 			<string>customAnisetteURL</string>
 			<key>DefaultValue</key>
-			<string>http://ani.sidestore.io</string>
+			<string>https://ani.sidestore.io</string>
 			<key>Titles</key>
 			<array>
 				<string>SideStore</string>
@@ -30,7 +30,7 @@
 			</array>
 			<key>Values</key>
 			<array>
-				<string>http://ani.sidestore.io</string>
+				<string>https://ani.sidestore.io</string>
 				<string>http://us1.sternserv.tech</string>
 				<string>http://de1.sternserv.tech</string>
 				<string>https://sign.rheaa.xyz</string>
