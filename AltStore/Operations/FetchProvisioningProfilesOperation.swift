@@ -397,6 +397,7 @@ extension FetchProvisioningProfilesOperation
                 applicationGroups.append(Bundle.baseAltStoreAppGroupID)
             }
         }
+        print("Application groups: \(applicationGroups)")
         
         // Dispatch onto global queue to prevent appGroupsLock deadlock.
         DispatchQueue.global().async {
