@@ -11,12 +11,9 @@ import AltSign
 extension ALTApplication
 {
     static let altstoreBundleID = Bundle.Info.appbundleIdentifier
-    static let altstoreBundleIDOriginal = "AltStore"
-    static let storeBundleID = "SideStore"
-    static let widgetID = "Widget"    
     
     var isAltStoreApp: Bool {
-        let isAltStoreApp = ( self.bundleIdentifier.contains(ALTApplication.altstoreBundleID) || self.bundleIdentifier.contains(ALTApplication.altstoreBundleIDOriginal) || self.bundleIdentifier.contains(ALTApplication.storeBundleID) ) && !self.bundleIdentifier.contains(ALTApplication.widgetID)
+        let isAltStoreApp = self.bundleIdentifier.contains(ALTApplication.altstoreBundleID)
         return isAltStoreApp
     }
 }
