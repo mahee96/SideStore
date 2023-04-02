@@ -382,8 +382,17 @@ extension FetchProvisioningProfilesOperation
             return completionHandler(.success(appID))
         }
         
+        print("Application groups before app.isAltStoreApp: \(applicationGroups)")
         if app.isAltStoreApp
         {
+            // Remove app groups that contain AltStore since they can be problematic (cause SideStore to expire early)
+            for (index, group) in applicationGroups.enumerated() {
+                if group.contains("AltStore") {
+                    print("Removing application group: \(group)")
+                    applicationGroups.remove(at: index)
+                }
+            }
+            
             // Potentially updating app groups for this specific AltStore.
             // Find the (unique) AltStore app group, then replace it
             // with the correct "base" app group ID.
