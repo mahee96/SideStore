@@ -382,9 +382,10 @@ extension FetchProvisioningProfilesOperation
             return completionHandler(.success(appID))
         }
         
-        print("Application groups before app.isAltStoreApp: \(applicationGroups)")
         if app.isAltStoreApp
         {
+            print("Application groups before modifying for SideStore: \(applicationGroups)")
+            
             // Remove app groups that contain AltStore since they can be problematic (cause SideStore to expire early)
             for (index, group) in applicationGroups.enumerated() {
                 if group.contains("AltStore") {
