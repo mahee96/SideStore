@@ -12,7 +12,7 @@
 	<string>A72ZC8AJ5X</string>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.SideStore.AltStore</string>
+		<string>group.com.SideStore.SideStore</string>
 	</array>
 	<key>get-task-allow</key>
 	<true/>
