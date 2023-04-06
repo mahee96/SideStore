@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>application-identifier</key>
-	<string>A72ZC8AJ5X.com.SideStore.AltStore</string>
+	<string>A72ZC8AJ5X.com.SideStore.SideStore</string>
 	<key>aps-environment</key>
 	<string>development</string>
 	<key>com.apple.developer.siri</key>
