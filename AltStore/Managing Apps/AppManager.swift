@@ -874,11 +874,7 @@ private extension AppManager
                     // Check if backup app is installed in place of real app.
                     let uti = UTTypeCopyDeclaration(app.installedBackupAppUTI as CFString)?.takeRetainedValue() as NSDictionary?
 
-                    // for some reason, `app.certificateSerialNumber != group.context.certificate?.serialNumber` is true on first SideStore refresh
-                    // in most cases, the first refresh gets stuck since it is a full reinstall, and to fix it you must exit to home screen
-                    // which finishes it but removes all app data
-                    // so we want to ensure we don't reinstall for SideStore if it's true (it will still reinstall if needsResign is true)
-                    if (app.certificateSerialNumber != group.context.certificate?.serialNumber && app.bundleIdentifier != StoreApp.altstoreAppID) ||
+                    if app.certificateSerialNumber != group.context.certificate?.serialNumber ||
                         uti != nil ||
                         app.needsResign
                     {
