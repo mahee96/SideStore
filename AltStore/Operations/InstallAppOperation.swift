@@ -152,7 +152,7 @@ final class InstallAppOperation: ResultOperation<InstalledApp>
             do {
                 try install_ipa(installedApp.bundleIdentifier)
             } catch {
-                return self.finish(.failure(minimuxerToOperationError(error)))
+                return self.finish(.failure(error))
             }
             
             installedApp.refreshedDate = Date()

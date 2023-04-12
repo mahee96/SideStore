@@ -41,7 +41,7 @@ final class RemoveAppOperation: ResultOperation<InstalledApp>
             do {
                 try remove_app(resignedBundleIdentifier)
             } catch {
-                return self.finish(.failure(minimuxerToOperationError(error)))
+                return self.finish(.failure(error))
             }
             
             DatabaseManager.shared.persistentContainer.performBackgroundTask { (context) in

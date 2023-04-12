@@ -46,7 +46,7 @@ final class DeactivateAppOperation: ResultOperation<InstalledApp>
                 do {
                     try remove_provisioning_profile(profile)
                 } catch {
-                    return self.finish(.failure(minimuxerToOperationError(error)))
+                    return self.finish(.failure(error))
                 }
             }
             

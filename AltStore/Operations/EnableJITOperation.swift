@@ -48,7 +48,7 @@ final class EnableJITOperation<Context: EnableJITContext>: ResultOperation<Void>
             do {
                 try debug_app(installedApp.resignedBundleIdentifier)
             } catch {
-                return self.finish(.failure(minimuxerToOperationError(error)))
+                return self.finish(.failure(error))
             }
             
             self.finish(.success(()))

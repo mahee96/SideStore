@@ -50,7 +50,7 @@ final class SendAppOperation: ResultOperation<()>
                 let bytes = Data(data).toRustByteSlice()
                 try yeet_app_afc(app.bundleIdentifier, bytes.forRust())
             } catch {
-                return self.finish(.failure(minimuxerToOperationError(error)))
+                return self.finish(.failure(error))
             }
             
             self.progress.completedUnitCount += 1

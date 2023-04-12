@@ -52,7 +52,7 @@ final class RefreshAppOperation: ResultOperation<InstalledApp>
                         let bytes = p.value.data.toRustByteSlice()
                         try install_provisioning_profile(bytes.forRust())
                     } catch {
-                        return self.finish(.failure(minimuxerToOperationError(error)))
+                        return self.finish(.failure(error))
                     }
                     
                     self.progress.completedUnitCount += 1
