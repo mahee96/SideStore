@@ -394,17 +394,26 @@ extension FetchProvisioningProfilesOperation
                 }
             }
             
+            // Make sure we add .AltWidget for the widget
+            var altStoreAppGroupID = Bundle.baseAltStoreAppGroupID
+            for (_, group) in applicationGroups.enumerated() {
+                if group.contains("AltWidget") {
+                    altStoreAppGroupID += ".AltWidget"
+                    break
+                }
+            }
+            
             // Potentially updating app groups for this specific AltStore.
             // Find the (unique) AltStore app group, then replace it
             // with the correct "base" app group ID.
             // Otherwise, we may append a duplicate team identifier to the end.
             if let index = applicationGroups.firstIndex(where: { $0.contains(Bundle.baseAltStoreAppGroupID) })
             {
-                applicationGroups[index] = Bundle.baseAltStoreAppGroupID
+                applicationGroups[index] = altStoreAppGroupID
             }
             else
             {
-                applicationGroups.append(Bundle.baseAltStoreAppGroupID)
+                applicationGroups.append(altStoreAppGroupID)
             }
         }
         print("Application groups: \(applicationGroups)")
