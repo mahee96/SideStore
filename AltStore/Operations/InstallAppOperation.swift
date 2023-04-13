@@ -149,9 +149,45 @@ final class InstallAppOperation: ResultOperation<InstalledApp>
                 })
             }
             
+            // Since reinstalling ourself will hang until we leave the app, force quit after 3 seconds if still installing
+            var installing = true
+            if installedApp.storeApp?.bundleIdentifier == Bundle.Info.appbundleIdentifier {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    if installing {
+                        print("We are still installing after 3 seconds")
+                        
+                        let alert = UIAlertController(title: "Finish Refresh", message: "To finish refreshing, SideStore must force close itself. Please reopen SideStore after continuing!", preferredStyle: .alert)
+                        alert.addAction(UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .default, handler: { _ in
+                            if installing {
+                                print("Closing SideStore since we are still installing")
+                                exit(0)
+                            } else {
+                                print("Not closing SideStore since installing finished")
+                            }
+                        }))
+                        
+                        let keyWindow = UIApplication.shared.windows.filter { $0.isKeyWindow }.first
+                        if var topController = keyWindow?.rootViewController {
+                            while let presentedViewController = topController.presentedViewController {
+                                topController = presentedViewController
+                            }
+
+                            topController.present(alert, animated: true)
+                        } else {
+                            print("No key window? Closing SideStore")
+                            exit(0)
+                        }
+                    } else {
+                        print("Installing finished")
+                    }
+                }
+            }
+            
             do {
                 try install_ipa(installedApp.bundleIdentifier)
+                installing = false
             } catch {
+                installing = false
                 return self.finish(.failure(error))
             }
             
