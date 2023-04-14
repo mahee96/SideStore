@@ -151,7 +151,7 @@ private extension ResignAppOperation
             
             // Remove _CodeSignature folder (if it exists) because it will be added when resigning and it may have files that aren't overwritten when resigning
             // These files might be the cause of some ApplicationVerificationFailed errors
-            let codeSignaturePath = bundle.bundleURL.appendingPathComponent("_CodeSignature").absoluteString
+            let codeSignaturePath = bundle.bundleURL.appendingPathComponent("_CodeSignature").absoluteString.replacingOccurrences(of: "file://", with: "")
             if FileManager.default.fileExists(atPath: codeSignaturePath) {
                 try FileManager.default.removeItem(atPath: codeSignaturePath)
                 print("Removed _CodeSignature folder at \(codeSignaturePath)")
