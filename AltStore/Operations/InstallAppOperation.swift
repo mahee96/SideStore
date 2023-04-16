@@ -154,29 +154,14 @@ final class InstallAppOperation: ResultOperation<InstalledApp>
             if installedApp.storeApp?.bundleIdentifier == Bundle.Info.appbundleIdentifier {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                     if installing {
-                        print("We are still installing after 3 seconds")
+                        print("We are still installing after 3 seconds, requesting notification and then closing")
                         
-                        let alert = UIAlertController(title: "Finish Refresh", message: "To finish refreshing, SideStore must force close itself. Please reopen SideStore after continuing!", preferredStyle: .alert)
-                        alert.addAction(UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .default, handler: { _ in
-                            if installing {
-                                print("Closing SideStore since we are still installing")
-                                exit(0)
-                            } else {
-                                print("Not closing SideStore since installing finished")
-                            }
-                        }))
-                        
-                        let keyWindow = UIApplication.shared.windows.filter { $0.isKeyWindow }.first
-                        if var topController = keyWindow?.rootViewController {
-                            while let presentedViewController = topController.presentedViewController {
-                                topController = presentedViewController
-                            }
-
-                            topController.present(alert, animated: true)
-                        } else {
-                            print("No key window? Closing SideStore")
-                            exit(0)
-                        }
+                        var content = UNMutableNotificationContent()
+                        content.title = "Refreshing..."
+                        content.body = "To finish refreshing, SideStore must force close itself. Please reopen SideStore after it is done refreshing!"
+                        let notification = UNNotificationRequest(identifier: Bundle.Info.appbundleIdentifier + ".FinishRefreshNotification", content: content, trigger: UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false))
+                        UNUserNotificationCenter.current().add(notification)
+                        exit(0)
                     } else {
                         print("Installing finished")
                     }
