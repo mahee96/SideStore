@@ -270,7 +270,7 @@ extension FetchProvisioningProfilesOperation
                     }
                     //App ID name must be ascii. If the name is not ascii, using bundleID instead
                     let appIDName: String
-                    if containsNonASCII(text: name) {
+                    if !name.allSatisfy({ $0.isASCII }) {
                         //Contains non ASCII (Such as Chinese/Japanese...), using bundleID
                         appIDName = bundleIdentifier
                     }else {
@@ -522,14 +522,4 @@ extension FetchProvisioningProfilesOperation
             }
         }
     }
-}
-
-func containsNonASCII(text: String) -> Bool {
-    let ascii = CharacterSet(charactersIn: "\0"..."~")
-    for scalar in text.unicodeScalars {
-        if !ascii.contains(scalar) {
-            return true
-        }
-    }
-    return false
 }
