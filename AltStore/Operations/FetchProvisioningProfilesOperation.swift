@@ -268,8 +268,17 @@ extension FetchProvisioningProfilesOperation
                             }
                         }
                     }
+                    //App ID name must be ascii. If the name is not ascii, using bundleID instead
+                    let appIDName: String
+                    if !name.allSatisfy({ $0.isASCII }) {
+                        //Contains non ASCII (Such as Chinese/Japanese...), using bundleID
+                        appIDName = bundleIdentifier
+                    }else {
+                        //ASCII text, keep going as usual
+                        appIDName = name
+                    }
                     
-                    ALTAppleAPI.shared.addAppID(withName: name, bundleIdentifier: bundleIdentifier, team: team, session: session) { (appID, error) in
+                    ALTAppleAPI.shared.addAppID(withName: appIDName, bundleIdentifier: bundleIdentifier, team: team, session: session) { (appID, error) in
                         do
                         {
                             do
