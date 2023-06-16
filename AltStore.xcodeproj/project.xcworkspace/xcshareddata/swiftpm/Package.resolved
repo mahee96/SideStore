@@ -6,7 +6,7 @@
       "location" : "https://github.com/SideStore/AltSign",
       "state" : {
         "branch" : "master",
-        "revision" : "7e0e7edcf8fbc44ac1e35da3e9030a297aa18b84"
+        "revision" : "602b1aded00b08e82a2ddb802b3cde6817ba7156"
       }
     },
     {
@@ -50,8 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/krzyzanowskim/OpenSSL",
       "state" : {
-        "revision" : "033fcb41dac96b1b6effa945ca1f9ade002370b2",
-        "version" : "1.1.1501"
+        "revision" : "0c70e4b7d22411a7fe3ff59b913d5b760b735ce1",
+        "version" : "1.1.2100"
       }
     },
     {
