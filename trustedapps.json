@@ -37,8 +37,8 @@
       "sourceURL": "https://pokemmo.eu/altstore/"
     },
     {
-      "identifier": "com.odysseyteam.taurine",
-      "sourceURL": "https://taurine.app/altstore/taurinestore.json"
+      "identifier": "dev.theodyssey.sidestore",
+      "sourceURL": "https://theodyssey.dev/altstore/odysseysource.json"
     },
     {
       "identifier": "stream.yattee",
