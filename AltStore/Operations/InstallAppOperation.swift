@@ -162,46 +162,7 @@ final class InstallAppOperation: ResultOperation<InstalledApp>
                         return
                     }
                     print("We are still installing after 3 seconds")
-                    
-                    UNUserNotificationCenter.current().getNotificationSettings { settings in
-                        switch (settings.authorizationStatus) {
-                        case .authorized, .ephemeral, .provisional:
-                            print("Notifications are enabled")
-                            
-                            let content = UNMutableNotificationContent()
-                            content.title = "Refreshing..."
-                            content.body = "To finish refreshing, SideStore must be moved to the background, which it does by opening Safari. Please reopen SideStore after it is done refreshing!"
-                            let notification = UNNotificationRequest(identifier: Bundle.Info.appbundleIdentifier + ".FinishRefreshNotification", content: content, trigger: UNTimeIntervalNotificationTrigger(timeInterval: 2, repeats: false))
-                            UNUserNotificationCenter.current().add(notification)
-                            
-                            DispatchQueue.main.async { UIApplication.shared.open(URL(string: "x-web-search://")!) }
-                            
-                            break
-                        default:
-                            print("Notifications are not enabled")
-                            
-                            let alert = UIAlertController(title: "Finish Refresh", message: "To finish refreshing, SideStore must be moved to the background. To do this, you can either go to the Home Screen or open Safari by pressing Continue. Please reopen SideStore after doing this.", preferredStyle: .alert)
-                            alert.addAction(UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .default, handler: { _ in
-                                print("Opening Safari")
-                                DispatchQueue.main.async { UIApplication.shared.open(URL(string: "x-web-search://")!) }
-                            }))
-                            
-                            DispatchQueue.main.async {
-                                let keyWindow = UIApplication.shared.windows.filter { $0.isKeyWindow }.first
-                                if var topController = keyWindow?.rootViewController {
-                                    while let presentedViewController = topController.presentedViewController {
-                                        topController = presentedViewController
-                                    }
-                                    topController.present(alert, animated: true)
-                                } else {
-                                    print("No key window? Let's just open Safari")
-                                    UIApplication.shared.open(URL(string: "x-web-search://")!)
-                                }
-                            }
-                            
-                            break
-                        }
-                    }
+                    UIApplication.shared.perform(#selector(NSXPCConnection.suspend))
                 }
             }
             var attempts = 10
