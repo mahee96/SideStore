@@ -42,19 +42,13 @@ final class RefreshAppOperation: ResultOperation<InstalledApp>
             
             DatabaseManager.shared.persistentContainer.performBackgroundTask { (context) in
                 print("Sending refresh app request...")
-
+                
                 for p in profiles {
-                    var attempts = 5
-                    while (attempts != 0){
-                        print("Install provisioning profile attempts left: \(attempts)")
-                        do {
-                            let bytes = p.value.data.toRustByteSlice()
-                            try install_provisioning_profile(bytes.forRust())
-                        } catch {
-                            if (attempts == 0) {
-                                return self.finish(.failure(error))
-                            } else { attempts -= 1 }
-                        }
+                    do {
+                        let bytes = p.value.data.toRustByteSlice()
+                        try install_provisioning_profile(bytes.forRust())
+                    } catch {
+                        return self.finish(.failure(error))
                     }
                     self.progress.completedUnitCount += 1
                     
