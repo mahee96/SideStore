@@ -8,7 +8,7 @@
 	<string>XYZ0123456</string>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.XYZ0123456.com.SideStore</string>
+		<string>group.com.SideStore.SideStore</string>
 	</array>
 	<key>get-task-allow</key>
 	<true/>
