@@ -169,14 +169,14 @@ final class InstallAppOperation: ResultOperation<InstalledApp>
 
                             let content = UNMutableNotificationContent()
                             content.title = "Refreshing..."
-                            content.body = "To finish refreshing SideStore must go to the home screen. Please reopen after!"
+                            content.body = "SideStore will automatically move to the homescreen to finish refreshing!"
                             let notification = UNNotificationRequest(identifier: Bundle.Info.appbundleIdentifier + ".FinishRefreshNotification", content: content, trigger: UNTimeIntervalNotificationTrigger(timeInterval: 2, repeats: false))
                             UNUserNotificationCenter.current().add(notification)
                             break
                         default:
                             print("Notifications are not enabled")
 
-                            let alert = UIAlertController(title: "Finish Refresh", message: "SideStore will automatically be moved to the background to finish refreshing. Please reopen SideStore after the process is finished.", preferredStyle: .alert)
+                            let alert = UIAlertController(title: "Finish Refresh", message: "Please reopen SideStore after the process is finished.To finish refreshing, SideStore must be moved to the background. To do this, you can either go to the Home Screen manually or by hitting Continue. Please reopen SideStore after doing this.", preferredStyle: .alert)
                             alert.addAction(UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .default, handler: { _ in
                                 print("Going home")
                                 UIApplication.shared.perform(#selector(NSXPCConnection.suspend))
