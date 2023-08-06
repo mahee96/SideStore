@@ -43,6 +43,10 @@
     {
       "identifier": "stream.yattee",
       "sourceURL": "https://repos.yattee.stream/alt/apps.json"
+    },
+    {
+      "identifier": "com.litritt.litsource",
+      "sourceURL": "https://apps.litritt.com/"
     }
   ]
 }
