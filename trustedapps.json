@@ -9,10 +9,6 @@
       "sourceURL": "https://community-apps.sidestore.io/sidecommunity.json"
     },
     {
-      "identifier": "io.sidestore.quantumsource",
-      "sourceURL": "https://bit.ly/quantumsource-min"
-    },    
-    {
       "identifier": "org.provenance-emu.provenance",
       "sourceURL": "https://provenance-emu.com/apps.json"
     },
