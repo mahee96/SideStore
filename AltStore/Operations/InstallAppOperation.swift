@@ -198,22 +198,15 @@ final class InstallAppOperation: ResultOperation<InstalledApp>
                     UIApplication.shared.perform(#selector(NSXPCConnection.suspend))
                 }
             }
-            var attempts = 10
-            while (attempts != 0){
-                print("Install ipa attempts left: \(attempts)")
-                do {
-                    try install_ipa(installedApp.bundleIdentifier)
-                    installing = false
-                    installedApp.refreshedDate = Date()
-                    self.finish(.success(installedApp))
-                    break
-                } catch {
-                    attempts -= 1
-                    if (attempts <= 0){
-                        installing = false
-                        self.finish(.failure(MinimuxerError.InstallApp))
-                    }
-                }
+            
+            do {
+                try install_ipa(installedApp.bundleIdentifier)
+                installing = false
+                installedApp.refreshedDate = Date()
+                self.finish(.success(installedApp))
+            } catch let error {
+                installing = false
+                self.finish(.failure(error))
             }
         }
     }
