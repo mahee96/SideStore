@@ -47,6 +47,7 @@ final class InstallAppOperation: ResultOperation<InstalledApp>
         
         let backgroundContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
         backgroundContext.perform {
+            UIApplication.shared.isIdleTimerDisabled = true
             
             /* App */
             let installedApp: InstalledApp
@@ -201,6 +202,7 @@ final class InstallAppOperation: ResultOperation<InstalledApp>
             do {
                 try install_ipa(installedApp.bundleIdentifier)
                 installing = false
+                UIApplication.shared.isIdleTimerDisabled = false
                 installedApp.refreshedDate = Date()
                 self.finish(.success(installedApp))
             } catch let error {
