@@ -27,6 +27,7 @@ public extension UserDefaults
     @NSManaged var preferredServerID: String?
     
     @NSManaged var isBackgroundRefreshEnabled: Bool
+    @NSManaged var isIdleTimeoutDisableEnabled: Bool
     @NSManaged var isDebugModeEnabled: Bool
     @NSManaged var presentedLaunchReminderNotification: Bool
     
@@ -72,6 +73,7 @@ public extension UserDefaults
         
         let defaults = [
             #keyPath(UserDefaults.isBackgroundRefreshEnabled): true,
+            #keyPath(UserDefaults.isIdleTimeoutDisableEnabled): true,
             #keyPath(UserDefaults.isLegacyDeactivationSupported): isLegacyDeactivationSupported,
             #keyPath(UserDefaults.activeAppLimitIncludesExtensions): activeAppLimitIncludesExtensions,
             #keyPath(UserDefaults.localServerSupportsRefreshing): localServerSupportsRefreshing,

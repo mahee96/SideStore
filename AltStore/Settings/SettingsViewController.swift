@@ -30,13 +30,14 @@ extension SettingsViewController
     fileprivate enum AppRefreshRow: Int, CaseIterable
     {
         case backgroundRefresh
+        case noIdleTimeout
         
         @available(iOS 14, *)
         case addToSiri
         
         static var allCases: [AppRefreshRow] {
-            guard #available(iOS 14, *) else { return [.backgroundRefresh] }
-            return [.backgroundRefresh, .addToSiri]
+            guard #available(iOS 14, *) else { return [.backgroundRefresh, .noIdleTimeout] }
+            return [.backgroundRefresh, .noIdleTimeout, .addToSiri]
         }
     }
     
@@ -73,6 +74,7 @@ final class SettingsViewController: UITableViewController
     @IBOutlet private var accountTypeLabel: UILabel!
     
     @IBOutlet private var backgroundRefreshSwitch: UISwitch!
+    @IBOutlet private var noIdleTimeoutSwitch: UISwitch!
     
     @IBOutlet private var versionLabel: UILabel!
     
@@ -280,6 +282,11 @@ private extension SettingsViewController
         UserDefaults.standard.isBackgroundRefreshEnabled = sender.isOn
     }
     
+    @IBAction func toggleNoIdleTimeoutEnabled(_ sender: UISwitch)
+    {
+        UserDefaults.standard.isIdleTimeoutDisableEnabled = sender.isOn
+    }
+    
     @available(iOS 14, *)
     @IBAction func addRefreshAppsShortcut()
     {
@@ -377,14 +384,25 @@ extension SettingsViewController
     {
         let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
-        if #available(iOS 14, *) {}
-        else if let cell = cell as? InsetGroupTableViewCell,
-                indexPath.section == Section.appRefresh.rawValue,
-                indexPath.row == AppRefreshRow.backgroundRefresh.rawValue
+//        if #available(iOS 14, *) {}
+//        else if let cell = cell as? InsetGroupTableViewCell,
+//                indexPath.section == Section.appRefresh.rawValue,
+//                indexPath.row == AppRefreshRow.backgroundRefresh.rawValue
+//        {
+//            // Only one row is visible pre-iOS 14.
+//            cell.style = .single
+//        }
+        
+        if AppRefreshRow.AllCases().count == 1
         {
-            // Only one row is visible pre-iOS 14.
-            cell.style = .single
+            if let cell = cell as? InsetGroupTableViewCell,
+               indexPath.section == Section.appRefresh.rawValue,
+               indexPath.row == AppRefreshRow.backgroundRefresh.rawValue
+            {
+                cell.style = .single
+            }
         }
+        
         
         return cell
     }
@@ -465,6 +483,7 @@ extension SettingsViewController
             switch row
             {
             case .backgroundRefresh: break
+            case .noIdleTimeout: break
             case .addToSiri:
                 guard #available(iOS 14, *) else { return }
                 self.addRefreshAppsShortcut()

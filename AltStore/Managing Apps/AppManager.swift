@@ -948,7 +948,13 @@ private extension AppManager
         }
         else
         {
+            DispatchQueue.main.schedule {
+                UIApplication.shared.isIdleTimerDisabled = UserDefaults.standard.isIdleTimeoutDisableEnabled
+            }
             performAppOperations()
+            DispatchQueue.main.schedule {
+                UIApplication.shared.isIdleTimerDisabled = false
+            }
         }
         
         return group
