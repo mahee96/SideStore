@@ -90,6 +90,8 @@ private extension AppIDsViewController
                 cell.bannerView.button.isUserInteractionEnabled = false
                 
                 cell.bannerView.buttonLabel.isHidden = false
+
+                let currentDate = Date()
                 
                 let formatter = DateComponentsFormatter()
                 formatter.unitsStyle = .full
@@ -98,11 +100,11 @@ private extension AppIDsViewController
                 formatter.allowedUnits = [.minute, .hour, .day]
                 formatter.maximumUnitCount = 1
                 
-                cell.bannerView.button.setTitle(formatter.string(from: Date(), to: expirationDate)?.uppercased(), for: .normal)
+                cell.bannerView.button.setTitle((formatter.string(from: currentDate, to: expirationDate) ?? NSLocalizedString("Unknown", comment: "")).uppercased(), for: .normal)
                 
-                formatter.includesTimeRemainingPhrase = true
+                // formatter.includesTimeRemainingPhrase = true
                 
-                attributedAccessibilityLabel.mutableString.append((formatter.string(from: Date(), to: expirationDate) ?? NSLocalizedString("Unknown", comment: "")) + " ")
+                // attributedAccessibilityLabel.mutableString.append((formatter.string(from: currentDate, to: expirationDate) ?? NSLocalizedString("Unknown", comment: "")) + " ")
             }
             else
             {
