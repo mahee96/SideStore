@@ -213,7 +213,7 @@ extension AppIDsViewController: UICollectionViewDelegateFlowLayout
                 **App IDs can't be deleted**, but they do expire after one week. SideStore will automatically renew App IDs for all active apps once they've expired.
                 """, comment: "")
                 
-                let attributedText = NSAttributedString(markdownRepresentation: text)
+                let attributedText = NSAttributedString(markdownRepresentation: text, attributes: [.font: headerView.textLabel.font as Any])
                 headerView.textLabel.attributedText = attributedText
             }
             else
