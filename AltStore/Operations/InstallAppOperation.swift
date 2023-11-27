@@ -48,6 +48,7 @@ final class InstallAppOperation: ResultOperation<InstalledApp>
         let backgroundContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
         backgroundContext.perform {
             
+            
             /* App */
             let installedApp: InstalledApp
             
