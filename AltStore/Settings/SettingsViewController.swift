@@ -152,6 +152,7 @@ private extension SettingsViewController
         }
         
         self.backgroundRefreshSwitch.isOn = UserDefaults.standard.isBackgroundRefreshEnabled
+        self.noIdleTimeoutSwitch.isOn = UserDefaults.standard.isIdleTimeoutDisableEnabled
         
         if self.isViewLoaded
         {
