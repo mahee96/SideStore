@@ -2,8 +2,7 @@ name: Feature Request
 description: Suggest a feature
 title: "[FEATURE REQUEST] "
 labels: ["enhancement"]
-assignees:
-  - naturecodevoid
+assignees: []
 body:
   - type: markdown
     attributes:
