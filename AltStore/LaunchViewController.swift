@@ -101,6 +101,13 @@ final class LaunchViewController: RSTLaunchViewController, UIDocumentPickerDeleg
             // Present Alert to
             self.present(dialogMessage, animated: true, completion: nil)
 
+            let dialogMessage = UIAlertController(title: "Analytics", message: "This app contains anonymous analytics for research and project development. By continuing to use this app, you are consenting to this data collection", preferredStyle: .alert)
+
+            let ok = UIAlertAction(title: "OK", style: .default, handler: { (action) -> Void in})
+            
+            dialogMessage.addAction(ok)
+            self.present(dialogMessage, animated: true, completion: nil)
+
             return nil
         }
     }
