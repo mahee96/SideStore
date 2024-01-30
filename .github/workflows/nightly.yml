@@ -1,6 +1,5 @@
 name: Nightly SideStore build
 on:
-  workflow_dispatch:
   push:
     branches:
       - develop
@@ -15,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: 'self-hosted'
+          - os: 'macos-12'
             version: '14.2'
 
     runs-on: ${{ matrix.os }}
