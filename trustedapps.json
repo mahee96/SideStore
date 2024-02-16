@@ -43,6 +43,10 @@
     {
       "identifier": "com.litritt.litsource",
       "sourceURL": "https://altstore.ignitedemulator.com/"
+    },
+    {
+      "identifier": "thatstel.la.altsource"
+      "sourceURL": "https://alt.thatstel.la/"
     }
   ]
 }
