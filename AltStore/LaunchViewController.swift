@@ -72,10 +72,11 @@ final class LaunchViewController: RSTLaunchViewController, UIDocumentPickerDeleg
             fm.fileExists(atPath: appResourcePath.path),
             let data = fm.contents(atPath: appResourcePath.path),
             let contents = String(data: data, encoding: .utf8),
-            !contents.isEmpty  {
+            !contents.isEmpty,
+            !UserDefaults.standard.isPairingReset {
             print("Loaded ALTPairingFile from \(appResourcePath.path)")
             return contents
-        } else if let plistString = Bundle.main.object(forInfoDictionaryKey: "ALTPairingFile") as? String, !plistString.isEmpty, !plistString.contains("insert pairing file here"){
+        } else if let plistString = Bundle.main.object(forInfoDictionaryKey: "ALTPairingFile") as? String, !plistString.isEmpty, !plistString.contains("insert pairing file here"), !UserDefaults.standard.isPairingReset{
             print("Loaded ALTPairingFile from Info.plist")
             return plistString
         } else {
@@ -93,6 +94,7 @@ final class LaunchViewController: RSTLaunchViewController, UIDocumentPickerDeleg
                 documentPickerController.shouldShowFileExtensions = true
                 documentPickerController.delegate = self
                 self.present(documentPickerController, animated: true, completion: nil)
+                UserDefaults.standard.isPairingReset = false
              })
             
             //Add OK button to a dialog message

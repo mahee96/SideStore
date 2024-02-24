@@ -20,24 +20,18 @@
 			<key>Titles</key>
 			<array>
 				<string>SideStore</string>
+				<string>SideStore (.zip)</string>
+				<string>SideStore (.xyz)</string>
 				<string>Macley (US)</string>
-				<string>Macley (DE)</string>
-				<string>DrPudding</string>
-				<string>Sideloadly</string>
-				<string>Nick</string>
 				<string>Jawshoeadan</string>
-				<string>crystall1nedev</string>
 			</array>
 			<key>Values</key>
 			<array>
 				<string>https://ani.sidestore.io</string>
+				<string>https://ani.sidestore.zip</string>
+				<string>https://ani.846969.xyz</string>
 				<string>http://5.249.163.88:6969/</string>
-				<string>http://45.132.246.138:6969/</string>
-				<string>https://sign.rheaa.xyz</string>
-				<string>https://sideloadly.io/anisette/irGb3Quww8zrhgqnzmrx</string>
-				<string>http://45.33.29.114</string>
 				<string>https://anisette.jawshoeadan.me</string>
-				<string>https://anisette.crystall1ne.software/</string>
 			</array>
 		</dict>
 		<dict>
