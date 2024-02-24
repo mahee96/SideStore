@@ -577,11 +577,12 @@ extension SettingsViewController
                 
                 alertController.addAction(UIAlertAction(title: NSLocalizedString("Delete and Reset", comment: ""), style: .destructive){ _ in
                     if fm.fileExists(atPath: documentsPath.path), let contents = try? String(contentsOf: documentsPath), !contents.isEmpty {
+                        UserDefaults.standard.isPairingReset = true
                         try? fm.removeItem(atPath: documentsPath.path)
                         NSLog("Pairing File Reseted")
                     }
                     self.tableView.deselectRow(at: indexPath, animated: true)
-                    let dialogMessage = UIAlertController(title: NSLocalizedString("Pairing File Reseted", comment: ""), message: NSLocalizedString("Please restart SideStore", comment: ""), preferredStyle: .alert)
+                    let dialogMessage = UIAlertController(title: NSLocalizedString("Pairing File Reset", comment: ""), message: NSLocalizedString("Please restart SideStore", comment: ""), preferredStyle: .alert)
                     self.present(dialogMessage, animated: true, completion: nil)
                 })
                 alertController.addAction(.cancel)
