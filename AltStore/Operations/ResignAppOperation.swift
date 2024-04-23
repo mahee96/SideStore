@@ -116,7 +116,9 @@ private extension ResignAppOperation
             
             infoDictionary[kCFBundleIdentifierKey as String] = profile.bundleIdentifier
             infoDictionary[Bundle.Info.altBundleID] = identifier
-            infoDictionary[Bundle.Info.devicePairingString] = Bundle.main.object(forInfoDictionaryKey: "ALTPairingFile") as? String
+            infoDictionary[Bundle.Info.devicePairingString] = "<insert pairing file here>"
+            infoDictionary.removeValue(forKey: "DTXcode")
+            infoDictionary.removeValue(forKey: "DTXcodeBuild")
 
             for (key, value) in additionalInfoDictionaryValues
             {
@@ -184,7 +186,7 @@ private extension ResignAppOperation
                 {
                     guard let udid = fetch_udid()?.toString() as? String else { throw OperationError.unknownUDID }
                     guard let pairingFileString = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.devicePairingString) as? String else { throw OperationError.unknownUDID }                    
-                    additionalValues[Bundle.Info.devicePairingString] = pairingFileString
+                    additionalValues[Bundle.Info.devicePairingString] = "<insert pairing file here>"
                     additionalValues[Bundle.Info.deviceID] = udid
                     additionalValues[Bundle.Info.serverID] = UserDefaults.standard.preferredServerID
                     

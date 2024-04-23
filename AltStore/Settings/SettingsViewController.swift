@@ -106,16 +106,33 @@ final class SettingsViewController: UITableViewController
         debugModeGestureRecognizer.numberOfTouchesRequired = 3
         self.tableView.addGestureRecognizer(debugModeGestureRecognizer)
         
+        print(Bundle.main.infoDictionary)
+        var versionString: String = ""
         if let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
         {
-            self.versionLabel.text = NSLocalizedString(String(format: "SideStore %@", version), comment: "SideStore Version")
+            versionString += "SideStore \(version)"
+            if let xcode = Bundle.main.object(forInfoDictionaryKey: "DTXcode") as? String {
+                print(xcode)
+                versionString += " - Xcode \(xcode) - "
+                if let build = Bundle.main.object(forInfoDictionaryKey: "DTXcodeBuild") as? String {
+                    print(build)
+                    versionString += "\(build)"
+                }
+            }
+            if let pairing = Bundle.main.object(forInfoDictionaryKey: "ALTPairingFile") as? String {
+                let pair_test = pairing == "<insert pairing file here>"
+                if !pair_test {
+                    versionString += " - \(!pair_test)"
+                }
+            }
         }
         else
         {
-            self.versionLabel.text = NSLocalizedString("SideStore", comment: "")
+            versionString += "SideStore\t"
         }
-        
-        self.tableView.contentInset.bottom = 20
+        self.versionLabel.text = NSLocalizedString(versionString, comment: "SideStore Version")
+
+        self.tableView.contentInset.bottom = 40
         
         self.update()
         
