@@ -61,6 +61,8 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         // Register default settings before doing anything else.
         UserDefaults.registerDefaults()
         
+        
+        
         DatabaseManager.shared.start { (error) in
             if let error = error
             {
