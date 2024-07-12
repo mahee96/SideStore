@@ -159,7 +159,7 @@ final class LaunchViewController: RSTLaunchViewController, UIDocumentPickerDeleg
         } else {
             // Show an alert explaining the pairing file
             // Create new Alert
-            let dialogMessage = UIAlertController(title: "Pairing File", message: "Select the pairing file for your device. For more information, go to https://wiki.sidestore.io/guides/getting-started/#pairing-file", preferredStyle: .alert)
+            let dialogMessage = UIAlertController(title: "Pairing File", message: "Select the pairing file or select \"Help\" for help.", preferredStyle: .alert)
             
             // Create OK button with action handler
             let ok = UIAlertAction(title: "OK", style: .default, handler: { (action) -> Void in
@@ -174,9 +174,20 @@ final class LaunchViewController: RSTLaunchViewController, UIDocumentPickerDeleg
                 UserDefaults.standard.isPairingReset = false
              })
             
-            //Add OK button to a dialog message
+            //add button to take to wiki for help
+            let wikiOption = UIAlertAction(title: "Help", style: .default) { (action) in
+                let wikiURL: String = "https://docs.sidestore.io/docs/getting-started/pairing-file"
+                if let url = URL(string: wikiURL) {
+                    UIApplication.shared.open(url)
+                }
+                sleep(2)
+                exit(0)
+            }
+            
+            //Add buttons to a dialog message
+            dialogMessage.addAction(wikiOption)
             dialogMessage.addAction(ok)
-
+            
             // Present Alert to
             self.present(dialogMessage, animated: true, completion: nil)
 
