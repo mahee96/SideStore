@@ -155,6 +155,13 @@ final class MyAppsViewController: UICollectionViewController
     @IBAction func unwindToMyAppsViewController(_ segue: UIStoryboardSegue)
     {
     }
+    var minimuxerStatus: Bool {
+        guard minimuxer.ready() else {
+            ToastView(error: (OperationError.noWiFi as NSError).withLocalizedTitle("No WiFi or VPN!")).show(in: self)
+            return false
+        }
+        return true
+    }
 }
 
 private extension MyAppsViewController
@@ -188,7 +195,7 @@ private extension MyAppsViewController
     func makeUpdatesDataSource() -> RSTFetchedResultsCollectionViewPrefetchingDataSource<InstalledApp, UIImage>
     {
         let fetchRequest = InstalledApp.updatesFetchRequest()
-        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \InstalledApp.storeApp?.latestVersion?.date, ascending: true),
+        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \InstalledApp.storeApp?.latestSupportedVersion?.date, ascending: false),
                                         NSSortDescriptor(keyPath: \InstalledApp.name, ascending: true)]
         fetchRequest.returnsObjectsAsFaults = false
         
@@ -197,21 +204,21 @@ private extension MyAppsViewController
         dataSource.cellIdentifierHandler = { _ in "UpdateCell" }
         dataSource.cellConfigurationHandler = { [weak self] (cell, installedApp, indexPath) in
             guard let self = self else { return }
-            guard let app = installedApp.storeApp, let latestVersion = app.latestVersion else { return }
+            guard let app = installedApp.storeApp, let latestSupportedVersion = app.latestSupportedVersion else { return }
             
             let cell = cell as! UpdateCollectionViewCell
             cell.layoutMargins.left = self.view.layoutMargins.left
             cell.layoutMargins.right = self.view.layoutMargins.right
             
             cell.tintColor = app.tintColor ?? .altPrimary
-            cell.versionDescriptionTextView.text = app.versionDescription
+            cell.versionDescriptionTextView.text = latestSupportedVersion.localizedDescription
             
             cell.bannerView.iconImageView.image = nil
             cell.bannerView.iconImageView.isIndicatingActivity = true
             
             cell.bannerView.configure(for: app)
             
-            let versionDate = Date().relativeDateString(since: latestVersion.date, dateFormatter: self.dateFormatter)
+            let versionDate = Date().relativeDateString(since: latestSupportedVersion.date, dateFormatter: self.dateFormatter)
             cell.bannerView.subtitleLabel.text = versionDate
             
             let appName: String
@@ -225,7 +232,7 @@ private extension MyAppsViewController
                 appName = app.name
             }
             
-            cell.bannerView.accessibilityLabel = String(format: NSLocalizedString("%@ %@ update. Released on %@.", comment: ""), appName, latestVersion.version, versionDate)
+            cell.bannerView.accessibilityLabel = String(format: NSLocalizedString("%@ %@ update. Released on %@.", comment: ""), appName, latestSupportedVersion.version, versionDate)
             
             cell.bannerView.button.isIndicatingActivity = false
             cell.bannerView.button.addTarget(self, action: #selector(MyAppsViewController.updateApp(_:)), for: .primaryActionTriggered)
@@ -528,11 +535,9 @@ private extension MyAppsViewController
                 
                 guard !failures.isEmpty else { return }
                 
-                let toastView: ToastView
-                
                 if let failure = failures.first, results.count == 1
                 {
-                    toastView = ToastView(error: failure.value)
+                    ToastView(error: failure.value).show(in: self)
                 }
                 else
                 {
@@ -550,11 +555,10 @@ private extension MyAppsViewController
                     let error = failures.first?.value as NSError?
                     let detailText = error?.localizedFailure ?? error?.localizedFailureReason ?? error?.localizedDescription
                     
-                    toastView = ToastView(text: localizedText, detailText: detailText)
+                    let toastView = ToastView(text: localizedText, detailText: detailText, opensLog: true)
                     toastView.preferredDuration = 4.0
+                    toastView.show(in: self)
                 }
-                
-                toastView.show(in: self)
             }
             
             self.refreshGroup = nil
@@ -645,11 +649,7 @@ private extension MyAppsViewController
     
     @IBAction func refreshAllApps(_ sender: UIBarButtonItem)
     {
-        if !minimuxer.ready() {
-            let toastView = ToastView(error: MinimuxerError.NoConnection)
-            toastView.show(in: self)
-            return
-        }
+        guard minimuxerStatus else { return }
 
         self.isRefreshingAllApps = true
         self.collectionView.collectionViewLayout.invalidateLayout()
@@ -694,8 +694,7 @@ private extension MyAppsViewController
                     self.collectionView.reloadItems(at: [indexPath])
                     
                 case .failure(let error):
-                    let toastView = ToastView(error: error)
-                    toastView.show(in: self)
+                    ToastView(error: error, opensLog: true).show(in: self)
                     
                     self.collectionView.reloadItems(at: [indexPath])
                     
@@ -713,11 +712,7 @@ private extension MyAppsViewController
     
     @IBAction func sideloadApp(_ sender: UIBarButtonItem)
     {
-        if !minimuxer.ready() {
-            let toastView = ToastView(error: MinimuxerError.NoConnection)
-            toastView.show(in: self)
-            return
-        }
+        guard minimuxerStatus else { return }
 
         let supportedTypes = UTType.types(tag: "ipa", tagClass: .filenameExtension, conformingTo: nil)
         
@@ -900,9 +895,8 @@ private extension MyAppsViewController
                     completion(.failure((OperationError.cancelled)))
                     
                 case .failure(let error):
-                    let toastView = ToastView(error: error)
-                    toastView.show(in: self)
-                    
+                    ToastView(error: error, opensLog: true).show(in: self)
+
                     completion(.failure(error))
                 }
             }
@@ -1016,18 +1010,13 @@ private extension MyAppsViewController
         UIApplication.shared.open(installedApp.openAppURL) { success in
             guard !success else { return }
             
-            let toastView = ToastView(error: OperationError.openAppFailed(name: installedApp.name))
-            toastView.show(in: self)
+            ToastView(error: OperationError.openAppFailed(name: installedApp.name), opensLog: true).show(in: self)
         }
     }
     
     func refresh(_ installedApp: InstalledApp)
     {
-        if !minimuxer.ready() {
-            let toastView = ToastView(error: MinimuxerError.NoConnection)
-            toastView.show(in: self)
-            return
-        }
+        guard minimuxerStatus else { return }
 
         let previousProgress = AppManager.shared.refreshProgress(for: installedApp)
         guard previousProgress == nil else {
@@ -1050,11 +1039,7 @@ private extension MyAppsViewController
     
     func activate(_ installedApp: InstalledApp)
     {
-        if !minimuxer.ready() {
-            let toastView = ToastView(error: MinimuxerError.NoConnection)
-            toastView.show(in: self)
-            return
-        }
+        guard minimuxerStatus else { return }
 
         func finish(_ result: Result<InstalledApp, Error>)
         {
@@ -1076,8 +1061,7 @@ private extension MyAppsViewController
                 DispatchQueue.main.async {
                     installedApp.isActive = false
                     
-                    let toastView = ToastView(error: error)
-                    toastView.show(in: self)
+                    ToastView(error: error, opensLog: true).show(in: self)
                 }
             }
         }
@@ -1131,12 +1115,8 @@ private extension MyAppsViewController
     
     func deactivate(_ installedApp: InstalledApp, completionHandler: ((Result<InstalledApp, Error>) -> Void)? = nil)
     {
-        guard installedApp.isActive else { return }
-        if !minimuxer.ready() {
-            let toastView = ToastView(error: MinimuxerError.NoConnection)
-            toastView.show(in: self)
-            return
-        }
+        guard installedApp.isActive, minimuxerStatus else { return }
+
         installedApp.isActive = false
         
         AppManager.shared.deactivate(installedApp, presentingViewController: self) { (result) in
@@ -1149,13 +1129,12 @@ private extension MyAppsViewController
             }
             catch
             {
-                print("Failed to activate app:", error)
+                print("Failed to deactivate app:", error)
                 
                 DispatchQueue.main.async {
                     installedApp.isActive = true
                     
-                    let toastView = ToastView(error: error)
-                    toastView.show(in: self)
+                    ToastView(error: error, opensLog: true).show(in: self)
                 }
             }
             
@@ -1186,8 +1165,7 @@ private extension MyAppsViewController
                 case .success: break
                 case .failure(let error):
                     DispatchQueue.main.async {
-                        let toastView = ToastView(error: error)
-                        toastView.show(in: self)
+                        ToastView(error: error, opensLog: true).show(in: self)
                     }
                 }
             }
@@ -1198,11 +1176,8 @@ private extension MyAppsViewController
     
     func backup(_ installedApp: InstalledApp)
     {
-        if !minimuxer.ready() {
-            let toastView = ToastView(error: MinimuxerError.NoConnection)
-            toastView.show(in: self)
-            return
-        }
+        guard minimuxerStatus else { return }
+
         let title = NSLocalizedString("Start Backup?", comment: "")
         let message = NSLocalizedString("This will replace any previous backups. Please leave SideStore open until the backup is complete.", comment: "")
 
@@ -1224,9 +1199,8 @@ private extension MyAppsViewController
                     print("Failed to back up app:", error)
                     
                     DispatchQueue.main.async {
-                        let toastView = ToastView(error: error)
-                        toastView.show(in: self)
-                        
+                        ToastView(error: error, opensLog: true).show(in: self)
+
                         self.collectionView.reloadSections([Section.activeApps.rawValue, Section.inactiveApps.rawValue])
                     }
                 }
@@ -1242,11 +1216,8 @@ private extension MyAppsViewController
     
     func restore(_ installedApp: InstalledApp)
     {
-        if !minimuxer.ready() {
-            let toastView = ToastView(error: MinimuxerError.NoConnection)
-            toastView.show(in: self)
-            return
-        }
+        guard minimuxerStatus else { return }
+
         let message = String(format: NSLocalizedString("This will replace all data you currently have in %@.", comment: ""), installedApp.name)
         let alertController = UIAlertController(title: NSLocalizedString("Are you sure you want to restore this backup?", comment: ""), message: message, preferredStyle: .actionSheet)
         alertController.addAction(.cancel)
@@ -1264,8 +1235,7 @@ private extension MyAppsViewController
                     print("Failed to restore app:", error)
                     
                     DispatchQueue.main.async {
-                        let toastView = ToastView(error: error)
-                        toastView.show(in: self)
+                        ToastView(error: error, opensLog: true).show(in: self)
                     }
                 }
             }
@@ -1340,8 +1310,7 @@ private extension MyAppsViewController
                 print("Failed to change app icon.", error)
                 
                 DispatchQueue.main.async {
-                    let toastView = ToastView(error: error)
-                    toastView.show(in: self)
+                    ToastView(error: error, opensLog: true).show(in: self)
                 }
             }
         }
@@ -1350,14 +1319,11 @@ private extension MyAppsViewController
     @available(iOS 14, *)
     func enableJIT(for installedApp: InstalledApp)
     {
-        if #available(iOS 17, *), !UserDefaults.standard.sidejitenable {
-            let toastView = ToastView(error: OperationError.tooNewError)
-            toastView.show(in: self)
-            return
-        }
-        if #unavailable(iOS 17), !minimuxer.ready() {
-            let toastView = ToastView(error: MinimuxerError.NoConnection)
-            toastView.show(in: self)
+        guard minimuxerStatus else { return }
+
+        if #available(iOS 17, *) {
+            ToastView(error: (OperationError.tooNewError as NSError).withLocalizedTitle("No iOS 17 On Device JIT!"), opensLog: true).show(in: self)
+            AppManager.shared.log(OperationError.tooNewError, operation: .enableJIT, app: installedApp)
             return
         }
         
@@ -1367,8 +1333,8 @@ private extension MyAppsViewController
                 {
                 case .success: break
                 case .failure(let error):
-                    let toastView = ToastView(error: error)
-                    toastView.show(in: self.navigationController?.view ?? self.view, duration: 5)
+                    ToastView(error: error, opensLog: true).show(in: self)
+                    AppManager.shared.log(error, operation: .enableJIT, app: installedApp)
                 }
             }
         }

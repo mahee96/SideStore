@@ -114,9 +114,9 @@ private extension BrowseViewController
                 let progress = AppManager.shared.installationProgress(for: app)
                 cell.bannerView.button.progress = progress
                 
-                if let versionDate = app.latestVersion?.date, versionDate > Date()
+                if let versionDate = app.latestSupportedVersion?.date, versionDate > Date()
                 {
-                    cell.bannerView.button.countdownDate = app.versionDate
+                    cell.bannerView.button.countdownDate = versionDate
                 }
                 else
                 {
@@ -278,7 +278,7 @@ private extension BrowseViewController
                 {
                 case .failure(OperationError.cancelled): break // Ignore
                 case .failure(let error):
-                    let toastView = ToastView(error: error)
+                    let toastView = ToastView(error: error, opensLog: true)
                     toastView.show(in: self)
                 
                 case .success: print("Installed app:", app.bundleIdentifier)

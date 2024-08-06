@@ -384,7 +384,7 @@ private extension AppViewController
             button.progress = progress
         }
         
-        if let versionDate = self.app.latestVersion?.date, versionDate > Date()
+        if let versionDate = self.app.latestAvailableVersion?.date, versionDate > Date()
         {
             self.bannerView.button.countdownDate = versionDate
             self.navigationBarDownloadButton.countdownDate = versionDate
@@ -510,7 +510,7 @@ extension AppViewController
             catch
             {
                 DispatchQueue.main.async {
-                    let toastView = ToastView(error: error)
+                    let toastView = ToastView(error: error, opensLog: true)
                     toastView.show(in: self)
                 }
             }

@@ -14,6 +14,7 @@ import Intents
 import Combine
 import WidgetKit
 
+import minimuxer
 import AltStoreCore
 import AltSign
 import Roxas
@@ -35,11 +36,6 @@ final class AppManagerPublisher: ObservableObject
     
     @Published
     fileprivate(set) var refreshProgress = [String: Progress]()
-}
-
-private func ==(lhs: OperatingSystemVersion, rhs: OperatingSystemVersion) -> Bool
-{
-    return (lhs.majorVersion == rhs.majorVersion && lhs.minorVersion == rhs.minorVersion && lhs.patchVersion == rhs.patchVersion)
 }
 
 final class AppManager
@@ -317,6 +313,35 @@ extension AppManager
         
         self.run([clearAppCacheOperation], context: nil)
     }
+
+    func log(_ error: Error, operation: LoggedError.Operation, app: AppProtocol)
+    {
+        switch error {
+        case ~OperationError.Code.cancelled: return // Don't log cancelled events
+        default: break
+        }
+        // Sanitize NSError on same thread before performing background task.
+        let sanitizedError = (error as NSError).sanitizedForSerialization()
+
+        DatabaseManager.shared.persistentContainer.performBackgroundTask { context in
+            var app = app
+            if let managedApp = app as? NSManagedObject, let tempApp = context.object(with: managedApp.objectID) as? AppProtocol
+            {
+                app = tempApp
+            }
+
+            do
+            {
+                _ = LoggedError(error: sanitizedError, app: app, operation: operation, context: context)
+                try context.save()
+            }
+            catch let saveError
+            {
+                print("[ALTLog] Failed to log error \(sanitizedError.domain) code \(sanitizedError.code) for \(app.bundleIdentifier):", saveError)
+            }
+        }
+    }
+
 }
 
 extension AppManager
@@ -369,7 +394,7 @@ extension AppManager
                     case .success(let source): fetchedSources.insert(source)
                     case .failure(let error):
                         let source = managedObjectContext.object(with: source.objectID) as! Source
-                        source.error = (error as NSError).sanitizedForCoreData()
+                        source.error = (error as NSError).sanitizedForSerialization()
                         errors[source] = error
                     }
                     
@@ -457,7 +482,7 @@ extension AppManager
         group.completionHandler = { (results) in
             do
             {
-                guard let result = results.values.first else { throw context.error ?? OperationError.unknown }
+                guard let result = results.values.first else { throw context.error ?? OperationError.unknown() }
                 completionHandler(result)
             }
             catch
@@ -476,7 +501,7 @@ extension AppManager
     func update(_ app: InstalledApp, presentingViewController: UIViewController?, context: AuthenticatedOperationContext = AuthenticatedOperationContext(), completionHandler: @escaping (Result<InstalledApp, Error>) -> Void) -> Progress
     {
         guard let storeApp = app.storeApp else {
-            completionHandler(.failure(OperationError.appNotFound))
+            completionHandler(.failure(OperationError.appNotFound(name: app.name)))
             return Progress.discreteProgress(totalUnitCount: 1)
         }
         
@@ -484,7 +509,7 @@ extension AppManager
         group.completionHandler = { (results) in
             do
             {
-                guard let result = results.values.first else { throw OperationError.unknown }
+                guard let result = results.values.first else { throw OperationError.unknown() }
                 completionHandler(result)
             }
             catch
@@ -520,8 +545,8 @@ extension AppManager
         group.completionHandler = { (results) in
             do
             {
-                guard let result = results.values.first else { throw OperationError.unknown }
-                
+                guard let result = results.values.first else { throw OperationError.unknown() }
+
                 let installedApp = try result.get()
                 assert(installedApp.managedObjectContext != nil)
                 
@@ -559,7 +584,7 @@ extension AppManager
             group.completionHandler = { (results) in
                 do
                 {
-                    guard let result = results.values.first else { throw OperationError.unknown }
+                    guard let result = results.values.first else { throw OperationError.unknown() }
 
                     let installedApp = try result.get()
                     assert(installedApp.managedObjectContext != nil)
@@ -585,8 +610,8 @@ extension AppManager
         group.completionHandler = { (results) in
             do
             {
-                guard let result = results.values.first else { throw OperationError.unknown }
-                
+                guard let result = results.values.first else { throw OperationError.unknown() }
+
                 let installedApp = try result.get()
                 assert(installedApp.managedObjectContext != nil)
                 
@@ -610,7 +635,7 @@ extension AppManager
         group.completionHandler = { (results) in
             do
             {
-                guard let result = results.values.first else { throw OperationError.unknown }
+                guard let result = results.values.first else { throw OperationError.unknown() }
                 
                 let installedApp = try result.get()
                 assert(installedApp.managedObjectContext != nil)
@@ -680,13 +705,20 @@ extension AppManager
             var installedApp: InstalledApp?
         }
         
+        let appName = installedApp.name
         let context = Context()
         context.installedApp = installedApp
         
         
         let enableJITOperation = EnableJITOperation(context: context)
         enableJITOperation.resultHandler = { (result) in
-            completionHandler(result)
+            switch result {
+            case .success: completionHandler(.success(()))
+            case .failure(let nsError as NSError):
+                let localizedTitle = String(format: NSLocalizedString("Failed to enable JIT for %@", comment: ""), appName)
+                let error = nsError.withLocalizedTitle(localizedTitle)
+                self.log(error, operation: .enableJIT, app: installedApp)
+            }
         }
         
         self.run([enableJITOperation], context: context, requiresSerialQueue: true)
@@ -821,6 +853,18 @@ private extension AppManager
             }
             
             return bundleIdentifier
+        }
+
+        var loggedErrorOperation: LoggedError.Operation {
+            switch self {
+            case .install: return .install
+            case .update: return .update
+            case .refresh: return .refresh
+            case .activate: return .activate
+            case .deactivate: return .deactivate
+            case .backup: return .backup
+            case .restore: return .restore
+            }
         }
     }
     
@@ -1062,7 +1106,9 @@ private extension AppManager
             switch result
             {
             case .failure(let error): context.error = error
-            case .success(let provisioningProfiles): context.provisioningProfiles = provisioningProfiles
+            case .success(let provisioningProfiles): 
+                context.provisioningProfiles = provisioningProfiles
+                print("PROVISIONING PROFILES \(context.provisioningProfiles)")
             }
         }
         fetchProvisioningProfilesOperation.addDependency(refreshAnisetteDataOperation)
@@ -1269,14 +1315,21 @@ private extension AppManager
             case .success(let installedApp):
                 completionHandler(.success(installedApp))
                 
-            case .failure(ALTServerError.unknownRequest), .failure(OperationError.appNotFound):
+            case .failure(MinimuxerError.ProfileInstall):
+                completionHandler(.failure(OperationError.noWiFi))
+                
+            case .failure(ALTServerError.unknownRequest), .failure(OperationError.appNotFound(name: app.name)):
                 // Fall back to installation if AltServer doesn't support newer provisioning profile requests,
                 // OR if the cached app could not be found and we may need to redownload it.
                 app.managedObjectContext?.performAndWait { // Must performAndWait to ensure we add operations before we return.
-                    let installProgress = self._install(app, operation: operation, group: group) { (result) in
-                        completionHandler(result)
+                    if minimuxer.ready() {
+                        let installProgress = self._install(app, operation: operation, group: group) { (result) in
+                            completionHandler(result)
+                        }
+                        progress.addChild(installProgress, withPendingUnitCount: 40)
+                    } else {
+                        completionHandler(.failure(OperationError.noWiFi))
                     }
-                    progress.addChild(installProgress, withPendingUnitCount: 40)
                 }
                 
             case .failure(let error):
@@ -1543,7 +1596,7 @@ private extension AppManager
         }
         
         guard let application = ALTApplication(fileURL: app.fileURL) else {
-            completionHandler(.failure(OperationError.appNotFound))
+            completionHandler(.failure(OperationError.appNotFound(name: app.name)))
             return progress
         }
         
@@ -1555,8 +1608,8 @@ private extension AppManager
                     let temporaryDirectoryURL = context.temporaryDirectory.appendingPathComponent("AltBackup-" + UUID().uuidString)
                     try FileManager.default.createDirectory(at: temporaryDirectoryURL, withIntermediateDirectories: true, attributes: nil)
                     
-                    guard let altbackupFileURL = Bundle.main.url(forResource: "AltBackup", withExtension: "ipa") else { throw OperationError.appNotFound }
-                    
+                    guard let altbackupFileURL = Bundle.main.url(forResource: "AltBackup", withExtension: "ipa") else { throw OperationError.appNotFound(name: app.name) }
+
                     let unzippedAppBundleURL = try FileManager.default.unzipAppBundle(at: altbackupFileURL, toDirectory: temporaryDirectoryURL)
                     guard let unzippedAppBundle = Bundle(url: unzippedAppBundleURL) else { throw OperationError.invalidApp }
                     
@@ -1694,11 +1747,35 @@ private extension AppManager
             do { try installedApp.managedObjectContext?.save() }
             catch { print("Error saving installed app.", error) }
         }
-        catch
+        catch let nsError as NSError
         {
+            var appName: String!
+            if let app = operation.app as? (NSManagedObject & AppProtocol) {
+                if let context = app.managedObjectContext {
+                    context.performAndWait {
+                        appName = app.name
+                    }
+                } else {
+                    appName = NSLocalizedString("Unknown App", comment: "")
+                }
+            } else {
+                appName = operation.app.name
+            }
+
+            let localizedTitle: String
+            switch operation {
+            case .install: localizedTitle = String(format: NSLocalizedString("Failed to Install %@", comment: ""), appName)
+            case .refresh: localizedTitle = String(format: NSLocalizedString("Failed to Refresh %@", comment: ""), appName)
+            case .update: localizedTitle = String(format: NSLocalizedString("Failed to Update %@", comment: ""), appName)
+            case .activate: localizedTitle = String(format: NSLocalizedString("Failed to Activate %@", comment: ""), appName)
+            case .deactivate: localizedTitle = String(format: NSLocalizedString("Failed to Deactivate %@", comment: ""), appName)
+            case .backup: localizedTitle = String(format: NSLocalizedString("Failed to Backup %@", comment: ""), appName)
+            case .restore: localizedTitle = String(format: NSLocalizedString("Failed to Restore %@ Backup", comment: ""), appName)
+            }
+            let error = nsError.withLocalizedTitle(localizedTitle)
             group.set(.failure(error), forAppWithBundleIdentifier: operation.bundleIdentifier)
             
-            self.log(error, for: operation)
+            self.log(error, operation: operation.loggedErrorOperation, app: operation.app)
         }
     }
     
@@ -1723,43 +1800,7 @@ private extension AppManager
         UNUserNotificationCenter.current().add(request)
     }
     
-    func log(_ error: Error, for operation: AppOperation)
-    {
-        // Sanitize NSError on same thread before performing background task.
-        let sanitizedError = (error as NSError).sanitizedForCoreData()
-        
-        let loggedErrorOperation: LoggedError.Operation = {
-            switch operation
-            {
-            case .install: return .install
-            case .update: return .update
-            case .refresh: return .refresh
-            case .activate: return .activate
-            case .deactivate: return .deactivate
-            case .backup: return .backup
-            case .restore: return .restore
-            }
-        }()
-                    
-        DatabaseManager.shared.persistentContainer.performBackgroundTask { context in
-            var app = operation.app
-            if let managedApp = app as? NSManagedObject, let tempApp = context.object(with: managedApp.objectID) as? AppProtocol
-            {
-                app = tempApp
-            }
-            
-            do
-            {
-                _ = LoggedError(error: sanitizedError, app: app, operation: loggedErrorOperation, context: context)
-                try context.save()
-            }
-            catch let saveError
-            {
-                print("[ALTLog] Failed to log error \(sanitizedError.domain) code \(sanitizedError.code) for \(app.bundleIdentifier):", saveError)
-            }
-        }
-    }
-    
+
     func run(_ operations: [Foundation.Operation], context: OperationContext?, requiresSerialQueue: Bool = false)
     {
         // Find "Install AltStore" operation if it already exists in `context`

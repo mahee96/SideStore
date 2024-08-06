@@ -62,14 +62,14 @@ public class InstalledApp: NSManagedObject, InstalledAppProtocol
     
     @objc public var hasUpdate: Bool {
         if self.storeApp == nil { return false }
-        if self.storeApp!.latestVersion == nil { return false }
-        
+        if self.storeApp!.latestSupportedVersion == nil { return false }
+
         let currentVersion = SemanticVersion(self.version)
-        let latestVersion = SemanticVersion(self.storeApp!.latestVersion!.version)
-        
+        let latestVersion = SemanticVersion(self.storeApp!.latestSupportedVersion!.version)
+
         if currentVersion == nil || latestVersion == nil {
             // One of the versions is not valid SemVer, fall back to comparing the version strings by character
-            return self.version < self.storeApp!.latestVersion!.version
+            return self.version < self.storeApp!.latestSupportedVersion!.version
         }
         
         return currentVersion! < latestVersion!
@@ -163,8 +163,8 @@ public extension InstalledApp
     class func updatesFetchRequest() -> NSFetchRequest<InstalledApp>
     {
         let fetchRequest = InstalledApp.fetchRequest() as NSFetchRequest<InstalledApp>
-        fetchRequest.predicate = NSPredicate(format: "%K == YES AND %K == YES",
-                                             #keyPath(InstalledApp.isActive), #keyPath(InstalledApp.hasUpdate))
+        fetchRequest.predicate = NSPredicate(format: "%K == YES AND %K != nil AND %K != %K",
+                                             #keyPath(InstalledApp.isActive), #keyPath(InstalledApp.storeApp), #keyPath(InstalledApp.version), #keyPath(InstalledApp.storeApp.latestSupportedVersion.version))
         return fetchRequest
     }
     
@@ -275,14 +275,12 @@ public extension InstalledApp
         
         do { try FileManager.default.createDirectory(at: appsDirectoryURL, withIntermediateDirectories: true, attributes: nil) }
         catch { print("Creating App Directory Error: \(error)") }
-        print("`appsDirectoryURL` is set to: \(appsDirectoryURL.absoluteString)")
         return appsDirectoryURL
     }
     
     class var legacyAppsDirectoryURL: URL {
         let baseDirectory = FileManager.default.applicationSupportDirectory
         let appsDirectoryURL = baseDirectory.appendingPathComponent("Apps")
-        print("legacy `appsDirectoryURL` is set to: \(appsDirectoryURL.absoluteString)")
         return appsDirectoryURL
     }
     
