@@ -59,7 +59,8 @@ struct AnisetteServers: View {
 
     var body: some View {
         ZStack {
-            Color(UIColor.systemBackground).ignoresSafeArea()
+            Color(UIColor.systemBackground)
+                .ignoresSafeArea()
                 .onAppear {
                     viewModel.getListOfServers()
                 }
@@ -92,14 +93,11 @@ struct AnisetteServers: View {
                         }
                         .padding()
                         .background(RoundedRectangle(cornerRadius: 10).fill(Color(UIColor.secondarySystemBackground)))
-                        .shadow(color: Color.gray.opacity(0.4), radius: 5, x: 0, y: 5)
-                        .listRowSeparatorTint(.white)
-                        .listRowBackground(Color(UIColor.systemBackground).ignoresSafeArea())
+                        .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 5)
                     }
                     .listStyle(.plain)
                     .scrollContentBackground(.hidden)
-                    .listRowBackground(Color(UIColor.systemBackground).ignoresSafeArea())
-                    
+                    .listRowBackground(Color(UIColor.systemBackground))
                 } else {
                     List(selection: $selected) {
                         ForEach($viewModel.servers, id: \.name) { server in
@@ -117,26 +115,23 @@ struct AnisetteServers: View {
                         }
                         .padding()
                         .background(RoundedRectangle(cornerRadius: 10).fill(Color(UIColor.secondarySystemBackground)))
-                        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 5)
+                        .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 5)
                     }
                     .listStyle(.plain)
-                    // Fallback on earlier versions
                 }
                 
                 VStack(spacing: 16) {
-                    // TextField with gray background
                     TextField("Anisette Server List", text: $viewModel.source)
                         .padding()
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color.gray))
-                        .foregroundColor(.white)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(UIColor.secondarySystemFill)))
+                        .foregroundColor(.primary)
                         .frame(height: 60)
-                        .shadow(color: Color.gray.opacity(0.4), radius: 10, x: 0, y: 5)
+                        .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 5)
                         .onChange(of: viewModel.source) { newValue in
                             UserDefaults.standard.menuAnisetteList = newValue
                             viewModel.getListOfServers()
                         }
 
-                    // Back and Refresh Buttons next to each other
                     HStack(spacing: 16) {
                         SUIButton(action: {
                             presentationMode.wrappedValue.dismiss()
@@ -165,7 +160,6 @@ struct AnisetteServers: View {
                         .shadow(color: Color.accentColor.opacity(0.4), radius: 10, x: 0, y: 5)
                     }
 
-                    // Reset Button below Back and Refresh
                     SUIButton(action: {
                         #if !DEBUG
                         if Keychain.shared.adiPb != nil {
@@ -189,7 +183,7 @@ struct AnisetteServers: View {
                 .padding(.horizontal)
             }
         }
-        .navigationBarHidden(true) // Hide the navigation bar if you don't need it
-        .navigationTitle("") // Remove title to avoid extra space
+        .navigationBarHidden(true)
+        .navigationTitle("")
     }
 }
