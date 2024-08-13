@@ -608,7 +608,7 @@ extension SettingsViewController
                 })
                 
                 // Option 3: Mail
-                alertController.addAction(UIAlertAction(title: "Mail", style: .default) { _ in
+                alertController.addAction(UIAlertAction(title: "Send Email", style: .default) { _ in
                     if MFMailComposeViewController.canSendMail() {
                         let mailViewController = MFMailComposeViewController()
                         mailViewController.mailComposeDelegate = self
