@@ -181,6 +181,7 @@ struct AnisetteServers: View {
                     .shadow(color: Color.red.opacity(0.4), radius: 10, x: 0, y: 5)
                 }
                 .padding(.horizontal)
+                .padding(.bottom)
             }
         }
         .navigationBarHidden(true)
