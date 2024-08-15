@@ -229,7 +229,7 @@ extension MinimuxerError: LocalizedError {
         case .NoDevice:
             return NSLocalizedString("Cannot fetch the device from the muxer", comment: "")
         case .NoConnection:
-            return NSLocalizedString("Unable to connect to the device, make sure Wireguard is enabled and you're connected to WiFi", comment: "")
+            return NSLocalizedString("Unable to connect to the device, make sure Wireguard is enabled and you're connected to WiFi. This could mean an invalid pairing.", comment: "")
         case .PairingFile:
             return NSLocalizedString("Invalid pairing file. Your pairing file either didn't have a UDID, or it wasn't a valid plist. Please use jitterbugpair to generate it", comment: "")
             
@@ -259,7 +259,7 @@ extension MinimuxerError: LocalizedError {
         case .CreateAfc:
             return self.createService(name: "AFC")
         case .RwAfc:
-            return NSLocalizedString("AFC was unable to manage files on the device", comment: "")
+            return NSLocalizedString("AFC was unable to manage files on the device. This usually means an invalid pairing.", comment: "")
         case .InstallApp(let message):
             return NSLocalizedString("Unable to install the app: \(message.toString())", comment: "")
         case .UninstallApp:
