@@ -490,7 +490,7 @@ private extension AuthenticationOperation
     {
         func requestCertificate()
         {
-            let machineName = "SideStore - " + UIDevice.current.name
+            let machineName: String = "SideStore - \(team.account.firstName)'s \(UIDevice.current.name)"
             ALTAppleAPI.shared.addCertificate(machineName: machineName, to: team, session: session) { (certificate, error) in
                 do
                 {
