@@ -107,6 +107,3 @@ jobs:
         with:
           name: SideStore-${{ steps.version.outputs.version }}-dSYM
           path: ./*.dSYM/
-
-      - name: Reset cache for apps.sidestore.io/nightly
-        run: sleep 10 && curl https://apps.sidestore.io/reset-cache/nightly/${{ secrets.SIDESOURCE_KEY }}
