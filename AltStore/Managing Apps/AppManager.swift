@@ -1014,6 +1014,51 @@ private extension AppManager
         return group
     }
     
+    func removeAppExtensions(from application: ALTApplication, _ presentingViewController: UIViewController, completion: @escaping (Result<Void, Error>) -> Void)
+    {
+        guard !application.appExtensions.isEmpty else { return completion(.success(())) }
+        
+        let firstSentence: String
+        
+        if UserDefaults.standard.activeAppLimitIncludesExtensions
+        {
+            firstSentence = NSLocalizedString("Non-developer Apple IDs are limited to 3 active apps and app extensions.", comment: "")
+        }
+        else
+        {
+            firstSentence = NSLocalizedString("Non-developer Apple IDs are limited to creating 10 App IDs per week.", comment: "")
+        }
+        
+        let message = firstSentence + " " + NSLocalizedString("Would you like to remove this app's extensions so they don't count towards your limit?", comment: "")
+        
+        let alertController = UIAlertController(title: NSLocalizedString("App Contains Extensions", comment: ""), message: message, preferredStyle: .alert)
+        alertController.addAction(UIAlertAction(title: UIAlertAction.cancel.title, style: UIAlertAction.cancel.style, handler: { (action) in
+            completion(.failure(OperationError.cancelled))
+        }))
+        alertController.addAction(UIAlertAction(title: NSLocalizedString("Keep App Extensions", comment: ""), style: .default) { (action) in
+            completion(.success(()))
+        })
+        alertController.addAction(UIAlertAction(title: NSLocalizedString("Remove App Extensions", comment: ""), style: .destructive) { (action) in
+            do
+            {
+                for appExtension in application.appExtensions
+                {
+                    try FileManager.default.removeItem(at: appExtension.fileURL)
+                }
+                
+                completion(.success(()))
+            }
+            catch
+            {
+                completion(.failure(error))
+            }
+        })
+        
+        DispatchQueue.main.async {
+            presentingViewController.present(alertController, animated: true)
+        }
+    }
+    
     private func _install(_ app: AppProtocol, operation appOperation: AppOperation, group: RefreshGroup, context: InstallAppOperationContext? = nil, additionalEntitlements: [ALTEntitlement: Any]? = nil, cacheApp: Bool = true, completionHandler: @escaping (Result<InstalledApp, Error>) -> Void) -> Progress
     {
         let progress = Progress.discreteProgress(totalUnitCount: 100)
@@ -1086,6 +1131,39 @@ private extension AppManager
         }
         verifyOperation.addDependency(downloadOperation)
         
+        /* Remove App Extensions */
+        
+        let removeAppExtensionsOperation = RSTAsyncBlockOperation { [weak self] (operation) in
+            do
+            {
+                if let error = context.error
+                {
+                    throw error
+                }
+                
+                guard let extensions = context.app?.appExtensions else { throw OperationError.invalidParameters }
+                
+                guard let app = context.app, let presentingViewController = context.authenticatedContext.presentingViewController else { throw OperationError.invalidParameters }
+                
+                
+                self?.removeAppExtensions(from: app, presentingViewController) { result in
+                    switch result {
+                    case .success(): break
+                    case .failure(let error): context.error = error
+                    }
+                    operation.finish()
+                }
+                
+            }
+            catch
+            {
+                group.context.error = error
+                operation.finish()
+            }
+        }
+        
+        removeAppExtensionsOperation.addDependency(verifyOperation)
+        
         
         /* Refresh Anisette Data */
         let refreshAnisetteDataOperation = FetchAnisetteDataOperation(context: group.context)
@@ -1096,7 +1174,7 @@ private extension AppManager
             case .success(let anisetteData): group.context.session?.anisetteData = anisetteData
             }
         }
-        refreshAnisetteDataOperation.addDependency(verifyOperation)
+        refreshAnisetteDataOperation.addDependency(removeAppExtensionsOperation)
 
 
         /* Fetch Provisioning Profiles */
@@ -1156,7 +1234,6 @@ private extension AppManager
             }
         }
         deactivateAppsOperation.addDependency(fetchProvisioningProfilesOperation)
-        
         
         /* Patch App */
         let patchAppOperation = RSTAsyncBlockOperation { operation in
@@ -1282,7 +1359,7 @@ private extension AppManager
         progress.addChild(installOperation.progress, withPendingUnitCount: 30)
         installOperation.addDependency(sendAppOperation)
         
-        let operations = [downloadOperation, verifyOperation, refreshAnisetteDataOperation, fetchProvisioningProfilesOperation, deactivateAppsOperation, patchAppOperation, resignAppOperation, sendAppOperation, installOperation]
+        let operations = [downloadOperation, verifyOperation, removeAppExtensionsOperation, refreshAnisetteDataOperation, fetchProvisioningProfilesOperation, deactivateAppsOperation, patchAppOperation, resignAppOperation, sendAppOperation, installOperation]
         group.add(operations)
         self.run(operations, context: group.context)
         
