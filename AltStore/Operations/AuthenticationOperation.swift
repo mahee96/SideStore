@@ -525,7 +525,7 @@ private extension AuthenticationOperation
         func replaceCertificate(from certificates: [ALTCertificate])
         {
             let ourCertificates = certificates.filter { a in
-                a.machineName?.starts(with: "SideStore") == true
+                a.machineName?.starts(with: "SideStore") == true || a.machineName?.starts(with: "AltStore") == true
             }
             
             if ourCertificates.isEmpty {
