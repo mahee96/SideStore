@@ -51,9 +51,8 @@ jobs:
       - name: Cache Build
         uses: irgaly/xcode-cache@v1
         with:
-          key: xcode-cache-deriveddata-${{ github.workflow }}-${{ github.sha }}
-          restore-keys: xcode-cache-deriveddata-${{ github.workflow }}-
-
+          key: xcode-cache-deriveddata-${{ github.sha }}
+          restore-keys: xcode-cache-deriveddata-
 
       - name: Build SideStore
         run: make build | xcpretty && exit ${PIPESTATUS[0]}
