@@ -32,6 +32,7 @@ public extension UserDefaults
     
     @NSManaged var isBackgroundRefreshEnabled: Bool
     @NSManaged var isIdleTimeoutDisableEnabled: Bool
+    @NSManaged var isAppLimitDisabled: Bool
     @NSManaged var isPairingReset: Bool
     @NSManaged var isDebugModeEnabled: Bool
     @NSManaged var presentedLaunchReminderNotification: Bool

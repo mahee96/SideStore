@@ -32,13 +32,22 @@ extension SettingsViewController
     {
         case backgroundRefresh
         case noIdleTimeout
+        case disableAppLimit
         
         @available(iOS 14, *)
         case addToSiri
         
         static var allCases: [AppRefreshRow] {
-            guard #available(iOS 14, *) else { return [.backgroundRefresh, .noIdleTimeout] }
-            return [.backgroundRefresh, .noIdleTimeout, .addToSiri]
+            var c: [AppRefreshRow] = [.backgroundRefresh, .noIdleTimeout]
+            let low: OperatingSystemVersion = .init(majorVersion: 14, minorVersion: 0, patchVersion: 0)
+            let high: OperatingSystemVersion = .init(majorVersion: 18, minorVersion: 1, patchVersion: 0)
+            let current = ProcessInfo.processInfo.operatingSystemVersion
+            if low <= current, current < high {
+                c.append(.disableAppLimit)
+            }
+            guard #available(iOS 14, *) else { return c }
+            c.append(.addToSiri)
+            return c
         }
     }
     
@@ -79,6 +88,7 @@ final class SettingsViewController: UITableViewController
     
     @IBOutlet private var backgroundRefreshSwitch: UISwitch!
     @IBOutlet private var noIdleTimeoutSwitch: UISwitch!
+    @IBOutlet private var disableAppLimitSwitch: UISwitch!
     
     @IBOutlet private var refreshSideJITServer: UILabel!
     
@@ -190,6 +200,7 @@ private extension SettingsViewController
         
         self.backgroundRefreshSwitch.isOn = UserDefaults.standard.isBackgroundRefreshEnabled
         self.noIdleTimeoutSwitch.isOn = UserDefaults.standard.isIdleTimeoutDisableEnabled
+        self.disableAppLimitSwitch.isOn = UserDefaults.standard.isAppLimitDisabled
         
         if self.isViewLoaded
         {
@@ -566,6 +577,7 @@ extension SettingsViewController
             {
             case .backgroundRefresh: break
             case .noIdleTimeout: break
+            case .disableAppLimit: break
             case .addToSiri:
                 guard #available(iOS 14, *) else { return }
                 self.addRefreshAppsShortcut()
