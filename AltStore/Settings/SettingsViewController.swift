@@ -40,9 +40,9 @@ extension SettingsViewController
         static var allCases: [AppRefreshRow] {
             var c: [AppRefreshRow] = [.backgroundRefresh, .noIdleTimeout]
             let low: OperatingSystemVersion = .init(majorVersion: 14, minorVersion: 0, patchVersion: 0)
-            let high: OperatingSystemVersion = .init(majorVersion: 18, minorVersion: 1, patchVersion: 0)
+            let high: OperatingSystemVersion = .init(majorVersion: 18, minorVersion: 2, patchVersion: 0)
             let current = ProcessInfo.processInfo.operatingSystemVersion
-            if low <= current, current < high {
+            if UserDefaults.standard.isDebugModeEnabled, low <= current, current < high {
                 c.append(.disableAppLimit)
             }
             guard #available(iOS 14, *) else { return c }
@@ -326,6 +326,10 @@ private extension SettingsViewController
         //Fix crash on iPad
         alertController.popoverPresentationController?.barButtonItem = sender
         self.present(alertController, animated: true, completion: nil)
+    }
+    
+    @IBAction func toggleDisableAppLimit(_ sender: UISwitch) {
+        UserDefaults.standard.isAppLimitDisabled = sender.isOn
     }
     
     @IBAction func toggleIsBackgroundRefreshEnabled(_ sender: UISwitch)
