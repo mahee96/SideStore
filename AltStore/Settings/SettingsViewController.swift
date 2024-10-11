@@ -330,6 +330,7 @@ private extension SettingsViewController
     
     @IBAction func toggleDisableAppLimit(_ sender: UISwitch) {
         UserDefaults.standard.isAppLimitDisabled = sender.isOn
+        UserDefaults.standard.activeAppsLimit = sender.isOn ? Int.max : ALTActiveAppsLimit
     }
     
     @IBAction func toggleIsBackgroundRefreshEnabled(_ sender: UISwitch)
