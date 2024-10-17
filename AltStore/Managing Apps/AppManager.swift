@@ -1017,7 +1017,7 @@ private extension AppManager
     
     func removeAppExtensions(from application: ALTApplication, extensions: Set<ALTApplication>, _ presentingViewController: UIViewController, completion: @escaping (Result<Void, Error>) -> Void)
     {
-        guard !application.appExtensions.isEmpty, !UserDefaults.standard.isAppLimitDisabled else { return completion(.success(())) }
+        guard !application.appExtensions.isEmpty else { return completion(.success(())) }
         
         let firstSentence: String
         
