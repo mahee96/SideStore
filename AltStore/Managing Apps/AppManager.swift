@@ -1178,12 +1178,12 @@ private extension AppManager
                 {
                     throw error
                 }
-
+/*
                 guard case .install = appOperation else {
                     operation.finish()
                     return
                 }
-                
+*/
                 guard let extensions = context.app?.appExtensions else { throw OperationError.invalidParameters }
                 
                 guard let app = context.app, let presentingViewController = context.authenticatedContext.presentingViewController else { throw OperationError.invalidParameters }
