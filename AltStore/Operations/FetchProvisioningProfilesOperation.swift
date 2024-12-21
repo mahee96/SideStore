@@ -12,18 +12,22 @@ import AltStoreCore
 import AltSign
 import Roxas
 
-@objc(FetchProvisioningProfilesOperation)
-final class FetchProvisioningProfilesOperation: ResultOperation<[String: ALTProvisioningProfile]>
+//@objc(FetchProvisioningProfilesOperation)
+final class FetchProvisioningProfilesOperation<T: AppOperationContext> : ResultOperation<[String: ALTProvisioningProfile]>
 {
-    let context: AppOperationContext
+    internal var contextContainer: ContextContainer<T>
+    
+    private var context: T{
+        contextContainer.context
+    }
     
     var additionalEntitlements: [ALTEntitlement: Any]?
     
     private let appGroupsLock = NSLock()
     
-    init(context: AppOperationContext)
+    init(contextContainer: ContextContainer<T>)
     {
-        self.context = context
+        self.contextContainer = contextContainer
         
         super.init()
         
@@ -218,14 +222,14 @@ extension FetchProvisioningProfilesOperation
                         {
                         case .failure(let error): completionHandler(.failure(error))
                         case .success(let appID):
-                            
+
                             // Update app groups
                             self.updateAppGroups(for: appID, app: app, team: team, session: session) { (result) in
                                 switch result
                                 {
                                 case .failure(let error): completionHandler(.failure(error))
                                 case .success(let appID):
-                                    
+
                                     // Fetch Provisioning Profile
                                     self.fetchProvisioningProfile(for: appID, team: team, session: session) { (result) in
                                         completionHandler(result)

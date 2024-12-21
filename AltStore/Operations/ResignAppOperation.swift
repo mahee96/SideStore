@@ -13,14 +13,22 @@ import AltStoreCore
 import AltSign
 import minimuxer
 
+struct ResignAppResult {
+    let resignedAppURL: URL
+    let resignedIpaURL: URL
+}
+
 @objc(ResignAppOperation)
-final class ResignAppOperation: ResultOperation<ALTApplication>
+final class ResignAppOperation: ResultOperation<ResignAppResult>
 {
-    let context: InstallAppOperationContext
+    internal let contextContainer: ContextContainer<InstallAppOperationContext>
+    private var context: InstallAppOperationContext{
+        contextContainer.context
+    }
     
-    init(context: InstallAppOperationContext)
+    init(contextContainer: ContextContainer<InstallAppOperationContext>)
     {
-        self.context = context
+        self.contextContainer = contextContainer
         
         super.init()
         
@@ -67,14 +75,10 @@ final class ResignAppOperation: ResultOperation<ALTApplication>
                 {
                     let destinationURL = InstalledApp.refreshedIPAURL(for: app)
                     try FileManager.default.copyItem(at: resignedURL, to: destinationURL, shouldReplace: true)
-                    print("Successfully resigned app to \(destinationURL.absoluteString)")
-                    
-                    // Use appBundleURL since we need an app bundle, not .ipa.
-                    guard let resignedApplication = ALTApplication(fileURL: appBundleURL) else { throw OperationError.invalidApp }
-                    
-                    Logger.sideload.notice("Resigned app \(self.context.bundleIdentifier, privacy: .public) to \(resignedApplication.bundleIdentifier, privacy: .public).")
-                    
-                    self.finish(.success(resignedApplication))
+                    print("Successfully resigned app to ipa at: \(destinationURL.absoluteString)")
+                                        
+                    let result = ResignAppResult(resignedAppURL: appBundleURL, resignedIpaURL: destinationURL)
+                    self.finish(.success(result))
                 }
                 catch
                 {
@@ -173,6 +177,9 @@ private extension ResignAppOperation
             do
             {
                 let appBundleURL = self.context.temporaryDirectory.appendingPathComponent("App.app")
+                if(FileManager.default.fileExists(atPath: appBundleURL.path)){
+                    try? FileManager.default.removeItem(at: appBundleURL)
+                }
                 try FileManager.default.copyItem(at: fileURL, to: appBundleURL)
                 
                 // Become current so we can observe progress from unzipAppBundle().

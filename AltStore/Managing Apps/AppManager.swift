@@ -1469,7 +1469,6 @@ private extension AppManager
         verifyOperation.addDependency(downloadOperation)
         
         /* Remove App Extensions */
-        
         let removeAppExtensionsOperation = RSTAsyncBlockOperation { [weak self] (operation) in
             do
             {
@@ -1477,12 +1476,7 @@ private extension AppManager
                 {
                     throw error
                 }
-/*
-                guard case .install = appOperation else {
-                    operation.finish()
-                    return
-                }
-*/
+
                 guard let extensions = context.app?.appExtensions else {
                     throw OperationError.invalidParameters("AppManager._install.removeAppExtensionsOperation: context.app?.appExtensions is nil")
                 }
@@ -1527,9 +1521,23 @@ private extension AppManager
         }
         refreshAnisetteDataOperation.addDependency(removeAppExtensionsOperation)
 
+        let results = resignAltBackupIpa(
+            app,
+            refreshAnisetteDataOperation,
+            additionalEntitlements,
+            context,
+            group: group)
+        { result in
+            print("resignAltBackupIpaOperation: \(result)")
+            // ignore results
+        }
+        let resignAltBackupIpaOperations = results.appOperations
+        let resignAltBackupLastOperation = results.lastOperation
+
+        let contextContainer: ContextContainer = ContextContainer(context: context)
 
         /* Fetch Provisioning Profiles */
-        let fetchProvisioningProfilesOperation = FetchProvisioningProfilesOperation(context: context)
+        let fetchProvisioningProfilesOperation = FetchProvisioningProfilesOperation(contextContainer: contextContainer)
         fetchProvisioningProfilesOperation.additionalEntitlements = additionalEntitlements
         fetchProvisioningProfilesOperation.resultHandler = { (result) in
             switch result
@@ -1538,12 +1546,11 @@ private extension AppManager
                 context.error = error
             case .success(let provisioningProfiles):
                 context.provisioningProfiles = provisioningProfiles
-                print("PROVISIONING PROFILES \(context.provisioningProfiles)")
+                print("PROVISIONING PROFILES \(String(describing: context.provisioningProfiles))")
             }
         }
-        fetchProvisioningProfilesOperation.addDependency(refreshAnisetteDataOperation)
+        fetchProvisioningProfilesOperation.addDependency(resignAltBackupLastOperation)
         progress.addChild(fetchProvisioningProfilesOperation.progress, withPendingUnitCount: 5)
-
 
         /* Deactivate Apps (if necessary) */
         let deactivateAppsOperation = RSTAsyncBlockOperation { [weak self] (operation) in
@@ -1669,16 +1676,28 @@ private extension AppManager
         
 
         /* Resign */
-        let resignAppOperation = ResignAppOperation(context: context)
+        let resignAppOperation = ResignAppOperation(contextContainer: contextContainer)
         resignAppOperation.resultHandler = { (result) in
             switch result
             {
             case .failure(let error):
                 context.error = error
-            case .success(let resignedApp):
-                context.resignedApp = resignedApp
-                
-                self.exportResginedAppsToDocsDir(resignedApp)
+            case .success(let resignAppResult):
+                let resignedAppURL = resignAppResult.resignedAppURL
+                let resignedIpaURL = resignAppResult.resignedIpaURL
+
+                // TODO: @mahee96, add capability to export this signed ipa
+                //       this could be used as direct install on non-dev id devices
+                //       if a capability to bypass the resigning presented as an option is available to user
+
+                // Use appBundleURL since we need an app bundle, not .ipa.
+                guard let resignedApplication = ALTApplication(fileURL: resignedAppURL) else {
+                    return completionHandler(.failure(OperationError.invalidApp))
+                }
+                Logger.sideload.notice("Resigned app \(context.bundleIdentifier, privacy: .public) to \(resignedApplication.bundleIdentifier, privacy: .public).")
+                context.resignedApp = resignedApplication
+
+                self.exportResginedAppsToDocsDir(resignedApplication)
             }
         }
         resignAppOperation.addDependency(patchAppOperation)
@@ -1731,16 +1750,18 @@ private extension AppManager
             downloadOperation,
             verifyOperation,
             removeAppExtensionsOperation,
-            deactivateAppsOperation,
-            patchAppOperation,
             refreshAnisetteDataOperation,
             fetchProvisioningProfilesOperation,
+            deactivateAppsOperation,
+            patchAppOperation,
             resignAppOperation,
             sendAppOperation,
             installOperation
-        ].compactMap { $0 }
+        ]
+        operations.append(contentsOf: resignAltBackupIpaOperations)
+        var validOperations = operations.compactMap { $0 }
         
-        group.add(operations)
+        group.add(validOperations)
         
         if let storeApp = downloadingApp.storeApp, storeApp.isPledgeRequired
         {
@@ -1751,24 +1772,148 @@ private extension AppManager
             if let index = operations.firstIndex(of: downloadOperation)
             {
                 // Remove downloadOperation from operations to prevent running it twice.
-                operations.remove(at: index)
+                validOperations.remove(at: index)
             }
         }
 
-        self.run(operations, context: group.context)
+        self.run(validOperations, context: group.context)
         
         return progress
     }
-    
+
+    struct ResignAltBackupOperations{
+        let appOperations: [RSTOperation]
+        let lastOperation: RSTOperation
+    }
+
+    private func resignAltBackupIpa(_ app: AppProtocol,
+                                    _ previousOperation: Operation,
+                                    _ additionalEntitlements: [ALTEntitlement: Any]?,
+                                    _ context: InstallAppOperationContext,
+                                    group: RefreshGroup,
+                                    completionHandler: @escaping (Result<URL, Error>) -> Void) -> ResignAltBackupOperations
+    {
+        guard (app.bundleIdentifier == StoreApp.altstoreAppID) else{
+            return ResignAltBackupOperations(appOperations: [], lastOperation: previousOperation)
+        }
+
+        let contextContainer = ContextContainer(context: context)
+
+        let setupOperation = RSTAsyncBlockOperation{ op in
+
+            let temporaryDirectory = context.temporaryDirectory
+            let unzippedAppDirectory = temporaryDirectory.appendingPathComponent("Temp")
+            let altBackupIpa = context.app!.fileURL.appendingPathComponent("AltBackup.ipa")
+
+            do{
+                if(FileManager.default.fileExists(atPath: unzippedAppDirectory.path)){
+                    try? FileManager.default.removeItem(at: unzippedAppDirectory)
+                }
+                try FileManager.default.createDirectory(at: unzippedAppDirectory, withIntermediateDirectories: true, attributes: nil)
+                let unzippedApplicationURL = try! FileManager.default.unzipAppBundle(at: altBackupIpa, toDirectory: unzippedAppDirectory)
+
+                let altBackupApp = ALTApplication(fileURL: unzippedApplicationURL)!
+
+                let altBackupCtx = InstallAppOperationContext(bundleIdentifier: altBackupApp.bundleIdentifier, authenticatedContext: group.context)
+                altBackupCtx.app = altBackupApp
+                assert(context.authenticatedContext === group.context)
+
+                contextContainer.context = altBackupCtx
+            }catch{
+                completionHandler(.failure(error))
+            }
+            op.finish()
+        }
+        setupOperation.addDependency(previousOperation)
+
+        /* Fetch Provisioning Profiles */
+        let fetchProfilesForAltBackup = FetchProvisioningProfilesOperation(contextContainer: contextContainer)
+        fetchProfilesForAltBackup.additionalEntitlements = additionalEntitlements
+        fetchProfilesForAltBackup.resultHandler = { (result) in
+            let context = contextContainer.context
+            switch result
+            {
+            case .failure(let error):
+                context.error = error
+            case .success(let provisioningProfiles):
+                context.provisioningProfiles = provisioningProfiles
+                print("PROVISIONING PROFILES \(String(describing: context.provisioningProfiles))")
+            }
+            print("\n\n")
+        }
+        fetchProfilesForAltBackup.addDependency(setupOperation)
+//        progress.addChild(fetchProvisioningProfilesOperation.progress, withPendingUnitCount: 5)
+
+        var resignedAltBackupIpa:URL? = nil
+        var resignedAltBackupApp:URL? = nil
+
+        /* Resign */
+        let resignAppOperation = ResignAppOperation(contextContainer: contextContainer)
+        resignAppOperation.resultHandler = { (result) in
+            let context = contextContainer.context
+            switch result
+            {
+            case .failure(let error):
+                context.error = error
+            case .success(let resignAppResult):
+                let resignedAppURL = resignAppResult.resignedAppURL
+                let resignedIpaURL = resignAppResult.resignedIpaURL
+
+                Logger.sideload.notice("Resigned AltBackup IPA: \(resignedIpaURL, privacy: .public).")
+                resignedAltBackupApp = resignedAppURL
+                resignedAltBackupIpa = resignedIpaURL
+
+                // remove any stale entries that were created (if any)
+                _ = try! FileManager.default.removeItem(at: resignedAppURL)
+            }
+        }
+        resignAppOperation.addDependency(fetchProfilesForAltBackup)
+
+        let restoreContext = RSTAsyncBlockOperation{ op in
+            let mainAppContext = context
+
+            // get the currently downloaded Cached App URL
+            let downloadedAppUrl = mainAppContext.app!.fileURL
+            let altBackupIpaUrl = downloadedAppUrl.appendingPathComponent("AltBackup.ipa")
+
+            if(resignedAltBackupIpa != nil && FileManager.default.fileExists(atPath: resignedAltBackupIpa!.path)){
+                _ = try! FileManager.default.replaceItemAt(altBackupIpaUrl, withItemAt: resignedAltBackupIpa!)
+                completionHandler(.success(altBackupIpaUrl))
+            }
+            else
+            {
+                completionHandler(.failure(OperationError.invalidParameters("Resigned.ipa for AltBackup cannot be be found...Aborting...")))
+            }
+
+            // cleanup the refreshed altBackup.app via its resignedAppURL since it is not needed further
+            if(resignedAltBackupApp != nil && FileManager.default.fileExists(atPath: resignedAltBackupApp!.path)){
+                _ = try! FileManager.default.removeItem(at: resignedAltBackupApp!)
+            }
+            op.finish()
+        }
+        restoreContext.addDependency(resignAppOperation)
+//        progress.addChild(resignAppOperation.progress, withPendingUnitCount: 20)
+
+        // Operations picked for request
+        let operations: [RSTOperation] = [
+            setupOperation,
+            fetchProfilesForAltBackup,
+            resignAppOperation,
+            restoreContext,
+        ].compactMap { $0 }
+
+        return ResignAltBackupOperations(appOperations: operations, lastOperation: restoreContext)
+    }
+
     private func exportResginedAppsToDocsDir(_ resignedApp: ALTApplication)
     {
         // Check if the user has enabled exporting resigned apps to the Documents directory and continue
         guard UserDefaults.standard.isResignedAppExportEnabled else {
             return
         }
-        
+
         let sourceURL = resignedApp.fileURL
-        
+
         let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let resignedAppsURL = documentsURL.appendingPathComponent("ResignedApps")
         // Create the ResignedApps subfolder if it doesn't exist
@@ -1780,14 +1925,14 @@ private extension AppManager
             print("Failed to create ResignedApps folder: \(error)")
             return
         }
-        
+
 //        let destinationURL = resignedAppsURL.appendingPathComponent(sourceURL.lastPathComponent)
         let utis = Bundle(url: resignedApp.fileURL)?.infoDictionary?[Bundle.Info.exportedUTIs] as? [[String: Any]]
         let isAltBackup = utis?.first?["UTTypeDescription"] as? String == "AltStore Backup App"
-        
+
         let destPath = isAltBackup ? resignedApp.name + "-altbackup" : resignedApp.name
         let destinationURL = resignedAppsURL.appendingPathComponent(destPath + ".app")
-        
+
         // Delete the existing file if it exists
         do {
             if FileManager.default.fileExists(atPath: destinationURL.path) {
@@ -1797,7 +1942,7 @@ private extension AppManager
             print("Failed to delete existing file at destination: \(error)")
             return
         }
-        
+
         // Copy the file to the ResignedApps folder
         do {
             try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
@@ -1806,8 +1951,8 @@ private extension AppManager
             print("Failed to copy file: \(error)")
         }
     }
-    
-    
+
+
     private func _refresh(_ app: InstalledApp, operation: AppOperation, group: RefreshGroup, completionHandler: @escaping (Result<InstalledApp, Error>) -> Void) -> Progress
     {
         let progress = Progress.discreteProgress(totalUnitCount: 100)
@@ -1833,8 +1978,10 @@ private extension AppManager
             op.finish()
         }
         
+        let contextContainer = ContextContainer(context: context)
+
         /* Fetch Provisioning Profiles */
-        let fetchProvisioningProfilesOperation = FetchProvisioningProfilesOperation(context: context)
+        let fetchProvisioningProfilesOperation = FetchProvisioningProfilesOperation(contextContainer: contextContainer)
         fetchProvisioningProfilesOperation.resultHandler = { (result) in
             switch result
             {

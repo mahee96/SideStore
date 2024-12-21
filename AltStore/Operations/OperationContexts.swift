@@ -58,6 +58,14 @@ final class AuthenticatedOperationContext: OperationContext
     }
 }
 
+class ContextContainer<T: AppOperationContext>
+{
+    var context: T
+    init(context: T) {
+        self.context = context
+    }
+}
+
 @dynamicMemberLookup
 class AppOperationContext
 {
