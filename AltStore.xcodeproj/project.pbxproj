@@ -61,6 +61,9 @@
 		A8945AA62D059B6100D86CBE /* Roxas.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A8945AA52D059B6100D86CBE /* Roxas.framework */; };
 		A8A543302D04F14400D72399 /* libfragmentzip.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8A5432F2D04F0C100D72399 /* libfragmentzip.a */; };
 		A8BB34E52D04EC8E000A8B4D /* minimuxer-helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A809F6A52D04DA1900F0F0F3 /* minimuxer-helpers.swift */; };
+		A8C38BE02D1F4E7700E83DBD /* ConsoleCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8C38BDD2D1F4E7700E83DBD /* ConsoleCapture.swift */; };
+		A8C38BE12D1F4E7700E83DBD /* ConsoleLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8C38BDE2D1F4E7700E83DBD /* ConsoleLogView.swift */; };
+		A8C38BE22D1F4E7700E83DBD /* MinimuxerLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8C38BDF2D1F4E7700E83DBD /* MinimuxerLogView.swift */; };
 		A8C6D50C2D1EE87600DF01F1 /* AltSign-Static in Frameworks */ = {isa = PBXBuildFile; productRef = A8C6D50B2D1EE87600DF01F1 /* AltSign-Static */; };
 		A8C6D5122D1EE8AF00DF01F1 /* AltSign-Static in Frameworks */ = {isa = PBXBuildFile; productRef = A8C6D5112D1EE8AF00DF01F1 /* AltSign-Static */; };
 		A8C6D5132D1EE8D700DF01F1 /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; };
@@ -624,6 +627,9 @@
 		A86202322D1F35640091187B /* AltStore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = AltStore.xcconfig; sourceTree = "<group>"; };
 		A86202332D1F35640091187B /* AltStoreCore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = AltStoreCore.xcconfig; sourceTree = "<group>"; };
 		A8945AA52D059B6100D86CBE /* Roxas.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Roxas.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A8C38BDD2D1F4E7700E83DBD /* ConsoleCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsoleCapture.swift; sourceTree = "<group>"; };
+		A8C38BDE2D1F4E7700E83DBD /* ConsoleLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsoleLogView.swift; sourceTree = "<group>"; };
+		A8C38BDF2D1F4E7700E83DBD /* MinimuxerLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinimuxerLogView.swift; sourceTree = "<group>"; };
 		A8D484D72D0CD306002C691D /* AltBackup.ipa */ = {isa = PBXFileReference; lastKnownFileType = file; path = AltBackup.ipa; sourceTree = "<group>"; };
 		A8F66C3C2D04D433009689E6 /* em_proxy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = em_proxy.h; sourceTree = "<group>"; };
 		A8F66C602D04D464009689E6 /* minimuxer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = minimuxer.xcodeproj; sourceTree = "<group>"; };
@@ -1159,6 +1165,16 @@
 				A8A5432F2D04F0C100D72399 /* libfragmentzip.a */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A8C38BDC2D1F4E4900E83DBD /* Console Stream */ = {
+			isa = PBXGroup;
+			children = (
+				A8C38BDD2D1F4E7700E83DBD /* ConsoleCapture.swift */,
+				A8C38BDE2D1F4E7700E83DBD /* ConsoleLogView.swift */,
+				A8C38BDF2D1F4E7700E83DBD /* MinimuxerLogView.swift */,
+			);
+			path = "Console Stream";
 			sourceTree = "<group>";
 		};
 		A8F66C072D04C025009689E6 /* SideStore */ = {
@@ -2095,6 +2111,7 @@
 		D589170128C7D93500E39C8B /* Error Log */ = {
 			isa = PBXGroup;
 			children = (
+				A8C38BDC2D1F4E4900E83DBD /* Console Stream */,
 				D57FE84328C7DB7100216002 /* ErrorLogViewController.swift */,
 				D54DED1328CBC44B008B27A0 /* ErrorLogTableViewCell.swift */,
 				0EE7FDCC2BE9124400D1E390 /* ErrorDetailsViewController.swift */,
@@ -2942,6 +2959,9 @@
 				BF9ABA4922DD0742008935CF /* ScreenshotCollectionViewCell.swift in Sources */,
 				BF9ABA4D22DD16DE008935CF /* PillButton.swift in Sources */,
 				D5C0E7672AD9C75900530CA4 /* AppCardCollectionViewCell.swift in Sources */,
+				A8C38BE02D1F4E7700E83DBD /* ConsoleCapture.swift in Sources */,
+				A8C38BE12D1F4E7700E83DBD /* ConsoleLogView.swift in Sources */,
+				A8C38BE22D1F4E7700E83DBD /* MinimuxerLogView.swift in Sources */,
 				D5DAE0962804DF430034D8D4 /* UpdatePatronsOperation.swift in Sources */,
 				D54058BB2A1D8FE3008CCC58 /* UIColor+AltStore.swift in Sources */,
 				BFE6326C22A86FF300F30809 /* AuthenticationOperation.swift in Sources */,

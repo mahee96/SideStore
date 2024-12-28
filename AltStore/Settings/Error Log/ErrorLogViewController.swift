@@ -16,6 +16,7 @@ import Roxas
 import Nuke
 
 import QuickLook
+import SwiftUI
 
 final class ErrorLogViewController: UITableViewController, QLPreviewControllerDelegate
 {
@@ -216,15 +217,27 @@ private extension ErrorLogViewController
         }
     }
     
-    @IBAction func showMinimuxerLogs(_ sender: UIBarButtonItem)
-    {
-        // Show minimuxer.log
-        let previewController = QLPreviewController()
-        previewController.dataSource = self
-        let navigationController = UINavigationController(rootViewController: previewController)
-        present(navigationController, animated: true, completion: nil)
-    }
+//    @IBAction func showMinimuxerLogs(_ sender: UIBarButtonItem)
+//    {
+//        // Show minimuxer.log
+//        let previewController = QLPreviewController()
+//        previewController.dataSource = self
+//        let navigationController = UINavigationController(rootViewController: previewController)
+//        present(navigationController, animated: true, completion: nil)
+//    }
     
+//    @IBAction func showMinimuxerLogs(_ sender: UIBarButtonItem) {
+//        // Present the SwiftUI log viewer
+//        let logView = MinimuxerLogView()
+//        let hostingController = UIHostingController(rootView: logView)
+//        present(hostingController, animated: true, completion: nil)
+//    }
+    
+    @IBAction func showMinimuxerLogs(_ sender: UIBarButtonItem) {
+        let hostingController = UIHostingController(rootView: ConsoleLogView())
+        present(hostingController, animated: true, completion: nil)
+    }
+
     @IBAction func clearLoggedErrors(_ sender: UIBarButtonItem)
     {
         let alertController = UIAlertController(title: NSLocalizedString("Are you sure you want to clear the error log?", comment: ""), message: nil, preferredStyle: .actionSheet)
