@@ -16,6 +16,7 @@ import Roxas
 import Nuke
 
 import QuickLook
+import SwiftUI
 
 final class ErrorLogViewController: UITableViewController, QLPreviewControllerDelegate
 {
@@ -216,15 +217,27 @@ private extension ErrorLogViewController
         }
     }
     
-    @IBAction func showMinimuxerLogs(_ sender: UIBarButtonItem)
-    {
-        // Show minimuxer.log
-        let previewController = QLPreviewController()
-        previewController.dataSource = self
-        let navigationController = UINavigationController(rootViewController: previewController)
-        present(navigationController, animated: true, completion: nil)
-    }
+//    @IBAction func showMinimuxerLogs(_ sender: UIBarButtonItem)
+//    {
+//        // Show minimuxer.log
+//        let previewController = QLPreviewController()
+//        previewController.dataSource = self
+//        let navigationController = UINavigationController(rootViewController: previewController)
+//        present(navigationController, animated: true, completion: nil)
+//    }
     
+//    @IBAction func showMinimuxerLogs(_ sender: UIBarButtonItem) {
+//        // Present the SwiftUI log viewer
+//        let logView = MinimuxerLogView()
+//        let hostingController = UIHostingController(rootView: logView)
+//        present(hostingController, animated: true, completion: nil)
+//    }
+    
+    @IBAction func showMinimuxerLogs(_ sender: UIBarButtonItem) {
+        let hostingController = UIHostingController(rootView: ConsoleLogView())
+        present(hostingController, animated: true, completion: nil)
+    }
+
     @IBAction func clearLoggedErrors(_ sender: UIBarButtonItem)
     {
         let alertController = UIAlertController(title: NSLocalizedString("Are you sure you want to clear the error log?", comment: ""), message: nil, preferredStyle: .actionSheet)
@@ -297,13 +310,21 @@ private extension ErrorLogViewController
                 
                 // All logs since the app launched.
                 let position = store.position(timeIntervalSinceLatestBoot: 0)
-                let predicate = NSPredicate(format: "subsystem == %@", Logger.altstoreSubsystem)
-                
-                let entries = try store.getEntries(at: position, matching: predicate)
-                    .compactMap { $0 as? OSLogEntryLog }
-                    .map { "[\($0.date.formatted())] [\($0.category)] [\($0.level.localizedName)] \($0.composedMessage)" }
-                
-                let outputText = entries.joined(separator: "\n")
+//                let predicate = NSPredicate(format: "subsystem == %@", Logger.altstoreSubsystem)
+//                
+//                let entries = try store.getEntries(at: position, matching: predicate)
+//                    .compactMap { $0 as? OSLogEntryLog }
+//                    .map { "[\($0.date.formatted())] [\($0.category)] [\($0.level.localizedName)] \($0.composedMessage)" }
+//
+                // Remove the predicate to get all log entries
+//                let entries = try store.getEntries(at: position)
+//                    .compactMap { $0 as? OSLogEntryLog }
+//                    .map { "[\($0.date.formatted())] [\($0.category)] [\($0.level.localizedName)] \($0.composedMessage)" }
+
+                let entries = try store.getEntries(at: position)
+
+//                let outputText = entries.joined(separator: "\n")
+                let outputText = entries.map { $0.description }.joined(separator: "\n")
                 
                 let outputDirectory = FileManager.default.uniqueTemporaryURL()
                 try FileManager.default.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
@@ -412,9 +433,13 @@ extension ErrorLogViewController: QLPreviewControllerDataSource {
         return 1
     }
 
-    func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> QLPreviewItem {
-        let fileURL = FileManager.default.documentsDirectory.appendingPathComponent("minimuxer.log")
-        return fileURL as QLPreviewItem
+    // func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> QLPreviewItem {
+    //     let fileURL = FileManager.default.documentsDirectory.appendingPathComponent("minimuxer.log")
+    //     return fileURL as QLPreviewItem
+    // }
+    func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> QLPreviewItem
+    {
+        return (_exportedLogURL as? NSURL) ?? NSURL()
     }
 }
 
