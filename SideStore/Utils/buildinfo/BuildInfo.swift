@@ -25,6 +25,23 @@ public class BuildInfo{
         case stable
     }
     
+    let bundle: Bundle
+    
+    init(){
+        bundle = Bundle.main
+    }
+    
+    enum BundleError: Swift.Error {
+        case invalidURL
+    }
+
+    init(url: URL) throws {
+        guard let bundle = Bundle(url: url) else {
+            throw BundleError.invalidURL
+        }
+        self.bundle = bundle
+    }
+    
     public lazy var channel: Channel = {
         let channel  = Bundle.main.object(forInfoDictionaryKey: Self.BUILD_CHANNEL_TAG) as? String
         return Channel(rawValue: channel ?? "") ?? .unknown

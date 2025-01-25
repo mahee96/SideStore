@@ -1329,7 +1329,6 @@ private extension AppManager
             downloadOperation.addDependency(verifyPledgeOperation)
         }
         
-        
         /* Verify App */
         let permissionsMode = UserDefaults.shared.permissionCheckingDisabled ? .none : permissionReviewMode
         let verifyOperation = VerifyAppOperation(permissionsMode: permissionsMode, context: context)

@@ -151,9 +151,7 @@ public class StoreApp: NSManagedObject, Decodable, Fetchable
 
     @NSManaged public private(set) var tintColor: UIColor?
 
-    // TODO: @mahee96: retire isBeta and use a string type to decode and store values as enum
-    @NSManaged public private(set) var isBeta: Bool
-    @NSManaged public private(set) var revision: String?
+    @NSManaged @objc(channel) var _channel: String?
     
     // Required for Marketplace apps.
     @NSManaged public private(set) var marketplaceID: String?
@@ -234,6 +232,17 @@ public class StoreApp: NSManagedObject, Decodable, Fetchable
         }
     }
     
+
+    public var channel: ReleaseTrack.CodingKeys {
+        get{
+            ReleaseTrack.channel(for: self._channel)
+        }
+        set {
+            self._channel = newValue.rawValue
+        }
+    }
+
+    
     @nonobjc public var permissions: Set<AppPermission> {
         return self._permissions as! Set<AppPermission>
     }
@@ -272,11 +281,6 @@ public class StoreApp: NSManagedObject, Decodable, Fetchable
     }
     @NSManaged @objc(screenshots) private(set) var _screenshots: NSOrderedSet
     
-    private override init(entity: NSEntityDescription, insertInto context: NSManagedObjectContext?)
-    {
-        super.init(entity: entity, insertInto: context)
-    }
-    
     private enum CodingKeys: String, CodingKey
     {
         case name
@@ -291,11 +295,11 @@ public class StoreApp: NSManagedObject, Decodable, Fetchable
         case subtitle
         case permissions = "appPermissions"
         case size
-        case isBeta = "beta"
-        case revision = "commitID"
         case versions
         case patreon
         case category
+        
+        case channel
         
         // Legacy
         case version
@@ -303,6 +307,13 @@ public class StoreApp: NSManagedObject, Decodable, Fetchable
         case versionDate
         case downloadURL
         case screenshotURLs
+        case isBeta = "beta"
+    }
+    
+    
+    internal override init(entity: NSEntityDescription, insertInto context: NSManagedObjectContext?)
+    {
+        super.init(entity: entity, insertInto: context)
     }
     
     public required init(from decoder: Decoder) throws
@@ -310,8 +321,13 @@ public class StoreApp: NSManagedObject, Decodable, Fetchable
         guard let context = decoder.managedObjectContext else { preconditionFailure("Decoder must have non-nil NSManagedObjectContext.") }
         
         // Must initialize with context in order for child context saves to work correctly.
-        super.init(entity: StoreApp.entity(), insertInto: context)
-        
+        super.init(entity: Self.entity(), insertInto: context)
+        try self.decode(from: decoder)
+    }
+    
+    internal func decode(from decoder: Decoder) throws {
+        guard let context = decoder.managedObjectContext else { preconditionFailure("Decoder must have non-nil NSManagedObjectContext.") }
+
         do
         {
             let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -323,10 +339,17 @@ public class StoreApp: NSManagedObject, Decodable, Fetchable
             self.iconURL = try container.decode(URL.self, forKey: .iconURL)
             
             self.subtitle = try container.decodeIfPresent(String.self, forKey: .subtitle)
-            self.isBeta = try container.decodeIfPresent(Bool.self, forKey: .isBeta) ?? false
-            self.revision = try container.decodeIfPresent(String.self, forKey: .revision)
             
-            var downloadURL = try container.decodeIfPresent(URL.self, forKey: .downloadURL)
+            // special case: AltStore sources supports 'isBeta' in the StoreApp so we have it for backward compatibility
+            let isBeta = try container.decodeIfPresent(Bool.self, forKey: .isBeta) ?? false
+            if isBeta{
+                self.channel = .beta
+            }
+
+            // since decode essentially inserts an entry into insertedObjects of context and scheduling them for persistence,
+            // we will decode only once
+            let versions = try container.decodeIfPresent([AppVersion].self, forKey: .versions)
+           
             let platformURLs = try container.decodeIfPresent(PlatformURLs.self.self, forKey: .platformURLs)
             if let platformURLs = platformURLs {
                 self.platformURLs = platformURLs
@@ -337,28 +360,20 @@ public class StoreApp: NSManagedObject, Decodable, Fetchable
                     throw DecodingError.dataCorruptedError(forKey: .platformURLs, in: container, debugDescription: "platformURLs has no entries")
 
                 }
-                    
-            } else if let downloadURL = downloadURL {
+            } else if let downloadURL = try container.decodeIfPresent(URL.self, forKey: .downloadURL) {
                 self._downloadURL = downloadURL
             } else {
-                let version = try container.decode(String.self, forKey: .version)
-                    if let versions = try container.decodeIfPresent([AppVersion].self, forKey: .versions){
-                        for ver in versions {
-                            if ver.version == version {
-                                self._downloadURL = ver.downloadURL
-                                downloadURL = ver.downloadURL // not sure if this is needed
-                            }
-                        }
-                        throw DecodingError.dataCorruptedError(forKey: .downloadURL, in: container, debugDescription: "E downloadURL:String or downloadURLs:[[Platform:URL]] key required.")
-                    } else {
-                        throw DecodingError.dataCorruptedError(forKey: .downloadURL, in: container, debugDescription: "E downloadURL:String or downloadURLs:[[Platform:URL]] key required.")
-                    }
-            // Required for Marketplace apps, but we'll verify later.
-            self.marketplaceID = try container.decodeIfPresent(String.self, forKey: .marketplaceID)
+                // for backward compatibility until sources like https://altstore.ignitedemulator.com get updated to v2
+                let error = DecodingError.dataCorruptedError(forKey: .downloadURL, in: container, debugDescription: "E downloadURL:String or downloadURLs:[[Platform:URL]] key required.")
+                let version = try container.decodeIfPresent(String.self, forKey: .version)  // actual storeApp version is deduced later in setVersions() so this is just temp field
 
-//                 else {
-//                throw DecodingError.dataCorruptedError(forKey: .downloadURL, in: container, debugDescription: "E downloadURL:String or downloadURLs:[[Platform:URL]] key required.")
-//                }
+                guard let versions, let downloadURL = versions.first(where: { $0.version == version })?.downloadURL ?? versions.first?.downloadURL else 
+                { 
+                        throw error 
+                }
+
+
+                self._downloadURL = downloadURL
             }
 
             if let tintColorHex = try container.decodeIfPresent(String.self, forKey: .tintColor)
@@ -418,7 +433,7 @@ public class StoreApp: NSManagedObject, Decodable, Fetchable
                 self._permissions = NSSet()
             }
             
-            if let versions = try container.decodeIfPresent([AppVersion].self, forKey: .versions)
+            if let versions = versions      // non nil check
             {
                 //TODO: Throw error if there isn't at least one version.
                 if (versions.count == 0){
@@ -461,24 +476,12 @@ public class StoreApp: NSManagedObject, Decodable, Fetchable
             }
             else
             {
-                let version = try container.decode(String.self, forKey: .version)
-                let versionDate = try container.decode(Date.self, forKey: .versionDate)
-                let versionDescription = try container.decodeIfPresent(String.self, forKey: .versionDescription)
-                
-                let downloadURL = try container.decode(URL.self, forKey: .downloadURL)
-                let size = try container.decode(Int32.self, forKey: .size)
-                
-                let appVersion = AppVersion.makeAppVersion(version: version,
-                                                           buildVersion: nil,
-                                                           date: versionDate,
-                                                           localizedDescription: versionDescription,
-                                                           downloadURL: downloadURL,
-                                                           size: Int64(size),
-                                                           appBundleID: self.bundleIdentifier,
-                                                           in: context)
+                let appVersion = try createNewAppVersion(decoder: decoder)
                 try self.setVersions([appVersion])
             }
-            
+            // Required for Marketplace apps, but we'll verify later.
+            self.marketplaceID = try container.decodeIfPresent(String.self, forKey: .marketplaceID)
+
             // Must _explicitly_ set to false to ensure it updates cached database value.
             self.isPledged = false
             self.prefersCustomPledge = false
@@ -525,6 +528,7 @@ public class StoreApp: NSManagedObject, Decodable, Fetchable
         }
     }
     
+    
     public override func awakeFromInsert()
     {
         super.awakeFromInsert()
@@ -535,18 +539,15 @@ public class StoreApp: NSManagedObject, Decodable, Fetchable
 
 internal extension StoreApp
 {
-    func setVersions(_ versions: [AppVersion]) throws
-    {
-        guard let latestVersion = versions.first else {
-            throw MergeError.noVersions(for: self)
-        }
-
-        self._versions = NSOrderedSet(array: versions)
-        
+    //MARK: - overridable in subentity
+    @objc func processAppVersion(_ versions: AppVersion) {
+        // left for overriding in subclasses
+    }
+    
+    private func getLatestSupportedVersion(_ versions: [AppVersion]) -> AppVersion? {
         let latestSupportedVersion = versions.first(where: { $0.isSupported })
-        self.latestSupportedVersion = latestSupportedVersion
         
-        for case let version as AppVersion in self._versions
+        for case let version in versions
         {
             if version == latestSupportedVersion
             {
@@ -555,16 +556,59 @@ internal extension StoreApp
             else
             {
                 // Ensure we replace any previous relationship when merging.
-                version.latestSupportedVersionApp = nil
+                version.latestSupportedVersionApp = self
             }
         }
-                
+        
+        return latestSupportedVersion
+    }
+    
+    func createNewAppVersion(decoder: Decoder) throws -> AppVersion {
+        guard let context = decoder.managedObjectContext else { preconditionFailure("Decoder must have non-nil NSManagedObjectContext.") }
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        let version = try container.decode(String.self, forKey: .version)
+        let versionDate = try container.decode(Date.self, forKey: .versionDate)
+        let versionDescription = try container.decodeIfPresent(String.self, forKey: .versionDescription)
+        
+        let downloadURL = try container.decode(URL.self, forKey: .downloadURL)
+        let size = try container.decode(Int32.self, forKey: .size)
+        
+        return AppVersion.makeAppVersion(version: version,
+                                           channel: self.channel,
+                                           buildVersion: nil,
+                                           date: versionDate,
+                                           localizedDescription: versionDescription,
+                                           downloadURL: downloadURL,
+                                           size: Int64(size),
+                                           appBundleID: self.bundleIdentifier,
+                                           in: context)
+    }
+
+    @objc func setVersions(_ versions: [AppVersion], in context: NSManagedObjectContext? = nil) throws {
+        // delegate to persist as it was in earlier impl before 0.6.0 in StoreAppV1
+        try setVersions(versions, in: context) { versions, _ in
+            self._versions = NSOrderedSet(array: versions)
+        }
+    }
+        
+    func setVersions(_ versions: [AppVersion], in context: NSManagedObjectContext? = nil,
+                     persist: (_ versions: [AppVersion], _ context: NSManagedObjectContext?)->Void) throws
+    {
+        guard let latestVersion = versions.first else {
+            throw MergeError.noVersions(for: self)
+        }
+
+        self.latestSupportedVersion = getLatestSupportedVersion(versions)
         // Preserve backwards compatibility by assigning legacy property values.
         self._version = latestVersion.version
         self._versionDate = latestVersion.date
         self._versionDescription = latestVersion.localizedDescription
         self._downloadURL = latestVersion.downloadURL
         self._size = Int32(latestVersion.size)
+
+        // persist the versions based on whatever impl the caller is intending for
+        persist(versions, context)
     }
     
     func setPermissions(_ permissions: Set<AppPermission>)
@@ -639,7 +683,7 @@ public extension StoreApp
 
 public extension StoreApp
 {
-    var latestAvailableVersion: AppVersion? {
+    @objc var latestAvailableVersion: AppVersion? {
         return self._versions.firstObject as? AppVersion
     }
     
@@ -674,9 +718,18 @@ public extension StoreApp
         return NSFetchRequest<StoreApp>(entityName: "StoreApp")
     }
     
+    //MARK: - override in subclasses if required
+    @objc func placeholderAppVersion(appVersion: AppVersion, in context: NSManagedObjectContext) -> AppVersion{
+        return appVersion
+    }
+    //MARK: - override in subclasses if required
+    @objc class func createStoreApp(in context: NSManagedObjectContext) -> StoreApp{
+        return StoreApp(context: context)
+    }
+    
     class func makeAltStoreApp(version: String, buildVersion: String?, in context: NSManagedObjectContext) -> StoreApp
     {
-        let app = StoreApp(context: context)
+        let app = Self.createStoreApp(in: context)
         app.name = "SideStore"
         app.bundleIdentifier = StoreApp.altstoreAppID
         app.developerName = "Side Team"
@@ -685,7 +738,8 @@ public extension StoreApp
         app.screenshotURLs = []
         app.sourceIdentifier = Source.altStoreIdentifier
         
-        let appVersion = AppVersion.makeAppVersion(version: version,
+        var appVersion = AppVersion.makeAppVersion(version: version,
+                                                   channel: app.channel,
                                                    buildVersion: buildVersion,
                                                    date: Date(),
                                                    downloadURL: URL(string: "http://rileytestut.com")!,
@@ -693,13 +747,12 @@ public extension StoreApp
                                                    appBundleID: app.bundleIdentifier,
                                                    sourceID: Source.altStoreIdentifier,
                                                    in: context)
-        try? app.setVersions([appVersion])
+        // update in sublasses if required
+        appVersion = app.placeholderAppVersion(appVersion: appVersion, in: context)
         
-        print("makeAltStoreApp StoreApp: \(String(describing: app))")
+        try? app.setVersions([appVersion], in: context)
         
-        #if BETA
-        app.isBeta = true
-        #endif
+        print("Creating a new Placeholder StoreApp: \n\(String(describing: app))")
         
         return app
     }
