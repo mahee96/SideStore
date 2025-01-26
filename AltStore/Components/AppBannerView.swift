@@ -142,7 +142,8 @@ extension AppBannerView
                 guard let storeApp = (app as? StoreApp) ?? (app as? InstalledApp)?.storeApp else { return }
                 self.developerName = storeApp.developerName
                 
-                if storeApp.isBeta
+//                if storeApp.isBeta
+                if storeApp.betaReleases?.first != nil
                 {
                     self.name = String(format: NSLocalizedString("%@ beta", comment: ""), app.name)
                     self.isBeta = true

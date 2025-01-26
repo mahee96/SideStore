@@ -62,7 +62,8 @@ fileprivate extension NSManagedObject
 fileprivate extension NSManagedObject
 {
     var storeAppVersions: NSOrderedSet? {
-        let versions = self.value(forKey: #keyPath(StoreApp._versions)) as? NSOrderedSet
+//        let versions = self.value(forKey: #keyPath(StoreApp._versions)) as? NSOrderedSet
+        let versions = self.value(forKey: #keyPath(ReleaseTrack._stable)) as? NSOrderedSet
         return versions
     }
     

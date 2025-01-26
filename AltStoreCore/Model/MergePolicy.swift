@@ -152,7 +152,8 @@ open class MergePolicy: RSTRelationshipPreservingMergePolicy
                         }
                         
                         // Delete previous versions (different than below).
-                        for case let appVersion as AppVersion in previousApp._versions where appVersion.app == nil
+//                        for case let appVersion as AppVersion in previousApp._versions where appVersion.app == nil
+                        for case let appVersion in previousApp.stableReleases where appVersion.app == nil
                         {
                             appVersion.managedObjectContext?.delete(appVersion)
                         }
@@ -212,8 +213,10 @@ open class MergePolicy: RSTRelationshipPreservingMergePolicy
                 }
                 
                 // Versions
-                let contextVersionIDs = NSOrderedSet(array: contextApp._versions.lazy.compactMap { $0 as? AppVersion }.map { $0.versionID })
-                for case let databaseVersion as AppVersion in databaseObject._versions where !contextVersionIDs.contains(databaseVersion.versionID)
+//                let contextVersionIDs = NSOrderedSet(array: contextApp._versions.lazy.compactMap { $0 as? AppVersion }.map { $0.versionID })
+                let contextVersionIDs = NSOrderedSet(array: contextApp.stableReleases.lazy.compactMap { $0 }.map { $0.versionID })
+//                for case let databaseVersion as AppVersion in databaseObject._versions where !contextVersionIDs.contains(databaseVersion.versionID)
+                for case let databaseVersion in databaseObject.stableReleases where !contextVersionIDs.contains(databaseVersion.versionID)
                 {
                     // Version # does NOT exist in context, so delete existing databaseVersion.
                     databaseVersion.managedObjectContext?.delete(databaseVersion)

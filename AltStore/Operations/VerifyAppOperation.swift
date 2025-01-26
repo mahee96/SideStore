@@ -136,7 +136,8 @@ private extension VerifyAppOperation
         if version != app.version {
             throw VerificationError.mismatchedVersion(app.version, expectedVersion: version, app: app)
         }
-        if (appVersion.isBeta && downloadedIpaRevision != sourceJsonIpaRevision) {
+//        if (appVersion.isBeta && downloadedIpaRevision != sourceJsonIpaRevision) {
+        if (appVersion.channel == .beta && downloadedIpaRevision != sourceJsonIpaRevision) {
             let sourceJsonIpaRevision = sourceJsonIpaRevision ?? "nil"
             throw VerificationError.mismatchedVersion(app.version + " - " + downloadedIpaRevision,
                                                       expectedVersion: version  + " - " + sourceJsonIpaRevision, app: app)

@@ -51,7 +51,8 @@ fileprivate extension NSManagedObject
         self.setValue(appVersion, forKey: #keyPath(StoreApp.latestSupportedVersion))
         
         let versions = NSOrderedSet(array: [appVersion])
-        self.setValue(versions, forKey: #keyPath(StoreApp._versions))
+//        self.setValue(versions, forKey: #keyPath(StoreApp._versions))
+        self.setValue(versions, forKey: #keyPath(ReleaseTrack._stable))
     }
     
     class func makeAppVersion(version: String,

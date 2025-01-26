@@ -89,7 +89,7 @@ public class InstalledApp: NSManagedObject, InstalledAppProtocol
             return self.version < latestSupportedVersion
         }
         
-        let isBeta = storeApp.isBeta
+        let isBeta = (storeApp.betaReleases?.first != nil) && UserDefaults.standard.isBetaUpdatesEnabled
         
         // compare semantic version updates
         //   - for stable releases "beta" shouldn't be true
@@ -103,7 +103,7 @@ public class InstalledApp: NSManagedObject, InstalledAppProtocol
             //       and we will accept this update
             
             // storeApp.revision is set in sources.json deployed at apps.json for the respective source
-            let revision = storeApp.revision ?? ""
+            let revision = storeApp.betaReleases?.first?.revision ?? ""
             if(isBeta && !revision.isEmpty){
                 let SHORT_COMMIT_LEN        = 7
                 let isRevisionValid         = (revision.count == SHORT_COMMIT_LEN)

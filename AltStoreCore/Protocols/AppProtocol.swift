@@ -48,6 +48,7 @@ extension ALTApplication: AppProtocol
 extension StoreApp: AppProtocol
 {
     public var url: URL? {
+//        return self.latestAvailableVersion?.downloadURL
         return self.latestAvailableVersion?.downloadURL
     }
     

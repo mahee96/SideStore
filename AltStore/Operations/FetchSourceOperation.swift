@@ -194,6 +194,7 @@ final class FetchSourceOperation: ResultOperation<Source>
                 catch
                 {
                     self.managedObjectContext.perform {
+                        print("\n\n\n",error,"\n\n\n")
                         self.finish(.failure(error))
                     }
                 }

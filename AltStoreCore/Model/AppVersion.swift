@@ -47,13 +47,26 @@ public class AppVersion: NSManagedObject, Decodable, Fetchable
     @NSManaged public var appBundleID: String
     @NSManaged public var sourceID: String?
    
-    // TODO: @mahee96: retire isBeta and use a string type to decode and store values as enum
-    @NSManaged public var isBeta: Bool
-    @NSManaged public var revision: String?
-    
+    @NSManaged public private(set) var revision: String?
+    @NSManaged @objc(channel) private var _channel: String?
+    @NSManaged public var releaseTrack: ReleaseTrack?
+
     /* Relationships */
-    @NSManaged public private(set) var app: StoreApp?
     @NSManaged @objc(latestVersionApp) public internal(set) var latestSupportedVersionApp: StoreApp?
+    
+    // public accessors
+    public var app: StoreApp? {
+        return releaseTrack?.storeApp
+    }
+
+    public var channel: ReleaseTrack.CodingKeys {
+        get{
+            ReleaseTrack.CodingKeys(rawValue: self._channel ?? "") ?? .unknown
+        }
+        set {
+            self._channel = newValue.rawValue
+        }
+    }
     
     private override init(entity: NSEntityDescription, insertInto context: NSManagedObjectContext?)
     {
@@ -71,7 +84,6 @@ public class AppVersion: NSManagedObject, Decodable, Fetchable
         case sha256
         case minOSVersion
         case maxOSVersion
-        case isBeta = "beta"
         case revision = "commitID"
     }
     
@@ -98,7 +110,6 @@ public class AppVersion: NSManagedObject, Decodable, Fetchable
             self._minOSVersion = try container.decodeIfPresent(String.self, forKey: .minOSVersion)
             self._maxOSVersion = try container.decodeIfPresent(String.self, forKey: .maxOSVersion)
 
-            self.isBeta = try container.decodeIfPresent(Bool.self, forKey: .isBeta) ?? false
             self.revision = try container.decodeIfPresent(String.self, forKey: .revision)
         }
         catch
@@ -147,6 +158,8 @@ public extension AppVersion
         localizedDescription: String? = nil,
         downloadURL: URL,
         size: Int64,
+        revision: String? = nil,        // by default assume release is stable ie, no revision info
+        sha256: String?,
         appBundleID: String,
         sourceID: String? = nil,
         in context: NSManagedObjectContext) -> AppVersion
@@ -158,6 +171,8 @@ public extension AppVersion
         appVersion.localizedDescription = localizedDescription
         appVersion.downloadURL = downloadURL
         appVersion.size = size
+        appVersion.sha256 = sha256
+        appVersion.revision = revision
         appVersion.appBundleID = appBundleID
         appVersion.sourceID = sourceID
 

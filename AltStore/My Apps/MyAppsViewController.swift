@@ -245,7 +245,8 @@ private extension MyAppsViewController
 
             let appName: String
             
-            if app.isBeta
+//            if app.isBeta
+            if app.betaReleases?.first != nil
             {
                 appName = String(format: NSLocalizedString("%@ beta", comment: ""), app.name)
             }
