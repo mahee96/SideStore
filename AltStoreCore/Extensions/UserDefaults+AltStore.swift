@@ -55,6 +55,8 @@ public extension UserDefaults
     @NSManaged var trustedServerURL: String?
     @NSManaged var skipPatreonDownloads: Bool
     
+    @NSManaged var betaUdpatesTrack: String?
+
     @nonobjc var preferredAppSorting: AppSorting {
         get {
             let sorting = _preferredAppSorting.flatMap { AppSorting(rawValue: $0) } ?? .default
@@ -138,6 +140,7 @@ public extension UserDefaults
             #keyPath(UserDefaults.isCowExploitSupported): isMacDirtyCowSupported,
             #keyPath(UserDefaults.permissionCheckingDisabled): permissionCheckingDisabled,
             #keyPath(UserDefaults._preferredAppSorting): preferredAppSorting.rawValue,
+            #keyPath(UserDefaults.betaUdpatesTrack): ReleaseTrack.CodingKeys.beta.rawValue,
         ] as [String: Any]
         
         UserDefaults.standard.register(defaults: defaults)

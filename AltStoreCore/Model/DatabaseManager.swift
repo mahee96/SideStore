@@ -307,7 +307,8 @@ private extension DatabaseManager
             }
             else
             {
-                storeApp = StoreApp.makeAltStoreApp(version: localApp.version, buildVersion: nil, in: context)
+                // always use latest StoreApp version to create the template
+                storeApp = StoreAppV2.makeAltStoreApp(version: localApp.version, buildVersion: nil, in: context)
                 storeApp.source = altStoreSource
             }
                         

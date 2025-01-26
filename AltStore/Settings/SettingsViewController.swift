@@ -130,6 +130,10 @@ final class SettingsViewController: UITableViewController
     
     private var exportDBInProgress = false
     
+    // Default track for beta updates when beta-updates are enabled
+    private static let defaultBetaUpdatesTrack: String = ReleaseTrack.CodingKeys.beta.rawValue
+    
+    
     required init?(coder aDecoder: NSCoder)
     {
         super.init(coder: aDecoder)
@@ -139,22 +143,20 @@ final class SettingsViewController: UITableViewController
     }
     
     
-    
-    var channel: String = "stable"
-
     private func handleReleaseChannelSelection(_ channel: String) {
         // Update your model/preferences
-        self.channel = channel
+        UserDefaults.standard.betaUdpatesTrack = channel
         updateReleaseChannelButtonTitle()
     }
     
     private func updateReleaseChannelButtonTitle() {
+        let channel = UserDefaults.standard.betaUdpatesTrack ?? Self.defaultBetaUpdatesTrack
         betaTrackPopupButton.setTitle(channel, for: .normal)
     }
     
     private func configureReleaseChannelButton() {
-        
-        let trackOptions = ["alpha", "beta"]
+        // get all tracks as string available except .stable and .unknown
+        let trackOptions: [String] = ReleaseTrack.betaTracks.map {$0.rawValue}
     
         // Create menu items with proper styling
         let items = trackOptions.map{ channel in
@@ -169,7 +171,6 @@ final class SettingsViewController: UITableViewController
                          children: items
         )
         betaTrackPopupButton.menu = menu
-        betaTrackPopupButton.showsMenuAsPrimaryAction = true
 
         // Set initial state
         updateReleaseChannelButtonTitle()

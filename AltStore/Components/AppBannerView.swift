@@ -142,7 +142,7 @@ extension AppBannerView
                 guard let storeApp = (app as? StoreApp) ?? (app as? InstalledApp)?.storeApp else { return }
                 self.developerName = storeApp.developerName
                 
-                if storeApp.isBeta
+                if ReleaseTrack.betaTracks.contains(storeApp.channel)
                 {
                     self.name = String(format: NSLocalizedString("%@ beta", comment: ""), app.name)
                     self.isBeta = true
@@ -233,7 +233,7 @@ extension AppBannerView
             {
                 // App is installed
                 
-                if installedApp.isUpdateAvailable
+                if installedApp.hasUpdate
                 {
                     buttonAction = .update
                 }

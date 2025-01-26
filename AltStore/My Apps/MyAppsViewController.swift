@@ -162,9 +162,6 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
         return !installedApp.isSideloaded
     }
     
-    @IBAction func unwindToMyAppsViewController(_ segue: UIStoryboardSegue)
-    {
-    }
     var minimuxerStatus: Bool {
         guard minimuxer.ready() else {
             ToastView(error: (OperationError.noWiFi as NSError).withLocalizedTitle("No WiFi or VPN!")).show(in: self)
@@ -218,16 +215,23 @@ private extension MyAppsViewController
     func makeUpdatesDataSource() -> RSTFetchedResultsCollectionViewPrefetchingDataSource<InstalledApp, UIImage>
     {
         let fetchRequest = InstalledApp.supportedUpdatesFetchRequest()
+  
         fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \InstalledApp.storeApp?.latestSupportedVersion?.date, ascending: false),
                                         NSSortDescriptor(keyPath: \InstalledApp.name, ascending: true)]
         fetchRequest.returnsObjectsAsFaults = false
         
+        
         let dataSource = RSTFetchedResultsCollectionViewPrefetchingDataSource<InstalledApp, UIImage>(fetchRequest: fetchRequest, managedObjectContext: DatabaseManager.shared.viewContext)
+        
+        
         dataSource.liveFetchLimit = maximumCollapsedUpdatesCount
         dataSource.cellIdentifierHandler = { _ in "UpdateCell" }
+        
         dataSource.cellConfigurationHandler = { [weak self] (cell, installedApp, indexPath) in
             guard let self = self else { return }
-            guard let app = installedApp.storeApp, let latestSupportedVersion = app.latestSupportedVersion else { return }
+            guard let app = installedApp.storeApp, let latestSupportedVersion = app.latestSupportedVersion else {
+                return
+            }
             
             let cell = cell as! UpdateCollectionViewCell
             cell.layoutMargins.left = self.view.layoutMargins.left
@@ -245,7 +249,7 @@ private extension MyAppsViewController
 
             let appName: String
             
-            if app.isBeta
+            if ReleaseTrack.betaTracks.contains(app.channel)
             {
                 appName = String(format: NSLocalizedString("%@ beta", comment: ""), app.name)
             }
@@ -1633,6 +1637,7 @@ private extension MyAppsViewController
             }
             catch let error as NSError
             {
+                print(error)
                 let toastView = ToastView(error: error.withLocalizedTitle(NSLocalizedString("Unable to Check for Updates", comment: "")))
                 toastView.addTarget(nil, action: #selector(TabBarController.presentSources), for: .touchUpInside)
                 toastView.show(in: self)
