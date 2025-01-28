@@ -1330,6 +1330,31 @@
 			path = common;
 			sourceTree = "<group>";
 		};
+		A8EA19602D4982E300DC6322 /* DatabaseManager */ = {
+			isa = PBXGroup;
+			children = (
+				BF66EECA2501AECA007EE018 /* DatabaseManager.swift */,
+				D5FD4ECA2A9532960097BEE8 /* DatabaseManager+Async.swift */,
+			);
+			path = DatabaseManager;
+			sourceTree = "<group>";
+		};
+		A8EA19612D4982E300DC6322 /* MergePolicies */ = {
+			isa = PBXGroup;
+			children = (
+				BF66EEC52501AECA007EE018 /* MergePolicy.swift */,
+			);
+			path = MergePolicies;
+			sourceTree = "<group>";
+		};
+		A8EA19622D4982FC00DC6322 /* Transformers */ = {
+			isa = PBXGroup;
+			children = (
+				BF66EEC12501AECA007EE018 /* SecureValueTransformer.swift */,
+			);
+			path = Transformers;
+			sourceTree = "<group>";
+		};
 		A8F66C072D04C025009689E6 /* SideStore */ = {
 			isa = PBXGroup;
 			children = (
@@ -1665,6 +1690,11 @@
 		BF66EEAA2501AECA007EE018 /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				A8EA19602D4982E300DC6322 /* DatabaseManager */,
+				A8EA19612D4982E300DC6322 /* MergePolicies */,
+				A8EA19622D4982FC00DC6322 /* Transformers */,
+				D557A4862AE88232007D0DCF /* Patreon */,
+				BF66EEAC2501AECA007EE018 /* Migrations */,
 				BF66EEB72501AECA007EE018 /* AltStore.xcdatamodeld */,
 				BF66EEC92501AECA007EE018 /* Account.swift */,
 				BF66EEC72501AECA007EE018 /* AppID.swift */,
@@ -2234,6 +2264,7 @@
 				D557A4802AE85BB0007D0DCF /* Pledge.swift */,
 				D557A4842AE88227007D0DCF /* PledgeTier.swift */,
 				D557A4822AE85DB7007D0DCF /* PledgeReward.swift */,
+				D5CA0C4A280E141900469595 /* ManagedPatron.swift */,
 			);
 			path = Patreon;
 			sourceTree = "<group>";
