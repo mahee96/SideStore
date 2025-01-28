@@ -9,7 +9,7 @@
 import CoreData
 
 @objc(AppVersion)
-public class AppVersion: NSManagedObject, Decodable, Fetchable
+public class AppVersion: BaseEntity, Decodable
 {
     /* Properties */
     @NSManaged public var version: String

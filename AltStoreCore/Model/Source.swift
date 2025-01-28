@@ -195,7 +195,7 @@ public extension Source
 }
 
 @objc(Source)
-public class Source: NSManagedObject, Fetchable, Decodable
+public class Source: BaseEntity, Decodable
 {
     /* Properties */
     @NSManaged public var name: String

@@ -90,6 +90,7 @@
 		A8C6D5182D1EE95B00DF01F1 /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A8D484D82D0CD306002C691D /* AltBackup.ipa in Resources */ = {isa = PBXBuildFile; fileRef = A8D484D72D0CD306002C691D /* AltBackup.ipa */; };
 		A8D49F532D3D2F9400844B92 /* ProcessInfo+AltStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D49F522D3D2F9400844B92 /* ProcessInfo+AltStore.swift */; };
+		A8EA195F2D4982D600DC6322 /* BaseEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8EA195E2D4982D600DC6322 /* BaseEntity.swift */; };
 		A8F838922D048E8F00ED425D /* libEmotionalDamage.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19104DB22909C06C00C49C7B /* libEmotionalDamage.a */; };
 		A8F838932D048E8F00ED425D /* libminimuxer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 191E5FAB290A5D92001A3B7C /* libminimuxer.a */; };
 		A8F838942D048ECE00ED425D /* libimobiledevice.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BF45872B2298D31600BD7491 /* libimobiledevice.a */; };
@@ -667,6 +668,7 @@
 		A8C38C372D2084D000E83DBD /* ConsoleLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsoleLogView.swift; sourceTree = "<group>"; };
 		A8D484D72D0CD306002C691D /* AltBackup.ipa */ = {isa = PBXFileReference; lastKnownFileType = file; path = AltBackup.ipa; sourceTree = "<group>"; };
 		A8D49F522D3D2F9400844B92 /* ProcessInfo+AltStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProcessInfo+AltStore.swift"; sourceTree = "<group>"; };
+		A8EA195E2D4982D600DC6322 /* BaseEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseEntity.swift; sourceTree = "<group>"; };
 		A8F66C3C2D04D433009689E6 /* em_proxy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = em_proxy.h; sourceTree = "<group>"; };
 		A8F66C602D04D464009689E6 /* minimuxer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = minimuxer.xcodeproj; sourceTree = "<group>"; };
 		A8FD915B2D046EF100322782 /* ProcessError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessError.swift; sourceTree = "<group>"; };
@@ -1695,27 +1697,21 @@
 				A8EA19622D4982FC00DC6322 /* Transformers */,
 				D557A4862AE88232007D0DCF /* Patreon */,
 				BF66EEAC2501AECA007EE018 /* Migrations */,
+				A8EA195E2D4982D600DC6322 /* BaseEntity.swift */,
 				BF66EEB72501AECA007EE018 /* AltStore.xcdatamodeld */,
 				BF66EEC92501AECA007EE018 /* Account.swift */,
 				BF66EEC72501AECA007EE018 /* AppID.swift */,
 				BF66EEC62501AECA007EE018 /* AppPermission.swift */,
 				D5F9821C2AB900060045751F /* AppScreenshot.swift */,
 				D52C08ED28AEC37A006C4AE5 /* AppVersion.swift */,
-				BF66EECA2501AECA007EE018 /* DatabaseManager.swift */,
-				D5FD4ECA2A9532960097BEE8 /* DatabaseManager+Async.swift */,
 				BF66EEC02501AECA007EE018 /* InstalledApp.swift */,
 				BF66EECB2501AECA007EE018 /* InstalledExtension.swift */,
 				D58916FD28C7C55C00E39C8B /* LoggedError.swift */,
-				BF66EEC52501AECA007EE018 /* MergePolicy.swift */,
 				BF66EEBF2501AECA007EE018 /* NewsItem.swift */,
-				D5CA0C4A280E141900469595 /* ManagedPatron.swift */,
 				BF66EEC32501AECA007EE018 /* RefreshAttempt.swift */,
-				BF66EEC12501AECA007EE018 /* SecureValueTransformer.swift */,
 				BF66EEAB2501AECA007EE018 /* Source.swift */,
 				BF66EEC42501AECA007EE018 /* StoreApp.swift */,
 				BF66EEC22501AECA007EE018 /* Team.swift */,
-				D557A4862AE88232007D0DCF /* Patreon */,
-				BF66EEAC2501AECA007EE018 /* Migrations */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -2920,6 +2916,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A8D49F532D3D2F9400844B92 /* ProcessInfo+AltStore.swift in Sources */,
+				A8EA195F2D4982D600DC6322 /* BaseEntity.swift in Sources */,
 				A82067842D03DC0600645C0D /* OperatingSystemVersion+Comparable.swift in Sources */,
 				D5FB28EE2ADDF89800A1C337 /* KnownSource.swift in Sources */,
 				BF66EED32501AECA007EE018 /* AltStore2ToAltStore3.xcmappingmodel in Sources */,
