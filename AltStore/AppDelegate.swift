@@ -68,7 +68,19 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         // Register default settings before doing anything else.
         UserDefaults.registerDefaults()
         
-    
+        
+        // Recreate Database if requested
+        // NOTE: Userdefaults are local to the SideStore.app sandbox and are not shared
+        if UserDefaults.standard.recreateDatabaseOnNextStart{
+            // reset the state
+            UserDefaults.standard.recreateDatabaseOnNextStart = false
+            
+            //clear and recreate db
+            DatabaseManager.recreateDatabase()
+        }
+        
+        
+        
         
         DatabaseManager.shared.start { (error) in
             if let error = error
@@ -423,6 +435,8 @@ private extension AppDelegate
                 let previousNewsItems = try context.fetch(previousNewsItemsFetchRequest) as! [[String: String]]
                 
                 try context.save()
+                
+                
                 
                 let updatesFetchRequest = InstalledApp.supportedUpdatesFetchRequest()
                 let newsItemsFetchRequest = NewsItem.fetchRequest() as NSFetchRequest<NewsItem>

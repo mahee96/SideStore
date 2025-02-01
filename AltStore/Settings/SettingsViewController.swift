@@ -84,6 +84,7 @@ extension SettingsViewController
         case verboseOperationsLogging
         case exportSqliteDB
         case operationsLoggingControl
+        case recreateDatabase
         case minimuxerConsoleLogging
     }
 }
@@ -118,6 +119,8 @@ final class SettingsViewController: UITableViewController
     @IBOutlet private var githubButton: UIButton!
     
     @IBOutlet private var versionLabel: UILabel!
+    
+    @IBOutlet private var recreateDatabaseSwitch: UISwitch!
     
     override var preferredStatusBarStyle: UIStatusBarStyle {
         return .lightContent
@@ -296,6 +299,8 @@ private extension SettingsViewController
         self.exportResignedAppsSwitch.isOn = UserDefaults.standard.isExportResignedAppEnabled
         self.verboseOperationsLoggingSwitch.isOn = UserDefaults.standard.isVerboseOperationsLoggingEnabled
         self.minimuxerConsoleLoggingSwitch.isOn = UserDefaults.standard.isMinimuxerConsoleLoggingEnabled
+
+        self.recreateDatabaseSwitch.isOn = UserDefaults.standard.recreateDatabaseOnNextStart
 
         if self.isViewLoaded
         {
@@ -498,7 +503,37 @@ private extension SettingsViewController
         // update it in database
         UserDefaults.standard.isMinimuxerConsoleLoggingEnabled = sender.isOn
     }
+    
+    @IBAction func toggleRecreateDatabaseSwitch(_ sender: UISwitch) {
+        // Update the setting in UserDefaults
+        UserDefaults.standard.recreateDatabaseOnNextStart = sender.isOn
 
+        guard sender.isOn else { return }
+        
+        DispatchQueue.global().async {
+            for time in (1...3).reversed() {
+                DispatchQueue.main.async {
+                    guard UserDefaults.standard.recreateDatabaseOnNextStart else {
+                        return
+                    }
+                    let toast = ToastView(text: "Database Delete Scheduled on Next Launch", detailText: "App is closing in \(time) seconds...")
+                    toast.tintColor = .altPrimary
+                    toast.preferredDuration = 1
+                    toast.show(in: self)
+                }
+                sleep(1) // Background sleep
+            }
+
+            DispatchQueue.main.async {
+                guard UserDefaults.standard.recreateDatabaseOnNextStart else {
+                    return
+                }
+                exit(0)
+            }
+        }
+    }
+
+    
     @IBAction func toggleEnableBetaUpdates(_ sender: UISwitch) {
         // update it in database
         UserDefaults.standard.isBetaUpdatesEnabled = sender.isOn
@@ -1104,7 +1139,7 @@ extension SettingsViewController
                 let segue = UIStoryboardSegue(identifier: "operationsLoggingControl", source: self, destination: operationsLoggingController)
                 self.present(segue.destination, animated: true, completion: nil)
                 
-            case .responseCaching, .exportResignedApp, .verboseOperationsLogging, .minimuxerConsoleLogging : break
+            case .responseCaching, .exportResignedApp, .verboseOperationsLogging, .minimuxerConsoleLogging, .recreateDatabase : break
             }
             
             

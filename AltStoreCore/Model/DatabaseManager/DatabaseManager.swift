@@ -40,7 +40,7 @@ fileprivate class PersistentContainer: RSTPersistentContainer
 
 public class DatabaseManager
 {
-    public static let shared = DatabaseManager()
+    public static private(set) var shared = DatabaseManager()
     
     public let persistentContainer: RSTPersistentContainer
     
@@ -64,10 +64,75 @@ public class DatabaseManager
     }
 }
 
+
+public extension DatabaseManager
+{
+    private class func loadPersistentStoresSync() {
+        let container = Self.shared.persistentContainer
+        let semaphore = DispatchSemaphore(value: 0)  // Semaphore to wait for async completion
+        
+        container.loadPersistentStores { description, error in
+            if let error = error {
+                print("Failed to load store: \(error)")
+            } else {
+                print("Store URL: \(description.url ?? URL(string: "unknown")!)")
+            }
+            
+            semaphore.signal()  // Signal the semaphore to unblock the thread
+        }
+        
+        semaphore.wait()  // Wait for the semaphore signal to unblock the thread
+        print("Persistent store loading complete.")
+    }
+    
+    class func recreateDatabase()
+    {
+        // delete existing database and start fresh if required
+        do {
+            let container = Self.shared.persistentContainer
+            
+            // perform a load before acquiring the databaseStoreURL
+            loadPersistentStoresSync()
+            
+            let databaseStore = container.persistentStoreCoordinator.persistentStores.first
+
+            guard let databaseStore else
+            {
+                print("\nDatabase Recreate request FAILED: databaseStore = nil\n")
+                return
+            }
+
+            guard let databaseStoreURL = databaseStore.url else
+            {
+                print("\nDatabase Recreate request FAILED: databaseStoreURL = nil\n")
+                return
+            }
+            
+            try Self.shared.persistentContainer.persistentStoreCoordinator.destroyPersistentStore(
+               at: databaseStoreURL,
+               ofType: NSSQLiteStoreType,       // target the store on disk (ex: other types include: binary, in-memory)
+               options: nil
+            )
+            
+            // just be sure
+            try? FileManager.default.removeItem(at: databaseStoreURL)
+                
+            print("\nDatabase Recreate: Delete SUCCEEDED\n")
+            
+            // create new instance
+            Self.shared = DatabaseManager()
+        }catch{
+            print("\nDatabase Recreate request FAILED: \(error)\n")
+        }
+    }
+}
+
+
 public extension DatabaseManager
 {
     func start(completionHandler: @escaping (Error?) -> Void)
     {
+        
         func finish(_ error: Error?)
         {
             self.dispatchQueue.async {
@@ -307,7 +372,8 @@ private extension DatabaseManager
             }
             else
             {
-                storeApp = StoreApp.makeAltStoreApp(version: localApp.version, buildVersion: nil, in: context)
+                // always use latest StoreApp version to create the template
+                storeApp = StoreAppV2.makeAltStoreApp(version: localApp.version, buildVersion: nil, in: context)
                 storeApp.source = altStoreSource
             }
                         
