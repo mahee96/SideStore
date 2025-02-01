@@ -224,6 +224,18 @@ extension MergePolicy{
         for track in conflicts.compactMap({ $0.databaseObject as? ReleaseTrack }) {
             track.managedObjectContext?.delete(track)
         }
+
+        for conflict in conflicts {
+            if let existingApp = conflict.databaseObject as? StoreApp,
+               let incomingApp = conflict.conflictingObjects.first as? StoreApp,
+               // if the entities are not matching, but existing is a placeholder, then delete the placeholder
+               type(of: existingApp) != type(of: incomingApp) && StoreApp.isPlaceHolderStoreApp(existingApp)
+            {
+                print("Delting placeholder store app to resolve conflict")
+                existingApp.managedObjectContext?.delete(existingApp)
+            }
+        }
+        
         
         for conflict in conflicts
         {

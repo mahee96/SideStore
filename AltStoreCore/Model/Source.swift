@@ -27,7 +27,7 @@ public extension Source
     static let altStoreSourceURL = URL(string: "https://apps.sidestore.io/")!
     #else
 //    static let altStoreSourceURL = URL(string: "https://apps.sidestore.io/")!
-    static let altStoreSourceURL = URL(string: "https://mahee96.github.io/apps-v2.json/")!       // using v2 for alpha releases
+    static let altStoreSourceURL = URL(string: "https://sidestore.github.io/apps-v2.json/")!       // using v2 for alpha releases
     #endif
     
     #endif

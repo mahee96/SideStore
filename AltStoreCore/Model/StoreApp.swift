@@ -721,6 +721,9 @@ public extension StoreApp
         return version.version == "0.0.0" && version.date == Date.distantPast && version.appBundleID == StoreApp.altstoreAppID
     }
     
+    class func isPlaceHolderStoreApp(_ app: StoreApp) -> Bool{
+        return app.version == "0.0.0" && app.versionDate == Date.distantPast && app.bundleIdentifier == StoreApp.altstoreAppID
+    }    
     
     
     class func makeAltStoreApp(version: String, buildVersion: String?, in context: NSManagedObjectContext) -> StoreApp
@@ -733,6 +736,9 @@ public extension StoreApp
         app.iconURL = URL(string: "https://user-images.githubusercontent.com/705880/63392210-540c5980-c37b-11e9-968c-8742fc68ab2e.png")!
         app.screenshotURLs = []
         app._channel = ReleaseTracks.stable.rawValue
+
+        app._version = "0.0.0"
+        app._versionDate = Date.distantPast
         
         var appVersion = AppVersion.makeAppVersion(version: "0.0.0",
                                                    buildVersion: nil,
