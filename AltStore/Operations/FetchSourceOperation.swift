@@ -95,7 +95,7 @@ final class FetchSourceOperation: ResultOperation<Source>
         let dataTask = self.session.dataTask(with: request) { (data, response, error) in
             
             let childContext = DatabaseManager.shared.persistentContainer.newBackgroundContext(withParent: self.managedObjectContext)
-//            childContext.mergePolicy = NSOverwriteMergePolicy
+            childContext.mergePolicy = NSOverwriteMergePolicy
             childContext.perform {
                 do
                 {
@@ -125,6 +125,10 @@ final class FetchSourceOperation: ResultOperation<Source>
                     
                     decoder.managedObjectContext = childContext
                     decoder.sourceURL = self.sourceURL
+                    
+                    if self.sourceURL.path.contains("provenance"){
+                        return
+                    }
                     
                     if #available(iOS 15, *)
                     {
