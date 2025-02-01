@@ -74,6 +74,7 @@ extension SettingsViewController
         case resetPairingFile
         case anisetteServers
         case betaUpdates
+        case betaTrack
 //        case hiddenSettings
     }
 
@@ -95,6 +96,10 @@ final class SettingsViewController: UITableViewController
     
     private var prototypeHeaderFooterView: SettingsHeaderFooterView!
     
+    // Add outlet
+    @IBOutlet private var betaTrackLabel: UILabel!
+    @IBOutlet private var betaTrackPopupButton: UIButton!
+
     private var debugGestureCounter = 0
     private weak var debugGestureTimer: Timer?
     
@@ -128,6 +133,10 @@ final class SettingsViewController: UITableViewController
     
     private var exportDBInProgress = false
     
+    // Default track for beta updates when beta-updates are enabled
+    private static let defaultBetaUpdatesTrack: String = ReleaseTracks.beta.rawValue
+    
+    
     required init?(coder aDecoder: NSCoder)
     {
         super.init(coder: aDecoder)
@@ -136,6 +145,48 @@ final class SettingsViewController: UITableViewController
         NotificationCenter.default.addObserver(self, selector: #selector(SettingsViewController.openErrorLog(_:)), name: ToastView.openErrorLogNotification, object: nil)
     }
     
+    
+    private func handleReleaseChannelSelection(_ channel: String) {
+        // Update your model/preferences
+        UserDefaults.standard.betaUdpatesTrack = channel
+        updateReleaseChannelButtonTitle()
+    }
+    
+    private func updateReleaseChannelButtonTitle() {
+        let channel = UserDefaults.standard.betaUdpatesTrack ?? Self.defaultBetaUpdatesTrack
+        betaTrackPopupButton.setTitle(channel, for: .normal)
+    }
+    
+    private func configureReleaseChannelButton() {
+        let currentTrack = UserDefaults.standard.betaUdpatesTrack
+        
+        // get all tracks as string available except .stable and .unknown
+        var trackOptions: [String] = ReleaseTracks.betaTracks.map {$0.rawValue}
+
+        if let currentTrack{
+            // prepend currently selected beta track from the user defaults
+            trackOptions = [currentTrack] + trackOptions.filter { $0 != currentTrack }
+        }
+    
+        // Create menu items with proper styling
+        let items = trackOptions.map{ channel in
+            UIAction(title: channel, handler: { [weak self] _ in
+                self?.handleReleaseChannelSelection(channel)
+            })
+        }
+        
+        // Create menu with proper styling
+        let menu = UIMenu(title: "",
+                         options: [.singleSelection, .displayInline], // Add displayInline
+                         children: items
+        )
+        betaTrackPopupButton.menu = menu
+
+        // Set initial state
+        updateReleaseChannelButtonTitle()
+    }
+
+
     override func viewDidLoad()
     {
         super.viewDidLoad()
@@ -183,6 +234,8 @@ final class SettingsViewController: UITableViewController
                 button.imageView?.contentMode = .scaleAspectFit
             }
         }
+        
+        configureReleaseChannelButton()
     }
     
     override func viewWillAppear(_ animated: Bool)
@@ -293,6 +346,8 @@ private extension SettingsViewController
 
         // AdvancedSettingsRow
         self.betaUpdatesSwitch.isOn = UserDefaults.standard.isBetaUpdatesEnabled
+        self.betaTrackLabel.isEnabled = UserDefaults.standard.isBetaUpdatesEnabled
+        self.betaTrackPopupButton.isEnabled = UserDefaults.standard.isBetaUpdatesEnabled
 
         // DiagnosticsRow
         self.disableResponseCachingSwitch.isOn = UserDefaults.standard.responseCachingDisabled
@@ -535,6 +590,8 @@ private extension SettingsViewController
 
     
     @IBAction func toggleEnableBetaUpdates(_ sender: UISwitch) {
+        betaTrackLabel.isEnabled = sender.isOn
+        betaTrackPopupButton.isEnabled = sender.isOn
         // update it in database
         UserDefaults.standard.isBetaUpdatesEnabled = sender.isOn
     }
@@ -1099,7 +1156,7 @@ extension SettingsViewController
 //                } else {
 //                    ELOG("UIApplication.openSettingsURLString invalid")
 //                }
-            case .refreshAttempts, .betaUpdates : break
+            case .refreshAttempts, .betaUpdates, .betaTrack: break
 
             }
         
