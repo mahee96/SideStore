@@ -126,6 +126,10 @@ final class FetchSourceOperation: ResultOperation<Source>
                     decoder.managedObjectContext = childContext
                     decoder.sourceURL = self.sourceURL
                     
+                    if self.sourceURL.path.contains("provenance"){
+                        return
+                    }
+                    
                     if #available(iOS 15, *)
                     {
                         decoder.allowsJSON5 = true

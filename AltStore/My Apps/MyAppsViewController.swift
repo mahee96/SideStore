@@ -245,7 +245,7 @@ private extension MyAppsViewController
 
             let appName: String
             
-            if app.isBeta
+            if ReleaseTracks.betaTracks.contains(latestSupportedVersion.channel)
             {
                 appName = String(format: NSLocalizedString("%@ beta", comment: ""), app.name)
             }
@@ -1602,6 +1602,7 @@ private extension MyAppsViewController
                     }
                     catch let error as AppManager.FetchSourcesError
                     {
+                        print(error)
                         try await error.managedObjectContext?.performAsync {
                             try error.managedObjectContext?.save()
                         }
@@ -1633,6 +1634,7 @@ private extension MyAppsViewController
             }
             catch let error as NSError
             {
+                print(error)
                 let toastView = ToastView(error: error.withLocalizedTitle(NSLocalizedString("Unable to Check for Updates", comment: "")))
                 toastView.addTarget(nil, action: #selector(TabBarController.presentSources), for: .touchUpInside)
                 toastView.show(in: self)

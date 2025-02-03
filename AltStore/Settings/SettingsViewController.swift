@@ -74,6 +74,7 @@ extension SettingsViewController
         case resetPairingFile
         case anisetteServers
         case betaUpdates
+        case betaTrack
 //        case hiddenSettings
     }
 
@@ -84,6 +85,7 @@ extension SettingsViewController
         case verboseOperationsLogging
         case exportSqliteDB
         case operationsLoggingControl
+        case recreateDatabase
         case minimuxerConsoleLogging
     }
 }
@@ -94,6 +96,10 @@ final class SettingsViewController: UITableViewController
     
     private var prototypeHeaderFooterView: SettingsHeaderFooterView!
     
+    // Add outlet
+    @IBOutlet private var betaTrackLabel: UILabel!
+    @IBOutlet private var betaTrackPopupButton: UIButton!
+
     private var debugGestureCounter = 0
     private weak var debugGestureTimer: Timer?
     
@@ -119,11 +125,17 @@ final class SettingsViewController: UITableViewController
     
     @IBOutlet private var versionLabel: UILabel!
     
+    @IBOutlet private var recreateDatabaseSwitch: UISwitch!
+    
     override var preferredStatusBarStyle: UIStatusBarStyle {
         return .lightContent
     }
     
     private var exportDBInProgress = false
+    
+    // Default track for beta updates when beta-updates are enabled
+    private static let defaultBetaUpdatesTrack: String = ReleaseTracks.beta.rawValue
+    
     
     required init?(coder aDecoder: NSCoder)
     {
@@ -133,6 +145,48 @@ final class SettingsViewController: UITableViewController
         NotificationCenter.default.addObserver(self, selector: #selector(SettingsViewController.openErrorLog(_:)), name: ToastView.openErrorLogNotification, object: nil)
     }
     
+    
+    private func handleReleaseChannelSelection(_ channel: String) {
+        // Update your model/preferences
+        UserDefaults.standard.betaUdpatesTrack = channel
+        updateReleaseChannelButtonTitle()
+    }
+    
+    private func updateReleaseChannelButtonTitle() {
+        let channel = UserDefaults.standard.betaUdpatesTrack ?? Self.defaultBetaUpdatesTrack
+        betaTrackPopupButton.setTitle(channel, for: .normal)
+    }
+    
+    private func configureReleaseChannelButton() {
+        let currentTrack = UserDefaults.standard.betaUdpatesTrack
+        
+        // get all tracks as string available except .stable and .unknown
+        var trackOptions: [String] = ReleaseTracks.betaTracks.map {$0.rawValue}
+
+        if let currentTrack{
+            // prepend currently selected beta track from the user defaults
+            trackOptions = [currentTrack] + trackOptions.filter { $0 != currentTrack }
+        }
+    
+        // Create menu items with proper styling
+        let items = trackOptions.map{ channel in
+            UIAction(title: channel, handler: { [weak self] _ in
+                self?.handleReleaseChannelSelection(channel)
+            })
+        }
+        
+        // Create menu with proper styling
+        let menu = UIMenu(title: "",
+                         options: [.singleSelection, .displayInline], // Add displayInline
+                         children: items
+        )
+        betaTrackPopupButton.menu = menu
+
+        // Set initial state
+        updateReleaseChannelButtonTitle()
+    }
+
+
     override func viewDidLoad()
     {
         super.viewDidLoad()
@@ -180,6 +234,8 @@ final class SettingsViewController: UITableViewController
                 button.imageView?.contentMode = .scaleAspectFit
             }
         }
+        
+        configureReleaseChannelButton()
     }
     
     override func viewWillAppear(_ animated: Bool)
@@ -290,12 +346,16 @@ private extension SettingsViewController
 
         // AdvancedSettingsRow
         self.betaUpdatesSwitch.isOn = UserDefaults.standard.isBetaUpdatesEnabled
+        self.betaTrackLabel.isEnabled = UserDefaults.standard.isBetaUpdatesEnabled
+        self.betaTrackPopupButton.isEnabled = UserDefaults.standard.isBetaUpdatesEnabled
 
         // DiagnosticsRow
         self.disableResponseCachingSwitch.isOn = UserDefaults.standard.responseCachingDisabled
         self.exportResignedAppsSwitch.isOn = UserDefaults.standard.isExportResignedAppEnabled
         self.verboseOperationsLoggingSwitch.isOn = UserDefaults.standard.isVerboseOperationsLoggingEnabled
         self.minimuxerConsoleLoggingSwitch.isOn = UserDefaults.standard.isMinimuxerConsoleLoggingEnabled
+
+        self.recreateDatabaseSwitch.isOn = UserDefaults.standard.recreateDatabaseOnNextStart
 
         if self.isViewLoaded
         {
@@ -498,8 +558,40 @@ private extension SettingsViewController
         // update it in database
         UserDefaults.standard.isMinimuxerConsoleLoggingEnabled = sender.isOn
     }
+    
+    @IBAction func toggleRecreateDatabaseSwitch(_ sender: UISwitch) {
+        // Update the setting in UserDefaults
+        UserDefaults.standard.recreateDatabaseOnNextStart = sender.isOn
 
+        guard sender.isOn else { return }
+        
+        DispatchQueue.global().async {
+            for time in (1...3).reversed() {
+                DispatchQueue.main.async {
+                    guard UserDefaults.standard.recreateDatabaseOnNextStart else {
+                        return
+                    }
+                    let toast = ToastView(text: "Database Delete Scheduled on Next Launch", detailText: "App is closing in \(time) seconds...")
+                    toast.tintColor = .altPrimary
+                    toast.preferredDuration = 1
+                    toast.show(in: self)
+                }
+                sleep(1) // Background sleep
+            }
+
+            DispatchQueue.main.async {
+                guard UserDefaults.standard.recreateDatabaseOnNextStart else {
+                    return
+                }
+                exit(0)
+            }
+        }
+    }
+
+    
     @IBAction func toggleEnableBetaUpdates(_ sender: UISwitch) {
+        betaTrackLabel.isEnabled = sender.isOn
+        betaTrackPopupButton.isEnabled = sender.isOn
         // update it in database
         UserDefaults.standard.isBetaUpdatesEnabled = sender.isOn
     }
@@ -1064,7 +1156,7 @@ extension SettingsViewController
 //                } else {
 //                    ELOG("UIApplication.openSettingsURLString invalid")
 //                }
-            case .refreshAttempts, .betaUpdates : break
+            case .refreshAttempts, .betaUpdates, .betaTrack: break
 
             }
         
@@ -1104,7 +1196,7 @@ extension SettingsViewController
                 let segue = UIStoryboardSegue(identifier: "operationsLoggingControl", source: self, destination: operationsLoggingController)
                 self.present(segue.destination, animated: true, completion: nil)
                 
-            case .responseCaching, .exportResignedApp, .verboseOperationsLogging, .minimuxerConsoleLogging : break
+            case .responseCaching, .exportResignedApp, .verboseOperationsLogging, .minimuxerConsoleLogging, .recreateDatabase : break
             }
             
             

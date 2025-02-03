@@ -36,6 +36,7 @@ public extension UserDefaults
     @NSManaged var isExportResignedAppEnabled: Bool
     @NSManaged var isVerboseOperationsLoggingEnabled: Bool
     @NSManaged var isMinimuxerConsoleLoggingEnabled: Bool
+    @NSManaged var recreateDatabaseOnNextStart: Bool
     @NSManaged var isPairingReset: Bool
     @NSManaged var isDebugModeEnabled: Bool
     @NSManaged var presentedLaunchReminderNotification: Bool
@@ -55,6 +56,9 @@ public extension UserDefaults
     @NSManaged var trustedServerURL: String?
     @NSManaged var skipPatreonDownloads: Bool
     
+    @NSManaged var prefixTeamID: Bool
+    @NSManaged var betaUdpatesTrack: String?
+
     @nonobjc var preferredAppSorting: AppSorting {
         get {
             let sorting = _preferredAppSorting.flatMap { AppSorting(rawValue: $0) } ?? .default
@@ -120,12 +124,14 @@ public extension UserDefaults
         let preferredAppSorting: AppSorting = if #available(iOS 15, *) { .default } else { .name }
         
         let defaults = [
+            #keyPath(UserDefaults.prefixTeamID): false,
             #keyPath(UserDefaults.isAppLimitDisabled): false,
             #keyPath(UserDefaults.isBetaUpdatesEnabled): false,
             #keyPath(UserDefaults.isExportResignedAppEnabled): false,
             #keyPath(UserDefaults.isDebugModeEnabled): false,
             #keyPath(UserDefaults.isVerboseOperationsLoggingEnabled): false,
             #keyPath(UserDefaults.isMinimuxerConsoleLoggingEnabled): true, // minimuxer logging is enabled by default as before
+            #keyPath(UserDefaults.recreateDatabaseOnNextStart): false, // setting this will ensure DB is deleted and initialized fresh on next start
             #keyPath(UserDefaults.isBackgroundRefreshEnabled): true,
             #keyPath(UserDefaults.isIdleTimeoutDisableEnabled): true,
             #keyPath(UserDefaults.isPairingReset): true,
@@ -138,6 +144,7 @@ public extension UserDefaults
             #keyPath(UserDefaults.isCowExploitSupported): isMacDirtyCowSupported,
             #keyPath(UserDefaults.permissionCheckingDisabled): permissionCheckingDisabled,
             #keyPath(UserDefaults._preferredAppSorting): preferredAppSorting.rawValue,
+            #keyPath(UserDefaults.betaUdpatesTrack): ReleaseTracks.beta.rawValue,
         ] as [String: Any]
         
         UserDefaults.standard.register(defaults: defaults)

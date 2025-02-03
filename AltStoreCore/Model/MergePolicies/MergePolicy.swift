@@ -129,69 +129,113 @@ private extension Error
     }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
 open class MergePolicy: RSTRelationshipPreservingMergePolicy
 {
+    var permissionsByGlobalAppID = [String: Set<AnyHashable>]()
+    var sortedVersionIDsByGlobalAppID = [String: NSOrderedSet]()
+    var sortedScreenshotIDsByGlobalAppID = [String: NSOrderedSet]()
+    var featuredAppIDsBySourceID = [String: [String]]()
+
+    // MARK: - Actual Constraint conflict resolution takes place here!
     open override func resolve(constraintConflicts conflicts: [NSConstraintConflict]) throws
     {
-        guard conflicts.allSatisfy({ $0.databaseObject != nil }) else {
-            for conflict in conflicts
+        try self.performPreMergeManualResolution(for: conflicts)
+        
+        try super.resolve(constraintConflicts: conflicts)
+        
+        try self.performPostMergeValidationAndCorrections(for: conflicts)
+    }
+}
+
+
+extension MergePolicy{
+    
+    // When conflict.databaseObject is unavailable, the conflicts exist only in context level and they must be new insertions
+    private func resolveWhenDatabaseObjectUnavailable(_ conflicts: [NSConstraintConflict]) throws{
+        
+        for conflict in conflicts
+        {
+            switch conflict.conflictingObjects.first
             {
-                switch conflict.conflictingObjects.first
+            case is StoreApp where conflict.conflictingObjects.count == 2:
+                // Modified cached StoreApp while replacing it with new one, causing context-level conflict.
+                // Most likely, we set up a relationship between the new StoreApp and a NewsItem,
+                // causing cached StoreApp to delete it's NewsItem relationship, resulting in (resolvable) conflict.
+                
+                if let previousApp = conflict.conflictingObjects.first(where: { !$0.isInserted }) as? StoreApp
                 {
-                case is StoreApp where conflict.conflictingObjects.count == 2:
-                    // Modified cached StoreApp while replacing it with new one, causing context-level conflict.
-                    // Most likely, we set up a relationship between the new StoreApp and a NewsItem,
-                    // causing cached StoreApp to delete it's NewsItem relationship, resulting in (resolvable) conflict.
-                    
-                    if let previousApp = conflict.conflictingObjects.first(where: { !$0.isInserted }) as? StoreApp
+                    // Delete previous permissions (different than below).
+                    for case let permission as AppPermission in previousApp._permissions where permission.app == nil
                     {
-                        // Delete previous permissions (different than below).
-                        for case let permission as AppPermission in previousApp._permissions where permission.app == nil
-                        {
-                            permission.managedObjectContext?.delete(permission)
-                        }
-                        
-                        // Delete previous versions (different than below).
-                        for case let appVersion as AppVersion in previousApp._versions where appVersion.app == nil
-                        {
-                            appVersion.managedObjectContext?.delete(appVersion)
-                        }
-                        
-                        // Delete previous screenshots (different than below).
-                        for case let appScreenshot as AppScreenshot in previousApp._screenshots where appScreenshot.app == nil
-                        {
-                            appScreenshot.managedObjectContext?.delete(appScreenshot)
-                        }
+                        permission.managedObjectContext?.delete(permission)
                     }
-                    
-                case is AppVersion where conflict.conflictingObjects.count == 2:
-                    // Occurs first time fetching sources after migrating from pre-AppVersion database model.
-                    let conflictingAppVersions = conflict.conflictingObjects.lazy.compactMap { $0 as? AppVersion }
-                    
-                    // Primary AppVersion == AppVersion whose latestVersionApp.latestVersion points back to itself.
-                    if let primaryAppVersion = conflictingAppVersions.first(where: { $0.latestSupportedVersionApp?.latestSupportedVersion == $0 }),
-                       let secondaryAppVersion = conflictingAppVersions.first(where: { $0 != primaryAppVersion })
+                                        
+                    // Delete previous versions (different than below).
+//                     for case let appVersion as AppVersion in previousApp._versions where appVersion.app == nil
+//                     {
+//                         appVersion.managedObjectContext?.delete(appVersion)
+//                     }
+
+                    // Delete previous screenshots (different than below).
+                    for case let appScreenshot as AppScreenshot in previousApp._screenshots where appScreenshot.app == nil
                     {
-                        secondaryAppVersion.managedObjectContext?.delete(secondaryAppVersion)
-                        print("[ALTLog] Resolving AppVersion context-level conflict. Most likely due to migrating from pre-AppVersion model version.", primaryAppVersion)
+                        appScreenshot.managedObjectContext?.delete(appScreenshot)
                     }
-                    
-                default:
-                    // Unknown context-level conflict.
-                    assertionFailure("MergePolicy is only intended to work with database-level conflicts.")
                 }
+                
+            case is AppVersion where conflict.conflictingObjects.count == 2:
+                // Occurs first time fetching sources after migrating from pre-AppVersion database model.
+                let conflictingAppVersions = conflict.conflictingObjects.lazy.compactMap { $0 as? AppVersion }
+                
+                // Primary AppVersion == AppVersion whose latestVersionApp.latestVersion points back to itself.
+                if let primaryAppVersion = conflictingAppVersions.first(where: { $0.latestSupportedVersionApp?.latestSupportedVersion == $0 }),
+                   let secondaryAppVersion = conflictingAppVersions.first(where: { $0 != primaryAppVersion })
+                {
+                    secondaryAppVersion.managedObjectContext?.delete(secondaryAppVersion)
+                    print("[ALTLog] Resolving AppVersion context-level conflict. Most likely due to migrating from pre-AppVersion model version.", primaryAppVersion)
+                }
+                
+            default:
+                // Unknown context-level conflict.
+//                assertionFailure("MergePolicy is only intended to work with database-level conflicts.")
+                assertionFailure("Context Conflict Detected: is there ambigious data in your incoming sources?\nConflict:\(conflict)")
             }
-            
-            try super.resolve(constraintConflicts: conflicts)
-                        
-            return
+        }
+    }
+    
+    // When conflict.databaseObject is available, it means this is replace (delete + insert) or update
+    private func resolveWhenDatabaseObjectAvailable(_ conflicts: [NSConstraintConflict]) throws {
+        
+        // handle releaseTracks by always deleting the db version and accepting the incoming object
+        // this prevents any stale references (actaully we shouldn't be inserting all the time,
+        // but due to existing design this is the hacky fix)
+        for track in conflicts.compactMap({ $0.databaseObject as? ReleaseTrack }) {
+            track.managedObjectContext?.delete(track)
+        }
+
+        for conflict in conflicts {
+            if let existingApp = conflict.databaseObject as? StoreApp,
+               let incomingApp = conflict.conflictingObjects.first as? StoreApp,
+               // if the entities are not matching, but existing is a placeholder, then delete the placeholder
+               type(of: existingApp) != type(of: incomingApp) && StoreApp.isPlaceHolderStoreApp(existingApp)
+            {
+                print("Delting placeholder store app to resolve conflict")
+                existingApp.managedObjectContext?.delete(existingApp)
+            }
         }
         
-        var permissionsByGlobalAppID = [String: Set<AnyHashable>]()
-        var sortedVersionIDsByGlobalAppID = [String: NSOrderedSet]()
-        var sortedScreenshotIDsByGlobalAppID = [String: NSOrderedSet]()
-        
-        var featuredAppIDsBySourceID = [String: [String]]()
         
         for conflict in conflicts
         {
@@ -199,7 +243,7 @@ open class MergePolicy: RSTRelationshipPreservingMergePolicy
             {
             case let databaseObject as StoreApp:
                 guard let contextApp = conflict.conflictingObjects.first as? StoreApp else { break }
-                
+
                 // Permissions
                 let contextPermissions = Set(contextApp._permissions.lazy.compactMap { $0 as? AppPermission }.map { AnyHashable($0.permission) })
                 for case let databasePermission as AppPermission in databaseObject._permissions /* where !contextPermissions.contains(AnyHashable(databasePermission.permission)) */ // Compiler error as of Xcode 15
@@ -212,8 +256,8 @@ open class MergePolicy: RSTRelationshipPreservingMergePolicy
                 }
                 
                 // Versions
-                let contextVersionIDs = NSOrderedSet(array: contextApp._versions.lazy.compactMap { $0 as? AppVersion }.map { $0.versionID })
-                for case let databaseVersion as AppVersion in databaseObject._versions where !contextVersionIDs.contains(databaseVersion.versionID)
+                let contextVersionIDs = NSOrderedSet(array: contextApp.versions.lazy.compactMap { $0 }.map { $0.versionID })
+                for case let databaseVersion in databaseObject.versions where !contextVersionIDs.contains(databaseVersion.versionID)
                 {
                     // Version # does NOT exist in context, so delete existing databaseVersion.
                     databaseVersion.managedObjectContext?.delete(databaseVersion)
@@ -307,8 +351,46 @@ open class MergePolicy: RSTRelationshipPreservingMergePolicy
             default: break
             }
         }
+    }
+}
+
+
+extension MergePolicy{
+
+    func performPreMergeManualResolution(for conflicts: [NSConstraintConflict]) throws {
         
-        try super.resolve(constraintConflicts: conflicts)
+        // When conflict.databaseObject is unavailable, it means this is the first time insertion
+        guard conflicts.allSatisfy({ $0.databaseObject != nil }) else {
+            return try self.resolveWhenDatabaseObjectUnavailable(conflicts)
+        }
+        
+        // always re-init for each resolve request
+        self.permissionsByGlobalAppID.removeAll()
+        self.sortedVersionIDsByGlobalAppID.removeAll()
+        self.sortedScreenshotIDsByGlobalAppID.removeAll()
+        self.featuredAppIDsBySourceID.removeAll()
+        
+        // When conflict.databaseObject is available, it means this is replace (delete + insert) or update
+        return try self.resolveWhenDatabaseObjectAvailable(conflicts)
+    }
+
+    func performPostMergeValidationAndCorrections(for conflicts: [NSConstraintConflict]) throws{
+        
+        // handle stale references to placeholder versions and re-anchor the latestVersion via setVersions()
+        for app in conflicts.compactMap({ $0.databaseObject as? StoreAppV2 }) {
+            var versions = app._versions.array as? [AppVersion] ?? []
+        
+            // Ensure we don't remove the only placeholder if there's just one version
+            if versions.count > 1, let placeholder = versions.first(where: StoreApp.isPlaceHolderVersion) {
+                placeholder.managedObjectContext?.delete(placeholder)
+                versions.removeAll { $0 === placeholder }
+            }
+            
+            // this sets in the latestVersion and other stuffs, so we need this post migration
+            try app.setVersions(versions)
+            assert((app.latestSupportedVersion != nil), "latestVersion is nil during merge? \(app)")
+        }
+        
         
         for conflict in conflicts
         {
@@ -317,7 +399,6 @@ open class MergePolicy: RSTRelationshipPreservingMergePolicy
             case let databaseObject as StoreApp:
                 do
                 {
-                    var appVersions = databaseObject.versions
                     
                     if let globallyUniqueID = databaseObject.globallyUniqueID
                     {
@@ -330,28 +411,29 @@ open class MergePolicy: RSTRelationshipPreservingMergePolicy
                             throw MergeError.incorrectPermissions(for: databaseObject)
                         }
                         
-                        // App versions
-                        if let sortedAppVersionIDs = sortedVersionIDsByGlobalAppID[globallyUniqueID],
-                           let sortedAppVersionsIDsArray = sortedAppVersionIDs.array as? [String],
-                           case let databaseVersionIDs = databaseObject.versions.map({ $0.versionID }),
-                           databaseVersionIDs != sortedAppVersionsIDsArray
-                        {
-                            // databaseObject.versions post-merge doesn't match contextApp.versions pre-merge, so attempt to fix by re-sorting.
-                            
-                            let fixedAppVersions = databaseObject.versions.sorted { (versionA, versionB) in
-                                let indexA = sortedAppVersionIDs.index(of: versionA.versionID)
-                                let indexB = sortedAppVersionIDs.index(of: versionB.versionID)
-                                return indexA < indexB
-                            }
-                            
-                            let appVersionIDs = fixedAppVersions.map { $0.versionID }
-                            guard appVersionIDs == sortedAppVersionsIDsArray else {
-                                // fixedAppVersions still doesn't match source's versions, so throw MergeError.
-                                throw MergeError.incorrectVersionOrder(for: databaseObject)
-                            }
-                            
-                            appVersions = fixedAppVersions
-                        }
+//                        // App versions
+//                        var appVersions = databaseObject.versions
+//                        if let sortedAppVersionIDs = sortedVersionIDsByGlobalAppID[globallyUniqueID],
+//                           let sortedAppVersionsIDsArray = sortedAppVersionIDs.array as? [String],
+//                           case let databaseVersionIDs = databaseObject.versions.map({ $0.versionID }),
+//                           databaseVersionIDs != sortedAppVersionsIDsArray
+//                        {
+//                            // databaseObject.versions post-merge doesn't match contextApp.versions pre-merge, so attempt to fix by re-sorting.
+//                            
+//                            let fixedAppVersions = databaseObject.versions.sorted { (versionA, versionB) in
+//                                let indexA = sortedAppVersionIDs.index(of: versionA.versionID)
+//                                let indexB = sortedAppVersionIDs.index(of: versionB.versionID)
+//                                return indexA < indexB
+//                            }
+//                            
+//                            let appVersionIDs = fixedAppVersions.map { $0.versionID }
+//                            guard appVersionIDs == sortedAppVersionsIDsArray else {
+//                                // fixedAppVersions still doesn't match source's versions, so throw MergeError.
+//                                throw MergeError.incorrectVersionOrder(for: databaseObject)
+//                            }
+//                            
+//                            appVersions = fixedAppVersions
+//                        }
                         
                         // Screenshots
                         if let sortedScreenshotIDs = sortedScreenshotIDsByGlobalAppID[globallyUniqueID],
@@ -380,7 +462,7 @@ open class MergePolicy: RSTRelationshipPreservingMergePolicy
                     }
                     
                     // Always update versions post-merging to make sure latestSupportedVersion is correct.
-                    try databaseObject.setVersions(appVersions)
+//                    try databaseObject.setVersions(appVersions)
                 }
                 catch
                 {
@@ -419,5 +501,11 @@ open class MergePolicy: RSTRelationshipPreservingMergePolicy
             default: break
             }
         }
+    }
+}
+
+extension MergePolicy{
+    class func getHeader(_ obj: AnyObject) -> String {
+        return obj.debugDescription.components(separatedBy: "; data:").first ?? ""
     }
 }

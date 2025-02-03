@@ -33,6 +33,9 @@ public extension Source
     #endif
 }
 
+
+
+
 public struct AppPermissionFeed: Codable {
     let type: String // ALTAppPermissionType
     let usageDescription: String
@@ -44,14 +47,32 @@ public struct AppPermissionFeed: Codable {
     }
 }
 
+// added in 0.6.0
+public struct AppReleaseTrack: Codable {
+    /* Properties */
+    let alpha:  [AppVersionFeed]
+    let beta:   [AppVersionFeed]
+    let stable: [AppVersionFeed]
+    
+    enum CodingKeys: String, CodingKey
+    {
+        // added in 0.6.0
+        case alpha
+        case beta
+        case stable
+    }
+}
+
 public struct AppVersionFeed: Codable {
     /* Properties */
     let version: String
     let date: Date
     let localizedDescription: String?
-    
     let downloadURL: URL
     let size: Int64
+    // added in 0.6.0
+    let sha256: String?     // sha 256 of the uploaded IPA
+    let revision: String?   // commit ID for now
     
     enum CodingKeys: String, CodingKey
     {
@@ -60,6 +81,9 @@ public struct AppVersionFeed: Codable {
         case localizedDescription
         case downloadURL
         case size
+        // added in 0.6.0
+        case sha256
+        case revision = "commitID"
     }
 }
 
@@ -76,84 +100,79 @@ public struct PlatformURLFeed: Codable {
     }
 }
 
-
 public struct StoreAppFeed: Codable {
+
     let name: String
     let bundleIdentifier: String
-    let subtitle: String?
-    
     let developerName: String
-    let localizedDescription: String
-    let size: Int64
-    
-    let iconURL: URL
-    let screenshotURLs: [URL]
-    
     let version: String
     let versionDate: Date
     let versionDescription: String?
-    let downloadURL: URL
-    let platformURLs: [PlatformURLFeed]?
-    
+    let size: Int64
+    let localizedDescription: String
+    let iconURL: URL
     let tintColor: String? // UIColor?
-    let isBeta: Bool
-    
-    //    let source: Source?
+    let downloadURL: URL
+    let sha256: String?
+    let screenshotURLs: [URL]
+    let releaseTrack: AppReleaseTrack
     let appPermission: [AppPermissionFeed]
-    let versions: [AppVersionFeed]
+
+//    let source: Source?
+    let subtitle: String?
+    let platformURLs: [PlatformURLFeed]?
     
     enum CodingKeys: String, CodingKey
     {
+        case name
         case bundleIdentifier
         case developerName
-        case downloadURL
-        case iconURL
-        case isBeta = "beta"
-        case localizedDescription
-        case name
-        case appPermission = "permissions"
-        case platformURLs
-        case screenshotURLs
-        case size
-        case subtitle
-        case tintColor
         case version
         case versionDate
         case versionDescription
-        case versions
+        case size
+        case localizedDescription
+        case iconURL
+        case tintColor
+        case downloadURL
+        case sha256
+        case screenshotURLs
+        case releaseTrack = "releaseChannels"
+        case appPermission = "permissions"
+
+        case subtitle
+        case platformURLs
     }
 }
 
 public struct NewsItemFeed: Codable {
-    let identifier: String
-    let date: Date
     
     let title: String
+    let identifier: String
     let caption: String
     let tintColor: String //UIColor
-    let notify: Bool
-    
-    let imageURL: URL?
     let externalURL: URL?
-    
+    let imageURL: URL?
+    let date: Date
+    let notify: Bool
     let appID: String?
     
     private enum CodingKeys: String, CodingKey
     {
-        case identifier
-        case date
         case title
+        case identifier
         case caption
         case tintColor
         case imageURL
         case externalURL = "url"
-        case appID
+        case date
         case notify
+        case appID
     }
 }
 
-
 public struct SourceJSON: Codable {
+    let version: Int?   // keep it optional(for coredata) until all users migrate to this version and remove it later
     let name: String
     let identifier: String
     let sourceURL: URL
@@ -163,6 +182,7 @@ public struct SourceJSON: Codable {
     
     enum CodingKeys: String, CodingKey
     {
+        case version
         case name
         case identifier
         case sourceURL
@@ -172,6 +192,10 @@ public struct SourceJSON: Codable {
     }
     
 }
+
+
+
+
 
 public extension Source
 {
@@ -194,10 +218,15 @@ public extension Source
     }
 }
 
+
+
+
+
 @objc(Source)
-public class Source: NSManagedObject, Fetchable, Decodable
+public class Source: BaseEntity, Decodable
 {
     /* Properties */
+    @NSManaged public var version: Int
     @NSManaged public var name: String
     @NSManaged public private(set) var identifier: String
     @NSManaged public var sourceURL: URL
@@ -253,6 +282,7 @@ public class Source: NSManagedObject, Fetchable, Decodable
     
     private enum CodingKeys: String, CodingKey
     {
+        case version
         case name
         case sourceURL
         case subtitle
@@ -287,6 +317,10 @@ public class Source: NSManagedObject, Fetchable, Decodable
             self.name = try container.decode(String.self, forKey: .name)
             
             // Optional Values
+            
+            // use sourceversion = 1 by default if not specified in source json
+            self.version = try container.decodeIfPresent(Int.self, forKey: .version) ?? 1
+            
             self.subtitle = try container.decodeIfPresent(String.self, forKey: .subtitle)
             self.websiteURL = try container.decodeIfPresent(URL.self, forKey: .websiteURL)
             self.localizedDescription = try container.decodeIfPresent(String.self, forKey: .localizedDescription)
@@ -306,7 +340,12 @@ public class Source: NSManagedObject, Fetchable, Decodable
             let userInfo = try container.decodeIfPresent([String: String].self, forKey: .userInfo)
             self.userInfo = userInfo?.reduce(into: [:]) { $0[ALTSourceUserInfoKey($1.key)] = $1.value }
             
-            let apps = try container.decodeIfPresent([StoreApp].self, forKey: .apps) ?? []
+            // get the "apps" object
+            let isApiV3: Bool = version > 2
+            let apps = isApiV3 ?
+                (try container.decodeIfPresent([StoreAppV2].self, forKey: .apps) ?? []) :
+                (try container.decodeIfPresent([StoreApp].self, forKey: .apps) ?? [])
+            
             let appsByID = Dictionary(apps.map { ($0.bundleIdentifier, $0) }, uniquingKeysWith: { (a, b) in return a })
             
             for (index, app) in apps.enumerated()
