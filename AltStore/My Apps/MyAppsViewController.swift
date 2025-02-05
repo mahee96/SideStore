@@ -327,14 +327,6 @@ private extension MyAppsViewController
             
             cell.deactivateBadge?.isHidden = false
             
-            // if the bundle's info.plist says we are one of beta, then show beta badge
-            if let trackString = try? BuildInfo(url: installedApp.fileURL).channel.rawValue,
-               let track = ReleaseTracks(stringValue: trackString),
-               ReleaseTracks.betaTracks.contains(track)
-            {
-               cell.bannerView.betaBadgeView?.isHidden = false
-            }
-            
             if let dropIndexPath = self.dropDestinationIndexPath, dropIndexPath.section == Section.activeApps.rawValue && dropIndexPath.item == indexPath.item
             {
                 cell.bannerView.alpha = 0.4

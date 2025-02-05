@@ -142,9 +142,26 @@ extension AppBannerView
                 guard let storeApp = (app as? StoreApp) ?? (app as? InstalledApp)?.storeApp else { return }
                 self.developerName = storeApp.developerName
                 
-                if let channel = storeApp.latestSupportedVersion?.channel,
+                var showBetaBadge = false
+                // installed App now includes BUILD_CHANNEL in its info.plist
+                // so if we have info there, we will use it, else we will default to latest AppVersion's channel
+                if let installedApp = app as? InstalledApp,
+                   let channel = try? BuildInfo(url: installedApp.fileURL).channel
+                {
+                    let track = ReleaseTracks(stringValue: channel.rawValue) ?? .unknown
+                    
+                    if (channel == .local || ReleaseTracks.betaTracks.contains(track))
+                    {
+                        showBetaBadge = true
+                    }
+                }
+                else if let channel  = storeApp.latestSupportedVersion?.channel,
                    ReleaseTracks.betaTracks.contains(channel)
                 {
+                    showBetaBadge = true
+                }
+                
+                if showBetaBadge {
                     self.name = String(format: NSLocalizedString("%@ beta", comment: ""), app.name)
                     self.isBeta = true
                 }
