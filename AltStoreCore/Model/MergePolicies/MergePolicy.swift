@@ -436,27 +436,32 @@ extension MergePolicy{
 //                        }
                         
                         // Screenshots
-                        if let sortedScreenshotIDs = sortedScreenshotIDsByGlobalAppID[globallyUniqueID],
-                           let sortedScreenshotIDsArray = sortedScreenshotIDs.array as? [String],
-                           case let databaseScreenshotIDs = databaseObject.screenshots.map({ $0.screenshotID }),
-                           databaseScreenshotIDs != sortedScreenshotIDsArray
+                        if let existingApp = conflict.databaseObject as? StoreApp,
+                           !StoreApp.isPlaceHolderStoreApp(existingApp)
                         {
-                            // Screenshot order is incorrect, so attempt to fix by re-sorting.
-                            let fixedScreenshots = databaseObject.screenshots.sorted { (screenshotA, screenshotB) in
-                                let indexA = sortedScreenshotIDs.index(of: screenshotA.screenshotID)
-                                let indexB = sortedScreenshotIDs.index(of: screenshotB.screenshotID)
-                                return indexA < indexB
-                            }
-                            
-                            let appScreenshotIDs = fixedScreenshots.map { $0.screenshotID }
-                            if appScreenshotIDs == sortedScreenshotIDsArray
+                            // process for screenshots ordering fix
+                            if let sortedScreenshotIDs = sortedScreenshotIDsByGlobalAppID[globallyUniqueID],
+                               let sortedScreenshotIDsArray = sortedScreenshotIDs.array as? [String],
+                               case let databaseScreenshotIDs = databaseObject.screenshots.map({ $0.screenshotID }),
+                               databaseScreenshotIDs != sortedScreenshotIDsArray
                             {
-                                databaseObject.setScreenshots(fixedScreenshots)
-                            }
-                            else
-                            {
-                                // Screenshots are still not in correct order, but not worth throwing error so ignore.
-                                print("Failed to re-sort screenshots into correct order. Expected:", sortedScreenshotIDsArray)
+                                // Screenshot order is incorrect, so attempt to fix by re-sorting.
+                                let fixedScreenshots = databaseObject.screenshots.sorted { (screenshotA, screenshotB) in
+                                    let indexA = sortedScreenshotIDs.index(of: screenshotA.screenshotID)
+                                    let indexB = sortedScreenshotIDs.index(of: screenshotB.screenshotID)
+                                    return indexA < indexB
+                                }
+                                
+                                let appScreenshotIDs = fixedScreenshots.map { $0.screenshotID }
+                                if appScreenshotIDs == sortedScreenshotIDsArray
+                                {
+                                    databaseObject.setScreenshots(fixedScreenshots)
+                                }
+                                else
+                                {
+                                    // Screenshots are still not in correct order, but not worth throwing error so ignore.
+                                    print("Failed to re-sort screenshots into correct order. Expected:", sortedScreenshotIDsArray)
+                                }
                             }
                         }
                     }

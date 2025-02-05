@@ -112,24 +112,15 @@ public class StoreAppV2: StoreApp {
         do
         {
             let container = try decoder.container(keyedBy: CodingKeys.self)
+            
             self.sha256 = try container.decodeIfPresent(String.self, forKey: .sha256)
             
             //TODO: V2 sources are required to define channel, hence update from decodeIfPresent() to decode()
             self._channel = try container.decodeIfPresent(String.self, forKey: .channel)
             self.revision = try container.decodeIfPresent(String.self, forKey: .revision)
             
-            // Decode and set releaseTracks (Mandatory for v2 StoreApp)
-            let releaseTracks = try container.decode([ReleaseTrack].self, forKey: .releaseTracks)
-            self._releaseTracks = NSOrderedSet(array: releaseTracks)
-            
-            try super.decode(from: decoder)     // Now call parent's decode logic to handle its own properties
-
-            if versions.isEmpty {
-                let sha256 = try container.decodeIfPresent(String.self, forKey: .sha256)
-                let newRelease = try super.createNewAppVersion(decoder: decoder)
-                                           .mutateForData(sha256: sha256, appBundleID: self.bundleIdentifier)
-                try self.setVersions([newRelease])                              // update and persist this placeholder release
-            }
+            // process parent props
+            try self.decode(from: decoder)
         }
         catch
         {
@@ -140,6 +131,24 @@ public class StoreAppV2: StoreApp {
             
             throw error
         }
+    }
+    
+    override func decodeVersions(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        // Decode and set releaseTracks (Mandatory for v2 StoreApp)
+        let releaseTracks = try container.decode([ReleaseTrack].self, forKey: .releaseTracks)
+        self._releaseTracks = NSOrderedSet(array: releaseTracks)
+        
+        var versions = self.versions
+        if versions.isEmpty {
+            let sha256 = try container.decodeIfPresent(String.self, forKey: .sha256)
+            let newRelease = try super.createNewAppVersion(decoder: decoder)
+                                       .mutateForData(sha256: sha256, appBundleID: self.bundleIdentifier)
+            versions = [newRelease]
+        }
+        
+        try self.setVersions(versions)      // update and persist
     }
 }
 

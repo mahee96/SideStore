@@ -325,6 +325,11 @@ public class StoreApp: BaseEntity, Decodable
     }
     
     internal func decode(from decoder: Decoder) throws {
+        try self.decodeVersions(from: decoder)  // pre-req for downloadURL procesing
+        try self.decodeProps(from: decoder)
+    }
+    
+    private func decodeProps(from decoder: Decoder) throws {
         guard let context = decoder.managedObjectContext else { preconditionFailure("Decoder must have non-nil NSManagedObjectContext.") }
 
         do
@@ -338,15 +343,7 @@ public class StoreApp: BaseEntity, Decodable
             self.iconURL = try container.decode(URL.self, forKey: .iconURL)
             
             self.subtitle = try container.decodeIfPresent(String.self, forKey: .subtitle)
-            
-            // since decode essentially inserts an entry into insertedObjects of context and scheduling them for persistence,
-            // we will decode only once
-            let appVersions = try container.decodeIfPresent([AppVersion].self, forKey: .versions)
-            if versions.isEmpty, let appVersions
-            {
-                self._versions = NSOrderedSet(array: appVersions)
-            }
-           
+                       
             let platformURLs = try container.decodeIfPresent(PlatformURLs.self.self, forKey: .platformURLs)
             if let platformURLs = platformURLs {
                 self.platformURLs = platformURLs
@@ -366,9 +363,8 @@ public class StoreApp: BaseEntity, Decodable
 
                 guard let downloadURL = versions.first(where: { $0.version == version })?.downloadURL ?? versions.first?.downloadURL else
                 {
-                        throw error 
+                    throw error
                 }
-
 
                 self._downloadURL = downloadURL
             }
@@ -429,60 +425,7 @@ public class StoreApp: BaseEntity, Decodable
             {
                 self._permissions = NSSet()
             }
-            
-            if !versions.isEmpty
-            {
-                //TODO: Throw error if there isn't at least one version.
-                if (versions.count == 0){
-                    throw DecodingError.dataCorruptedError(forKey: .versions, in: container, debugDescription: "At least one version is required in key: versions")
-                }
-
-                for (index, version) in zip(0..., versions)
-                {
-                    version.appBundleID = self.bundleIdentifier
-
-                    if self.marketplaceID != nil
-                    {
-                        struct IndexCodingKey: CodingKey
-                        {
-                            var stringValue: String { self.intValue?.description ?? "" }
-                            var intValue: Int?
-
-                            init?(stringValue: String)
-                            {
-                                fatalError()
-                            }
-
-                            init(intValue: Int)
-                            {
-                                self.intValue = intValue
-                            }
-                        }
-
-                        // Marketplace apps must provide build version.
-                        guard version.buildVersion != nil else {
-                            let codingPath = container.codingPath + [CodingKeys.versions as CodingKey] + [IndexCodingKey(intValue: index) as CodingKey]
-                            let context = DecodingError.Context(codingPath: codingPath, debugDescription: "Notarized apps must provide a build version.")
-                            throw DecodingError.keyNotFound(AppVersion.CodingKeys.buildVersion, context)
-                        }
-                    }
-
-                }
-                
-                try self.setVersions(versions)
-            }
-            else
-            {
-                // TODO: Think of a way to deal propagate this isBeta as a track/channelName into the created AppVersion
-//                // special case: AltStore sources supports 'isBeta' in the StoreApp so we have it for backward compatibility
-//                let isBeta = try container.decodeIfPresent(Bool.self, forKey: .isBeta) ?? false
-//                if isBeta{
-//                    self.channel = .beta
-//                }
-                
-                let appVersion = try createNewAppVersion(decoder: decoder)
-                try self.setVersions([appVersion])
-            }
+                        
             // Required for Marketplace apps, but we'll verify later.
             self.marketplaceID = try container.decodeIfPresent(String.self, forKey: .marketplaceID)
 
@@ -532,6 +475,54 @@ public class StoreApp: BaseEntity, Decodable
         }
     }
     
+    internal func decodeVersions(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+      
+        // since decode essentially inserts an entry into insertedObjects of context and scheduling them for persistence,
+        // we will decode only once
+        guard let versions = try container.decodeIfPresent([AppVersion].self, forKey: .versions),
+            !versions.isEmpty else
+        {
+            // create one from the storeApp description and use it as current
+            let appVersion = try createNewAppVersion(decoder: decoder)
+            try self.setVersions([appVersion])
+            return
+        }
+        
+        for (index, version) in zip(0..., versions)
+        {
+            version.appBundleID = self.bundleIdentifier
+
+            if self.marketplaceID != nil
+            {
+                struct IndexCodingKey: CodingKey
+                {
+                    var stringValue: String { self.intValue?.description ?? "" }
+                    var intValue: Int?
+
+                    init?(stringValue: String)
+                    {
+                        fatalError()
+                    }
+
+                    init(intValue: Int)
+                    {
+                        self.intValue = intValue
+                    }
+                }
+
+                // Marketplace apps must provide build version.
+                guard version.buildVersion != nil else {
+                    let codingPath = container.codingPath + [CodingKeys.versions as CodingKey] + [IndexCodingKey(intValue: index) as CodingKey]
+                    let context = DecodingError.Context(codingPath: codingPath, debugDescription: "Notarized apps must provide a build version.")
+                    throw DecodingError.keyNotFound(AppVersion.CodingKeys.buildVersion, context)
+                }
+            }
+
+        }
+        
+        try self.setVersions(versions)
+    }
     
     public override func awakeFromInsert()
     {
