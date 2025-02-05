@@ -130,7 +130,7 @@ public extension UserDefaults
             #keyPath(UserDefaults.isExportResignedAppEnabled): false,
             #keyPath(UserDefaults.isDebugModeEnabled): false,
             #keyPath(UserDefaults.isVerboseOperationsLoggingEnabled): false,
-            #keyPath(UserDefaults.isMinimuxerConsoleLoggingEnabled): true, // minimuxer logging is enabled by default as before
+            #keyPath(UserDefaults.isMinimuxerConsoleLoggingEnabled): false, // minimuxer logging is disabled by default for console loggin
             #keyPath(UserDefaults.recreateDatabaseOnNextStart): false, // setting this will ensure DB is deleted and initialized fresh on next start
             #keyPath(UserDefaults.isBackgroundRefreshEnabled): true,
             #keyPath(UserDefaults.isIdleTimeoutDisableEnabled): true,
