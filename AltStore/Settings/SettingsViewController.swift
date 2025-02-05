@@ -282,7 +282,13 @@ private extension SettingsViewController
         
         var versionLabel: String = ""
         
-        if let installedApp = InstalledApp.fetchAltStore(in: DatabaseManager.shared.viewContext)
+        if let version = buildInfo.marketing_version
+        {
+            var version = "\(version) \(getXcodeVersion())"
+            
+            versionLabel = NSLocalizedString(String(format: "Version %@", version), comment: "SideStore Version")
+        }
+        else if let installedApp = InstalledApp.fetchAltStore(in: DatabaseManager.shared.viewContext)
         {
             let isStableBuild = (buildInfo.channel == .stable)
             let revision = buildInfo.revision ?? ""
@@ -296,14 +302,6 @@ private extension SettingsViewController
             }
             
             versionLabel = NSLocalizedString(String(format: "Version %@", localizedVersion), comment: "SideStore Version")
-        }
-        else if let version = buildInfo.marketing_version
-        {
-            var version = "SideStore \(version)"
-            
-            version += getXcodeVersion()
-            
-            versionLabel = NSLocalizedString(String(format: "Version %@", version), comment: "SideStore Version")
         }
         else
         {
