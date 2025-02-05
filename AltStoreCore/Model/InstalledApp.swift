@@ -170,7 +170,10 @@ public class InstalledApp: BaseEntity, InstalledAppProtocol
             return isIncomingValid // No installed revision is valid case
         }
         
-        let isInstalledValid = installedRevision.isEmpty || installedRevision.count == shortCommitLen
+        let isInstalledValid = installedRevision.isEmpty ||
+                               installedRevision.count == shortCommitLen ||
+                               installedRevision == ReleaseTracks.local.stringValue
+        
         return isIncomingValid && isInstalledValid && revision != installedRevision
     }
     
