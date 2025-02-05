@@ -229,9 +229,10 @@ extension MergePolicy{
             if let existingApp = conflict.databaseObject as? StoreApp,
                let incomingApp = conflict.conflictingObjects.first as? StoreApp,
                // if the entities are not matching, but existing is a placeholder, then delete the placeholder
-               type(of: existingApp) != type(of: incomingApp) && StoreApp.isPlaceHolderStoreApp(existingApp)
+               type(of: existingApp) != type(of: incomingApp)
             {
-                print("Delting placeholder store app to resolve conflict")
+                print("Delting existing \(type(of: existingApp)) in db to resolve conflict. " + 
+                      "Incoming \(type(of: incomingApp)) will be saved in its place")
                 existingApp.managedObjectContext?.delete(existingApp)
             }
         }
