@@ -227,7 +227,7 @@ jobs:
       - name: Check if PUBLISH_BETA_UPDATES is set
         id: check_publish
         run: |
-          if [[ "${{ env.PUBLISH_BETA_UPDATES }}" != "__YES__" ]]; then
+          if [[ "${{ vars.PUBLISH_BETA_UPDATES }}" != "__YES__" ]]; then
             echo "PUBLISH_BETA_UPDATES is not set. Skipping deployment."
             exit 1  # Exit with 1 to indicate no deployment
           else
