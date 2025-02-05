@@ -145,8 +145,7 @@ public class InstalledApp: BaseEntity, InstalledAppProtocol
         
         // Check beta updates if enabled
         if UserDefaults.standard.isBetaUpdatesEnabled,
-           let versionTrack = latestVersion.releaseTrack?.track,
-           ReleaseTracks.betaTracks.map({$0.stringValue}).contains(versionTrack),
+           ReleaseTracks.betaTracks.contains(latestVersion.channel),
            latestSemVer == currentSemVer
         {
             // Special handling for SideStore app

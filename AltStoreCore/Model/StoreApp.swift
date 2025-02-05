@@ -162,16 +162,15 @@ extension StoreApp {
     //MARK: - relationships
     @NSManaged @objc(releaseTracks) private(set) var _releaseTracks: NSOrderedSet?
     
-    public var releaseTracks: [ReleaseTrack]?{
+    private var releaseTracks: [ReleaseTrack]?{
         return _releaseTracks?.array as? [ReleaseTrack]
     }
-    
     
     private func releaseTrackFor(track: String) -> ReleaseTrack? {
         return releaseTracks?.first(where: { $0.track == track })
     }
     
-    private func stableTrack() -> ReleaseTrack? {
+    private var stableTrack: ReleaseTrack? {
         releaseTrackFor(track: ReleaseTracks.stable.stringValue)
     }
     
@@ -185,7 +184,7 @@ extension StoreApp {
 
             // Ensure both beta and stable releases are found and supported
             if let latestBeta = betaReleases?.first(where: { $0.isSupported }),
-               let latestStable = stableTrack()?.releases?.first(where: { $0.isSupported }),
+               let latestStable = stableTrack?.releases?.first(where: { $0.isSupported }),
                let stableSemVer = SemanticVersion(latestStable.version),
                let betaSemVer = SemanticVersion(latestBeta.version),
                betaSemVer >= stableSemVer
@@ -202,11 +201,6 @@ extension StoreApp {
         return betaReleases ?? releases?.releases?.compactMap { $0 }
     }
 }
-
-
-
-
-
 
 
 @objc(StoreApp)
@@ -237,8 +231,6 @@ public class StoreApp: BaseEntity, Decodable
 
     @NSManaged public private(set) var tintColor: UIColor?
 
-    @NSManaged @objc(channel) var _channel: String?
-    
     // Required for Marketplace apps.
     @NSManaged public private(set) var marketplaceID: String?
 
@@ -318,16 +310,6 @@ public class StoreApp: BaseEntity, Decodable
         }
     }
 
-//    public var channel: ReleaseTracks {
-//        get{
-//            ReleaseTracks.channel(for: self._channel)
-//        }
-//        set {
-//            self._channel = newValue.rawValue
-//        }
-//    }
-
-    
     @nonobjc public var permissions: Set<AppPermission> {
         return self._permissions as! Set<AppPermission>
     }
@@ -384,14 +366,14 @@ public class StoreApp: BaseEntity, Decodable
         case patreon
         case category
         
-        case channel
-        
         // Legacy
         case version
         case versionDescription
         case versionDate
         case downloadURL
         case screenshotURLs
+        
+        // backward compatibility for altstore source format
         case isBeta = "beta"
         
         // v2 source format
@@ -418,7 +400,6 @@ public class StoreApp: BaseEntity, Decodable
             let container = try decoder.container(keyedBy: CodingKeys.self)
             
             self.sha256 = try container.decodeIfPresent(String.self, forKey: .sha256)
-            self._channel = try container.decodeIfPresent(String.self, forKey: .channel)
             self.revision = try container.decodeIfPresent(String.self, forKey: .revision)
             
             self.name = try container.decode(String.self, forKey: .name)
@@ -512,7 +493,7 @@ public class StoreApp: BaseEntity, Decodable
             {
                 self._permissions = NSSet()
             }
-                        
+
             // Required for Marketplace apps, but we'll verify later.
             self.marketplaceID = try container.decodeIfPresent(String.self, forKey: .marketplaceID)
 
@@ -565,12 +546,14 @@ public class StoreApp: BaseEntity, Decodable
     private func decodeVersions(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
       
-        // TODO: restrict release tracks decoding strictly to v2 sources by getting apiVersion from Source entity
         if let releaseTracks = try container.decodeIfPresent([ReleaseTrack].self, forKey: .releaseTracks){
             self._releaseTracks = NSOrderedSet(array: releaseTracks)
         }
         
-        var versions = getReleases(default: stableTrack()) ?? []
+        // get channel info if present, else default to stable
+        var channel = ReleaseTracks.stable.stringValue
+
+        var versions = getReleases(default: stableTrack) ?? []
         if versions.isEmpty {
             if let appVersions = try container.decodeIfPresent([AppVersion].self, forKey: .versions)
             {
@@ -579,10 +562,19 @@ public class StoreApp: BaseEntity, Decodable
             else
             {
                 let sha256 = try container.decodeIfPresent(String.self, forKey: .sha256)
-
+                
+                if try container.decodeIfPresent(Bool.self, forKey: .isBeta) ?? false
+                {
+                    channel = ReleaseTracks.beta.stringValue
+                }
+                
                 // create one from the storeApp description and use it as current
                 let newRelease = try createNewAppVersion(decoder: decoder)
-                                       .mutateForData(sha256: sha256, appBundleID: self.bundleIdentifier)
+                                        .mutateForData(
+                                            channel: channel,
+                                            sha256: sha256,
+                                            appBundleID: self.bundleIdentifier
+                                        )
 
                 versions = [newRelease]
             }
@@ -591,6 +583,11 @@ public class StoreApp: BaseEntity, Decodable
         for (index, version) in zip(0..., versions)
         {
             version.appBundleID = self.bundleIdentifier
+            
+            // ignore setting, if it was already updated by ReleaseTracks in V2 sources
+            if version._channel == nil {
+                _ = version.mutateForData(channel: channel)
+            }
 
             if self.marketplaceID != nil
             {
@@ -818,6 +815,13 @@ public extension StoreApp
     
     class func makeAltStoreApp(version: String, buildVersion: String?, in context: NSManagedObjectContext) -> StoreApp
     {
+        let placeholderVersion = "0.0.0"
+        let placeholderDate = Date.distantPast
+        let placeholderChannel = ReleaseTracks.stable.stringValue      // placeholder is always assumed to be from stable channel
+        let placeholderSize: Int32 = 0
+        let placeholderAppID = StoreApp.altstoreAppID
+        let placeholderDownloadURL = URL(string: "https://sidestore.io")!
+        
         let app = Self.createStoreApp(in: context)
         app.name = "SideStore"
         app.bundleIdentifier = StoreApp.altstoreAppID
@@ -825,19 +829,20 @@ public extension StoreApp
         app.localizedDescription = "SideStore is an alternative App Store."
         app.iconURL = URL(string: "https://user-images.githubusercontent.com/705880/63392210-540c5980-c37b-11e9-968c-8742fc68ab2e.png")!
         app.screenshotURLs = []
-        app._channel = ReleaseTracks.stable.rawValue
 
-        app._version = "0.0.0"
-        app._versionDate = Date.distantPast
+        app._version = placeholderVersion
+        app._versionDate = placeholderDate
+        app._downloadURL = placeholderDownloadURL
+        app._size = placeholderSize
         
-        var appVersion = AppVersion.makeAppVersion(version: "0.0.0",
-                                                   buildVersion: nil,
-                                                   date: Date.distantPast,
+        var appVersion = AppVersion.makeAppVersion(version: app._version,
+                                                   channel: placeholderChannel,
+                                                   date: app._versionDate,
 //                                                   date: Date(timeIntervalSinceReferenceDate: 0),
 //                                                   date: Date(timeIntervalSince1970: 0),
-                                                   downloadURL: URL(string: "https://sidestore.io")!,
-                                                   size: 0,
-                                                   appBundleID: StoreApp.altstoreAppID,
+                                                   downloadURL: app._downloadURL,
+                                                   size: Int64(app._size),
+                                                   appBundleID: app.bundleIdentifier,
                                                    in: context)
         // update in sublasses if required
         appVersion = app.placeholderAppVersion(appVersion: appVersion, in: context)

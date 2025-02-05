@@ -94,6 +94,9 @@ public extension UserDefaults
     @NSManaged var permissionCheckingDisabled: Bool
     @NSManaged var responseCachingDisabled: Bool
     
+    // Default track for beta updates when beta-updates are enabled
+    static let defaultBetaUpdatesTrack: String = ReleaseTracks.beta.rawValue
+    
     class func registerDefaults()
     {
         let ios13_5 = OperatingSystemVersion(majorVersion: 13, minorVersion: 5, patchVersion: 0)
@@ -144,7 +147,7 @@ public extension UserDefaults
             #keyPath(UserDefaults.isCowExploitSupported): isMacDirtyCowSupported,
             #keyPath(UserDefaults.permissionCheckingDisabled): permissionCheckingDisabled,
             #keyPath(UserDefaults._preferredAppSorting): preferredAppSorting.rawValue,
-            #keyPath(UserDefaults.betaUdpatesTrack): ReleaseTracks.beta.rawValue,
+            #keyPath(UserDefaults.betaUdpatesTrack): defaultBetaUpdatesTrack,
         ] as [String: Any]
         
         UserDefaults.standard.register(defaults: defaults)

@@ -136,27 +136,35 @@ private extension VerifyAppOperation
             }
         }
         
-        // if not beta but version matches, then accept it, else compare revisions between source and downloaded
         if version != app.version {
             throw VerificationError.mismatchedVersion(version: app.version, expectedVersion: version, app: app)
         }
 
-        // if app is SideStore, we validate it against build revision too
-        guard app.bundleIdentifier == ALTApplication.altstoreBundleID,
-              appVersion.channel == .beta else {
-            return
-        }
-        
-        let downloadedIpaRevision = (try? BuildInfo(url: app.fileURL).revision) ?? "nil"
-        let sourceJsonIpaRevision = appVersion.revision
-        // beta feature
-        if (appVersion.channel == .beta && downloadedIpaRevision != sourceJsonIpaRevision) {
-            let sourceJsonIpaRevision = sourceJsonIpaRevision ?? "nil"
-            throw VerificationError.mismatchedVersion(version: app.version,
-                                                      revision: downloadedIpaRevision,
-                                                      expectedVersion: version,
-                                                      expectedRevision: sourceJsonIpaRevision,
-                                                      app: app)
+        // V2 sources and above (only) feature (compares build revision for sideStore if on beta track)
+        if let source = appVersion.storeApp?.source,
+           source.isSourceAtLeastV2
+        {
+            let isBeta = ReleaseTracks.betaTracks.contains(appVersion.channel)
+            
+            // if app is SideStore, we validate it against build revision too
+            guard isBeta, app.bundleIdentifier == ALTApplication.altstoreBundleID else
+            {
+                return
+            }
+            
+            let downloadedIpaRevision = try? BuildInfo(url: app.fileURL).revision
+            let sourceJsonIpaRevision = appVersion.revision
+            
+            if downloadedIpaRevision != sourceJsonIpaRevision {
+                
+                let sourceJsonIpaRevision = sourceJsonIpaRevision.map { $0.isEmpty ? "nil" : $0 } ?? "nil"
+                let downloadedIpaRevision = downloadedIpaRevision.map { $0.isEmpty ? "nil" : $0 } ?? "nil"
+                throw VerificationError.mismatchedVersion(version: app.version,
+                                                          revision: downloadedIpaRevision,
+                                                          expectedVersion: version,
+                                                          expectedRevision: sourceJsonIpaRevision,
+                                                          app: app)
+            }
         }
     }
     

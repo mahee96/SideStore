@@ -49,6 +49,8 @@ public class AppVersion: BaseEntity, Decodable
    
     @NSManaged public private(set) var revision: String?
     @NSManaged public var releaseTrack: ReleaseTrack?
+    
+    @NSManaged @objc(channel) private(set) var _channel: String?
 
     /* Relationships */
     @NSManaged @objc(app) private(set) var _app: StoreApp?
@@ -60,7 +62,7 @@ public class AppVersion: BaseEntity, Decodable
     }
 
     public var channel: ReleaseTracks {
-        ReleaseTracks(stringValue: releaseTrack?.track ?? "") ?? .unknown
+        ReleaseTracks(stringValue: releaseTrack?.track ?? _channel ?? "") ?? .unknown
     }
     
     private override init(entity: NSEntityDescription, insertInto context: NSManagedObjectContext?)
@@ -150,7 +152,8 @@ public extension AppVersion
     // create once and use mutateForData() to update it if required
     class func makeAppVersion(
         version: String,
-        buildVersion: String?,
+        buildVersion: String? = nil,
+        channel: String? = nil,
         date: Date,
         localizedDescription: String? = nil,
         downloadURL: URL,
@@ -164,6 +167,7 @@ public extension AppVersion
         let appVersion = AppVersion(context: context)
         appVersion.version = version
         appVersion.buildVersion = buildVersion
+        appVersion._channel = channel
         appVersion.date = date
         appVersion.localizedDescription = localizedDescription
         appVersion.downloadURL = downloadURL
@@ -179,6 +183,7 @@ public extension AppVersion
     // update with new values
     func mutateForData(
         version: String? = nil,
+        channel: String? = nil,
         buildVersion: String? = nil,
         date: Date? = nil,
         localizedDescription: String? = nil,
@@ -191,6 +196,7 @@ public extension AppVersion
     {
         // use overriding incoming params if present else retain existing
         self.version = version ?? self.version
+        self._channel = channel ?? self._channel
         self.buildVersion = buildVersion ?? self.buildVersion
         self.date = date ?? self.date
         self.localizedDescription = localizedDescription ?? self.localizedDescription

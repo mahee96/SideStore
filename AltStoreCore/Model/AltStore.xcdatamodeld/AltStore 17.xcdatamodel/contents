@@ -62,6 +62,7 @@
     <entity name="AppVersion" representedClassName="AppVersion" syncable="YES">
         <attribute name="appBundleID" attributeType="String"/>
         <attribute name="buildVersion" optional="YES" attributeType="String"/>
+        <attribute name="channel" optional="YES" attributeType="String"/>
         <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="downloadURL" attributeType="URI"/>
         <attribute name="localizedDescription" optional="YES" attributeType="String"/>
@@ -255,7 +256,6 @@
     <entity name="StoreApp" representedClassName="StoreApp" syncable="YES">
         <attribute name="bundleIdentifier" attributeType="String"/>
         <attribute name="category" optional="YES" attributeType="String"/>
-        <attribute name="channel" optional="YES" attributeType="String"/>
         <attribute name="developerName" attributeType="String"/>
         <attribute name="downloadURL" attributeType="URI"/>
         <attribute name="featuredSortID" optional="YES" attributeType="String"/>

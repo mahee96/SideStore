@@ -87,7 +87,9 @@ public extension ReleaseTrack{
                 {
                     return
                 }
-                version.appBundleID = storeApp.bundleIdentifier
+                
+                // update it into the appVersion
+                _ = version.mutateForData(channel: track, appBundleID: storeApp.bundleIdentifier)
             }
     }
     

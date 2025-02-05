@@ -135,10 +135,6 @@ final class SettingsViewController: UITableViewController
     private static var exportDBInProgress = false
     private static var deleteDBInProgress = false
     
-    // Default track for beta updates when beta-updates are enabled
-    private static let defaultBetaUpdatesTrack: String = ReleaseTracks.beta.rawValue
-    
-    
     required init?(coder aDecoder: NSCoder)
     {
         super.init(coder: aDecoder)
@@ -155,7 +151,7 @@ final class SettingsViewController: UITableViewController
     }
     
     private func updateReleaseChannelButtonTitle() {
-        let channel = UserDefaults.standard.betaUdpatesTrack ?? Self.defaultBetaUpdatesTrack
+        let channel = UserDefaults.standard.betaUdpatesTrack ?? UserDefaults.defaultBetaUpdatesTrack
         betaTrackPopupButton.setTitle(channel, for: .normal)
     }
     

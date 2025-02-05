@@ -219,7 +219,9 @@ public extension Source
 }
 
 
-
+extension CodingUserInfoKey {
+    static let sourceVersion = CodingUserInfoKey(rawValue: "sourceVersion")!
+}
 
 
 @objc(Source)
@@ -346,9 +348,6 @@ public class Source: BaseEntity, Decodable
             let userInfo = try container.decodeIfPresent([String: String].self, forKey: .userInfo)
             self.userInfo = userInfo?.reduce(into: [:]) { $0[ALTSourceUserInfoKey($1.key)] = $1.value }
             
-            // get the "apps" object
-//            let isApiV2: Bool = version >= 2
-//            let apps = isApiV2 ?
             let apps = try container.decodeIfPresent([StoreApp].self, forKey: .apps) ?? []
             
             let appsByID = Dictionary(apps.map { ($0.bundleIdentifier, $0) }, uniquingKeysWith: { (a, b) in return a })
