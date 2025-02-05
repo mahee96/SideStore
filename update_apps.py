@@ -116,9 +116,8 @@ for app in data.get("apps", []):
         if len(tracks) > 1:
             print(f"Multiple tracks with same `track` name = ${RELEASE_CHANNEL} are not allowed!")
             sys.exit(1)
-
-        track = tracks[0]   # first result is the track
-        if not track:
+            
+        if not tracks:
             # there was no entries in this release channel so create one
             track = {
                 "track": RELEASE_CHANNEL,
@@ -126,6 +125,7 @@ for app in data.get("apps", []):
             }
             channels.insert(0, track)
         else:
+            track = tracks[0]   # first result is the selected track
             # Update the existing TOP version object entry
             track["releases"][0] = new_version
 
