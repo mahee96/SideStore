@@ -40,21 +40,34 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .nightly-build-num
-          key: nightly-build-num
+          key: nightly-build-num-${{ hashFiles('.nightly-build-num') }}
+          restore-keys: nightly-build-num-
 
+      - name: Rename cache to .nightly-build-num 
+        run: mv nightly-build-num-* .nightly-build-num || true
+    
       - name: Get version
         id: version-marketing
-        run: echo "VERSION_IPA=$(grep MARKETING_VERSION Build.xcconfig | sed -e "s/MARKETING_VERSION = //g")" >> $GITHUB_ENV
+        run: |
+          echo "VERSION_IPA=$(grep MARKETING_VERSION Build.xcconfig | sed -e "s/MARKETING_VERSION = //g")" >> $GITHUB_ENV
+    
+      - name: Echo Build.xcconfig, .nightly-build-num
+        run: |
+          cat Build.xcconfig
+          [ -f .nightly-build-num ] && cat .nightly-build-num || echo ".nightly-build-num not found"
 
       - name: Increase nightly build number and set as version
         run: bash .github/workflows/increase-nightly-build-num.sh
 
-      - name: Get version
+      - name: Refetch MARKETING_VERSION from Build.xcconfig again
         id: version
-        run: echo "version=$(grep MARKETING_VERSION Build.xcconfig | sed -e "s/MARKETING_VERSION = //g")" >> $GITHUB_OUTPUT
-
-      - name: Echo version
-        run: echo "${{ steps.version.outputs.version }}"
+        run: |
+          echo "version=$(grep MARKETING_VERSION Build.xcconfig | sed -e "s/MARKETING_VERSION = //g")" >> $GITHUB_OUTPUT
+  
+      - name: Echo Build.xcconfig, .nightly-build-num
+        run: |
+          cat Build.xcconfig
+          cat .nightly-build-num
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1.6.0
