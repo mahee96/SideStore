@@ -138,11 +138,7 @@ extension AppBannerView
             init(app: AppProtocol)
             {
                 self.name = app.name
-                
-                guard let storeApp = (app as? StoreApp) ?? (app as? InstalledApp)?.storeApp else { return }
-                self.developerName = storeApp.developerName
-                
-                var showBetaBadge = false
+                                
                 // installed App now includes BUILD_CHANNEL in its info.plist
                 // so if we have info there, we will use it, else we will default to latest AppVersion's channel
                 if let installedApp = app as? InstalledApp,
@@ -152,16 +148,20 @@ extension AppBannerView
                     
                     if (channel == .local || ReleaseTracks.betaTracks.contains(track))
                     {
-                        showBetaBadge = true
+                        self.name = String(format: NSLocalizedString("%@ beta", comment: ""), app.name)
+                        self.isBeta = true
                     }
                 }
-                else if let channel  = storeApp.latestSupportedVersion?.channel,
-                   ReleaseTracks.betaTracks.contains(channel)
-                {
-                    showBetaBadge = true
+                
+                guard let storeApp = (app as? StoreApp) ?? (app as? InstalledApp)?.storeApp else {
+                    return
                 }
                 
-                if showBetaBadge {
+                self.developerName = storeApp.developerName
+
+                if !self.isBeta, let channel  = storeApp.latestSupportedVersion?.channel,
+                   ReleaseTracks.betaTracks.contains(channel)
+                {
                     self.name = String(format: NSLocalizedString("%@ beta", comment: ""), app.name)
                     self.isBeta = true
                 }
