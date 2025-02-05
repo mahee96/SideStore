@@ -111,7 +111,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         
         UserDefaults.standard.preferredServerID = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.serverID) as? String
         
-        #if DEBUG && (targetEnvironment(simulator) || BETA)
+        #if DEBUG && targetEnvironment(simulator)
         UserDefaults.standard.isDebugModeEnabled = true
         #endif
         
