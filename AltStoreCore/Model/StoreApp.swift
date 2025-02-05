@@ -813,6 +813,22 @@ public extension StoreApp
     }    
     
     
+    private class func appIconURL() -> URL {
+        let iconNames = [
+            "AppIcon76x76@2x~ipad",
+            "AppIcon60x60@2x",
+            "AppIcon"
+        ]
+        
+        for iconName in iconNames {
+            if let path = Bundle.main.path(forResource: iconName, ofType: "png") {
+                return URL(fileURLWithPath: path)
+            }
+        }
+        
+        return URL(string: "https://sidestore.io/apps-v2.json/apps/sidestore/icon.png")!
+    }
+    
     class func makeAltStoreApp(version: String, buildVersion: String?, in context: NSManagedObjectContext) -> StoreApp
     {
         let placeholderVersion = "0.0.0"
@@ -823,13 +839,13 @@ public extension StoreApp
         let placeholderDownloadURL = URL(string: "https://sidestore.io")!
         
         let app = Self.createStoreApp(in: context)
+        app.iconURL = appIconURL()
         app.name = "SideStore"
-        app.bundleIdentifier = StoreApp.altstoreAppID
         app.developerName = "Side Team"
         app.localizedDescription = "SideStore is an alternative App Store."
-        app.iconURL = URL(string: "https://user-images.githubusercontent.com/705880/63392210-540c5980-c37b-11e9-968c-8742fc68ab2e.png")!
         app.screenshotURLs = []
 
+        app.bundleIdentifier = placeholderAppID
         app._version = placeholderVersion
         app._versionDate = placeholderDate
         app._downloadURL = placeholderDownloadURL
