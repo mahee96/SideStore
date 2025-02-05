@@ -16,15 +16,6 @@ public class BuildInfo{
     private static let XCODE_VERSION_TAG  = "DTXcode"
     private static let XCODE_REVISION_TAG = "DTXcodeBuild"
 
-    public enum Channel: String {
-        case unknown
-        case local          // xcodebuilds can use this by setting BUILD_CHANNEL in CodeSigning.xcconfig
-        
-        case alpha
-        case beta
-        case stable
-    }
-    
     let bundle: Bundle
     
     public init(){
@@ -42,9 +33,9 @@ public class BuildInfo{
         self.bundle = bundle
     }
     
-    public lazy var channel: Channel = {
+    public lazy var channel: ReleaseTracks = {
         let channel  = bundle.object(forInfoDictionaryKey: Self.BUILD_CHANNEL_TAG) as? String
-        return Channel(rawValue: channel ?? "") ?? .unknown
+        return ReleaseTracks(rawValue: channel ?? "") ?? .unknown
     }()
 
     public lazy var revision: String? = {

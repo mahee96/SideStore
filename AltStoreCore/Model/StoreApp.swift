@@ -12,6 +12,32 @@ import CoreData
 import Roxas
 import AltSign
 
+import SemanticVersion
+
+public enum ReleaseTracks: String, CodingKey, CaseIterable
+{
+    case unknown
+    case local          // xcodebuilds can use this by setting BUILD_CHANNEL in CodeSigning.xcconfig
+    
+    case alpha
+    case beta
+    case stable
+    
+        
+    public static var betaTracks: [ReleaseTracks] {
+        ReleaseTracks.allCases.filter(isBetaTrack)
+    }
+
+    public static var nonBetaTracks: [ReleaseTracks] {
+        ReleaseTracks.allCases.filter { !isBetaTrack($0) }
+    }
+
+    private static func isBetaTrack(_ key: ReleaseTracks) -> Bool {
+        key == .alpha || key == .beta
+    }
+}
+
+
 public extension StoreApp
 {
     #if ALPHA
@@ -122,6 +148,66 @@ private struct PatreonParameters: Decodable
     var benefit: String?
     var hidden: Bool?
 }
+
+
+
+
+// added for v0.6.0 appsV2 sources format
+extension StoreApp {
+    
+    //MARK: - properties
+    @NSManaged public private(set) var sha256: String?
+    @NSManaged public private(set) var revision: String?
+
+    //MARK: - relationships
+    @NSManaged @objc(releaseTracks) private(set) var _releaseTracks: NSOrderedSet?
+    
+    public var releaseTracks: [ReleaseTrack]?{
+        return _releaseTracks?.array as? [ReleaseTrack]
+    }
+    
+    
+    private func releaseTrackFor(track: String) -> ReleaseTrack? {
+        return releaseTracks?.first(where: { $0.track == track })
+    }
+    
+    private func stableTrack() -> ReleaseTrack? {
+        releaseTrackFor(track: ReleaseTracks.stable.stringValue)
+    }
+    
+    private var betaReleases: [AppVersion]? {
+        // If beta track is selected, use it instead
+        if UserDefaults.standard.isBetaUpdatesEnabled,
+           let betaTrack = UserDefaults.standard.betaUdpatesTrack {
+            
+            // Filter and flatten beta and stable releases
+            let betaReleases = releaseTrackFor(track: betaTrack)?.releases?.compactMap { $0 }
+
+            // Ensure both beta and stable releases are found and supported
+            if let latestBeta = betaReleases?.first(where: { $0.isSupported }),
+               let latestStable = stableTrack()?.releases?.first(where: { $0.isSupported }),
+               let stableSemVer = SemanticVersion(latestStable.version),
+               let betaSemVer = SemanticVersion(latestBeta.version),
+               betaSemVer >= stableSemVer
+            {
+                
+                return betaReleases
+            }
+        }
+        return nil
+    }
+    
+    private func getReleases(default releases: ReleaseTrack?) -> [AppVersion]?
+    {
+        return betaReleases ?? releases?.releases?.compactMap { $0 }
+    }
+}
+
+
+
+
+
+
 
 @objc(StoreApp)
 public class StoreApp: BaseEntity, Decodable
@@ -307,6 +393,11 @@ public class StoreApp: BaseEntity, Decodable
         case downloadURL
         case screenshotURLs
         case isBeta = "beta"
+        
+        // v2 source format
+        case sha256
+        case revision
+        case releaseTracks = "releaseChannels"
     }
     
     
@@ -318,23 +409,17 @@ public class StoreApp: BaseEntity, Decodable
     public required init(from decoder: Decoder) throws
     {
         guard let context = decoder.managedObjectContext else { preconditionFailure("Decoder must have non-nil NSManagedObjectContext.") }
-        
+
         // Must initialize with context in order for child context saves to work correctly.
         super.init(entity: Self.entity(), insertInto: context)
-        try self.decode(from: decoder)
-    }
-    
-    internal func decode(from decoder: Decoder) throws {
-        try self.decodeVersions(from: decoder)  // pre-req for downloadURL procesing
-        try self.decodeProps(from: decoder)
-    }
-    
-    private func decodeProps(from decoder: Decoder) throws {
-        guard let context = decoder.managedObjectContext else { preconditionFailure("Decoder must have non-nil NSManagedObjectContext.") }
 
         do
         {
             let container = try decoder.container(keyedBy: CodingKeys.self)
+            
+            self.sha256 = try container.decodeIfPresent(String.self, forKey: .sha256)
+            self._channel = try container.decodeIfPresent(String.self, forKey: .channel)
+            self.revision = try container.decodeIfPresent(String.self, forKey: .revision)
             
             self.name = try container.decode(String.self, forKey: .name)
             self.bundleIdentifier = try container.decode(String.self, forKey: .bundleIdentifier)
@@ -344,6 +429,8 @@ public class StoreApp: BaseEntity, Decodable
             
             self.subtitle = try container.decodeIfPresent(String.self, forKey: .subtitle)
                        
+            try self.decodeVersions(from: decoder)  // pre-req for downloadURL procesing
+        
             let platformURLs = try container.decodeIfPresent(PlatformURLs.self.self, forKey: .platformURLs)
             if let platformURLs = platformURLs {
                 self.platformURLs = platformURLs
@@ -475,18 +562,30 @@ public class StoreApp: BaseEntity, Decodable
         }
     }
     
-    internal func decodeVersions(from decoder: Decoder) throws {
+    private func decodeVersions(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
       
-        // since decode essentially inserts an entry into insertedObjects of context and scheduling them for persistence,
-        // we will decode only once
-        guard let versions = try container.decodeIfPresent([AppVersion].self, forKey: .versions),
-            !versions.isEmpty else
-        {
-            // create one from the storeApp description and use it as current
-            let appVersion = try createNewAppVersion(decoder: decoder)
-            try self.setVersions([appVersion])
-            return
+        // TODO: restrict release tracks decoding strictly to v2 sources by getting apiVersion from Source entity
+        if let releaseTracks = try container.decodeIfPresent([ReleaseTrack].self, forKey: .releaseTracks){
+            self._releaseTracks = NSOrderedSet(array: releaseTracks)
+        }
+        
+        var versions = getReleases(default: stableTrack()) ?? []
+        if versions.isEmpty {
+            if let appVersions = try container.decodeIfPresent([AppVersion].self, forKey: .versions)
+            {
+                versions = appVersions
+            }
+            else
+            {
+                let sha256 = try container.decodeIfPresent(String.self, forKey: .sha256)
+
+                // create one from the storeApp description and use it as current
+                let newRelease = try createNewAppVersion(decoder: decoder)
+                                       .mutateForData(sha256: sha256, appBundleID: self.bundleIdentifier)
+
+                versions = [newRelease]
+            }
         }
         
         for (index, version) in zip(0..., versions)

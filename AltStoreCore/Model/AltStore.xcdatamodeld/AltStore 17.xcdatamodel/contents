@@ -221,7 +221,7 @@
     <entity name="ReleaseTrack" representedClassName="ReleaseTrack" syncable="YES">
         <attribute name="track" optional="YES" attributeType="String"/>
         <relationship name="releases" optional="YES" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="AppVersion" inverseName="releaseTrack" inverseEntity="AppVersion"/>
-        <relationship name="storeApp" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="StoreAppV2" inverseName="releaseTracks" inverseEntity="StoreAppV2"/>
+        <relationship name="storeApp" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="StoreApp" inverseName="releaseTracks" inverseEntity="StoreApp"/>
         <uniquenessConstraints>
             <uniquenessConstraint>
                 <constraint value="track"/>
@@ -269,7 +269,9 @@
         <attribute name="pledgeAmount" optional="YES" attributeType="Decimal"/>
         <attribute name="pledgeCurrency" optional="YES" attributeType="String"/>
         <attribute name="prefersCustomPledge" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="revision" optional="YES" attributeType="String"/>
         <attribute name="screenshotURLs" attributeType="Transformable" valueTransformerName="ALTSecureValueTransformer"/>
+        <attribute name="sha256" optional="YES" attributeType="String"/>
         <attribute name="size" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="sortIndex" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="sourceIdentifier" optional="YES" attributeType="String"/>
@@ -284,6 +286,7 @@
         <relationship name="loggedErrors" toMany="YES" deletionRule="Nullify" destinationEntity="LoggedError" inverseName="storeApp" inverseEntity="LoggedError"/>
         <relationship name="newsItems" toMany="YES" deletionRule="Nullify" destinationEntity="NewsItem" inverseName="storeApp" inverseEntity="NewsItem"/>
         <relationship name="permissions" toMany="YES" deletionRule="Cascade" destinationEntity="AppPermission" inverseName="app" inverseEntity="AppPermission"/>
+        <relationship name="releaseTracks" optional="YES" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="ReleaseTrack" inverseName="storeApp" inverseEntity="ReleaseTrack"/>
         <relationship name="screenshots" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="AppScreenshot" inverseName="app" inverseEntity="AppScreenshot"/>
         <relationship name="source" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Source" inverseName="apps" inverseEntity="Source"/>
         <relationship name="versions" optional="YES" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="AppVersion" inverseName="app" inverseEntity="AppVersion"/>
@@ -292,14 +295,6 @@
                 <constraint value="sourceIdentifier"/>
                 <constraint value="bundleIdentifier"/>
             </uniquenessConstraint>
-        </uniquenessConstraints>
-    </entity>
-    <entity name="StoreAppV2" representedClassName="StoreAppV2" parentEntity="StoreApp" syncable="YES">
-        <attribute name="revision" optional="YES" attributeType="String"/>
-        <attribute name="sha256" optional="YES" attributeType="String"/>
-        <relationship name="releaseTracks" optional="YES" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="ReleaseTrack" inverseName="storeApp" inverseEntity="ReleaseTrack"/>
-        <uniquenessConstraints>
-            <uniquenessConstraint/>
         </uniquenessConstraints>
     </entity>
     <entity name="Team" representedClassName="Team" syncable="YES">

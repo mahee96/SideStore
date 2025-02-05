@@ -17,7 +17,7 @@ public class ReleaseTrack: BaseEntity, Decodable
     
     // RelationShips
     @NSManaged @objc(releases) private var _releases: NSOrderedSet?
-    @NSManaged public private(set) var storeApp: StoreAppV2?
+    @NSManaged public private(set) var storeApp: StoreApp?
     
     private enum CodingKeys: String, CodingKey, CaseIterable {
         case track
@@ -70,14 +70,7 @@ public class ReleaseTrack: BaseEntity, Decodable
 }
 
 public extension ReleaseTrack{
-    /// Handles updating AppVersion fields that depend on StoreApp relationship
-    ///
-    /// Design Notes:
-    /// - Uses KVO to observe storeApp relationship changes because:
-    ///   1. ReleaseTrack has an inverse relationship to StoreAppV2
-    ///   2. CoreData automatically sets storeApp after init() completes
-    ///   3. Avoids manual setter methods for relationship management
-    ///
+    
     /// Warning:
     /// - Special handling required for deleted objects:
     ///   - CoreData sets all properties to nil during deletion
@@ -117,19 +110,3 @@ public extension ReleaseTrack{
         }
     }
 }
-
-//
-//extension ReleaseTrack{
-//    
-//    public func latestRelease(for channel: CodingKeys) -> AppVersion? {
-//        if case .stable = channel {
-//            return self.storeApp?.latestSupportedVersion
-//        }
-//        return releasesFor(channel: channel)?.first
-//    }
-//    
-//    public func latestRelease(for channelName: String?) -> AppVersion? {
-//        let channel = Self.channel(for: channelName)
-//        return latestRelease(for: channel)
-//    }
-//}

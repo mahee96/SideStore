@@ -341,10 +341,9 @@ public class Source: BaseEntity, Decodable
             self.userInfo = userInfo?.reduce(into: [:]) { $0[ALTSourceUserInfoKey($1.key)] = $1.value }
             
             // get the "apps" object
-            let isApiV2: Bool = version >= 2
-            let apps = isApiV2 ?
-                (try container.decodeIfPresent([StoreAppV2].self, forKey: .apps) ?? []) : // else use V1 source decoder
-                (try container.decodeIfPresent([StoreApp].self, forKey: .apps) ?? [])
+//            let isApiV2: Bool = version >= 2
+//            let apps = isApiV2 ?
+            let apps = try container.decodeIfPresent([StoreApp].self, forKey: .apps) ?? []
             
             let appsByID = Dictionary(apps.map { ($0.bundleIdentifier, $0) }, uniquingKeysWith: { (a, b) in return a })
             

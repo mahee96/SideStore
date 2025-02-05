@@ -142,11 +142,9 @@ extension AppBannerView
                 // installed App now includes BUILD_CHANNEL in its info.plist
                 // so if we have info there, we will use it, else we will default to latest AppVersion's channel
                 if let installedApp = app as? InstalledApp,
-                   let channel = try? BuildInfo(url: installedApp.fileURL).channel
+                   let track = try? BuildInfo(url: installedApp.fileURL).channel
                 {
-                    let track = ReleaseTracks(stringValue: channel.rawValue) ?? .unknown
-                    
-                    if (channel == .local || ReleaseTracks.betaTracks.contains(track))
+                    if (track == .local || ReleaseTracks.betaTracks.contains(track))
                     {
                         self.name = String(format: NSLocalizedString("%@ beta", comment: ""), app.name)
                         self.isBeta = true
@@ -159,8 +157,8 @@ extension AppBannerView
                 
                 self.developerName = storeApp.developerName
 
-                if !self.isBeta, let channel  = storeApp.latestSupportedVersion?.channel,
-                   ReleaseTracks.betaTracks.contains(channel)
+                if !self.isBeta, let track  = storeApp.latestSupportedVersion?.channel,
+                   ReleaseTracks.betaTracks.contains(track)
                 {
                     self.name = String(format: NSLocalizedString("%@ beta", comment: ""), app.name)
                     self.isBeta = true

@@ -64,7 +64,6 @@
 		A859ED5C2D1EE827003DCC58 /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; };
 		A859ED5D2D1EE827003DCC58 /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A86315DF2D3EB2DE0048FA40 /* ErrorProcessing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A86315DE2D3EB2D80048FA40 /* ErrorProcessing.swift */; };
-		A86316042D3ED9260048FA40 /* StoreAppV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = A86316032D3ED9260048FA40 /* StoreAppV2.swift */; };
 		A868CFE42D31999A002F1201 /* SingletonGenericMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = A868CFE32D319988002F1201 /* SingletonGenericMap.swift */; };
 		A8696EE42D34512C00E96389 /* RemoveAppExtensionsOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8696EE32D34512C00E96389 /* RemoveAppExtensionsOperation.swift */; };
 		A888EAD62D4020770026F7E3 /* BuildInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A888EAD42D401D8A0026F7E3 /* BuildInfo.swift */; };
@@ -652,7 +651,6 @@
 		A86202322D1F35640091187B /* AltStore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = AltStore.xcconfig; sourceTree = "<group>"; };
 		A86202332D1F35640091187B /* AltStoreCore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = AltStoreCore.xcconfig; sourceTree = "<group>"; };
 		A86315DE2D3EB2D80048FA40 /* ErrorProcessing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorProcessing.swift; sourceTree = "<group>"; };
-		A86316032D3ED9260048FA40 /* StoreAppV2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreAppV2.swift; sourceTree = "<group>"; };
 		A868CFE32D319988002F1201 /* SingletonGenericMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingletonGenericMap.swift; sourceTree = "<group>"; };
 		A8696EE32D34512C00E96389 /* RemoveAppExtensionsOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoveAppExtensionsOperation.swift; sourceTree = "<group>"; };
 		A888EAD42D401D8A0026F7E3 /* BuildInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildInfo.swift; sourceTree = "<group>"; };
@@ -1715,7 +1713,6 @@
 				A80D60D12D3D705F00CEF65D /* ReleaseTrack.swift */,
 				BF66EEAB2501AECA007EE018 /* Source.swift */,
 				BF66EEC42501AECA007EE018 /* StoreApp.swift */,
-				A86316032D3ED9260048FA40 /* StoreAppV2.swift */,
 				BF66EEC22501AECA007EE018 /* Team.swift */,
 			);
 			path = Model;
@@ -2925,7 +2922,6 @@
 				A82067842D03DC0600645C0D /* OperatingSystemVersion+Comparable.swift in Sources */,
 				D5FB28EE2ADDF89800A1C337 /* KnownSource.swift in Sources */,
 				BF66EED32501AECA007EE018 /* AltStore2ToAltStore3.xcmappingmodel in Sources */,
-				A86316042D3ED9260048FA40 /* StoreAppV2.swift in Sources */,
 				BF66EEA52501AEC5007EE018 /* Benefit.swift in Sources */,
 				D52B4ABF2AF183F0005991C3 /* WebViewController.swift in Sources */,
 				BF66EED22501AECA007EE018 /* AltStore4ToAltStore5.xcmappingmodel in Sources */,

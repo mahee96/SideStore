@@ -164,7 +164,6 @@ extension MergePolicy{
     
     // When conflict.databaseObject is unavailable, the conflicts exist only in context level and they must be new insertions
     private func resolveWhenDatabaseObjectUnavailable(_ conflicts: [NSConstraintConflict]) throws{
-        handleStoreAppV2RelatedConflicts(conflicts)
         
         for conflict in conflicts
         {
@@ -218,9 +217,7 @@ extension MergePolicy{
     
     // When conflict.databaseObject is available, it means this is replace (delete + insert) or update
     private func resolveWhenDatabaseObjectAvailable(_ conflicts: [NSConstraintConflict]) throws {
-                
-        handleStoreAppV2RelatedConflicts(conflicts)
-
+        
         for conflict in conflicts
         {
             switch conflict.databaseObject
@@ -337,27 +334,6 @@ extension MergePolicy{
         }
         
     }
-    
-    private func handleStoreAppV2RelatedConflicts(_ conflicts: [NSConstraintConflict]) {
-        // handle releaseTracks by always deleting the db version and accepting the incoming object
-        // this prevents any stale references (actaully we shouldn't be inserting all the time,
-        // but due to existing design this is the hacky fix)
-        for track in conflicts.compactMap({ $0.databaseObject as? ReleaseTrack }) {
-            track.managedObjectContext?.delete(track)
-        }
-
-        for conflict in conflicts {
-            if let existingApp = conflict.databaseObject as? StoreApp,
-               let incomingApp = conflict.conflictingObjects.first as? StoreApp,
-               // if the entities are not matching, but existing is a placeholder, then delete the placeholder
-               type(of: existingApp) != type(of: incomingApp)
-            {
-                print("Delting existing \(type(of: existingApp)) in db to resolve conflict. " +
-                      "Incoming \(type(of: incomingApp)) will be saved in its place")
-                existingApp.managedObjectContext?.delete(existingApp)
-            }
-        }
-    }
 }
 
 
@@ -384,30 +360,8 @@ extension MergePolicy{
         
         for conflict in conflicts
         {
-            if conflict.databaseObject?.isDeleted ?? false {
-                // if we are dealing with transient (now deleted) objects, ignore post processing
-                continue
-            }
-            
             switch conflict.databaseObject
             {
-            case let databaseObject as StoreAppV2:
-                // handle stale references to placeholder versions and re-anchor the latestVersion via setVersions()
-                if !databaseObject.isDeleted {
-                    let app = databaseObject
-                    var versions = app._versions.array as? [AppVersion] ?? []
-                
-                    // Ensure we don't remove the only placeholder if there's just one version
-                    if versions.count > 1, let placeholder = versions.first(where: StoreApp.isPlaceHolderVersion) {
-                        placeholder.managedObjectContext?.delete(placeholder)
-                        versions.removeAll { $0 === placeholder }
-                    }
-                    
-                    // this sets in the latestVersion and other stuffs, so we need this post migration
-                    try app.setVersions(versions)
-                    assert((app.latestSupportedVersion != nil), "latestVersion is nil during merge? \(app)")
-                }
-                
             case let databaseObject as StoreApp:
                 do
                 {
