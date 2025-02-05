@@ -94,7 +94,7 @@ for app in data.get("apps", []):
             })
         
         # Process the versions array
-        channels = app.get("releaseChannels", {})
+        channels = app.get("releaseChannels", [])
         if not channels:
             app["releaseChannels"] = channels
 
@@ -107,16 +107,22 @@ for app in data.get("apps", []):
             "size": SIZE,
             "sha256": SHA256,
         }
+        
         # add commit ID if release is not stable 
         if RELEASE_CHANNEL != 'stable':
             new_version["commitID"] = COMMIT_ID
 
-        if not channels.get(RELEASE_CHANNEL):
+        track = [track for track in channels if track.get("track") == RELEASE_CHANNEL]
+        if not track:
             # there was no entries in this release channel so create one
-            channels[RELEASE_CHANNEL] = [new_version]
+            track = {
+                "track": RELEASE_CHANNEL,
+                "releases": [new_version]
+            }
+            channels.insert(0, track)
         else:
             # Update the existing TOP version object entry
-            channels[RELEASE_CHANNEL][0] = new_version
+            track["releases"][0] = new_version
 
         updated = True
         break
