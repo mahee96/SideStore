@@ -230,10 +230,10 @@ jobs:
           echo "PUBLISH_BETA_UPDATES=${{ vars.PUBLISH_BETA_UPDATES }}"
           if [[ "${{ vars.PUBLISH_BETA_UPDATES }}" == "__YES__" ]]; then
             echo "PUBLISH_BETA_UPDATES is not set. Skipping deployment."
-            echo "should_deploy=true" >> $GITHUB_ENV
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
           else
             echo "PUBLISH_BETA_UPDATES is set. Proceeding with deployment."
-            echo "should_deploy=false" >> $GITHUB_ENV
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Get short commit hash
