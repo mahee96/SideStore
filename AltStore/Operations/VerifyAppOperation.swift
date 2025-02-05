@@ -85,7 +85,12 @@ final class VerifyAppOperation: ResultOperation<Void>
                                         
                     try await self.verifyHash(of: app, at: ipaURL, matches: appVersion)
                     try await self.verifyDownloadedVersion(of: app, matches: appVersion)
-                    try await self.verifyPermissions(of: app, match: appVersion)
+                    
+                    // process missing permissions check only if the source is V2 or later
+                    if let sourceVersion = appVersion.app?.source?.isSourceAtLeastV2
+                    {
+                        try await self.verifyPermissions(of: app, match: appVersion)
+                    }
                     
                     self.finish(.success(()))
                 }
@@ -123,11 +128,12 @@ private extension VerifyAppOperation
         let (version, buildVersion) = await $appVersion.perform { ($0.version, $0.buildVersion) }
         
         // marketplace buildVersion validation
-//        if let buildVersion
-//        {
-//            guard buildVersion == app.buildVersion else { throw VerificationError.mismatchedBuildVersion(app.buildVersion, expectedVersion: buildVersion, app: app) }
-//        }
-        
+        if let buildVersion
+        {
+            guard buildVersion == app.buildVersion else {
+                throw VerificationError.mismatchedBuildVersion(app.buildVersion, expectedVersion: buildVersion, app: app)
+            }
+        }
         
         // if not beta but version matches, then accept it, else compare revisions between source and downloaded
         if version != app.version {

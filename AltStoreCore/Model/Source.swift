@@ -275,6 +275,12 @@ public class Source: BaseEntity, Decodable
         }
     }
     
+    
+    public var isSourceAtLeastV2: Bool {
+        return self.version >= 2
+    }
+    
+    
     // `internal` to prevent accidentally using instead of `effectiveFeaturedApps`
     @nonobjc internal var featuredApps: [StoreApp]? {
         return self._hasFeaturedApps ? self._featuredApps.array as? [StoreApp] : nil
