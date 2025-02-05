@@ -131,7 +131,7 @@ private extension VerifyAppOperation
         
         // if not beta but version matches, then accept it, else compare revisions between source and downloaded
         if version != app.version {
-            throw VerificationError.mismatchedVersion(app.version, expectedVersion: version, app: app)
+            throw VerificationError.mismatchedVersion(version: app.version, expectedVersion: version, app: app)
         }
 
         // if app is SideStore, we validate it against build revision too
@@ -140,15 +140,17 @@ private extension VerifyAppOperation
             return
         }
         
-        let downloadedIpaRevision = (try? BuildInfo(url: app.fileURL).revision) ?? ""
+        let downloadedIpaRevision = (try? BuildInfo(url: app.fileURL).revision) ?? "nil"
         let sourceJsonIpaRevision = appVersion.revision
-       // beta feature
+        // beta feature
         if (appVersion.channel == .beta && downloadedIpaRevision != sourceJsonIpaRevision) {
             let sourceJsonIpaRevision = sourceJsonIpaRevision ?? "nil"
-            throw VerificationError.mismatchedVersion(app.version + " - " + downloadedIpaRevision,
-                                                      expectedVersion: version  + " - " + sourceJsonIpaRevision, app: app)
+            throw VerificationError.mismatchedVersion(version: app.version,
+                                                      revision: downloadedIpaRevision,
+                                                      expectedVersion: version,
+                                                      expectedRevision: sourceJsonIpaRevision,
+                                                      app: app)
         }
-
     }
     
     func verifyPermissions(of app: ALTApplication, @AsyncManaged match appVersion: AppVersion) async throws

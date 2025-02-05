@@ -43,33 +43,32 @@ public class BuildInfo{
     }
     
     public lazy var channel: Channel = {
-        let channel  = Bundle.main.object(forInfoDictionaryKey: Self.BUILD_CHANNEL_TAG) as? String
+        let channel  = bundle.object(forInfoDictionaryKey: Self.BUILD_CHANNEL_TAG) as? String
         return Channel(rawValue: channel ?? "") ?? .unknown
     }()
 
     public lazy var revision: String? = {
-        let revision  = Bundle.main.object(forInfoDictionaryKey: Self.BUILD_REVISION_TAG) as? String
+        let revision  = bundle.object(forInfoDictionaryKey: Self.BUILD_REVISION_TAG) as? String
         return revision
     }()
 
     public lazy var project_version: String? = {
-        let revision  = Bundle.main.object(forInfoDictionaryKey: Self.CURRENT_PROJECT_VERSION_TAG) as? String
+        let revision  = bundle.object(forInfoDictionaryKey: Self.CURRENT_PROJECT_VERSION_TAG) as? String
         return revision
     }()
 
     public lazy var marketing_version: String? = {
-        let revision  = Bundle.main.object(forInfoDictionaryKey: Self.MARKETING_VERSION_TAG) as? String
+        let revision  = bundle.object(forInfoDictionaryKey: Self.MARKETING_VERSION_TAG) as? String
         return revision
     }()
 
     public lazy var xcode: String? = {
-        let xcode  = Bundle.main.object(forInfoDictionaryKey: Self.XCODE_VERSION_TAG) as? String
+        let xcode  = bundle.object(forInfoDictionaryKey: Self.XCODE_VERSION_TAG) as? String
         return xcode
     }()
 
     public lazy var xcode_revision: String? = {
-        let revision  = Bundle.main.object(forInfoDictionaryKey: Self.XCODE_REVISION_TAG) as? String
+        let revision  = bundle.object(forInfoDictionaryKey: Self.XCODE_REVISION_TAG) as? String
         return revision
     }()
-
 }
