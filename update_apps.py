@@ -112,7 +112,12 @@ for app in data.get("apps", []):
         if RELEASE_CHANNEL != 'stable':
             new_version["commitID"] = COMMIT_ID
 
-        track = [track for track in channels if track.get("track") == RELEASE_CHANNEL]
+        tracks = [track for track in channels if track.get("track") == RELEASE_CHANNEL]
+        if not updated:
+            print(f"Multiple tracks with same `track` name = ${RELEASE_CHANNEL} are not allowed!")
+            sys.exit(1)
+
+        track = tracks[0]   # first result is the track
         if not track:
             # there was no entries in this release channel so create one
             track = {
