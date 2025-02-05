@@ -195,16 +195,30 @@ public extension AppVersion
         sourceID: String? = nil) -> AppVersion
     {
         // use overriding incoming params if present else retain existing
-        self.version = version ?? self.version
+
+        // non-optionals
+        if let version {
+            self.version = version
+        }
+        if let date {
+            self.date = date
+        }
+        if let downloadURL{
+            self.downloadURL = downloadURL
+        }
+        if let size{
+            self.size = size
+        }
+        if let appBundleID{
+            self.appBundleID = appBundleID
+        }
+        
+        // optionals
+        self.localizedDescription = localizedDescription ?? self.localizedDescription
         self._channel = channel ?? self._channel
         self.buildVersion = buildVersion ?? self.buildVersion
-        self.date = date ?? self.date
-        self.localizedDescription = localizedDescription ?? self.localizedDescription
-        self.downloadURL = downloadURL ?? self.downloadURL
-        self.size = size ?? self.size
         self.sha256 = sha256 ?? self.sha256
         self.revision = revision ?? self.revision
-        self.appBundleID = appBundleID ?? self.appBundleID
         self.sourceID = sourceID ?? self.sourceID
 
         return self
