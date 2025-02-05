@@ -67,7 +67,6 @@
 		A86316042D3ED9260048FA40 /* StoreAppV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = A86316032D3ED9260048FA40 /* StoreAppV2.swift */; };
 		A868CFE42D31999A002F1201 /* SingletonGenericMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = A868CFE32D319988002F1201 /* SingletonGenericMap.swift */; };
 		A8696EE42D34512C00E96389 /* RemoveAppExtensionsOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8696EE32D34512C00E96389 /* RemoveAppExtensionsOperation.swift */; };
-		A888EAD52D401D8F0026F7E3 /* BuildInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A888EAD42D401D8A0026F7E3 /* BuildInfo.swift */; };
 		A888EAD62D4020770026F7E3 /* BuildInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A888EAD42D401D8A0026F7E3 /* BuildInfo.swift */; };
 		A88B8C492D35AD3200F53F9D /* OperationsLoggingContolView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88B8C482D35AD3200F53F9D /* OperationsLoggingContolView.swift */; };
 		A88B8C552D35F1EC00F53F9D /* OperationsLoggingControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88B8C542D35F1EC00F53F9D /* OperationsLoggingControl.swift */; };
@@ -3103,7 +3102,6 @@
 				BFF00D302501BD7D00746320 /* Intents.intentdefinition in Sources */,
 				D5B6F6AB2AD76541007EED5A /* PreviewAppScreenshotsViewController.swift in Sources */,
 				BFD2476E2284B9A500981D42 /* AppDelegate.swift in Sources */,
-				A888EAD52D401D8F0026F7E3 /* BuildInfo.swift in Sources */,
 				BF41B806233423AE00C593A3 /* TabBarController.swift in Sources */,
 				BFE00A202503097F00EB4D0C /* INInteraction+AltStore.swift in Sources */,
 				BFDB6A0B22AAEDB7007EA6D6 /* Operation.swift in Sources */,

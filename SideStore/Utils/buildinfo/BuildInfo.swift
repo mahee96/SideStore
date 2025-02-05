@@ -27,7 +27,7 @@ public class BuildInfo{
     
     let bundle: Bundle
     
-    init(){
+    public init(){
         bundle = Bundle.main
     }
     
@@ -35,7 +35,7 @@ public class BuildInfo{
         case invalidURL
     }
 
-    init(url: URL) throws {
+    public init(url: URL) throws {
         guard let bundle = Bundle(url: url) else {
             throw BundleError.invalidURL
         }
