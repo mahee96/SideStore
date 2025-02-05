@@ -113,7 +113,7 @@ for app in data.get("apps", []):
             new_version["commitID"] = COMMIT_ID
 
         tracks = [track for track in channels if track.get("track") == RELEASE_CHANNEL]
-        if not updated:
+        if len(tracks) > 1:
             print(f"Multiple tracks with same `track` name = ${RELEASE_CHANNEL} are not allowed!")
             sys.exit(1)
 
