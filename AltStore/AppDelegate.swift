@@ -75,11 +75,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
             // reset the state
             UserDefaults.standard.recreateDatabaseOnNextStart = false
             
-            //clear and recreate db
+            // re-create database
             DatabaseManager.recreateDatabase()
         }
-        
-        
         
         
         DatabaseManager.shared.start { (error) in

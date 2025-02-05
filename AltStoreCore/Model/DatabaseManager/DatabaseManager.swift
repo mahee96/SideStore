@@ -85,48 +85,68 @@ public extension DatabaseManager
         print("Persistent store loading complete.")
     }
     
-    class func recreateDatabase()
+    class func deleteDatabase() -> Bool
     {
         // delete existing database and start fresh if required
         do {
             let container = Self.shared.persistentContainer
             
-            // perform a load before acquiring the databaseStoreURL
-            loadPersistentStoresSync()
+            var databaseStore = container.persistentStoreCoordinator.persistentStores.first
+            if databaseStore == nil{
+                // perform a load before acquiring the databaseStoreURL
+                Self.loadPersistentStoresSync()
+                databaseStore = container.persistentStoreCoordinator.persistentStores.first
+            }
             
-            let databaseStore = container.persistentStoreCoordinator.persistentStores.first
 
             guard let databaseStore else
             {
-                print("\nDatabase Recreate request FAILED: databaseStore = nil\n")
-                return
+                print("\nDatabase Delete request FAILED: databaseStore = nil\n")
+                return false
             }
 
             guard let databaseStoreURL = databaseStore.url else
             {
-                print("\nDatabase Recreate request FAILED: databaseStoreURL = nil\n")
-                return
+                print("\nDatabase Delete request FAILED: databaseStoreURL = nil\n")
+                return false
             }
             
+            // Reset the managed object context
+            Self.shared.persistentContainer.viewContext.reset()
+
+            // Remove all existing persistent stores
+            for store in Self.shared.persistentContainer.persistentStoreCoordinator.persistentStores {
+                try? Self.shared.persistentContainer.persistentStoreCoordinator.remove(store)
+            }
+
+            // Now destroy the persistent store
             try Self.shared.persistentContainer.persistentStoreCoordinator.destroyPersistentStore(
-               at: databaseStoreURL,
-               ofType: NSSQLiteStoreType,       // target the store on disk (ex: other types include: binary, in-memory)
-               options: nil
+                at: databaseStoreURL,
+                ofType: NSSQLiteStoreType,
+                options: nil
             )
             
             // just be sure
             try? FileManager.default.removeItem(at: databaseStoreURL)
                 
-            print("\nDatabase Recreate: Delete SUCCEEDED\n")
+            print("\nDatabase Delete: SUCCEEDED\n")
             
-            // create new instance
-            Self.shared = DatabaseManager()
+            return true
         }catch{
-            print("\nDatabase Recreate request FAILED: \(error)\n")
+            print("\nDatabase Delete request FAILED: \(error)\n")
+            return false
         }
     }
-}
+    
+    class func recreateDatabase() {
+        // Try to perform delete if one exists
+        _ = Self.deleteDatabase()
+        
+        // create new instance and load persistence store
+        Self.shared = DatabaseManager()
+    }
 
+}
 
 public extension DatabaseManager
 {

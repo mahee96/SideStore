@@ -83,7 +83,8 @@ extension SettingsViewController
         case responseCaching
         case exportResignedApp
         case verboseOperationsLogging
-        case exportSqliteDB
+        case exportDatabase
+        case deleteDatabase
         case operationsLoggingControl
         case recreateDatabase
         case minimuxerConsoleLogging
@@ -131,7 +132,8 @@ final class SettingsViewController: UITableViewController
         return .lightContent
     }
     
-    private var exportDBInProgress = false
+    private static var exportDBInProgress = false
+    private static var deleteDBInProgress = false
     
     // Default track for beta updates when beta-updates are enabled
     private static let defaultBetaUpdatesTrack: String = ReleaseTracks.beta.rawValue
@@ -558,7 +560,7 @@ private extension SettingsViewController
         // update it in database
         UserDefaults.standard.isMinimuxerConsoleLoggingEnabled = sender.isOn
     }
-    
+
     @IBAction func toggleRecreateDatabaseSwitch(_ sender: UISwitch) {
         // Update the setting in UserDefaults
         UserDefaults.standard.recreateDatabaseOnNextStart = sender.isOn
@@ -1164,10 +1166,19 @@ extension SettingsViewController
             let row = DiagnosticsRow.allCases[indexPath.row]
             switch row {
                 
-            case .exportSqliteDB:
+            case .deleteDatabase:
+                if !Self.deleteDBInProgress {
+                    Self.deleteDBInProgress = true
+                    
+                    _ = DatabaseManager.deleteDatabase()
+                    
+                    exit(0) // exit app immediately to prevent db usage and crashes
+                }
+                
+            case .exportDatabase:
                 // do not accept simulatenous export requests
-                if !exportDBInProgress {
-                    exportDBInProgress = true
+                if !Self.exportDBInProgress {
+                    Self.exportDBInProgress = true
                     Task{
                         var toastView: ToastView?
                         do{
@@ -1185,7 +1196,7 @@ extension SettingsViewController
                         }
                         
                         // update that work has finished
-                        exportDBInProgress = false
+                        Self.exportDBInProgress = false
                     }
                 }
                 
