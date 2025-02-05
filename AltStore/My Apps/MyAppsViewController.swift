@@ -1044,57 +1044,6 @@ private extension MyAppsViewController
         cell.bannerView.iconImageView.isIndicatingActivity = false
     }
     
-    func removeAppExtensions(from application: ALTApplication, completion: @escaping (Result<Void, Error>) -> Void)
-    {
-        guard !application.appExtensions.isEmpty else { return completion(.success(())) }
-        
-        func removeAppExtensions() throws
-        {
-            for appExtension in application.appExtensions
-            {
-                try FileManager.default.removeItem(at: appExtension.fileURL)
-            }
-            
-            let scInfoURL = application.fileURL.appendingPathComponent("SC_Info")
-            let manifestPlistURL = scInfoURL.appendingPathComponent("Manifest.plist")
-            
-            if let manifestPlist = NSMutableDictionary(contentsOf: manifestPlistURL),
-               let sinfReplicationPaths = manifestPlist["SinfReplicationPaths"] as? [String]
-            {
-                let replacementPaths = sinfReplicationPaths.filter { !$0.starts(with: "PlugIns/") } // Filter out app extension paths.
-                manifestPlist["SinfReplicationPaths"] = replacementPaths
-                try manifestPlist.write(to: manifestPlistURL)
-            }
-        }
-        
-        let firstSentence: String
-        
-        if UserDefaults.standard.activeAppLimitIncludesExtensions
-        {
-            firstSentence = NSLocalizedString("Non-developer Apple IDs are limited to 3 active apps and app extensions.", comment: "")
-        }
-        else
-        {
-            firstSentence = NSLocalizedString("Non-developer Apple IDs are limited to creating 10 App IDs per week.", comment: "")
-        }
-        
-        let message = firstSentence + " " + NSLocalizedString("Would you like to remove this app's extensions so they don't count towards your limit?", comment: "")
-        
-        let alertController = UIAlertController(title: NSLocalizedString("App Contains Extensions", comment: ""), message: message, preferredStyle: .alert)
-        alertController.addAction(UIAlertAction(title: UIAlertAction.cancel.title, style: UIAlertAction.cancel.style, handler: { (action) in
-            completion(.failure(OperationError.cancelled))
-        }))
-        alertController.addAction(UIAlertAction(title: NSLocalizedString("Keep App Extensions", comment: ""), style: .default) { (action) in
-            completion(.success(()))
-        })
-        alertController.addAction(UIAlertAction(title: NSLocalizedString("Remove App Extensions", comment: ""), style: .destructive) { (action) in
-            let result = Result { try removeAppExtensions() }
-            completion(result)
-        })
-        
-        self.present(alertController, animated: true, completion: nil)
-    }
-    
     @objc func showHiddenUpdatesAlert(_ sender: UIButton)
     {
         guard !self.unsupportedUpdates.isEmpty else { return }
