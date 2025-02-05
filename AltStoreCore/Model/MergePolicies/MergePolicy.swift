@@ -164,6 +164,7 @@ extension MergePolicy{
     
     // When conflict.databaseObject is unavailable, the conflicts exist only in context level and they must be new insertions
     private func resolveWhenDatabaseObjectUnavailable(_ conflicts: [NSConstraintConflict]) throws{
+        handleStoreAppV2RelatedConflicts(conflicts)
         
         for conflict in conflicts
         {
@@ -183,10 +184,10 @@ extension MergePolicy{
                     }
                                         
                     // Delete previous versions (different than below).
-//                     for case let appVersion as AppVersion in previousApp._versions where appVersion.app == nil
-//                     {
-//                         appVersion.managedObjectContext?.delete(appVersion)
-//                     }
+                    for case let appVersion as AppVersion in previousApp._versions where appVersion.app == nil
+                    {
+                        appVersion.managedObjectContext?.delete(appVersion)
+                    }
 
                     // Delete previous screenshots (different than below).
                     for case let appScreenshot as AppScreenshot in previousApp._screenshots where appScreenshot.app == nil
@@ -217,27 +218,9 @@ extension MergePolicy{
     
     // When conflict.databaseObject is available, it means this is replace (delete + insert) or update
     private func resolveWhenDatabaseObjectAvailable(_ conflicts: [NSConstraintConflict]) throws {
-        
-        // handle releaseTracks by always deleting the db version and accepting the incoming object
-        // this prevents any stale references (actaully we shouldn't be inserting all the time,
-        // but due to existing design this is the hacky fix)
-        for track in conflicts.compactMap({ $0.databaseObject as? ReleaseTrack }) {
-            track.managedObjectContext?.delete(track)
-        }
+                
+        handleStoreAppV2RelatedConflicts(conflicts)
 
-        for conflict in conflicts {
-            if let existingApp = conflict.databaseObject as? StoreApp,
-               let incomingApp = conflict.conflictingObjects.first as? StoreApp,
-               // if the entities are not matching, but existing is a placeholder, then delete the placeholder
-               type(of: existingApp) != type(of: incomingApp)
-            {
-                print("Delting existing \(type(of: existingApp)) in db to resolve conflict. " + 
-                      "Incoming \(type(of: incomingApp)) will be saved in its place")
-                existingApp.managedObjectContext?.delete(existingApp)
-            }
-        }
-        
-        
         for conflict in conflicts
         {
             switch conflict.databaseObject
@@ -352,6 +335,28 @@ extension MergePolicy{
             default: break
             }
         }
+        
+    }
+    
+    private func handleStoreAppV2RelatedConflicts(_ conflicts: [NSConstraintConflict]) {
+        // handle releaseTracks by always deleting the db version and accepting the incoming object
+        // this prevents any stale references (actaully we shouldn't be inserting all the time,
+        // but due to existing design this is the hacky fix)
+        for track in conflicts.compactMap({ $0.databaseObject as? ReleaseTrack }) {
+            track.managedObjectContext?.delete(track)
+        }
+
+        for conflict in conflicts {
+            if let existingApp = conflict.databaseObject as? StoreApp,
+               let incomingApp = conflict.conflictingObjects.first as? StoreApp,
+               // if the entities are not matching, but existing is a placeholder, then delete the placeholder
+               type(of: existingApp) != type(of: incomingApp)
+            {
+                print("Delting existing \(type(of: existingApp)) in db to resolve conflict. " +
+                      "Incoming \(type(of: incomingApp)) will be saved in its place")
+                existingApp.managedObjectContext?.delete(existingApp)
+            }
+        }
     }
 }
 
@@ -377,69 +382,80 @@ extension MergePolicy{
 
     func performPostMergeValidationAndCorrections(for conflicts: [NSConstraintConflict]) throws{
         
-        // handle stale references to placeholder versions and re-anchor the latestVersion via setVersions()
-        for app in conflicts.compactMap({ $0.databaseObject as? StoreAppV2 }) {
-            var versions = app._versions.array as? [AppVersion] ?? []
-        
-            // Ensure we don't remove the only placeholder if there's just one version
-            if versions.count > 1, let placeholder = versions.first(where: StoreApp.isPlaceHolderVersion) {
-                placeholder.managedObjectContext?.delete(placeholder)
-                versions.removeAll { $0 === placeholder }
-            }
-            
-            // this sets in the latestVersion and other stuffs, so we need this post migration
-            try app.setVersions(versions)
-            assert((app.latestSupportedVersion != nil), "latestVersion is nil during merge? \(app)")
-        }
-        
-        
         for conflict in conflicts
         {
+            if conflict.databaseObject?.isDeleted ?? false {
+                // if we are dealing with transient (now deleted) objects, ignore post processing
+                continue
+            }
+            
             switch conflict.databaseObject
             {
+            case let databaseObject as StoreAppV2:
+                // handle stale references to placeholder versions and re-anchor the latestVersion via setVersions()
+                if !databaseObject.isDeleted {
+                    let app = databaseObject
+                    var versions = app._versions.array as? [AppVersion] ?? []
+                
+                    // Ensure we don't remove the only placeholder if there's just one version
+                    if versions.count > 1, let placeholder = versions.first(where: StoreApp.isPlaceHolderVersion) {
+                        placeholder.managedObjectContext?.delete(placeholder)
+                        versions.removeAll { $0 === placeholder }
+                    }
+                    
+                    // this sets in the latestVersion and other stuffs, so we need this post migration
+                    try app.setVersions(versions)
+                    assert((app.latestSupportedVersion != nil), "latestVersion is nil during merge? \(app)")
+                }
+                
             case let databaseObject as StoreApp:
                 do
                 {
                     
                     if let globallyUniqueID = databaseObject.globallyUniqueID
                     {
-                        // Permissions
-                        if let appPermissions = permissionsByGlobalAppID[globallyUniqueID],
-                           case let databasePermissions = Set(databaseObject.permissions.map({ AnyHashable($0.permission) })),
-                           databasePermissions != appPermissions
-                        {
-                            // Sorting order doesn't matter, but elements themselves don't match so throw error.
-                            throw MergeError.incorrectPermissions(for: databaseObject)
-                        }
                         
-//                        // App versions
-//                        var appVersions = databaseObject.versions
-//                        if let sortedAppVersionIDs = sortedVersionIDsByGlobalAppID[globallyUniqueID],
-//                           let sortedAppVersionsIDsArray = sortedAppVersionIDs.array as? [String],
-//                           case let databaseVersionIDs = databaseObject.versions.map({ $0.versionID }),
-//                           databaseVersionIDs != sortedAppVersionsIDsArray
-//                        {
-//                            // databaseObject.versions post-merge doesn't match contextApp.versions pre-merge, so attempt to fix by re-sorting.
-//                            
-//                            let fixedAppVersions = databaseObject.versions.sorted { (versionA, versionB) in
-//                                let indexA = sortedAppVersionIDs.index(of: versionA.versionID)
-//                                let indexB = sortedAppVersionIDs.index(of: versionB.versionID)
-//                                return indexA < indexB
-//                            }
-//                            
-//                            let appVersionIDs = fixedAppVersions.map { $0.versionID }
-//                            guard appVersionIDs == sortedAppVersionsIDsArray else {
-//                                // fixedAppVersions still doesn't match source's versions, so throw MergeError.
-//                                throw MergeError.incorrectVersionOrder(for: databaseObject)
-//                            }
-//                            
-//                            appVersions = fixedAppVersions
-//                        }
-                        
-                        // Screenshots
                         if let existingApp = conflict.databaseObject as? StoreApp,
                            !StoreApp.isPlaceHolderStoreApp(existingApp)
                         {
+                            // Permissions
+                            if let appPermissions = permissionsByGlobalAppID[globallyUniqueID],
+                               case let databasePermissions = Set(databaseObject.permissions.map({ AnyHashable($0.permission) })),
+                               databasePermissions != appPermissions
+                            {
+                                // Sorting order doesn't matter, but elements themselves don't match so throw error.
+                                throw MergeError.incorrectPermissions(for: databaseObject)
+                            }
+
+                            
+                            // App versions
+                            var appVersions = databaseObject.versions
+                            if let sortedAppVersionIDs = sortedVersionIDsByGlobalAppID[globallyUniqueID],
+                               let sortedAppVersionsIDsArray = sortedAppVersionIDs.array as? [String],
+                               case let databaseVersionIDs = appVersions.map({ $0.versionID }),
+                               databaseVersionIDs != sortedAppVersionsIDsArray
+                            {
+                                // databaseObject.versions post-merge doesn't match contextApp.versions pre-merge, so attempt to fix by re-sorting.
+                                
+                                let fixedAppVersions = appVersions.sorted { (versionA, versionB) in
+                                    let indexA = sortedAppVersionIDs.index(of: versionA.versionID)
+                                    let indexB = sortedAppVersionIDs.index(of: versionB.versionID)
+                                    return indexA < indexB
+                                }
+                                
+                                let appVersionIDs = fixedAppVersions.map { $0.versionID }
+                                guard appVersionIDs == sortedAppVersionsIDsArray else {
+                                    // fixedAppVersions still doesn't match source's versions, so throw MergeError.
+                                    throw MergeError.incorrectVersionOrder(for: databaseObject)
+                                }
+                                
+                                appVersions = fixedAppVersions
+                                
+                                // Always update versions post-merging to make sure latestSupportedVersion is correct.
+                                try databaseObject.setVersions(appVersions)
+                            }
+                            
+                            // Screenshots
                             // process for screenshots ordering fix
                             if let sortedScreenshotIDs = sortedScreenshotIDsByGlobalAppID[globallyUniqueID],
                                let sortedScreenshotIDsArray = sortedScreenshotIDs.array as? [String],
@@ -467,8 +483,6 @@ extension MergePolicy{
                         }
                     }
                     
-                    // Always update versions post-merging to make sure latestSupportedVersion is correct.
-//                    try databaseObject.setVersions(appVersions)
                 }
                 catch
                 {
