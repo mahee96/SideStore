@@ -87,7 +87,8 @@ final class VerifyAppOperation: ResultOperation<Void>
                     try await self.verifyDownloadedVersion(of: app, matches: appVersion)
                     
                     // process missing permissions check only if the source is V2 or later
-                    if let sourceVersion = appVersion.app?.source?.isSourceAtLeastV2
+                    if let source = appVersion.app?.source,
+                       source.isSourceAtLeastV2
                     {
                         try await self.verifyPermissions(of: app, match: appVersion)
                     }
