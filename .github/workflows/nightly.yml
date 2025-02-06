@@ -54,10 +54,14 @@ jobs:
       - name: Increase nightly build number and set as version
         run: bash .github/workflows/increase-nightly-build-num.sh
 
-      - name: Refetch MARKETING_VERSION from Build.xcconfig again
+      - name: Setting MARKETING_VERSION from Build.xcconfig into ENV var
         id: version
         run: |
-          echo "version=$(grep MARKETING_VERSION Build.xcconfig | sed -e "s/MARKETING_VERSION = //g")" >> $GITHUB_OUTPUT
+          echo "MARKETING_VERSION=$(grep MARKETING_VERSION Build.xcconfig | sed -e "s/MARKETING_VERSION = //g")" >> $GITHUB_ENV
+          echo "version=$MARKETING_VERSION" >> $GITHUB_OUTPUT
+
+          echo MARKETING_VERSION=$MARKETING_VERSION
+          echo version=$version
   
       - name: Echo Build.xcconfig, .nightly-build-num
         run: |
