@@ -146,7 +146,9 @@ public class InstalledApp: BaseEntity, InstalledAppProtocol
         // Check beta updates if enabled
         if UserDefaults.standard.isBetaUpdatesEnabled,
            ReleaseTracks.betaTracks.contains(latestVersion.channel),
-           latestSemVer == currentSemVer
+           let latestVer = SemanticVersion("\(currentSemVer!.major).\(currentSemVer!.minor).\(currentSemVer!.patch)"),
+           currentSemVer! == latestVer,
+           latestSemVer!.preRelease > currentSemVer!.preRelease
         {
             // Special handling for SideStore app
             if storeApp.bundleIdentifier == Bundle.Info.appbundleIdentifier {
