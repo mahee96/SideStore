@@ -306,8 +306,12 @@ jobs:
           echo "COMMIT_ID=$SHORT_COMMIT" >> $GITHUB_ENV
           echo "SIZE=$IPA_SIZE" >> $GITHUB_ENV
           echo "SHA256=$SHA256_HASH" >> $GITHUB_ENV
-          echo "LOCALIZED_DESCRIPTION=$LOCALIZED_DESCRIPTION" >> $GITHUB_ENV
           echo "DOWNLOAD_URL=https://github.com/SideStore/SideStore/releases/download/nightly/SideStore.ipa" >> $GITHUB_ENV
+
+          # multiline strings
+          echo "LOCALIZED_DESCRIPTION<<EOF" >> $GITHUB_ENV
+          echo "$LOCALIZED_DESCRIPTION" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Checkout SideStore/apps-v2.json
         if: steps.check_publish.outputs.should_deploy == 'true'
