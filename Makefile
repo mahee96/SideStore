@@ -206,6 +206,7 @@ print_release_type:
 
 # switched back to release build as default config, unless specified by the incoming environment vars
 BUILD_CONFIG ?= Release
+MARKETING_VERSION ?= 
 build: print_release_type
 	@echo ">>>>>>>> BUILD_CONFIG is set to '$(BUILD_CONFIG)', Building for $(BUILD_CONFIG) mode! <<<<<<<<<"
 	@echo ""
@@ -220,7 +221,8 @@ build: print_release_type
 				DEVELOPMENT_TEAM=XYZ0123456 \
 				ORG_IDENTIFIER=com.SideStore \
 				BUILD_REVISION=$(COMMIT_ID) \
-				BUILD_CHANNEL=$(BUILD_CHANNEL)
+				BUILD_CHANNEL=$(BUILD_CHANNEL) \
+				MARKETING_VERSION=$(MARKETING_VERSION) \
 				BUNDLE_ID_SUFFIX=
 #				DWARF_DSYM_FOLDER_PATH="."
 
