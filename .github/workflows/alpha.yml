@@ -306,6 +306,7 @@ jobs:
           This is release for:
             - version: "${{ steps.version.outputs.version }}"
             - revision: "$SHORT_COMMIT"
+            - timestamp: "${{ steps.date.outputs.date }}"
             - track: "alpha"
           EOF
           )
