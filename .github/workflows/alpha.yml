@@ -2,7 +2,7 @@ name: Alpha SideStore build
 on:
   push:
     branches:
-      - alpha
+      - develop-alpha
 
 jobs:
   build:
