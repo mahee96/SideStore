@@ -7,6 +7,11 @@ on:
     - cron: '0 0 * * *' # Runs every night at midnight UTC
   workflow_dispatch: # Allows manual trigger
 
+# cancel duplicate run if from same branch
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-changes:
     if: github.event_name == 'schedule'
@@ -45,16 +50,14 @@ jobs:
       (github.event_name == 'push' || 
       (github.event_name == 'schedule' && needs.check-changes.result == 'success' && needs.check-changes.outputs.has_changes == 'true'))
     concurrency:
-      group: ${{ github.ref }}
-      cancel-in-progress: true
+      group: build-number-increment   # serialize for build num cache access
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: 'macos-14'
+          - os: 'macos-15'
             version: '16.1'
 
-            
     runs-on: ${{ matrix.os }}
     steps:
 
@@ -74,23 +77,25 @@ jobs:
       - name: Install xcbeautify
         run: brew install xcbeautify
 
-      - name: Cache .nightly-build-num
-        uses: actions/cache@v4
+      - name: Checkout SideStore/beta-build-num
+        uses: actions/checkout@v4
         with:
-          path: .nightly-build-num
-          key: nightly-build-num-${{ hashFiles('.nightly-build-num') }}
-          restore-keys: nightly-build-num-
+            repository: 'SideStore/beta-build-num'
+            ref: 'main'
+            token: ${{ secrets.BETA_BUILD_NUM_DEPLOY_KEY }}
+            path: 'SideStore/beta-build-num'
 
-      - name: Rename cache to .nightly-build-num 
-        run: mv nightly-build-num-* .nightly-build-num || true
+      - name: Copy buildnumber.txt to repo root
+        run: |
+          cp SideStore/beta-build-num/buildnumber.txt .
         
-      - name: Echo Build.xcconfig, .nightly-build-num
+      - name: Echo Build.xcconfig, buildnumber.txt
         run: |
           cat Build.xcconfig
-          [ -f .nightly-build-num ] && cat .nightly-build-num || echo ".nightly-build-num not found"
+          cat buildnumber.txt
 
       - name: Increase nightly build number and set as version
-        run: bash .github/workflows/increase-nightly-build-num.sh
+        run: bash .github/workflows/increase-beta-build-num.sh
 
       - name: Extract MARKETING_VERSION from Build.xcconfig
         id: version
@@ -114,11 +119,10 @@ jobs:
           echo "MARKETING_VERSION=$MARKETING_VERSION" >> $GITHUB_ENV
           echo "MARKETING_VERSION=$MARKETING_VERSION"
 
-    
-      - name: Echo Build.xcconfig, .nightly-build-num
+      - name: Echo Updated Build.xcconfig, buildnumber.txt
         run: |
           cat Build.xcconfig
-          cat .nightly-build-num
+          cat buildnumber.txt
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1.6.0
@@ -267,7 +271,7 @@ jobs:
               Version: `${{ steps.version.outputs.version }}`
 
       - name: Add version to IPA file name
-        run: mv SideStore.ipa SideStore-${{ steps.version.outputs.version }}.ipa
+        run: cp SideStore.ipa SideStore-${{ steps.version.outputs.version }}.ipa
 
       - name: Upload SideStore.ipa Artifact
         uses: actions/upload-artifact@v4
@@ -320,10 +324,10 @@ jobs:
         run: |
           if [[ "$(uname)" == "Darwin" ]]; then
             # macOS
-            IPA_SIZE=$(stat -f %z SideStore-${{ steps.version.outputs.version }}.ipa)
+            IPA_SIZE=$(stat -f %z SideStore.ipa)
           else
             # Linux
-            IPA_SIZE=$(stat -c %s SideStore-${{ steps.version.outputs.version }}.ipa)
+            IPA_SIZE=$(stat -c %s SideStore.ipa)
           fi
           echo "IPA size in bytes: $IPA_SIZE"
           echo "IPA_SIZE=$IPA_SIZE" >> $GITHUB_ENV
@@ -331,7 +335,7 @@ jobs:
       - name: Compute SHA-256 of IPA
         if: steps.check_publish.outputs.should_deploy == 'true'
         run: |
-          SHA256_HASH=$(shasum -a 256 SideStore-${{ steps.version.outputs.version }}.ipa | awk '{ print $1 }')
+          SHA256_HASH=$(shasum -a 256 SideStore.ipa | awk '{ print $1 }')
           echo "SHA-256 Hash: $SHA256_HASH"
           echo "SHA256_HASH=$SHA256_HASH" >> $GITHUB_ENV
 
@@ -344,7 +348,8 @@ jobs:
           This is release for:
             - version: "${{ steps.version.outputs.version }}"
             - revision: "$SHORT_COMMIT"
-            - track: "nightly"
+            - track: "$RELEASE_CHANNEL"
+            - timestamp: "${{ steps.date.outputs.date }}"
           EOF
           )
           
@@ -374,7 +379,7 @@ jobs:
             path: 'SideStore/apps-v2.json'
       
       - name: Publish to SideStore/apps-v2.json
-        if: steps.check_publish.outputs.should_deploy == 'true'
+        id: publish-release
         run: |
           # Copy and execute the update script
           pushd SideStore/apps-v2.json/
@@ -390,6 +395,27 @@ jobs:
           git add ./_includes/source.json
           git commit -m " - updated for $SHORT_COMMIT deployment" || echo "No changes to commit"
 
-          git status
+          git push origin HEAD:main
+          popd
+
+      - name: Echo Updated Build.xcconfig, buildnumber.txt
+        run: |
+          cat Build.xcconfig
+          cat buildnumber.txt
+
+      # save it
+      - name: Publish to SideStore/beta-build-num
+        run: |
+          rm SideStore/beta-build-num/buildNumber.txt
+          mv buildNumber.txt SideStore/beta-build-num/buildNumber.txt
+          pushd SideStore/beta-build-num/
+          
+          # Configure Git user (committer details)
+          git config user.name "GitHub Actions"
+          git config user.email "github-actions@github.com"
+
+          git add buildNumber.txt
+          git commit -m " - updated for $RELEASE_CHANNEL - $SHORT_COMMIT deployment" || echo "No changes to commit"
+
           git push origin HEAD:main
           popd
