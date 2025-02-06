@@ -293,11 +293,14 @@ jobs:
           VERSION_IPA="${version}-${date}.${build_num}"
 
           # Format localized description
-          LOCALIZED_DESCRIPTION="This is release for:
-          - track: \"nightly\"
-          - release: \"${{ steps.version.outputs.version }}\"
-          - revision: \"${{ github.sha }}\""
-
+          LOCALIZED_DESCRIPTION=$(cat <<EOF
+          This is release for:
+            - track: "nightly"
+            - release: "${{ steps.version.outputs.version }}"
+            - revision: "${{ github.sha }}"
+          EOF
+          )
+          
           echo "VERSION_IPA=$VERSION_IPA" >> $GITHUB_ENV
           echo "VERSION_DATE=$FORMATTED_DATE" >> $GITHUB_ENV
           echo "COMMIT_ID=$SHORT_COMMIT" >> $GITHUB_ENV
