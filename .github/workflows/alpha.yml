@@ -2,8 +2,7 @@ name: Alpha SideStore build
 on:
   push:
     branches:
-      # - alpha
-      - rebase-2.0-wip
+      - alpha
 
 jobs:
   build:
@@ -22,7 +21,9 @@ jobs:
     steps:
 
       - name: Set current build as ALPHA
-        run: echo "IS_ALPHA=1" >> $GITHUB_ENV
+        run: |
+          echo "IS_ALPHA=1" >> $GITHUB_ENV
+          echo "RELEASE_CHANNEL=alpha" >> $GITHUB_ENV
         
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,21 +40,47 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .alpha-build-num
-          key: alpha-build-num
+          key: alpha-build-num-${{ hashFiles('.alpha-build-num') }}
+          restore-keys: alpha-build-num-
 
-      - name: Get version
-        id: version-marketing
-        run: echo "VERSION_IPA=$(grep MARKETING_VERSION Build.xcconfig | sed -e "s/MARKETING_VERSION = //g")" >> $GITHUB_ENV
+      - name: Rename cache to .alpha-build-num 
+        run: mv alpha-build-num-* .alpha-build-num || true
+        
+      - name: Echo Build.xcconfig, .alpha-build-num
+        run: |
+          cat Build.xcconfig
+          [ -f .alpha-build-num ] && cat .alpha-build-num || echo ".alpha-build-num not found"
 
       - name: Increase alpha build number and set as version
         run: bash .github/workflows/increase-alpha-build-num.sh
 
-      - name: Get version
+      - name: Extract MARKETING_VERSION from Build.xcconfig
         id: version
-        run: echo "version=$(grep MARKETING_VERSION Build.xcconfig | sed -e "s/MARKETING_VERSION = //g")" >> $GITHUB_OUTPUT
+        run: |
+          version=$(grep MARKETING_VERSION Build.xcconfig | sed -e 's/MARKETING_VERSION = //g')
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "version=$version"
 
-      - name: Echo version
-        run: echo "${{ steps.version.outputs.version }}"
+      - name: Set MARKETING_VERSION
+        run: |
+          # Extract version number (e.g., "0.6.0")
+          version=$(echo "${{ steps.version.outputs.version }}" | sed -E 's/^[^0-9]*([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+          # Extract date (YYYYMMDD) (e.g., "20250205")
+          date=$(echo "${{ steps.version.outputs.version }}" | sed -E 's/.*\.([0-9]{4})\.([0-9]{2})\.([0-9]{2})\..*/\1\2\3/')
+          # Extract build number (e.g., "2")
+          build_num=$(echo "${{ steps.version.outputs.version }}" | sed -E 's/.*\.([0-9]+)\+.*/\1/')
+
+          # Combine them into the final output
+          MARKETING_VERSION="${version}-${date}.${build_num}"
+
+          echo "MARKETING_VERSION=$MARKETING_VERSION" >> $GITHUB_ENV
+          echo "MARKETING_VERSION=$MARKETING_VERSION"
+
+    
+      - name: Echo Build.xcconfig, .alpha-build-num
+        run: |
+          cat Build.xcconfig
+          cat .alpha-build-num
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1.6.0
@@ -134,14 +161,40 @@ jobs:
 
         
       - name: Build SideStore
-        run: NSUnbufferedIO=YES make build 2>&1 | xcbeautify --renderer github-actions && exit ${PIPESTATUS[0]}
+        # using 'tee' to intercept stdout and log for detailed build-log
+        run: |
+          NSUnbufferedIO=YES make build 2>&1 | tee build.log | xcbeautify --renderer github-actions && exit ${PIPESTATUS[0]}
 
       - name: Fakesign app
-        run: make fakesign
+        run: make fakesign | tee -a build.log
 
       - name: Convert to IPA
-        run: make ipa
+        run: make ipa | tee -a build.log
 
+      - name: Encrypt build.log generated from SideStore build for upload
+        run: |
+          DEFAULT_BUILD_LOG_PASSWORD=12345
+
+          BUILD_LOG_ZIP_PASSWORD=${{ secrets.BUILD_LOG_ZIP_PASSWORD }}
+          BUILD_LOG_ZIP_PASSWORD=${BUILD_LOG_ZIP_PASSWORD:-$DEFAULT_BUILD_LOG_PASSWORD}
+
+          if [ "$BUILD_LOG_ZIP_PASSWORD" == "$DEFAULT_BUILD_LOG_PASSWORD" ]; then
+            echo "Warning: BUILD_LOG_ZIP_PASSWORD is not set. Defaulting to '${DEFAULT_BUILD_LOG_PASSWORD}'."
+          fi 
+
+          if [ ! -f build.log ]; then
+            echo "Warning: build.log is missing, creating a dummy log..."
+            echo "Error: build.log was missing, This is a dummy placeholder file..." > build.log
+          fi
+          
+          zip -e -P "$BUILD_LOG_ZIP_PASSWORD" encrypted-build_log.zip build.log
+
+      - name: List Files after SideStore build
+        run: |
+          echo ">>>>>>>>> Workdir <<<<<<<<<<"
+          ls -la .
+          echo ""
+  
       - name: Get current date
         id: date
         run: echo "date=$(date -u +'%c')" >> $GITHUB_OUTPUT
@@ -160,13 +213,13 @@ jobs:
           release: "Alpha"
           tag: "alpha"
           prerelease: true
-          files: SideStore.ipa SideStore.dSYMs.zip
+          files: SideStore.ipa SideStore.dSYMs.zip encrypted-build_log.zip
           body: |
               This is an ⚠️ **EXPERIMENTAL** ⚠️ alpha build for commit [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}).
               
               Alpha builds are **extremely experimental builds only meant to be used by developers and alpha testers. They often contain bugs and experimental features. Use at your own risk!**
               
-              If you want to try out new features early but want a lower chance of bugs, you can look at [SideStore Stable](https://github.com/${{ github.repository }}/releases?q=stable).
+              If you want to try out new features early but want a lower chance of bugs, you can look at [SideStore Nightly](https://github.com/${{ github.repository }}/releases?q=nightly).
               
               ## Build Info
               
@@ -190,21 +243,27 @@ jobs:
           name: SideStore-${{ steps.version.outputs.version }}-dSYM
           path: ./SideStore.xcarchive/dSYMs/*
 
+      - name: Upload encrypted-build_log.zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: encrypted-build_log.zip
+          path: encrypted-build_log.zip
+
       # Check if PUBLISH_ALPHA_UPDATES secret is set to non-zero
       - name: Check if PUBLISH_ALPHA_UPDATES is set
         id: check_publish
         run: |
-          if [[ "${{ secrets.PUBLISH_ALPHA_UPDATES }}" != "__YES__" ]]; then
+          echo "PUBLISH_ALPHA_UPDATES=${{ vars.PUBLISH_ALPHA_UPDATES }}"
+          if [[ "${{ vars.PUBLISH_ALPHA_UPDATES }}" == "__YES__" ]]; then
             echo "PUBLISH_ALPHA_UPDATES is not set. Skipping deployment."
-            exit 1  # Exit with 1 to indicate no deployment
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
           else
             echo "PUBLISH_ALPHA_UPDATES is set. Proceeding with deployment."
-            exit 0  # Exit with 0 to indicate deployment should proceed
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
           fi
-        continue-on-error: true  # Continue even if exit code is 1
 
       - name: Get short commit hash
-        if: ${{ steps.check_publish.outcome == 'success' }}
+        if: steps.check_publish.outputs.should_deploy == 'true'
         run: |
           # SHORT_COMMIT="${{ github.sha }}"
           SHORT_COMMIT=${GITHUB_SHA:0:7}
@@ -212,14 +271,14 @@ jobs:
           echo "SHORT_COMMIT=$SHORT_COMMIT" >> $GITHUB_ENV          
 
       - name: Get formatted date
-        if: ${{ steps.check_publish.outcome == 'success' }}
+        if: steps.check_publish.outputs.should_deploy == 'true'
         run: |
           FORMATTED_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           echo "Formatted date: $FORMATTED_DATE"
           echo "FORMATTED_DATE=$FORMATTED_DATE" >> $GITHUB_ENV          
       
       - name: Get size of IPA in bytes (macOS/Linux)
-        if: ${{ steps.check_publish.outcome == 'success' }}
+        if: steps.check_publish.outputs.should_deploy == 'true'
         run: |
           if [[ "$(uname)" == "Darwin" ]]; then
             # macOS
@@ -232,38 +291,52 @@ jobs:
           echo "IPA_SIZE=$IPA_SIZE" >> $GITHUB_ENV
 
       - name: Compute SHA-256 of IPA
-        if: ${{ steps.check_publish.outcome == 'success' }}
+        if: steps.check_publish.outputs.should_deploy == 'true'
         run: |
           SHA256_HASH=$(shasum -a 256 SideStore-${{ steps.version.outputs.version }}.ipa | awk '{ print $1 }')
           echo "SHA-256 Hash: $SHA256_HASH"
           echo "SHA256_HASH=$SHA256_HASH" >> $GITHUB_ENV
 
       - name: Set environment variables dynamically
-        if: ${{ steps.check_publish.outcome == 'success' }}
+        if: steps.check_publish.outputs.should_deploy == 'true'
         run: |
-          echo "VERSION_IPA=$VERSION_IPA" >> $GITHUB_ENV
+          
+          # Format localized description
+          LOCALIZED_DESCRIPTION=$(cat <<EOF
+          This is release for:
+            - version: "${{ steps.version.outputs.version }}"
+            - revision: "$SHORT_COMMIT"
+            - track: "alpha"
+          EOF
+          )
+          
+          echo "VERSION_IPA=$MARKETING_VERSION" >> $GITHUB_ENV
           echo "VERSION_DATE=$FORMATTED_DATE" >> $GITHUB_ENV
-          echo "BETA=true" >> $GITHUB_ENV
           echo "COMMIT_ID=$SHORT_COMMIT" >> $GITHUB_ENV
           echo "SIZE=$IPA_SIZE" >> $GITHUB_ENV
           echo "SHA256=$SHA256_HASH" >> $GITHUB_ENV
-          echo "LOCALIZED_DESCRIPTION=This is alpha release for revision: ${{ github.sha }}" >> $GITHUB_ENV
           echo "DOWNLOAD_URL=https://github.com/SideStore/SideStore/releases/download/alpha/SideStore.ipa" >> $GITHUB_ENV
 
+          # multiline strings
+          echo "LOCALIZED_DESCRIPTION<<EOF" >> $GITHUB_ENV
+          echo "$LOCALIZED_DESCRIPTION" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
       - name: Checkout SideStore/apps-v2.json
-        if: ${{ steps.check_publish.outcome == 'success' }}
+        if: steps.check_publish.outputs.should_deploy == 'true'
         uses: actions/checkout@v4
         with:
             # Repository name with owner. For example, actions/checkout
             # Default: ${{ github.repository }}
             repository: 'SideStore/apps-v2.json'
-            ref: 'main'
+            ref: 'main' # TODO: use branches for alpha and alpha tracks? so as to avoid push collision?
+            # ref: 'alpha' # TODO: use branches for alpha and alpha tracks? so as to avoid push collision?
             # token: ${{ github.token }}
             token: ${{ secrets.APPS_DEPLOY_KEY }}
             path: 'SideStore/apps-v2.json'
       
       - name: Publish to SideStore/apps-v2.json
-        if: ${{ steps.check_publish.outcome == 'success' }}
+        if: steps.check_publish.outputs.should_deploy == 'true'
         run: |
           # Copy and execute the update script
           pushd SideStore/apps-v2.json/
@@ -272,7 +345,7 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "github-actions@github.com"
           
-          # Make the update script executable and run it
+          # update the source.json
           python3 ../../update_apps.py "./_includes/source.json"
           
           # Commit changes and push using SSH
