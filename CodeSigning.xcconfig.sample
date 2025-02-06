@@ -18,6 +18,7 @@ BUNDLE_ID_SUFFIX = .$(DEVELOPMENT_TEAM)
 // Comment this out to use default 'stable' channel defined in Build.xcconfig
 // For local xcode or commandline builds we can use local channel for local build specific logic
 BUILD_CHANNEL = local
+BUILD_REVISION = local
 
 // Set to YES if you have a valid paid Apple Developer account
 DEVELOPER_ACCOUNT_PAID = NO
