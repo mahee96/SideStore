@@ -1,11 +1,15 @@
 name: Nightly SideStore Build
 on:
+  push:
+    branches:
+      - develop
   schedule:
-    - cron: '0 0 * * *' # Runs every day at midnight UTC
-  workflow_dispatch: # Allows manual triggering
+    - cron: '0 0 * * *' # Runs every night at midnight UTC
+  workflow_dispatch: # Allows manual trigger
 
 jobs:
   check-changes:
+    if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     outputs:
       has_changes: ${{ steps.check.outputs.has_changes }}
@@ -26,10 +30,8 @@ jobs:
           fi
           echo "Has changes: $NEW_COMMITS"
           if [ "$NEW_COMMITS" -gt 0 ]; then
-            echo "has_changes=true" >> $GITHUB_ENV
             echo "has_changes=true" >> $GITHUB_OUTPUT
           else
-            echo "has_changes=false" >> $GITHUB_ENV
             echo "has_changes=false" >> $GITHUB_OUTPUT
           fi
         env:
@@ -38,7 +40,10 @@ jobs:
   build:
     name: Build and upload SideStore Nightly releases
     needs: check-changes
-    if: needs.check-changes.outputs.has_changes == 'true'
+    if: |
+      always() &&
+      (github.event_name == 'push' || 
+      (github.event_name == 'schedule' && needs.check-changes.result == 'success' && needs.check-changes.outputs.has_changes == 'true'))
     concurrency:
       group: ${{ github.ref }}
       cancel-in-progress: true
@@ -48,6 +53,7 @@ jobs:
         include:
           - os: 'macos-14'
             version: '16.1'
+
             
     runs-on: ${{ matrix.os }}
     steps:
