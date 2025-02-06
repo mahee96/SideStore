@@ -148,7 +148,7 @@ public class InstalledApp: BaseEntity, InstalledAppProtocol
            ReleaseTracks.betaTracks.contains(latestVersion.channel),
            let latestVer = SemanticVersion("\(currentSemVer!.major).\(currentSemVer!.minor).\(currentSemVer!.patch)"),
            currentSemVer! == latestVer,
-           latestSemVer!.preRelease > currentSemVer!.preRelease
+           (latestSemVer!.preRelease > currentSemVer!.preRelease) || (latestSemVer!.build > currentSemVer!.build)
         {
             // Special handling for SideStore app
             if storeApp.bundleIdentifier == Bundle.Info.appbundleIdentifier {
