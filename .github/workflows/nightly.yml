@@ -295,9 +295,9 @@ jobs:
           # Format localized description
           LOCALIZED_DESCRIPTION=$(cat <<EOF
           This is release for:
+            - version: "${{ steps.version.outputs.version }}"
+            - revision: "$SHORT_COMMIT"
             - track: "nightly"
-            - release: "${{ steps.version.outputs.version }}"
-            - revision: "${{ github.sha }}"
           EOF
           )
           
