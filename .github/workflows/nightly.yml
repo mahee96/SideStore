@@ -1,12 +1,44 @@
-name: Nightly SideStore build
+name: Nightly SideStore Build
 on:
-  push:
-    branches:
-      - develop
+  schedule:
+    - cron: '0 0 * * *' # Runs every day at midnight UTC
+  workflow_dispatch: # Allows manual triggering
 
 jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ steps.check.outputs.has_changes }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Ensure full history
+
+      - name: Check for new commits since last run
+        id: check
+        run: |
+          LAST_RUN=$(gh run list --workflow "Nightly SideStore Build" --json createdAt --jq ".[0].createdAt" || echo "")
+          if [ -n "$LAST_RUN" ]; then
+            NEW_COMMITS=$(git rev-list --count --since="$LAST_RUN" origin/develop)
+          else
+            NEW_COMMITS=1
+          fi
+          echo "Has changes: $NEW_COMMITS"
+          if [ "$NEW_COMMITS" -gt 0 ]; then
+            echo "has_changes=true" >> $GITHUB_ENV
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_ENV
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build:
     name: Build and upload SideStore Nightly releases
+    needs: check-changes
+    if: needs.check-changes.outputs.has_changes == 'true'
     concurrency:
       group: ${{ github.ref }}
       cancel-in-progress: true
@@ -16,7 +48,7 @@ jobs:
         include:
           - os: 'macos-14'
             version: '16.1'
-
+            
     runs-on: ${{ matrix.os }}
     steps:
 
