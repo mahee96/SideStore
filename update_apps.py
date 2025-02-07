@@ -10,7 +10,6 @@ SIDESTORE_BUNDLE_ID = "com.SideStore.SideStore"
 VERSION_IPA = os.getenv("VERSION_IPA")
 VERSION_DATE = os.getenv("VERSION_DATE")
 RELEASE_CHANNEL = os.getenv("RELEASE_CHANNEL")
-COMMIT_ID = os.getenv("COMMIT_ID")
 SIZE = os.getenv("SIZE")
 SHA256 = os.getenv("SHA256")
 LOCALIZED_DESCRIPTION = os.getenv("LOCALIZED_DESCRIPTION")
@@ -21,7 +20,6 @@ BUNDLE_IDENTIFIER = os.getenv("BUNDLE_IDENTIFIER", SIDESTORE_BUNDLE_ID)
 # VERSION_IPA = os.getenv("VERSION_IPA", "0.0.0")
 # VERSION_DATE = os.getenv("VERSION_DATE", "2000-12-18T00:00:00Z")
 # RELEASE_CHANNEL = os.getenv("RELEASE_CHANNEL", "alpha")
-# COMMIT_ID = os.getenv("COMMIT_ID", "1234567")
 # SIZE = int(os.getenv("SIZE", "0"))  # Convert to integer
 # SHA256 = os.getenv("SHA256", "")
 # LOCALIZED_DESCRIPTION = os.getenv("LOCALIZED_DESCRIPTION", "Invalid Update")
@@ -40,7 +38,6 @@ print("  ====> Required parameter list <====")
 print("Version:", VERSION_IPA)
 print("Version Date:", VERSION_DATE)
 print("ReleaseChannel:", RELEASE_CHANNEL)
-print("Commit ID:", COMMIT_ID)
 print("Size:", SIZE)
 print("Sha256:", SHA256)
 print("Localized Description:", LOCALIZED_DESCRIPTION)
@@ -68,10 +65,6 @@ if (VERSION_IPA == None or \
 RELEASE_CHANNEL = RELEASE_CHANNEL.lower()
 # Convert to integer
 SIZE = int(SIZE)
-
-if RELEASE_CHANNEL != 'stable' and COMMIT_ID is None:
-    print("Commit ID cannot be empty when ReleaseChannel is not 'stable' ")
-    sys.exit(1)
 
 version = data.get("version")
 if int(version) < 2:
@@ -108,10 +101,6 @@ for app in data.get("apps", []):
             "sha256": SHA256,
         }
         
-        # add commit ID if release is not stable 
-        if RELEASE_CHANNEL != 'stable':
-            new_version["commitID"] = COMMIT_ID
-
         tracks = [track for track in channels if track.get("track") == RELEASE_CHANNEL]
         if len(tracks) > 1:
             print(f"Multiple tracks with same `track` name = ${RELEASE_CHANNEL} are not allowed!")

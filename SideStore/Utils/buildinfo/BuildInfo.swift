@@ -7,7 +7,6 @@
 //
 
 public class BuildInfo{
-    private static let BUILD_REVISION_TAG  = "BuildRevision"    // commit ID for now (but could be any, set by build env vars
     private static let BUILD_CHANNEL_TAG   = "BuildChannel"     // set by build env, ex CI will set it via env vars, for xcode builds this is empty
     
     private static let MARKETING_VERSION_TAG        = "CFBundleShortVersionString"
@@ -38,19 +37,14 @@ public class BuildInfo{
         return ReleaseTracks(rawValue: channel ?? "") ?? .unknown
     }()
 
-    public lazy var revision: String? = {
-        let revision  = bundle.object(forInfoDictionaryKey: Self.BUILD_REVISION_TAG) as? String
-        return revision
-    }()
-
     public lazy var project_version: String? = {
-        let revision  = bundle.object(forInfoDictionaryKey: Self.CURRENT_PROJECT_VERSION_TAG) as? String
-        return revision
+        let version  = bundle.object(forInfoDictionaryKey: Self.CURRENT_PROJECT_VERSION_TAG) as? String
+        return version
     }()
 
     public lazy var marketing_version: String? = {
-        let revision  = bundle.object(forInfoDictionaryKey: Self.MARKETING_VERSION_TAG) as? String
-        return revision
+        let version  = bundle.object(forInfoDictionaryKey: Self.MARKETING_VERSION_TAG) as? String
+        return version
     }()
 
     public lazy var xcode: String? = {

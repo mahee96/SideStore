@@ -73,7 +73,6 @@ jobs:
 
       - name: Set current build as BETA
         run: |
-          echo "IS_BETA=1" >> $GITHUB_ENV
           echo "RELEASE_CHANNEL=beta" >> $GITHUB_ENV
         
       - name: Checkout code
@@ -115,6 +114,13 @@ jobs:
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "version=$version"
 
+      - name: Get short commit hash
+        run: |
+          # SHORT_COMMIT="${{ github.sha }}"
+          SHORT_COMMIT=${GITHUB_SHA:0:7}
+          echo "Short commit hash: $SHORT_COMMIT"
+          echo "SHORT_COMMIT=$SHORT_COMMIT" >> $GITHUB_ENV          
+
       - name: Set MARKETING_VERSION
         run: |
           # Extract version number (e.g., "0.6.0")
@@ -125,7 +131,7 @@ jobs:
           build_num=$(echo "${{ steps.version.outputs.version }}" | sed -E 's/.*\.([0-9]+)\+.*/\1/')
 
           # Combine them into the final output
-          MARKETING_VERSION="${version}-${date}.${build_num}"
+          MARKETING_VERSION="${version}-${date}.${build_num}+${SHORT_COMMIT}"
 
           echo "MARKETING_VERSION=$MARKETING_VERSION" >> $GITHUB_ENV
           echo "MARKETING_VERSION=$MARKETING_VERSION"
@@ -315,14 +321,6 @@ jobs:
             echo "should_deploy=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Get short commit hash
-        if: steps.check_publish.outputs.should_deploy == 'true'
-        run: |
-          # SHORT_COMMIT="${{ github.sha }}"
-          SHORT_COMMIT=${GITHUB_SHA:0:7}
-          echo "Short commit hash: $SHORT_COMMIT"
-          echo "SHORT_COMMIT=$SHORT_COMMIT" >> $GITHUB_ENV          
-
       - name: Get formatted date
         if: steps.check_publish.outputs.should_deploy == 'true'
         run: |
@@ -354,7 +352,6 @@ jobs:
         if: steps.check_publish.outputs.should_deploy == 'true'
         run: |
           
-          # Format localized description
           LOCALIZED_DESCRIPTION=$(cat <<EOF
           This is release for:
             - version: "${{ steps.version.outputs.version }}"
@@ -366,7 +363,6 @@ jobs:
           
           echo "VERSION_IPA=$MARKETING_VERSION" >> $GITHUB_ENV
           echo "VERSION_DATE=$FORMATTED_DATE" >> $GITHUB_ENV
-          echo "COMMIT_ID=$SHORT_COMMIT" >> $GITHUB_ENV
           echo "SIZE=$IPA_SIZE" >> $GITHUB_ENV
           echo "SHA256=$SHA256_HASH" >> $GITHUB_ENV
           echo "DOWNLOAD_URL=https://github.com/SideStore/SideStore/releases/download/nightly/SideStore.ipa" >> $GITHUB_ENV

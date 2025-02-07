@@ -157,7 +157,6 @@ extension StoreApp {
     
     //MARK: - properties
     @NSManaged public private(set) var sha256: String?
-    @NSManaged public private(set) var revision: String?
 
     //MARK: - relationships
     @NSManaged @objc(releaseTracks) private(set) var _releaseTracks: NSOrderedSet?
@@ -378,7 +377,6 @@ public class StoreApp: BaseEntity, Decodable
         
         // v2 source format
         case sha256
-        case revision
         case releaseTracks = "releaseChannels"
     }
     
@@ -400,7 +398,6 @@ public class StoreApp: BaseEntity, Decodable
             let container = try decoder.container(keyedBy: CodingKeys.self)
             
             self.sha256 = try container.decodeIfPresent(String.self, forKey: .sha256)
-            self.revision = try container.decodeIfPresent(String.self, forKey: .revision)
             
             self.name = try container.decode(String.self, forKey: .name)
             self.bundleIdentifier = try container.decode(String.self, forKey: .bundleIdentifier)

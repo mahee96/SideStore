@@ -54,20 +54,7 @@ extension VerificationError
                           expectedVersion: expectedVersion
         )
     }
-    
-    static func mismatchedVersion(version: String,
-                                  revision: String,
-                                  expectedVersion: String,
-                                  expectedRevision: String,
-                                  app: AppProtocol) -> VerificationError
-    {
-        VerificationError(code: .mismatchedVersion, app: app,
-                          version: version,
-                          expectedVersion: expectedVersion,
-                          revision: revision,
-                          expectedRevision: expectedRevision
-        )
-    }
+
     
     static func mismatchedBuildVersion(_ version: String, expectedVersion: String, app: AppProtocol) -> VerificationError {
         VerificationError(code: .mismatchedBuildVersion, app: app, version: version, expectedVersion: expectedVersion)
@@ -99,8 +86,6 @@ struct VerificationError: ALTLocalizedError
     
     @UserInfoValue var version: String?
     @UserInfoValue var expectedVersion: String?
-    @UserInfoValue var revision: String?
-    @UserInfoValue var expectedRevision: String?
     
     @UserInfoValue
     var permissions: [any ALTAppPermission]?
@@ -177,9 +162,7 @@ struct VerificationError: ALTLocalizedError
             
         case .mismatchedVersion:
             let appName = self.$app.name ?? NSLocalizedString("the app", comment: "")
-            let revision = revision == nil ? "" : "\nFound Revision: \(self.revision!)"
-            let expectedRevision = expectedRevision == nil ? "" : "\nExpected Revision: \(self.expectedRevision!)"
-            return String(format: NSLocalizedString("The downloaded version of %@ does not match the version specified by the source.\nExpected version: %@\(expectedRevision)\nFound version: %@\(revision)", comment: ""), appName, expectedVersion ?? "nil", version ?? "nil")
+            return String(format: NSLocalizedString("The downloaded version of %@ does not match the version specified by the source.\nExpected version: %@\nFound version: %@", comment: ""), appName, expectedVersion ?? "nil", version ?? "nil")
             
         case .mismatchedBuildVersion:
             let appName = self.$app.name ?? NSLocalizedString("the app", comment: "")

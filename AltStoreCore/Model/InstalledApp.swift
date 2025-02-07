@@ -150,11 +150,7 @@ public class InstalledApp: BaseEntity, InstalledAppProtocol
            currentSemVer! == latestVer,
            (latestSemVer!.preRelease > currentSemVer!.preRelease) || (latestSemVer!.build > currentSemVer!.build)
         {
-            // Special handling for SideStore app
-            if storeApp.bundleIdentifier == Bundle.Info.appbundleIdentifier {
-                let revision = latestVersion.revision
-                return revision != nil && isRevisionNewer(revision!)
-            }
+            return true
         }
         
         return false
@@ -163,24 +159,6 @@ public class InstalledApp: BaseEntity, InstalledAppProtocol
     func matches(_ appVersion: AppVersion) -> Bool {
         return version == appVersion.version && storeBuildVersion == appVersion.buildVersion
     }
-
-    private func isRevisionNewer(_ revision: String) -> Bool {
-        let shortCommitLen = 7
-        let isIncomingValid = revision.count == shortCommitLen
-        
-        guard let installedRevision = try? BuildInfo(url: fileURL).revision else {
-            return isIncomingValid // No installed revision is valid case
-        }
-        
-        let isInstalledValid = installedRevision.isEmpty ||
-                               installedRevision.count == shortCommitLen ||
-                               installedRevision == ReleaseTracks.local.stringValue
-        
-        return isIncomingValid && isInstalledValid && revision != installedRevision
-    }
-    
-    
-    
     
     public var appIDCount: Int {
         return 1 + self.appExtensions.count
@@ -232,8 +210,7 @@ public extension InstalledApp
         self.resignedBundleIdentifier = resignedApp.bundleIdentifier
         self.version = resignedApp.version
         
-        // TODO: @mahee96: requires altsign-marketplace branch release or equivalent
-//        self.buildVersion = resignedApp.buildVersion
+        self.buildVersion = resignedApp.buildVersion
         self.storeBuildVersion = storeBuildVersion
         
         self.certificateSerialNumber = certificateSerialNumber

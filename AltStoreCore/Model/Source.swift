@@ -72,7 +72,6 @@ public struct AppVersionFeed: Codable {
     let size: Int64
     // added in 0.6.0
     let sha256: String?     // sha 256 of the uploaded IPA
-    let revision: String?   // commit ID for now
     
     enum CodingKeys: String, CodingKey
     {
@@ -83,7 +82,6 @@ public struct AppVersionFeed: Codable {
         case size
         // added in 0.6.0
         case sha256
-        case revision = "commitID"
     }
 }
 

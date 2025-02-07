@@ -282,30 +282,22 @@ private extension SettingsViewController
         
         var versionLabel: String = ""
 
-        let revision = buildInfo.revision ?? ""
-
-        if let installedApp = InstalledApp.fetchAltStore(in: DatabaseManager.shared.viewContext)
+        if var version = buildInfo.marketing_version
+        {
+            versionLabel = NSLocalizedString(String(format: "Version %@", version), comment: "SideStore Version")
+        }
+        else if let installedApp = InstalledApp.fetchAltStore(in: DatabaseManager.shared.viewContext)
         {
             var localizedVersion = installedApp.version
             let isStableBuild = (buildInfo.channel == .stable)
-            // Only show build version (and build revision) for non stable builds.
+            // Only show build version for non stable builds.
             if !isStableBuild {
                 localizedVersion += buildInfo.project_version.map{ version in
-                    version.isEmpty  ? "" : " (\(version))" + (revision.isEmpty ? "" : " - \(revision)")
+                    version.isEmpty  ? "" : " (\(version))"
                 } ?? installedApp.localizedVersion
             }
             
             versionLabel = NSLocalizedString(String(format: "Version %@", localizedVersion), comment: "SideStore Version")
-        }
-        else if var version = buildInfo.marketing_version
-        {
-            // Only show build version (and build revision) for non stable builds.
-            let isLocalBuild = (buildInfo.channel == .local)
-            if isLocalBuild {
-                version +=  (revision.isEmpty ? "" : " - \(revision)")
-            }
-            
-            versionLabel = NSLocalizedString(String(format: "Version %@", version), comment: "SideStore Version")
         }
         else
         {

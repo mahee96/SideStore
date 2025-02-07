@@ -47,7 +47,6 @@ public class AppVersion: BaseEntity, Decodable
     @NSManaged public var appBundleID: String
     @NSManaged public var sourceID: String?
    
-    @NSManaged public private(set) var revision: String?
     @NSManaged public var releaseTrack: ReleaseTrack?
     
     @NSManaged @objc(channel) private(set) var _channel: String?
@@ -81,7 +80,6 @@ public class AppVersion: BaseEntity, Decodable
         case sha256
         case minOSVersion
         case maxOSVersion
-        case revision = "commitID"
     }
     
     public required init(from decoder: Decoder) throws
@@ -106,8 +104,6 @@ public class AppVersion: BaseEntity, Decodable
             self.sha256 = try container.decodeIfPresent(String.self, forKey: .sha256)?.lowercased()
             self._minOSVersion = try container.decodeIfPresent(String.self, forKey: .minOSVersion)
             self._maxOSVersion = try container.decodeIfPresent(String.self, forKey: .maxOSVersion)
-
-            self.revision = try container.decodeIfPresent(String.self, forKey: .revision)
         }
         catch
         {
@@ -158,7 +154,6 @@ public extension AppVersion
         localizedDescription: String? = nil,
         downloadURL: URL,
         size: Int64,
-        revision: String? = nil,        // by default assume release is stable ie, no revision info
         sha256: String? = nil,
         appBundleID: String,
         sourceID: String? = nil,
@@ -173,7 +168,6 @@ public extension AppVersion
         appVersion.downloadURL = downloadURL
         appVersion.size = size
         appVersion.sha256 = sha256
-        appVersion.revision = revision
         appVersion.appBundleID = appBundleID
         appVersion.sourceID = sourceID
 
@@ -189,7 +183,6 @@ public extension AppVersion
         localizedDescription: String? = nil,
         downloadURL: URL? = nil,
         size: Int64? = nil,
-        revision: String? = nil,        // by default assume release is stable ie, no revision info
         sha256: String? = nil,
         appBundleID: String? = nil,
         sourceID: String? = nil) -> AppVersion
@@ -218,7 +211,6 @@ public extension AppVersion
         self._channel = channel ?? self._channel
         self.buildVersion = buildVersion ?? self.buildVersion
         self.sha256 = sha256 ?? self.sha256
-        self.revision = revision ?? self.revision
         self.sourceID = sourceID ?? self.sourceID
 
         return self
