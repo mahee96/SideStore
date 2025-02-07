@@ -137,17 +137,19 @@ public class InstalledApp: BaseEntity, InstalledAppProtocol
         if currentSemVer == nil || latestSemVer == nil {
             return !matches(latestVersion)
         }
+        let currentVer = SemanticVersion("\(currentSemVer!.major).\(currentSemVer!.minor).\(currentSemVer!.patch)")
+        let latestVer  = SemanticVersion("\(latestSemVer!.major).\(latestSemVer!.minor).\(latestSemVer!.patch)")
         
-        // Check if stable version is newer (always take precedence)
-        if latestSemVer! > currentSemVer! {
+        // Compare by major.minor.patch
+        if latestVer! > latestVer! {
             return true
         }
         
         // Check beta updates if enabled
         if UserDefaults.standard.isBetaUpdatesEnabled,
            ReleaseTracks.betaTracks.contains(latestVersion.channel),
-           let latestVer = SemanticVersion("\(currentSemVer!.major).\(currentSemVer!.minor).\(currentSemVer!.patch)"),
-           currentSemVer! == latestVer,
+           latestVer == currentVer,         // major.minor.patch are matching
+           // now compare by preRelease and buildNum to break the tie
            (latestSemVer!.preRelease > currentSemVer!.preRelease) || (latestSemVer!.build > currentSemVer!.build)
         {
             return true
