@@ -284,6 +284,9 @@ private extension SettingsViewController
 
         if var version = buildInfo.marketing_version
         {
+            if buildInfo.channel == .local{
+                version += " - (local)"
+            }
             versionLabel = NSLocalizedString(String(format: "Version %@", version), comment: "SideStore Version")
         }
         else if let installedApp = InstalledApp.fetchAltStore(in: DatabaseManager.shared.viewContext)

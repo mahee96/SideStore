@@ -17,7 +17,7 @@ import SemanticVersion
 public enum ReleaseTracks: String, CodingKey, CaseIterable
 {
     case unknown
-    case local          // xcodebuilds can use this by setting BUILD_CHANNEL in CodeSigning.xcconfig
+    case local          
     
     case alpha
     case beta

@@ -16,6 +16,7 @@ import AltStoreCore
 import AltSign
 import Roxas
 import minimuxer
+import SemanticVersion
 
 import Nuke
 
@@ -241,7 +242,18 @@ private extension MyAppsViewController
             
             cell.bannerView.button.isIndicatingActivity = false
             cell.bannerView.configure(for: app, action: .update)
-            cell.bannerView.subtitleLabel.text = String(format: NSLocalizedString("Version %@", comment: ""), latestSupportedVersion.localizedVersion)
+            
+            var versionText = latestSupportedVersion.localizedVersion
+
+            // If the app is SideStore itself, remove the build number to save space
+            if app.bundleIdentifier == Bundle.Info.appbundleIdentifier,
+               let version = SemanticVersion(latestSupportedVersion.version)
+            {
+                // leave out the build so that it doesnt take up much space
+                versionText = SemanticVersion(version.major, version.minor, version.patch, version.preRelease).description
+            }
+            
+            cell.bannerView.subtitleLabel.text = String(format: NSLocalizedString("Version %@", comment: ""), versionText)
 
             let appName: String
             
