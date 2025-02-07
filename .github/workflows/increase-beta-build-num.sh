@@ -11,21 +11,24 @@ RELEASE_CHANNEL=${RELEASE_CHANNEL:-"beta"}
 
 write() {
     sed -e "/MARKETING_VERSION = .*/s/$/-$RELEASE_CHANNEL.$DATE.$BUILD_NUM+$(git rev-parse --short HEAD)/" -i '' Build.xcconfig
-    echo "$DATE,$BUILD_NUM" > buildNumber.txt
+    echo "$DATE,$BUILD_NUM" > build_number.txt
 }
 
-if [ ! -f ".beta-build-num" ]; then
+if [ ! -f "build_number.txt" ]; then
     write
     exit 0
 fi
 
-LAST_DATE=`cat .beta-build-num | perl -n -e '/([^,]*),([^ ]*)$/ && print $1'`
-LAST_BUILD_NUM=`cat .beta-build-num | perl -n -e '/([^,]*),([^ ]*)$/ && print $2'`
+LAST_DATE=`cat build_number.txt | perl -n -e '/([^,]*),([^ ]*)$/ && print $1'`
+LAST_BUILD_NUM=`cat build_number.txt | perl -n -e '/([^,]*),([^ ]*)$/ && print $2'`
 
-if [[ "$DATE" != "$LAST_DATE" ]]; then
-    write
-else
-    BUILD_NUM=`expr $LAST_BUILD_NUM + 1`
-    write
-fi
+# if [[ "$DATE" != "$LAST_DATE" ]]; then
+#     write
+# else
+#     BUILD_NUM=`expr $LAST_BUILD_NUM + 1`
+#     write
+# fi
 
+# Build number is always incremental
+BUILD_NUM=`expr $LAST_BUILD_NUM + 1`
+write

@@ -82,17 +82,17 @@ jobs:
         with:
             repository: 'SideStore/beta-build-num'
             ref: 'main'
-            token: ${{ secrets.BETA_BUILD_NUM_DEPLOY_KEY }}
+            token: ${{ secrets.CROSS_REPO_PUSH_KEY }}
             path: 'SideStore/beta-build-num'
 
-      - name: Copy buildnumber.txt to repo root
+      - name: Copy build_number.txt to repo root
         run: |
-          cp SideStore/beta-build-num/buildnumber.txt .
+          cp SideStore/beta-build-num/build_number.txt .
         
-      - name: Echo Build.xcconfig, buildnumber.txt
+      - name: Echo Build.xcconfig, build_number.txt
         run: |
           cat Build.xcconfig
-          cat buildnumber.txt
+          cat build_number.txt
 
       - name: Increase nightly build number and set as version
         run: bash .github/workflows/increase-beta-build-num.sh
@@ -119,10 +119,10 @@ jobs:
           echo "MARKETING_VERSION=$MARKETING_VERSION" >> $GITHUB_ENV
           echo "MARKETING_VERSION=$MARKETING_VERSION"
 
-      - name: Echo Updated Build.xcconfig, buildnumber.txt
+      - name: Echo Updated Build.xcconfig, build_number.txt
         run: |
           cat Build.xcconfig
-          cat buildnumber.txt
+          cat build_number.txt
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1.6.0
@@ -375,7 +375,7 @@ jobs:
             ref: 'main' # TODO: use branches for alpha and beta tracks? so as to avoid push collision?
             # ref: 'nightly' # TODO: use branches for alpha and beta tracks? so as to avoid push collision?
             # token: ${{ github.token }}
-            token: ${{ secrets.APPS_DEPLOY_KEY }}
+            token: ${{ secrets.CROSS_REPO_PUSH_KEY }}
             path: 'SideStore/apps-v2.json'
       
       - name: Publish to SideStore/apps-v2.json
@@ -398,24 +398,29 @@ jobs:
           git push origin HEAD:main
           popd
 
-      - name: Echo Updated Build.xcconfig, buildnumber.txt
+      - name: Echo Updated Build.xcconfig, build_number.txt
         run: |
           cat Build.xcconfig
-          cat buildnumber.txt
+          cat build_number.txt
 
       # save it
       - name: Publish to SideStore/beta-build-num
         run: |
-          rm SideStore/beta-build-num/buildNumber.txt
-          mv buildNumber.txt SideStore/beta-build-num/buildNumber.txt
+          rm SideStore/beta-build-num/build_number.txt
+          mv build_number.txt SideStore/beta-build-num/build_number.txt
           pushd SideStore/beta-build-num/
-          
-          # Configure Git user (committer details)
+  
+          echo "Configure Git user (committer details)"
           git config user.name "GitHub Actions"
           git config user.email "github-actions@github.com"
-
-          git add buildNumber.txt
+          
+          echo "Adding files to commit"
+          git add --verbose build_number.txt
           git commit -m " - updated for $RELEASE_CHANNEL - $SHORT_COMMIT deployment" || echo "No changes to commit"
 
-          git push origin HEAD:main
+          echo "Performing git pull, to see if any extenal change has been made within our current run duration"
+          git pull --force
+
+          echo "Pushing to remote repo"
+          git push --verbose origin HEAD:main
           popd
