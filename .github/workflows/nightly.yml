@@ -91,7 +91,8 @@ jobs:
         uses: actions/checkout@v4
         with:
             repository: 'SideStore/beta-build-num'
-            ref: 'main'
+            # ref: 'main'   # use this when you want to share the build num with other beta workflows
+            ref: 'nightly'
             token: ${{ secrets.CROSS_REPO_PUSH_KEY }}
             path: 'SideStore/beta-build-num'
 
@@ -405,7 +406,7 @@ jobs:
           git add ./_includes/source.json
           git commit -m " - updated for $SHORT_COMMIT deployment" || echo "No changes to commit"
 
-          git push origin HEAD:main
+          git push --verbose
           popd
 
       - name: Echo Updated Build.xcconfig, build_number.txt
@@ -429,8 +430,8 @@ jobs:
           git commit -m " - updated for $RELEASE_CHANNEL - $SHORT_COMMIT deployment" || echo "No changes to commit"
 
           echo "Performing git pull, to see if any extenal change has been made within our current run duration"
-          git pull --force
+          git pull
 
           echo "Pushing to remote repo"
-          git push --verbose origin HEAD:main
+          git push --verbose
           popd
