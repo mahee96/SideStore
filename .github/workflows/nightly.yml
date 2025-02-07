@@ -24,12 +24,21 @@ jobs:
         with:
           fetch-depth: 0 # Ensure full history
 
-      - name: Check for new commits since last run
+      - name: Get last successful workflow run
+        id: get_last_success
+        run: |
+          LAST_SUCCESS=$(gh run list --workflow "Nightly SideStore Build" --json createdAt,conclusion \
+            --jq '[.[] | select(.conclusion=="success")][0].createdAt' || echo "")
+          echo "Last successful run: $LAST_SUCCESS"
+          echo "last_success=$LAST_SUCCESS" >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check for new commits since last successful build
         id: check
         run: |
-          LAST_RUN=$(gh run list --workflow "Nightly SideStore Build" --json createdAt --jq ".[0].createdAt" || echo "")
-          if [ -n "$LAST_RUN" ]; then
-            NEW_COMMITS=$(git rev-list --count --since="$LAST_RUN" origin/develop)
+          if [ -n "$LAST_SUCCESS" ]; then
+            NEW_COMMITS=$(git rev-list --count --since="$LAST_SUCCESS" origin/develop)
           else
             NEW_COMMITS=1
           fi
@@ -41,6 +50,7 @@ jobs:
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LAST_SUCCESS: ${{ env.last_success }}
 
   build:
     name: Build and upload SideStore Nightly releases
