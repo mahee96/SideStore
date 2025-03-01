@@ -103,29 +103,31 @@
 		A8C6D5142D1EE8D700DF01F1 /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A8C6D5172D1EE95B00DF01F1 /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; };
 		A8C6D5182D1EE95B00DF01F1 /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		A8CB7BC52D734E800081C9ED /* WireGuardConfigBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21BC2D73356B00434EF6 /* WireGuardConfigBuilder.swift */; };
+		A8CB7BCD2D734EFB0081C9ED /* YourViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8CB7BCC2D734EFB0081C9ED /* YourViewController.swift */; };
+		A8CB7BD82D736D2F0081C9ED /* EmotionalProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21B82D73356100434EF6 /* EmotionalProxy.swift */; };
+		A8CB7BD92D736D2F0081C9ED /* EmotionalDamage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21B42D73354C00434EF6 /* EmotionalDamage.swift */; };
+		A8CB7BDA2D736D2F0081C9ED /* TunnelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21BA2D73356700434EF6 /* TunnelManager.swift */; };
+		A8CB7BDB2D736D2F0081C9ED /* WireGuardExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21BE2D73356F00434EF6 /* WireGuardExtensions.swift */; };
+		A8CB7BDC2D736D2F0081C9ED /* SocketAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21C22D73359A00434EF6 /* SocketAddress.swift */; };
+		A8CB7BDD2D736D2F0081C9ED /* UDPSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21C02D73359500434EF6 /* UDPSocket.swift */; };
+		A8CB7BDE2D736D2F0081C9ED /* UDPTester.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21B62D73355800434EF6 /* UDPTester.swift */; };
+		A8CB7BDF2D736D2F0081C9ED /* NetworkSettingsBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21C42D7335A000434EF6 /* NetworkSettingsBuilder.swift */; };
+		A8CB7BE02D736D2F0081C9ED /* LoggerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21C62D7335A600434EF6 /* LoggerService.swift */; };
 		A8D484D82D0CD306002C691D /* AltBackup.ipa in Resources */ = {isa = PBXBuildFile; fileRef = A8D484D72D0CD306002C691D /* AltBackup.ipa */; };
 		A8D49F532D3D2F9400844B92 /* ProcessInfo+AltStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D49F522D3D2F9400844B92 /* ProcessInfo+AltStore.swift */; };
-		A8DB21842D73070600434EF6 /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A8DB21832D73070600434EF6 /* NetworkExtension.framework */; };
-		A8DB218C2D73070600434EF6 /* EmotionalManglingProxy.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A8DB21822D73070600434EF6 /* EmotionalManglingProxy.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		A8DB21942D7307D900434EF6 /* WireGuardKit in Frameworks */ = {isa = PBXBuildFile; productRef = A8DB21932D7307D900434EF6 /* WireGuardKit */; };
-		A8DB21A62D730B1000434EF6 /* client_privatekey in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21A52D730B1000434EF6 /* client_privatekey */; };
-		A8DB21A82D730B1F00434EF6 /* client_publickey in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21A72D730B1F00434EF6 /* client_publickey */; };
-		A8DB21AA2D730B2500434EF6 /* server_privatekey in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21A92D730B2500434EF6 /* server_privatekey */; };
-		A8DB21AC2D730B2B00434EF6 /* server_publickey_client in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21AB2D730B2B00434EF6 /* server_publickey_client */; };
-		A8DB21AE2D730B3500434EF6 /* emp.conf in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21AD2D730B3500434EF6 /* emp.conf */; };
-		A8DB21B52D73354C00434EF6 /* EmotionalDamage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21B42D73354C00434EF6 /* EmotionalDamage.swift */; };
-		A8DB21B72D73355800434EF6 /* UDPTester.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21B62D73355800434EF6 /* UDPTester.swift */; };
-		A8DB21B92D73356100434EF6 /* EmotionalProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21B82D73356100434EF6 /* EmotionalProxy.swift */; };
-		A8DB21BB2D73356700434EF6 /* TunnelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21BA2D73356700434EF6 /* TunnelManager.swift */; };
-		A8DB21BD2D73356B00434EF6 /* WireGuardConfigBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21BC2D73356B00434EF6 /* WireGuardConfigBuilder.swift */; };
-		A8DB21C12D73359500434EF6 /* UDPSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21C02D73359500434EF6 /* UDPSocket.swift */; };
-		A8DB21C32D73359A00434EF6 /* SocketAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21C22D73359A00434EF6 /* SocketAddress.swift */; };
-		A8DB21C52D7335A000434EF6 /* NetworkSettingsBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21C42D7335A000434EF6 /* NetworkSettingsBuilder.swift */; };
-		A8DB21C72D7335A600434EF6 /* LoggerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21C62D7335A600434EF6 /* LoggerService.swift */; };
-		A8DB21C92D7335AD00434EF6 /* PacketTunnelProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21C82D7335AD00434EF6 /* PacketTunnelProvider.swift */; };
+		A8DB21EA2D734CCD00434EF6 /* EmotionalManglingProxy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A8DB21E42D734CCD00434EF6 /* EmotionalManglingProxy.framework */; };
+		A8DB21EB2D734CCD00434EF6 /* EmotionalManglingProxy.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A8DB21E42D734CCD00434EF6 /* EmotionalManglingProxy.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		A8DB21F32D734CE300434EF6 /* WireGuardKit in Frameworks */ = {isa = PBXBuildFile; productRef = A8DB21F22D734CE300434EF6 /* WireGuardKit */; };
+		A8DB22032D734DBC00434EF6 /* client_privatekey in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21A52D730B1000434EF6 /* client_privatekey */; };
+		A8DB22042D734DBC00434EF6 /* client_publickey in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21A72D730B1F00434EF6 /* client_publickey */; };
+		A8DB22052D734DBC00434EF6 /* server_privatekey in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21A92D730B2500434EF6 /* server_privatekey */; };
+		A8DB22062D734DBC00434EF6 /* server_publickey_client in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21AB2D730B2B00434EF6 /* server_publickey_client */; };
+		A8DB22072D734DBC00434EF6 /* emp.conf in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21AD2D730B3500434EF6 /* emp.conf */; };
 		A8E2DB312D684E2A009E5D31 /* UITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8E2DB2E2D684E2A009E5D31 /* UITests.swift */; };
 		A8E2DB322D684E2A009E5D31 /* UITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8E2DB2F2D684E2A009E5D31 /* UITestsLaunchTests.swift */; };
 		A8E2DB342D68507F009E5D31 /* SideStoreTests.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = A8E2DB332D68507F009E5D31 /* SideStoreTests.xctestplan */; };
+		A8E903B42D736F5B0006DA66 /* EmotionalManglingProxy.h in Headers */ = {isa = PBXBuildFile; fileRef = A8E903B32D736F5B0006DA66 /* EmotionalManglingProxy.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		A8EA195F2D4982D600DC6322 /* BaseEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8EA195E2D4982D600DC6322 /* BaseEntity.swift */; };
 		A8F838922D048E8F00ED425D /* libEmotionalDamage.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19104DB22909C06C00C49C7B /* libEmotionalDamage.a */; };
 		A8F838932D048E8F00ED425D /* libminimuxer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 191E5FAB290A5D92001A3B7C /* libminimuxer.a */; };
@@ -528,14 +530,14 @@
 			remoteGlobalIDString = B315FDCE2866CDD3002E243C;
 			remoteInfo = "fragmentzip-iOS";
 		};
-		A8DB218A2D73070600434EF6 /* PBXContainerItemProxy */ = {
+		A8DB21E82D734CCD00434EF6 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = BFD247622284B9A500981D42 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = A8DB21812D73070600434EF6;
-			remoteInfo = EmotionalManglingProxy;
+			remoteGlobalIDString = A8DB21E32D734CCD00434EF6;
+			remoteInfo = EMP;
 		};
-		A8DB21952D7307E400434EF6 /* PBXContainerItemProxy */ = {
+		A8DB21F02D734CD200434EF6 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = BFD247622284B9A500981D42 /* Project object */;
 			proxyType = 1;
@@ -611,6 +613,7 @@
 				A8C6D5182D1EE95B00DF01F1 /* OpenSSL.xcframework in Embed Frameworks */,
 				BF1614F2250822F100767AEA /* Roxas.framework in Embed Frameworks */,
 				BF66EE862501AE50007EE018 /* AltStoreCore.framework in Embed Frameworks */,
+				A8DB21EB2D734CCD00434EF6 /* EmotionalManglingProxy.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -622,7 +625,6 @@
 			dstSubfolderSpec = 13;
 			files = (
 				BF989177250AABF4002ACF50 /* AltWidgetExtension.appex in Embed Foundation Extensions */,
-				A8DB218C2D73070600434EF6 /* EmotionalManglingProxy.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -729,9 +731,9 @@
 		A8C38C2B2D206AD900E83DBD /* AbstractClassError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AbstractClassError.swift; sourceTree = "<group>"; };
 		A8C38C312D206B2500E83DBD /* FileOutputStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileOutputStream.swift; sourceTree = "<group>"; };
 		A8C38C372D2084D000E83DBD /* ConsoleLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsoleLogView.swift; sourceTree = "<group>"; };
+		A8CB7BCC2D734EFB0081C9ED /* YourViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YourViewController.swift; sourceTree = "<group>"; };
 		A8D484D72D0CD306002C691D /* AltBackup.ipa */ = {isa = PBXFileReference; lastKnownFileType = file; path = AltBackup.ipa; sourceTree = "<group>"; };
 		A8D49F522D3D2F9400844B92 /* ProcessInfo+AltStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProcessInfo+AltStore.swift"; sourceTree = "<group>"; };
-		A8DB21822D73070600434EF6 /* EmotionalManglingProxy.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = EmotionalManglingProxy.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A8DB21832D73070600434EF6 /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
 		A8DB219B2D7309F800434EF6 /* EmotionalManglingProxy.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = EmotionalManglingProxy.entitlements; sourceTree = "<group>"; };
 		A8DB219D2D7309F800434EF6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -754,11 +756,13 @@
 		A8DB21C82D7335AD00434EF6 /* PacketTunnelProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketTunnelProvider.swift; sourceTree = "<group>"; };
 		A8DB21DD2D73498000434EF6 /* SimplePacketTunnelProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimplePacketTunnelProvider.swift; sourceTree = "<group>"; };
 		A8DB21DE2D734A7600434EF6 /* WireGuardService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireGuardService.swift; sourceTree = "<group>"; };
+		A8DB21E42D734CCD00434EF6 /* EmotionalManglingProxy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = EmotionalManglingProxy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A8E2DB212D684CBD009E5D31 /* UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A8E2DB2C2D684D39009E5D31 /* UITests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = UITests.xcconfig; sourceTree = "<group>"; };
 		A8E2DB2E2D684E2A009E5D31 /* UITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITests.swift; sourceTree = "<group>"; };
 		A8E2DB2F2D684E2A009E5D31 /* UITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestsLaunchTests.swift; sourceTree = "<group>"; };
 		A8E2DB332D68507F009E5D31 /* SideStoreTests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = SideStoreTests.xctestplan; sourceTree = "<group>"; };
+		A8E903B32D736F5B0006DA66 /* EmotionalManglingProxy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = EmotionalManglingProxy.h; sourceTree = "<group>"; };
 		A8EA195E2D4982D600DC6322 /* BaseEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseEntity.swift; sourceTree = "<group>"; };
 		A8F66C3C2D04D433009689E6 /* em_proxy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = em_proxy.h; sourceTree = "<group>"; };
 		A8F66C602D04D464009689E6 /* minimuxer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = minimuxer.xcodeproj; sourceTree = "<group>"; };
@@ -1154,12 +1158,11 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		A8DB217F2D73070600434EF6 /* Frameworks */ = {
+		A8DB21E12D734CCD00434EF6 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A8DB21942D7307D900434EF6 /* WireGuardKit in Frameworks */,
-				A8DB21842D73070600434EF6 /* NetworkExtension.framework in Frameworks */,
+				A8DB21F32D734CE300434EF6 /* WireGuardKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1209,6 +1212,7 @@
 				A8B646012D70C23E00125819 /* MarkdownKit in Frameworks */,
 				A805C3CD2D0C316A00E76BDD /* Pods_SideStore.framework in Frameworks */,
 				A8F838942D048ECE00ED425D /* libimobiledevice.a in Frameworks */,
+				A8DB21EA2D734CCD00434EF6 /* EmotionalManglingProxy.framework in Frameworks */,
 				A8F838922D048E8F00ED425D /* libEmotionalDamage.a in Frameworks */,
 				A8F838932D048E8F00ED425D /* libminimuxer.a in Frameworks */,
 				D533E8B72727841800A9B5DD /* libAppleArchive.tbd in Frameworks */,
@@ -1475,6 +1479,7 @@
 				A8DB21A42D730AF300434EF6 /* keys */,
 				A8DB219D2D7309F800434EF6 /* Info.plist */,
 				A8DB219B2D7309F800434EF6 /* EmotionalManglingProxy.entitlements */,
+				A8E903B32D736F5B0006DA66 /* EmotionalManglingProxy.h */,
 			);
 			path = EmotionalManglingProxy;
 			sourceTree = "<group>";
@@ -1574,6 +1579,7 @@
 		A8F66C072D04C025009689E6 /* SideStore */ = {
 			isa = PBXGroup;
 			children = (
+				A8CB7BCC2D734EFB0081C9ED /* YourViewController.swift */,
 				A8B645F82D70C0DD00125819 /* Views */,
 				A8E2DB352D6850A9009E5D31 /* Tests */,
 				A8F66C5C2D04D433009689E6 /* minimuxer */,
@@ -2144,7 +2150,7 @@
 				D586D39828EF58B0000E101F /* AltTests.xctest */,
 				A8E2DB212D684CBD009E5D31 /* UITests.xctest */,
 				A81A8CC52D68BA610086C96F /* DataStructureTests.xctest */,
-				A8DB21822D73070600434EF6 /* EmotionalManglingProxy.appex */,
+				A8DB21E42D734CCD00434EF6 /* EmotionalManglingProxy.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -2540,6 +2546,14 @@
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
+		A8DB21DF2D734CCD00434EF6 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A8E903B42D736F5B0006DA66 /* EmotionalManglingProxy.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		BF4587272298D31600BD7491 /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
@@ -2664,26 +2678,27 @@
 			productReference = A81A8CC52D68BA610086C96F /* DataStructureTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		A8DB21812D73070600434EF6 /* EmotionalManglingProxy */ = {
+		A8DB21E32D734CCD00434EF6 /* EmotionalManglingProxy */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A8DB218E2D73070600434EF6 /* Build configuration list for PBXNativeTarget "EmotionalManglingProxy" */;
+			buildConfigurationList = A8DB21ED2D734CCD00434EF6 /* Build configuration list for PBXNativeTarget "EmotionalManglingProxy" */;
 			buildPhases = (
-				A8DB217E2D73070600434EF6 /* Sources */,
-				A8DB217F2D73070600434EF6 /* Frameworks */,
-				A8DB21802D73070600434EF6 /* Resources */,
+				A8DB21DF2D734CCD00434EF6 /* Headers */,
+				A8DB21E02D734CCD00434EF6 /* Sources */,
+				A8DB21E12D734CCD00434EF6 /* Frameworks */,
+				A8DB21E22D734CCD00434EF6 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				A8DB21962D7307E400434EF6 /* PBXTargetDependency */,
+				A8DB21F12D734CD200434EF6 /* PBXTargetDependency */,
 			);
 			name = EmotionalManglingProxy;
 			packageProductDependencies = (
-				A8DB21932D7307D900434EF6 /* WireGuardKit */,
+				A8DB21F22D734CE300434EF6 /* WireGuardKit */,
 			);
-			productName = EmotionalManglingProxy;
-			productReference = A8DB21822D73070600434EF6 /* EmotionalManglingProxy.appex */;
-			productType = "com.apple.product-type.app-extension";
+			productName = EMP;
+			productReference = A8DB21E42D734CCD00434EF6 /* EmotionalManglingProxy.framework */;
+			productType = "com.apple.product-type.framework";
 		};
 		A8E2DB202D684CBD009E5D31 /* UITests */ = {
 			isa = PBXNativeTarget;
@@ -2804,7 +2819,7 @@
 				19104DBA2909C0F200C49C7B /* PBXTargetDependency */,
 				BF66EE842501AE50007EE018 /* PBXTargetDependency */,
 				BF989176250AABF4002ACF50 /* PBXTargetDependency */,
-				A8DB218B2D73070600434EF6 /* PBXTargetDependency */,
+				A8DB21E92D734CCD00434EF6 /* PBXTargetDependency */,
 			);
 			name = SideStore;
 			productName = AltStore;
@@ -2833,8 +2848,9 @@
 					A87F0D6C2D726D6E004B2BC2 = {
 						CreatedOnToolsVersion = 16.2;
 					};
-					A8DB21812D73070600434EF6 = {
+					A8DB21E32D734CCD00434EF6 = {
 						CreatedOnToolsVersion = 16.2;
+						LastSwiftMigration = 1620;
 					};
 					A8E2DB202D684CBD009E5D31 = {
 						CreatedOnToolsVersion = 16.2;
@@ -2911,7 +2927,7 @@
 				A8E2DB202D684CBD009E5D31 /* UITests */,
 				A81A8CC42D68BA610086C96F /* DataStructureTests */,
 				A87F0D6C2D726D6E004B2BC2 /* WireGuardGoBridgeiOS */,
-				A8DB21812D73070600434EF6 /* EmotionalManglingProxy */,
+				A8DB21E32D734CCD00434EF6 /* EmotionalManglingProxy */,
 			);
 		};
 /* End PBXProject section */
@@ -2976,15 +2992,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		A8DB21802D73070600434EF6 /* Resources */ = {
+		A8DB21E22D734CCD00434EF6 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A8DB21AA2D730B2500434EF6 /* server_privatekey in Resources */,
-				A8DB21A82D730B1F00434EF6 /* client_publickey in Resources */,
-				A8DB21A62D730B1000434EF6 /* client_privatekey in Resources */,
-				A8DB21AC2D730B2B00434EF6 /* server_publickey_client in Resources */,
-				A8DB21AE2D730B3500434EF6 /* emp.conf in Resources */,
+				A8DB22032D734DBC00434EF6 /* client_privatekey in Resources */,
+				A8DB22042D734DBC00434EF6 /* client_publickey in Resources */,
+				A8DB22052D734DBC00434EF6 /* server_privatekey in Resources */,
+				A8DB22062D734DBC00434EF6 /* server_publickey_client in Resources */,
+				A8DB22072D734DBC00434EF6 /* emp.conf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3181,20 +3197,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		A8DB217E2D73070600434EF6 /* Sources */ = {
+		A8DB21E02D734CCD00434EF6 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A8DB21BB2D73356700434EF6 /* TunnelManager.swift in Sources */,
-				A8DB21C92D7335AD00434EF6 /* PacketTunnelProvider.swift in Sources */,
-				A8DB21C12D73359500434EF6 /* UDPSocket.swift in Sources */,
-				A8DB21C32D73359A00434EF6 /* SocketAddress.swift in Sources */,
-				A8DB21C52D7335A000434EF6 /* NetworkSettingsBuilder.swift in Sources */,
-				A8DB21B52D73354C00434EF6 /* EmotionalDamage.swift in Sources */,
-				A8DB21B72D73355800434EF6 /* UDPTester.swift in Sources */,
-				A8DB21BD2D73356B00434EF6 /* WireGuardConfigBuilder.swift in Sources */,
-				A8DB21B92D73356100434EF6 /* EmotionalProxy.swift in Sources */,
-				A8DB21C72D7335A600434EF6 /* LoggerService.swift in Sources */,
+				A8CB7BD82D736D2F0081C9ED /* EmotionalProxy.swift in Sources */,
+				A8CB7BD92D736D2F0081C9ED /* EmotionalDamage.swift in Sources */,
+				A8CB7BDA2D736D2F0081C9ED /* TunnelManager.swift in Sources */,
+				A8CB7BDB2D736D2F0081C9ED /* WireGuardExtensions.swift in Sources */,
+				A8CB7BDC2D736D2F0081C9ED /* SocketAddress.swift in Sources */,
+				A8CB7BDD2D736D2F0081C9ED /* UDPSocket.swift in Sources */,
+				A8CB7BDE2D736D2F0081C9ED /* UDPTester.swift in Sources */,
+				A8CB7BDF2D736D2F0081C9ED /* NetworkSettingsBuilder.swift in Sources */,
+				A8CB7BE02D736D2F0081C9ED /* LoggerService.swift in Sources */,
+				A8CB7BC52D734E800081C9ED /* WireGuardConfigBuilder.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3532,6 +3548,7 @@
 				BF770E5122BB1CF6002A40FE /* InstallAppOperation.swift in Sources */,
 				BF9ABA4B22DD1380008935CF /* NavigationBar.swift in Sources */,
 				A8FD917B2D0472DD00322782 /* DeprecatedAPIs.swift in Sources */,
+				A8CB7BCD2D734EFB0081C9ED /* YourViewController.swift in Sources */,
 				A81A8CBA2D68B3110086C96F /* TreeMap.swift in Sources */,
 				BF6C8FAC242935ED00125131 /* NSAttributedString+Markdown.m in Sources */,
 				A8C38C382D2084D000E83DBD /* ConsoleLogView.swift in Sources */,
@@ -3591,15 +3608,15 @@
 			name = "minimuxer-staticlib";
 			targetProxy = A809F6A02D04D7CB00F0F0F3 /* PBXContainerItemProxy */;
 		};
-		A8DB218B2D73070600434EF6 /* PBXTargetDependency */ = {
+		A8DB21E92D734CCD00434EF6 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = A8DB21812D73070600434EF6 /* EmotionalManglingProxy */;
-			targetProxy = A8DB218A2D73070600434EF6 /* PBXContainerItemProxy */;
+			target = A8DB21E32D734CCD00434EF6 /* EmotionalManglingProxy */;
+			targetProxy = A8DB21E82D734CCD00434EF6 /* PBXContainerItemProxy */;
 		};
-		A8DB21962D7307E400434EF6 /* PBXTargetDependency */ = {
+		A8DB21F12D734CD200434EF6 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = A87F0D6C2D726D6E004B2BC2 /* WireGuardGoBridgeiOS */;
-			targetProxy = A8DB21952D7307E400434EF6 /* PBXContainerItemProxy */;
+			targetProxy = A8DB21F02D734CD200434EF6 /* PBXContainerItemProxy */;
 		};
 		A8E00D3E2D0C95B5000DD2C7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -3868,80 +3885,100 @@
 			};
 			name = Release;
 		};
-		A8DB218F2D73070600434EF6 /* Debug */ = {
+		A8DB21EE2D734CCD00434EF6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-				CODE_SIGN_ENTITLEMENTS = EmotionalManglingProxy/EmotionalManglingProxy.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_MODULE_VERIFIER = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = EmotionalManglingProxy/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = EmotionalManglingProxy;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2025 SideStore. All rights reserved.";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
+					"@loader_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
-				OTHER_LDFLAGS = "-v";
-				PRODUCT_BUNDLE_IDENTIFIER = com.SideStore.SideStore.B6C58C4T52.EmotionalManglingProxy;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
+				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				OTHER_SWIFT_FLAGS = "";
+				PRODUCT_BUNDLE_IDENTIFIER = com.SideStore.SideStore.B6C58C4T52.EMP;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_INSTALL_OBJC_HEADER = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
 			};
 			name = Debug;
 		};
-		A8DB21902D73070600434EF6 /* Release */ = {
+		A8DB21EF2D734CCD00434EF6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-				CODE_SIGN_ENTITLEMENTS = EmotionalManglingProxy/EmotionalManglingProxy.entitlements;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = "";
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_MODULE_VERIFIER = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = EmotionalManglingProxy/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = EmotionalManglingProxy;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2025 SideStore. All rights reserved.";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
+					"@loader_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
-				OTHER_LDFLAGS = "-v";
-				PRODUCT_BUNDLE_IDENTIFIER = com.SideStore.SideStore.B6C58C4T52.EmotionalManglingProxy;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
+				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				OTHER_SWIFT_FLAGS = "";
+				PRODUCT_BUNDLE_IDENTIFIER = com.SideStore.SideStore.B6C58C4T52.EMP;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_INSTALL_OBJC_HEADER = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
 			};
 			name = Release;
 		};
@@ -4550,11 +4587,11 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A8DB218E2D73070600434EF6 /* Build configuration list for PBXNativeTarget "EmotionalManglingProxy" */ = {
+		A8DB21ED2D734CCD00434EF6 /* Build configuration list for PBXNativeTarget "EmotionalManglingProxy" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				A8DB218F2D73070600434EF6 /* Debug */,
-				A8DB21902D73070600434EF6 /* Release */,
+				A8DB21EE2D734CCD00434EF6 /* Debug */,
+				A8DB21EF2D734CCD00434EF6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -4691,8 +4728,9 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = "AltSign-Static";
 		};
-		A8DB21932D7307D900434EF6 /* WireGuardKit */ = {
+		A8DB21F22D734CE300434EF6 /* WireGuardKit */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = A8DB21D02D7341EF00434EF6 /* XCRemoteSwiftPackageReference "wireguard-apple" */;
 			productName = WireGuardKit;
 		};
 /* End XCSwiftPackageProductDependency section */

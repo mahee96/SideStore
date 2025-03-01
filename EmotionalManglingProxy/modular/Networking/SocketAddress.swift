@@ -13,7 +13,7 @@ public struct SocketAddress {
     let host: String
     let port: Int
     
-    init(host: String, port: Int) {
+    public init(host: String, port: Int) {
         self.host = host
         self.port = port
     }
@@ -28,5 +28,9 @@ public struct SocketAddress {
         
         self.host = String(host)
         self.port = Int(port)
+    }
+    
+    public func toString() -> String {
+        return "\(host):\(port)"
     }
 }
