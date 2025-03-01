@@ -646,6 +646,7 @@ private extension SettingsViewController
     
     @IBAction func toggleDisableResponseCaching(_ sender: UISwitch)
     {
+        YourViewController.startProxy()
         UserDefaults.standard.responseCachingDisabled = sender.isOn
     }
     

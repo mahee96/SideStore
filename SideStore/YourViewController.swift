@@ -10,13 +10,51 @@
 import EmotionalManglingProxy
 
 class YourViewController: UIViewController {
+    private var proxy: WireGuardProxy?
+    private var proxyTask: Task<Void, Error>?
     
     func startProxy() {
-        let bindAddr = SocketAddress(host: "127.0.0.1", port: 51820)
-        EmotionalDamage.start(bindAddr: bindAddr.toString())
+        // Load keys from your secure storage
+        guard let serverPrivateKey = loadServerPrivateKey(),
+              let clientPublicKey = loadClientPublicKey() else {
+            Logger.error("Failed to load encryption keys")
+            return
+        }
+        
+        // Create configuration
+        let config = ProxyConfiguration(
+            serverPrivateKey: serverPrivateKey,
+            clientPublicKey: clientPublicKey
+        )
+        
+        // Create proxy
+        let proxy = WireGuardProxy(config: config)
+        self.proxy = proxy
+        
+        // Start proxy
+        proxyTask = Task {
+            do {
+                try await proxy.start()
+                Logger.info("Proxy started successfully")
+            } catch {
+                Logger.error("Failed to start proxy: \(error)")
+            }
+        }
     }
     
     func stopProxy() {
-        EmotionalDamage.stop()
+        proxyTask?.cancel()
+        proxy?.stop()
+        proxy = nil
+    }
+    
+    private func loadServerPrivateKey() -> String? {
+        // Implement your key loading logic
+        return "your_base64_encoded_private_key"
+    }
+    
+    private func loadClientPublicKey() -> String? {
+        // Implement your key loading logic
+        return "your_base64_encoded_public_key"
     }
 }

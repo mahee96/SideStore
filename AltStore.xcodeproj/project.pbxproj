@@ -82,6 +82,18 @@
 		A88B8C492D35AD3200F53F9D /* OperationsLoggingContolView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88B8C482D35AD3200F53F9D /* OperationsLoggingContolView.swift */; };
 		A88B8C552D35F1EC00F53F9D /* OperationsLoggingControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88B8C542D35F1EC00F53F9D /* OperationsLoggingControl.swift */; };
 		A8945AA62D059B6100D86CBE /* Roxas.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A8945AA52D059B6100D86CBE /* Roxas.framework */; };
+		A8A2B8802D73B082000C3D07 /* ProxyError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B87F2D73B082000C3D07 /* ProxyError.swift */; };
+		A8A2B8822D73B08D000C3D07 /* ProxyConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B8812D73B08D000C3D07 /* ProxyConfiguration.swift */; };
+		A8A2B8842D73B0A3000C3D07 /* WireGuardPacket.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B8832D73B0A3000C3D07 /* WireGuardPacket.swift */; };
+		A8A2B8862D73B0B2000C3D07 /* Handshake.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B8852D73B0B2000C3D07 /* Handshake.swift */; };
+		A8A2B8882D73B0CC000C3D07 /* UDPConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B8872D73B0CC000C3D07 /* UDPConnection.swift */; };
+		A8A2B88A2D73B101000C3D07 /* WireGuardProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B8892D73B101000C3D07 /* WireGuardProxy.swift */; };
+		A8A2B88C2D73B129000C3D07 /* Statistics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B88B2D73B129000C3D07 /* Statistics.swift */; };
+		A8A2B88E2D73B14D000C3D07 /* PacketProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B88D2D73B145000C3D07 /* PacketProcessor.swift */; };
+		A8A2B8902D73B15B000C3D07 /* ConnectionMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B88F2D73B153000C3D07 /* ConnectionMonitor.swift */; };
+		A8A2B8932D73B18A000C3D07 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B8922D73B185000C3D07 /* Logger.swift */; };
+		A8A2B8952D73B199000C3D07 /* Encryption.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B8942D73B196000C3D07 /* Encryption.swift */; };
+		A8A2B8972D73B1A6000C3D07 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B8962D73B19F000C3D07 /* Constants.swift */; };
 		A8A543302D04F14400D72399 /* libfragmentzip.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8A5432F2D04F0C100D72399 /* libfragmentzip.a */; };
 		A8A853AF2D3065A300995795 /* ActiveAppsTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A853AE2D3065A300995795 /* ActiveAppsTimelineProvider.swift */; };
 		A8AD35592D31BF2C003A28B4 /* PageInfoManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8AD35582D31BF29003A28B4 /* PageInfoManager.swift */; };
@@ -103,21 +115,14 @@
 		A8C6D5142D1EE8D700DF01F1 /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A8C6D5172D1EE95B00DF01F1 /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; };
 		A8C6D5182D1EE95B00DF01F1 /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		A8CB7BC52D734E800081C9ED /* WireGuardConfigBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21BC2D73356B00434EF6 /* WireGuardConfigBuilder.swift */; };
 		A8CB7BCD2D734EFB0081C9ED /* YourViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8CB7BCC2D734EFB0081C9ED /* YourViewController.swift */; };
-		A8CB7BD82D736D2F0081C9ED /* EmotionalProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21B82D73356100434EF6 /* EmotionalProxy.swift */; };
-		A8CB7BD92D736D2F0081C9ED /* EmotionalDamage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21B42D73354C00434EF6 /* EmotionalDamage.swift */; };
-		A8CB7BDA2D736D2F0081C9ED /* TunnelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21BA2D73356700434EF6 /* TunnelManager.swift */; };
-		A8CB7BDB2D736D2F0081C9ED /* WireGuardExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21BE2D73356F00434EF6 /* WireGuardExtensions.swift */; };
 		A8CB7BDC2D736D2F0081C9ED /* SocketAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21C22D73359A00434EF6 /* SocketAddress.swift */; };
 		A8CB7BDD2D736D2F0081C9ED /* UDPSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21C02D73359500434EF6 /* UDPSocket.swift */; };
 		A8CB7BDE2D736D2F0081C9ED /* UDPTester.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21B62D73355800434EF6 /* UDPTester.swift */; };
-		A8CB7BDF2D736D2F0081C9ED /* NetworkSettingsBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21C42D7335A000434EF6 /* NetworkSettingsBuilder.swift */; };
-		A8CB7BE02D736D2F0081C9ED /* LoggerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21C62D7335A600434EF6 /* LoggerService.swift */; };
 		A8D484D82D0CD306002C691D /* AltBackup.ipa in Resources */ = {isa = PBXBuildFile; fileRef = A8D484D72D0CD306002C691D /* AltBackup.ipa */; };
 		A8D49F532D3D2F9400844B92 /* ProcessInfo+AltStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D49F522D3D2F9400844B92 /* ProcessInfo+AltStore.swift */; };
-		A8DB21EA2D734CCD00434EF6 /* EmotionalManglingProxy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A8DB21E42D734CCD00434EF6 /* EmotionalManglingProxy.framework */; };
-		A8DB21EB2D734CCD00434EF6 /* EmotionalManglingProxy.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A8DB21E42D734CCD00434EF6 /* EmotionalManglingProxy.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		A8DB21EA2D734CCD00434EF6 /* WireGuardProxy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A8DB21E42D734CCD00434EF6 /* WireGuardProxy.framework */; };
+		A8DB21EB2D734CCD00434EF6 /* WireGuardProxy.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A8DB21E42D734CCD00434EF6 /* WireGuardProxy.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A8DB21F32D734CE300434EF6 /* WireGuardKit in Frameworks */ = {isa = PBXBuildFile; productRef = A8DB21F22D734CE300434EF6 /* WireGuardKit */; };
 		A8DB22032D734DBC00434EF6 /* client_privatekey in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21A52D730B1000434EF6 /* client_privatekey */; };
 		A8DB22042D734DBC00434EF6 /* client_publickey in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21A72D730B1F00434EF6 /* client_publickey */; };
@@ -613,7 +618,7 @@
 				A8C6D5182D1EE95B00DF01F1 /* OpenSSL.xcframework in Embed Frameworks */,
 				BF1614F2250822F100767AEA /* Roxas.framework in Embed Frameworks */,
 				BF66EE862501AE50007EE018 /* AltStoreCore.framework in Embed Frameworks */,
-				A8DB21EB2D734CCD00434EF6 /* EmotionalManglingProxy.framework in Embed Frameworks */,
+				A8DB21EB2D734CCD00434EF6 /* WireGuardProxy.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -720,6 +725,21 @@
 		A88B8C482D35AD3200F53F9D /* OperationsLoggingContolView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationsLoggingContolView.swift; sourceTree = "<group>"; };
 		A88B8C542D35F1EC00F53F9D /* OperationsLoggingControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationsLoggingControl.swift; sourceTree = "<group>"; };
 		A8945AA52D059B6100D86CBE /* Roxas.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Roxas.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A8A2B86B2D737D96000C3D07 /* WireGuardTunnel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireGuardTunnel.swift; sourceTree = "<group>"; };
+		A8A2B86D2D739281000C3D07 /* WireGuardTunnelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireGuardTunnelManager.swift; sourceTree = "<group>"; };
+		A8A2B8752D73A89D000C3D07 /* TunSocket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunSocket.swift; sourceTree = "<group>"; };
+		A8A2B87F2D73B082000C3D07 /* ProxyError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProxyError.swift; sourceTree = "<group>"; };
+		A8A2B8812D73B08D000C3D07 /* ProxyConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProxyConfiguration.swift; sourceTree = "<group>"; };
+		A8A2B8832D73B0A3000C3D07 /* WireGuardPacket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireGuardPacket.swift; sourceTree = "<group>"; };
+		A8A2B8852D73B0B2000C3D07 /* Handshake.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Handshake.swift; sourceTree = "<group>"; };
+		A8A2B8872D73B0CC000C3D07 /* UDPConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UDPConnection.swift; sourceTree = "<group>"; };
+		A8A2B8892D73B101000C3D07 /* WireGuardProxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireGuardProxy.swift; sourceTree = "<group>"; };
+		A8A2B88B2D73B129000C3D07 /* Statistics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Statistics.swift; sourceTree = "<group>"; };
+		A8A2B88D2D73B145000C3D07 /* PacketProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketProcessor.swift; sourceTree = "<group>"; };
+		A8A2B88F2D73B153000C3D07 /* ConnectionMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionMonitor.swift; sourceTree = "<group>"; };
+		A8A2B8922D73B185000C3D07 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
+		A8A2B8942D73B196000C3D07 /* Encryption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Encryption.swift; sourceTree = "<group>"; };
+		A8A2B8962D73B19F000C3D07 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		A8A853AE2D3065A300995795 /* ActiveAppsTimelineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveAppsTimelineProvider.swift; sourceTree = "<group>"; };
 		A8AD35582D31BF29003A28B4 /* PageInfoManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageInfoManager.swift; sourceTree = "<group>"; };
 		A8B516E22D2666CA0047047C /* CoreDataHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataHelper.swift; sourceTree = "<group>"; };
@@ -735,7 +755,6 @@
 		A8D484D72D0CD306002C691D /* AltBackup.ipa */ = {isa = PBXFileReference; lastKnownFileType = file; path = AltBackup.ipa; sourceTree = "<group>"; };
 		A8D49F522D3D2F9400844B92 /* ProcessInfo+AltStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProcessInfo+AltStore.swift"; sourceTree = "<group>"; };
 		A8DB21832D73070600434EF6 /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
-		A8DB219B2D7309F800434EF6 /* EmotionalManglingProxy.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = EmotionalManglingProxy.entitlements; sourceTree = "<group>"; };
 		A8DB219D2D7309F800434EF6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A8DB21A52D730B1000434EF6 /* client_privatekey */ = {isa = PBXFileReference; lastKnownFileType = text; path = client_privatekey; sourceTree = "<group>"; };
 		A8DB21A72D730B1F00434EF6 /* client_publickey */ = {isa = PBXFileReference; lastKnownFileType = text; path = client_publickey; sourceTree = "<group>"; };
@@ -746,17 +765,10 @@
 		A8DB21B42D73354C00434EF6 /* EmotionalDamage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionalDamage.swift; sourceTree = "<group>"; };
 		A8DB21B62D73355800434EF6 /* UDPTester.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UDPTester.swift; sourceTree = "<group>"; };
 		A8DB21B82D73356100434EF6 /* EmotionalProxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionalProxy.swift; sourceTree = "<group>"; };
-		A8DB21BA2D73356700434EF6 /* TunnelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelManager.swift; sourceTree = "<group>"; };
 		A8DB21BC2D73356B00434EF6 /* WireGuardConfigBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireGuardConfigBuilder.swift; sourceTree = "<group>"; };
-		A8DB21BE2D73356F00434EF6 /* WireGuardExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireGuardExtensions.swift; sourceTree = "<group>"; };
 		A8DB21C02D73359500434EF6 /* UDPSocket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UDPSocket.swift; sourceTree = "<group>"; };
 		A8DB21C22D73359A00434EF6 /* SocketAddress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketAddress.swift; sourceTree = "<group>"; };
-		A8DB21C42D7335A000434EF6 /* NetworkSettingsBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkSettingsBuilder.swift; sourceTree = "<group>"; };
-		A8DB21C62D7335A600434EF6 /* LoggerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggerService.swift; sourceTree = "<group>"; };
-		A8DB21C82D7335AD00434EF6 /* PacketTunnelProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketTunnelProvider.swift; sourceTree = "<group>"; };
-		A8DB21DD2D73498000434EF6 /* SimplePacketTunnelProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimplePacketTunnelProvider.swift; sourceTree = "<group>"; };
-		A8DB21DE2D734A7600434EF6 /* WireGuardService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireGuardService.swift; sourceTree = "<group>"; };
-		A8DB21E42D734CCD00434EF6 /* EmotionalManglingProxy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = EmotionalManglingProxy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A8DB21E42D734CCD00434EF6 /* WireGuardProxy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = WireGuardProxy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A8E2DB212D684CBD009E5D31 /* UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A8E2DB2C2D684D39009E5D31 /* UITests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = UITests.xcconfig; sourceTree = "<group>"; };
 		A8E2DB2E2D684E2A009E5D31 /* UITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITests.swift; sourceTree = "<group>"; };
@@ -1212,7 +1224,7 @@
 				A8B646012D70C23E00125819 /* MarkdownKit in Frameworks */,
 				A805C3CD2D0C316A00E76BDD /* Pods_SideStore.framework in Frameworks */,
 				A8F838942D048ECE00ED425D /* libimobiledevice.a in Frameworks */,
-				A8DB21EA2D734CCD00434EF6 /* EmotionalManglingProxy.framework in Frameworks */,
+				A8DB21EA2D734CCD00434EF6 /* WireGuardProxy.framework in Frameworks */,
 				A8F838922D048E8F00ED425D /* libEmotionalDamage.a in Frameworks */,
 				A8F838932D048E8F00ED425D /* libminimuxer.a in Frameworks */,
 				D533E8B72727841800A9B5DD /* libAppleArchive.tbd in Frameworks */,
@@ -1366,6 +1378,49 @@
 			path = operations;
 			sourceTree = "<group>";
 		};
+		A8A2B87B2D73B04D000C3D07 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				A8A2B8892D73B101000C3D07 /* WireGuardProxy.swift */,
+				A8A2B8812D73B08D000C3D07 /* ProxyConfiguration.swift */,
+				A8A2B87F2D73B082000C3D07 /* ProxyError.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		A8A2B87C2D73B051000C3D07 /* Protocol */ = {
+			isa = PBXGroup;
+			children = (
+				A8A2B8942D73B196000C3D07 /* Encryption.swift */,
+				A8A2B8832D73B0A3000C3D07 /* WireGuardPacket.swift */,
+				A8A2B8852D73B0B2000C3D07 /* Handshake.swift */,
+			);
+			path = Protocol;
+			sourceTree = "<group>";
+		};
+		A8A2B87D2D73B060000C3D07 /* Network */ = {
+			isa = PBXGroup;
+			children = (
+				A8A2B8872D73B0CC000C3D07 /* UDPConnection.swift */,
+				A8A2B88D2D73B145000C3D07 /* PacketProcessor.swift */,
+				A8A2B88F2D73B153000C3D07 /* ConnectionMonitor.swift */,
+			);
+			path = Network;
+			sourceTree = "<group>";
+		};
+		A8A2B8912D73B174000C3D07 /* old */ = {
+			isa = PBXGroup;
+			children = (
+				A8A2B86B2D737D96000C3D07 /* WireGuardTunnel.swift */,
+				A8DB21B82D73356100434EF6 /* EmotionalProxy.swift */,
+				A8DB21B42D73354C00434EF6 /* EmotionalDamage.swift */,
+				A8A2B8752D73A89D000C3D07 /* TunSocket.swift */,
+				A8DB21BC2D73356B00434EF6 /* WireGuardConfigBuilder.swift */,
+				A8A2B86D2D739281000C3D07 /* WireGuardTunnelManager.swift */,
+			);
+			path = old;
+			sourceTree = "<group>";
+		};
 		A8A543222D04F0C100D72399 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -1470,18 +1525,20 @@
 			path = common;
 			sourceTree = "<group>";
 		};
-		A8DB219F2D7309F800434EF6 /* EmotionalManglingProxy */ = {
+		A8DB219F2D7309F800434EF6 /* WireGuardProxy */ = {
 			isa = PBXGroup;
 			children = (
-				A8DB21DE2D734A7600434EF6 /* WireGuardService.swift */,
-				A8DB21DD2D73498000434EF6 /* SimplePacketTunnelProvider.swift */,
-				A8DB21B32D73354400434EF6 /* modular */,
-				A8DB21A42D730AF300434EF6 /* keys */,
+				A8A2B87B2D73B04D000C3D07 /* Core */,
+				A8A2B87C2D73B051000C3D07 /* Protocol */,
+				A8A2B87D2D73B060000C3D07 /* Network */,
+				A8DB21CD2D7335D100434EF6 /* Utils */,
 				A8DB219D2D7309F800434EF6 /* Info.plist */,
-				A8DB219B2D7309F800434EF6 /* EmotionalManglingProxy.entitlements */,
 				A8E903B32D736F5B0006DA66 /* EmotionalManglingProxy.h */,
+				A8A2B8912D73B174000C3D07 /* old */,
+				A8DB21A42D730AF300434EF6 /* keys */,
+				A8DB21CC2D7335C400434EF6 /* Networking */,
 			);
-			path = EmotionalManglingProxy;
+			path = WireGuardProxy;
 			sourceTree = "<group>";
 		};
 		A8DB21A42D730AF300434EF6 /* keys */ = {
@@ -1497,20 +1554,6 @@
 			path = keys;
 			sourceTree = "<group>";
 		};
-		A8DB21B32D73354400434EF6 /* modular */ = {
-			isa = PBXGroup;
-			children = (
-				A8DB21C82D7335AD00434EF6 /* PacketTunnelProvider.swift */,
-				A8DB21B82D73356100434EF6 /* EmotionalProxy.swift */,
-				A8DB21B42D73354C00434EF6 /* EmotionalDamage.swift */,
-				A8DB21BA2D73356700434EF6 /* TunnelManager.swift */,
-				A8DB21BE2D73356F00434EF6 /* WireGuardExtensions.swift */,
-				A8DB21CC2D7335C400434EF6 /* Networking */,
-				A8DB21CD2D7335D100434EF6 /* Utils */,
-			);
-			path = modular;
-			sourceTree = "<group>";
-		};
 		A8DB21CC2D7335C400434EF6 /* Networking */ = {
 			isa = PBXGroup;
 			children = (
@@ -1524,9 +1567,9 @@
 		A8DB21CD2D7335D100434EF6 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
-				A8DB21C42D7335A000434EF6 /* NetworkSettingsBuilder.swift */,
-				A8DB21BC2D73356B00434EF6 /* WireGuardConfigBuilder.swift */,
-				A8DB21C62D7335A600434EF6 /* LoggerService.swift */,
+				A8A2B88B2D73B129000C3D07 /* Statistics.swift */,
+				A8A2B8922D73B185000C3D07 /* Logger.swift */,
+				A8A2B8962D73B19F000C3D07 /* Constants.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -2126,7 +2169,7 @@
 				BF58047C246A28F7008AE704 /* AltBackup */,
 				BF98916C250AABF3002ACF50 /* AltWidget */,
 				D586D39928EF58B0000E101F /* AltTests */,
-				A8DB219F2D7309F800434EF6 /* EmotionalManglingProxy */,
+				A8DB219F2D7309F800434EF6 /* WireGuardProxy */,
 				BFD247852284BB3300981D42 /* Frameworks */,
 				BFD2476B2284B9A500981D42 /* Products */,
 				C2B79346E83FCBDE76D501CB /* Pods */,
@@ -2150,7 +2193,7 @@
 				D586D39828EF58B0000E101F /* AltTests.xctest */,
 				A8E2DB212D684CBD009E5D31 /* UITests.xctest */,
 				A81A8CC52D68BA610086C96F /* DataStructureTests.xctest */,
-				A8DB21E42D734CCD00434EF6 /* EmotionalManglingProxy.framework */,
+				A8DB21E42D734CCD00434EF6 /* WireGuardProxy.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -2678,9 +2721,9 @@
 			productReference = A81A8CC52D68BA610086C96F /* DataStructureTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		A8DB21E32D734CCD00434EF6 /* EmotionalManglingProxy */ = {
+		A8DB21E32D734CCD00434EF6 /* WireGuardProxy */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A8DB21ED2D734CCD00434EF6 /* Build configuration list for PBXNativeTarget "EmotionalManglingProxy" */;
+			buildConfigurationList = A8DB21ED2D734CCD00434EF6 /* Build configuration list for PBXNativeTarget "WireGuardProxy" */;
 			buildPhases = (
 				A8DB21DF2D734CCD00434EF6 /* Headers */,
 				A8DB21E02D734CCD00434EF6 /* Sources */,
@@ -2692,12 +2735,12 @@
 			dependencies = (
 				A8DB21F12D734CD200434EF6 /* PBXTargetDependency */,
 			);
-			name = EmotionalManglingProxy;
+			name = WireGuardProxy;
 			packageProductDependencies = (
 				A8DB21F22D734CE300434EF6 /* WireGuardKit */,
 			);
 			productName = EMP;
-			productReference = A8DB21E42D734CCD00434EF6 /* EmotionalManglingProxy.framework */;
+			productReference = A8DB21E42D734CCD00434EF6 /* WireGuardProxy.framework */;
 			productType = "com.apple.product-type.framework";
 		};
 		A8E2DB202D684CBD009E5D31 /* UITests */ = {
@@ -2927,7 +2970,7 @@
 				A8E2DB202D684CBD009E5D31 /* UITests */,
 				A81A8CC42D68BA610086C96F /* DataStructureTests */,
 				A87F0D6C2D726D6E004B2BC2 /* WireGuardGoBridgeiOS */,
-				A8DB21E32D734CCD00434EF6 /* EmotionalManglingProxy */,
+				A8DB21E32D734CCD00434EF6 /* WireGuardProxy */,
 			);
 		};
 /* End PBXProject section */
@@ -3201,16 +3244,21 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A8CB7BD82D736D2F0081C9ED /* EmotionalProxy.swift in Sources */,
-				A8CB7BD92D736D2F0081C9ED /* EmotionalDamage.swift in Sources */,
-				A8CB7BDA2D736D2F0081C9ED /* TunnelManager.swift in Sources */,
-				A8CB7BDB2D736D2F0081C9ED /* WireGuardExtensions.swift in Sources */,
+				A8A2B8932D73B18A000C3D07 /* Logger.swift in Sources */,
+				A8A2B8822D73B08D000C3D07 /* ProxyConfiguration.swift in Sources */,
+				A8A2B88E2D73B14D000C3D07 /* PacketProcessor.swift in Sources */,
+				A8A2B8882D73B0CC000C3D07 /* UDPConnection.swift in Sources */,
+				A8A2B8902D73B15B000C3D07 /* ConnectionMonitor.swift in Sources */,
+				A8A2B88A2D73B101000C3D07 /* WireGuardProxy.swift in Sources */,
 				A8CB7BDC2D736D2F0081C9ED /* SocketAddress.swift in Sources */,
+				A8A2B8972D73B1A6000C3D07 /* Constants.swift in Sources */,
 				A8CB7BDD2D736D2F0081C9ED /* UDPSocket.swift in Sources */,
+				A8A2B8802D73B082000C3D07 /* ProxyError.swift in Sources */,
 				A8CB7BDE2D736D2F0081C9ED /* UDPTester.swift in Sources */,
-				A8CB7BDF2D736D2F0081C9ED /* NetworkSettingsBuilder.swift in Sources */,
-				A8CB7BE02D736D2F0081C9ED /* LoggerService.swift in Sources */,
-				A8CB7BC52D734E800081C9ED /* WireGuardConfigBuilder.swift in Sources */,
+				A8A2B88C2D73B129000C3D07 /* Statistics.swift in Sources */,
+				A8A2B8842D73B0A3000C3D07 /* WireGuardPacket.swift in Sources */,
+				A8A2B8952D73B199000C3D07 /* Encryption.swift in Sources */,
+				A8A2B8862D73B0B2000C3D07 /* Handshake.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3610,7 +3658,7 @@
 		};
 		A8DB21E92D734CCD00434EF6 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = A8DB21E32D734CCD00434EF6 /* EmotionalManglingProxy */;
+			target = A8DB21E32D734CCD00434EF6 /* WireGuardProxy */;
 			targetProxy = A8DB21E82D734CCD00434EF6 /* PBXContainerItemProxy */;
 		};
 		A8DB21F12D734CD200434EF6 /* PBXTargetDependency */ = {
@@ -4587,7 +4635,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A8DB21ED2D734CCD00434EF6 /* Build configuration list for PBXNativeTarget "EmotionalManglingProxy" */ = {
+		A8DB21ED2D734CCD00434EF6 /* Build configuration list for PBXNativeTarget "WireGuardProxy" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A8DB21EE2D734CCD00434EF6 /* Debug */,

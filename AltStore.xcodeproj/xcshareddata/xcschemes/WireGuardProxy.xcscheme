@@ -16,8 +16,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "A8DB21E32D734CCD00434EF6"
-               BuildableName = "EmotionalManglingProxy.framework"
-               BlueprintName = "EmotionalManglingProxy"
+               BuildableName = "WireGuardProxy.framework"
+               BlueprintName = "WireGuardProxy"
                ReferencedContainer = "container:AltStore.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -51,8 +51,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "A8DB21E32D734CCD00434EF6"
-            BuildableName = "EmotionalManglingProxy.framework"
-            BlueprintName = "EmotionalManglingProxy"
+            BuildableName = "WireGuardProxy.framework"
+            BlueprintName = "WireGuardProxy"
             ReferencedContainer = "container:AltStore.xcodeproj">
          </BuildableReference>
       </MacroExpansion>

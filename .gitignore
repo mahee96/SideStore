@@ -70,3 +70,4 @@ test-recording.mp4
 test-recording.log
 altstore-sources.md
 local-build.sh
+.cursorignore
