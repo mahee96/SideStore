@@ -13,8 +13,12 @@ import Foundation
 class WireGuardConfigBuilder {
     static func buildConfig(bindAddr: SocketAddress) throws -> TunnelConfiguration {
         // Read the keys from the bundle
-        guard let serverPrivateKeyPath = Bundle.main.path(forResource: "server_privatekey", ofType: nil, inDirectory: "keys"),
-              let clientPublicKeyPath = Bundle.main.path(forResource: "client_publickey", ofType: nil, inDirectory: "keys") else {
+//        guard let serverPrivateKeyPath = Bundle.main.path(forResource: "server_privatekey", ofType: nil, inDirectory: "keys"),
+//              let clientPublicKeyPath = Bundle.main.path(forResource: "client_publickey", ofType: nil, inDirectory: "keys") else {
+//            throw ConfigError.missingKeyFiles
+//        }
+        guard let serverPrivateKeyPath = Bundle(for: self).path(forResource: "server_privatekey", ofType: nil),
+              let clientPublicKeyPath = Bundle(for: self).path(forResource: "client_publickey", ofType: nil) else {
             throw ConfigError.missingKeyFiles
         }
         
@@ -38,7 +42,7 @@ class WireGuardConfigBuilder {
         // Create peer configuration
         var peer = PeerConfiguration(publicKey: clientPublicKey)
         peer.allowedIPs = [IPAddressRange(from: "10.7.0.0/24")!]
-        peer.endpoint = Endpoint(from: "127.0.0.1:51820")
+        peer.endpoint = Endpoint(from: "127.0.0.1:51920")
         peer.persistentKeepAlive = 25
         
         // Create tunnel configuration
