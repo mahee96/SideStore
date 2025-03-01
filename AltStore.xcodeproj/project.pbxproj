@@ -82,18 +82,6 @@
 		A88B8C492D35AD3200F53F9D /* OperationsLoggingContolView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88B8C482D35AD3200F53F9D /* OperationsLoggingContolView.swift */; };
 		A88B8C552D35F1EC00F53F9D /* OperationsLoggingControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88B8C542D35F1EC00F53F9D /* OperationsLoggingControl.swift */; };
 		A8945AA62D059B6100D86CBE /* Roxas.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A8945AA52D059B6100D86CBE /* Roxas.framework */; };
-		A8A2B8802D73B082000C3D07 /* ProxyError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B87F2D73B082000C3D07 /* ProxyError.swift */; };
-		A8A2B8822D73B08D000C3D07 /* ProxyConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B8812D73B08D000C3D07 /* ProxyConfiguration.swift */; };
-		A8A2B8842D73B0A3000C3D07 /* WireGuardPacket.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B8832D73B0A3000C3D07 /* WireGuardPacket.swift */; };
-		A8A2B8862D73B0B2000C3D07 /* Handshake.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B8852D73B0B2000C3D07 /* Handshake.swift */; };
-		A8A2B8882D73B0CC000C3D07 /* UDPConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B8872D73B0CC000C3D07 /* UDPConnection.swift */; };
-		A8A2B88A2D73B101000C3D07 /* WireGuardProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B8892D73B101000C3D07 /* WireGuardProxy.swift */; };
-		A8A2B88C2D73B129000C3D07 /* Statistics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B88B2D73B129000C3D07 /* Statistics.swift */; };
-		A8A2B88E2D73B14D000C3D07 /* PacketProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B88D2D73B145000C3D07 /* PacketProcessor.swift */; };
-		A8A2B8902D73B15B000C3D07 /* ConnectionMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B88F2D73B153000C3D07 /* ConnectionMonitor.swift */; };
-		A8A2B8932D73B18A000C3D07 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B8922D73B185000C3D07 /* Logger.swift */; };
-		A8A2B8952D73B199000C3D07 /* Encryption.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B8942D73B196000C3D07 /* Encryption.swift */; };
-		A8A2B8972D73B1A6000C3D07 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A2B8962D73B19F000C3D07 /* Constants.swift */; };
 		A8A543302D04F14400D72399 /* libfragmentzip.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8A5432F2D04F0C100D72399 /* libfragmentzip.a */; };
 		A8A853AF2D3065A300995795 /* ActiveAppsTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A853AE2D3065A300995795 /* ActiveAppsTimelineProvider.swift */; };
 		A8AD35592D31BF2C003A28B4 /* PageInfoManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8AD35582D31BF29003A28B4 /* PageInfoManager.swift */; };
@@ -116,23 +104,14 @@
 		A8C6D5172D1EE95B00DF01F1 /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; };
 		A8C6D5182D1EE95B00DF01F1 /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A8CB7BCD2D734EFB0081C9ED /* YourViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8CB7BCC2D734EFB0081C9ED /* YourViewController.swift */; };
-		A8CB7BDC2D736D2F0081C9ED /* SocketAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21C22D73359A00434EF6 /* SocketAddress.swift */; };
-		A8CB7BDD2D736D2F0081C9ED /* UDPSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21C02D73359500434EF6 /* UDPSocket.swift */; };
-		A8CB7BDE2D736D2F0081C9ED /* UDPTester.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21B62D73355800434EF6 /* UDPTester.swift */; };
 		A8D484D82D0CD306002C691D /* AltBackup.ipa in Resources */ = {isa = PBXBuildFile; fileRef = A8D484D72D0CD306002C691D /* AltBackup.ipa */; };
 		A8D49F532D3D2F9400844B92 /* ProcessInfo+AltStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D49F522D3D2F9400844B92 /* ProcessInfo+AltStore.swift */; };
 		A8DB21EA2D734CCD00434EF6 /* WireGuardProxy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A8DB21E42D734CCD00434EF6 /* WireGuardProxy.framework */; };
 		A8DB21EB2D734CCD00434EF6 /* WireGuardProxy.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A8DB21E42D734CCD00434EF6 /* WireGuardProxy.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A8DB21F32D734CE300434EF6 /* WireGuardKit in Frameworks */ = {isa = PBXBuildFile; productRef = A8DB21F22D734CE300434EF6 /* WireGuardKit */; };
-		A8DB22032D734DBC00434EF6 /* client_privatekey in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21A52D730B1000434EF6 /* client_privatekey */; };
-		A8DB22042D734DBC00434EF6 /* client_publickey in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21A72D730B1F00434EF6 /* client_publickey */; };
-		A8DB22052D734DBC00434EF6 /* server_privatekey in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21A92D730B2500434EF6 /* server_privatekey */; };
-		A8DB22062D734DBC00434EF6 /* server_publickey_client in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21AB2D730B2B00434EF6 /* server_publickey_client */; };
-		A8DB22072D734DBC00434EF6 /* emp.conf in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21AD2D730B3500434EF6 /* emp.conf */; };
 		A8E2DB312D684E2A009E5D31 /* UITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8E2DB2E2D684E2A009E5D31 /* UITests.swift */; };
 		A8E2DB322D684E2A009E5D31 /* UITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8E2DB2F2D684E2A009E5D31 /* UITestsLaunchTests.swift */; };
 		A8E2DB342D68507F009E5D31 /* SideStoreTests.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = A8E2DB332D68507F009E5D31 /* SideStoreTests.xctestplan */; };
-		A8E903B42D736F5B0006DA66 /* EmotionalManglingProxy.h in Headers */ = {isa = PBXBuildFile; fileRef = A8E903B32D736F5B0006DA66 /* EmotionalManglingProxy.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		A8EA195F2D4982D600DC6322 /* BaseEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8EA195E2D4982D600DC6322 /* BaseEntity.swift */; };
 		A8F838922D048E8F00ED425D /* libEmotionalDamage.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19104DB22909C06C00C49C7B /* libEmotionalDamage.a */; };
 		A8F838932D048E8F00ED425D /* libminimuxer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 191E5FAB290A5D92001A3B7C /* libminimuxer.a */; };
@@ -725,21 +704,6 @@
 		A88B8C482D35AD3200F53F9D /* OperationsLoggingContolView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationsLoggingContolView.swift; sourceTree = "<group>"; };
 		A88B8C542D35F1EC00F53F9D /* OperationsLoggingControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationsLoggingControl.swift; sourceTree = "<group>"; };
 		A8945AA52D059B6100D86CBE /* Roxas.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Roxas.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		A8A2B86B2D737D96000C3D07 /* WireGuardTunnel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireGuardTunnel.swift; sourceTree = "<group>"; };
-		A8A2B86D2D739281000C3D07 /* WireGuardTunnelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireGuardTunnelManager.swift; sourceTree = "<group>"; };
-		A8A2B8752D73A89D000C3D07 /* TunSocket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunSocket.swift; sourceTree = "<group>"; };
-		A8A2B87F2D73B082000C3D07 /* ProxyError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProxyError.swift; sourceTree = "<group>"; };
-		A8A2B8812D73B08D000C3D07 /* ProxyConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProxyConfiguration.swift; sourceTree = "<group>"; };
-		A8A2B8832D73B0A3000C3D07 /* WireGuardPacket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireGuardPacket.swift; sourceTree = "<group>"; };
-		A8A2B8852D73B0B2000C3D07 /* Handshake.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Handshake.swift; sourceTree = "<group>"; };
-		A8A2B8872D73B0CC000C3D07 /* UDPConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UDPConnection.swift; sourceTree = "<group>"; };
-		A8A2B8892D73B101000C3D07 /* WireGuardProxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireGuardProxy.swift; sourceTree = "<group>"; };
-		A8A2B88B2D73B129000C3D07 /* Statistics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Statistics.swift; sourceTree = "<group>"; };
-		A8A2B88D2D73B145000C3D07 /* PacketProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketProcessor.swift; sourceTree = "<group>"; };
-		A8A2B88F2D73B153000C3D07 /* ConnectionMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionMonitor.swift; sourceTree = "<group>"; };
-		A8A2B8922D73B185000C3D07 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
-		A8A2B8942D73B196000C3D07 /* Encryption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Encryption.swift; sourceTree = "<group>"; };
-		A8A2B8962D73B19F000C3D07 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		A8A853AE2D3065A300995795 /* ActiveAppsTimelineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveAppsTimelineProvider.swift; sourceTree = "<group>"; };
 		A8AD35582D31BF29003A28B4 /* PageInfoManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageInfoManager.swift; sourceTree = "<group>"; };
 		A8B516E22D2666CA0047047C /* CoreDataHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataHelper.swift; sourceTree = "<group>"; };
@@ -755,26 +719,12 @@
 		A8D484D72D0CD306002C691D /* AltBackup.ipa */ = {isa = PBXFileReference; lastKnownFileType = file; path = AltBackup.ipa; sourceTree = "<group>"; };
 		A8D49F522D3D2F9400844B92 /* ProcessInfo+AltStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProcessInfo+AltStore.swift"; sourceTree = "<group>"; };
 		A8DB21832D73070600434EF6 /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
-		A8DB219D2D7309F800434EF6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		A8DB21A52D730B1000434EF6 /* client_privatekey */ = {isa = PBXFileReference; lastKnownFileType = text; path = client_privatekey; sourceTree = "<group>"; };
-		A8DB21A72D730B1F00434EF6 /* client_publickey */ = {isa = PBXFileReference; lastKnownFileType = text; path = client_publickey; sourceTree = "<group>"; };
-		A8DB21A92D730B2500434EF6 /* server_privatekey */ = {isa = PBXFileReference; lastKnownFileType = text; path = server_privatekey; sourceTree = "<group>"; };
-		A8DB21AB2D730B2B00434EF6 /* server_publickey_client */ = {isa = PBXFileReference; lastKnownFileType = text; path = server_publickey_client; sourceTree = "<group>"; };
-		A8DB21AD2D730B3500434EF6 /* emp.conf */ = {isa = PBXFileReference; lastKnownFileType = text; path = emp.conf; sourceTree = "<group>"; };
-		A8DB21AF2D730B3A00434EF6 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		A8DB21B42D73354C00434EF6 /* EmotionalDamage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionalDamage.swift; sourceTree = "<group>"; };
-		A8DB21B62D73355800434EF6 /* UDPTester.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UDPTester.swift; sourceTree = "<group>"; };
-		A8DB21B82D73356100434EF6 /* EmotionalProxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionalProxy.swift; sourceTree = "<group>"; };
-		A8DB21BC2D73356B00434EF6 /* WireGuardConfigBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireGuardConfigBuilder.swift; sourceTree = "<group>"; };
-		A8DB21C02D73359500434EF6 /* UDPSocket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UDPSocket.swift; sourceTree = "<group>"; };
-		A8DB21C22D73359A00434EF6 /* SocketAddress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketAddress.swift; sourceTree = "<group>"; };
 		A8DB21E42D734CCD00434EF6 /* WireGuardProxy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = WireGuardProxy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A8E2DB212D684CBD009E5D31 /* UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A8E2DB2C2D684D39009E5D31 /* UITests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = UITests.xcconfig; sourceTree = "<group>"; };
 		A8E2DB2E2D684E2A009E5D31 /* UITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITests.swift; sourceTree = "<group>"; };
 		A8E2DB2F2D684E2A009E5D31 /* UITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestsLaunchTests.swift; sourceTree = "<group>"; };
 		A8E2DB332D68507F009E5D31 /* SideStoreTests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = SideStoreTests.xctestplan; sourceTree = "<group>"; };
-		A8E903B32D736F5B0006DA66 /* EmotionalManglingProxy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = EmotionalManglingProxy.h; sourceTree = "<group>"; };
 		A8EA195E2D4982D600DC6322 /* BaseEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseEntity.swift; sourceTree = "<group>"; };
 		A8F66C3C2D04D433009689E6 /* em_proxy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = em_proxy.h; sourceTree = "<group>"; };
 		A8F66C602D04D464009689E6 /* minimuxer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = minimuxer.xcodeproj; sourceTree = "<group>"; };
@@ -1378,49 +1328,6 @@
 			path = operations;
 			sourceTree = "<group>";
 		};
-		A8A2B87B2D73B04D000C3D07 /* Core */ = {
-			isa = PBXGroup;
-			children = (
-				A8A2B8892D73B101000C3D07 /* WireGuardProxy.swift */,
-				A8A2B8812D73B08D000C3D07 /* ProxyConfiguration.swift */,
-				A8A2B87F2D73B082000C3D07 /* ProxyError.swift */,
-			);
-			path = Core;
-			sourceTree = "<group>";
-		};
-		A8A2B87C2D73B051000C3D07 /* Protocol */ = {
-			isa = PBXGroup;
-			children = (
-				A8A2B8942D73B196000C3D07 /* Encryption.swift */,
-				A8A2B8832D73B0A3000C3D07 /* WireGuardPacket.swift */,
-				A8A2B8852D73B0B2000C3D07 /* Handshake.swift */,
-			);
-			path = Protocol;
-			sourceTree = "<group>";
-		};
-		A8A2B87D2D73B060000C3D07 /* Network */ = {
-			isa = PBXGroup;
-			children = (
-				A8A2B8872D73B0CC000C3D07 /* UDPConnection.swift */,
-				A8A2B88D2D73B145000C3D07 /* PacketProcessor.swift */,
-				A8A2B88F2D73B153000C3D07 /* ConnectionMonitor.swift */,
-			);
-			path = Network;
-			sourceTree = "<group>";
-		};
-		A8A2B8912D73B174000C3D07 /* old */ = {
-			isa = PBXGroup;
-			children = (
-				A8A2B86B2D737D96000C3D07 /* WireGuardTunnel.swift */,
-				A8DB21B82D73356100434EF6 /* EmotionalProxy.swift */,
-				A8DB21B42D73354C00434EF6 /* EmotionalDamage.swift */,
-				A8A2B8752D73A89D000C3D07 /* TunSocket.swift */,
-				A8DB21BC2D73356B00434EF6 /* WireGuardConfigBuilder.swift */,
-				A8A2B86D2D739281000C3D07 /* WireGuardTunnelManager.swift */,
-			);
-			path = old;
-			sourceTree = "<group>";
-		};
 		A8A543222D04F0C100D72399 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -1523,55 +1430,6 @@
 				A8C38C2B2D206AD900E83DBD /* AbstractClassError.swift */,
 			);
 			path = common;
-			sourceTree = "<group>";
-		};
-		A8DB219F2D7309F800434EF6 /* WireGuardProxy */ = {
-			isa = PBXGroup;
-			children = (
-				A8A2B87B2D73B04D000C3D07 /* Core */,
-				A8A2B87C2D73B051000C3D07 /* Protocol */,
-				A8A2B87D2D73B060000C3D07 /* Network */,
-				A8DB21CD2D7335D100434EF6 /* Utils */,
-				A8DB219D2D7309F800434EF6 /* Info.plist */,
-				A8E903B32D736F5B0006DA66 /* EmotionalManglingProxy.h */,
-				A8A2B8912D73B174000C3D07 /* old */,
-				A8DB21A42D730AF300434EF6 /* keys */,
-				A8DB21CC2D7335C400434EF6 /* Networking */,
-			);
-			path = WireGuardProxy;
-			sourceTree = "<group>";
-		};
-		A8DB21A42D730AF300434EF6 /* keys */ = {
-			isa = PBXGroup;
-			children = (
-				A8DB21A52D730B1000434EF6 /* client_privatekey */,
-				A8DB21A72D730B1F00434EF6 /* client_publickey */,
-				A8DB21A92D730B2500434EF6 /* server_privatekey */,
-				A8DB21AB2D730B2B00434EF6 /* server_publickey_client */,
-				A8DB21AD2D730B3500434EF6 /* emp.conf */,
-				A8DB21AF2D730B3A00434EF6 /* README.md */,
-			);
-			path = keys;
-			sourceTree = "<group>";
-		};
-		A8DB21CC2D7335C400434EF6 /* Networking */ = {
-			isa = PBXGroup;
-			children = (
-				A8DB21C22D73359A00434EF6 /* SocketAddress.swift */,
-				A8DB21C02D73359500434EF6 /* UDPSocket.swift */,
-				A8DB21B62D73355800434EF6 /* UDPTester.swift */,
-			);
-			path = Networking;
-			sourceTree = "<group>";
-		};
-		A8DB21CD2D7335D100434EF6 /* Utils */ = {
-			isa = PBXGroup;
-			children = (
-				A8A2B88B2D73B129000C3D07 /* Statistics.swift */,
-				A8A2B8922D73B185000C3D07 /* Logger.swift */,
-				A8A2B8962D73B19F000C3D07 /* Constants.swift */,
-			);
-			path = Utils;
 			sourceTree = "<group>";
 		};
 		A8E2DB302D684E2A009E5D31 /* UITests */ = {
@@ -2169,7 +2027,6 @@
 				BF58047C246A28F7008AE704 /* AltBackup */,
 				BF98916C250AABF3002ACF50 /* AltWidget */,
 				D586D39928EF58B0000E101F /* AltTests */,
-				A8DB219F2D7309F800434EF6 /* WireGuardProxy */,
 				BFD247852284BB3300981D42 /* Frameworks */,
 				BFD2476B2284B9A500981D42 /* Products */,
 				C2B79346E83FCBDE76D501CB /* Pods */,
@@ -2593,7 +2450,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A8E903B42D736F5B0006DA66 /* EmotionalManglingProxy.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3039,11 +2895,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A8DB22032D734DBC00434EF6 /* client_privatekey in Resources */,
-				A8DB22042D734DBC00434EF6 /* client_publickey in Resources */,
-				A8DB22052D734DBC00434EF6 /* server_privatekey in Resources */,
-				A8DB22062D734DBC00434EF6 /* server_publickey_client in Resources */,
-				A8DB22072D734DBC00434EF6 /* emp.conf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3244,21 +3095,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A8A2B8932D73B18A000C3D07 /* Logger.swift in Sources */,
-				A8A2B8822D73B08D000C3D07 /* ProxyConfiguration.swift in Sources */,
-				A8A2B88E2D73B14D000C3D07 /* PacketProcessor.swift in Sources */,
-				A8A2B8882D73B0CC000C3D07 /* UDPConnection.swift in Sources */,
-				A8A2B8902D73B15B000C3D07 /* ConnectionMonitor.swift in Sources */,
-				A8A2B88A2D73B101000C3D07 /* WireGuardProxy.swift in Sources */,
-				A8CB7BDC2D736D2F0081C9ED /* SocketAddress.swift in Sources */,
-				A8A2B8972D73B1A6000C3D07 /* Constants.swift in Sources */,
-				A8CB7BDD2D736D2F0081C9ED /* UDPSocket.swift in Sources */,
-				A8A2B8802D73B082000C3D07 /* ProxyError.swift in Sources */,
-				A8CB7BDE2D736D2F0081C9ED /* UDPTester.swift in Sources */,
-				A8A2B88C2D73B129000C3D07 /* Statistics.swift in Sources */,
-				A8A2B8842D73B0A3000C3D07 /* WireGuardPacket.swift in Sources */,
-				A8A2B8952D73B199000C3D07 /* Encryption.swift in Sources */,
-				A8A2B8862D73B0B2000C3D07 /* Handshake.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

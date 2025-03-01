@@ -5,12 +5,6 @@
       location = "group:AltStore.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:SideStore/wireguard-apple/WireGuard.xcodeproj">
-   </FileRef>
-   <FileRef
-      location = "group:SideStore/wireguard-apple">
-   </FileRef>
-   <FileRef
       location = "group:SideStore/AltSign">
    </FileRef>
    <FileRef
