@@ -105,6 +105,24 @@
 		A8C6D5182D1EE95B00DF01F1 /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A8D484D82D0CD306002C691D /* AltBackup.ipa in Resources */ = {isa = PBXBuildFile; fileRef = A8D484D72D0CD306002C691D /* AltBackup.ipa */; };
 		A8D49F532D3D2F9400844B92 /* ProcessInfo+AltStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D49F522D3D2F9400844B92 /* ProcessInfo+AltStore.swift */; };
+		A8DB21842D73070600434EF6 /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A8DB21832D73070600434EF6 /* NetworkExtension.framework */; };
+		A8DB218C2D73070600434EF6 /* EmotionalManglingProxy.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A8DB21822D73070600434EF6 /* EmotionalManglingProxy.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A8DB21942D7307D900434EF6 /* WireGuardKit in Frameworks */ = {isa = PBXBuildFile; productRef = A8DB21932D7307D900434EF6 /* WireGuardKit */; };
+		A8DB21A62D730B1000434EF6 /* client_privatekey in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21A52D730B1000434EF6 /* client_privatekey */; };
+		A8DB21A82D730B1F00434EF6 /* client_publickey in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21A72D730B1F00434EF6 /* client_publickey */; };
+		A8DB21AA2D730B2500434EF6 /* server_privatekey in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21A92D730B2500434EF6 /* server_privatekey */; };
+		A8DB21AC2D730B2B00434EF6 /* server_publickey_client in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21AB2D730B2B00434EF6 /* server_publickey_client */; };
+		A8DB21AE2D730B3500434EF6 /* emp.conf in Resources */ = {isa = PBXBuildFile; fileRef = A8DB21AD2D730B3500434EF6 /* emp.conf */; };
+		A8DB21B52D73354C00434EF6 /* EmotionalDamage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21B42D73354C00434EF6 /* EmotionalDamage.swift */; };
+		A8DB21B72D73355800434EF6 /* UDPTester.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21B62D73355800434EF6 /* UDPTester.swift */; };
+		A8DB21B92D73356100434EF6 /* EmotionalProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21B82D73356100434EF6 /* EmotionalProxy.swift */; };
+		A8DB21BB2D73356700434EF6 /* TunnelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21BA2D73356700434EF6 /* TunnelManager.swift */; };
+		A8DB21BD2D73356B00434EF6 /* WireGuardConfigBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21BC2D73356B00434EF6 /* WireGuardConfigBuilder.swift */; };
+		A8DB21C12D73359500434EF6 /* UDPSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21C02D73359500434EF6 /* UDPSocket.swift */; };
+		A8DB21C32D73359A00434EF6 /* SocketAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21C22D73359A00434EF6 /* SocketAddress.swift */; };
+		A8DB21C52D7335A000434EF6 /* NetworkSettingsBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21C42D7335A000434EF6 /* NetworkSettingsBuilder.swift */; };
+		A8DB21C72D7335A600434EF6 /* LoggerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21C62D7335A600434EF6 /* LoggerService.swift */; };
+		A8DB21C92D7335AD00434EF6 /* PacketTunnelProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DB21C82D7335AD00434EF6 /* PacketTunnelProvider.swift */; };
 		A8E2DB312D684E2A009E5D31 /* UITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8E2DB2E2D684E2A009E5D31 /* UITests.swift */; };
 		A8E2DB322D684E2A009E5D31 /* UITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8E2DB2F2D684E2A009E5D31 /* UITestsLaunchTests.swift */; };
 		A8E2DB342D68507F009E5D31 /* SideStoreTests.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = A8E2DB332D68507F009E5D31 /* SideStoreTests.xctestplan */; };
@@ -510,6 +528,20 @@
 			remoteGlobalIDString = B315FDCE2866CDD3002E243C;
 			remoteInfo = "fragmentzip-iOS";
 		};
+		A8DB218A2D73070600434EF6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BFD247622284B9A500981D42 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A8DB21812D73070600434EF6;
+			remoteInfo = EmotionalManglingProxy;
+		};
+		A8DB21952D7307E400434EF6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BFD247622284B9A500981D42 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A87F0D6C2D726D6E004B2BC2;
+			remoteInfo = WireGuardGoBridgeiOS;
+		};
 		A8E00D3D2D0C95B5000DD2C7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = BFD247622284B9A500981D42 /* Project object */;
@@ -590,6 +622,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				BF989177250AABF4002ACF50 /* AltWidgetExtension.appex in Embed Foundation Extensions */,
+				A8DB218C2D73070600434EF6 /* EmotionalManglingProxy.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -698,6 +731,29 @@
 		A8C38C372D2084D000E83DBD /* ConsoleLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsoleLogView.swift; sourceTree = "<group>"; };
 		A8D484D72D0CD306002C691D /* AltBackup.ipa */ = {isa = PBXFileReference; lastKnownFileType = file; path = AltBackup.ipa; sourceTree = "<group>"; };
 		A8D49F522D3D2F9400844B92 /* ProcessInfo+AltStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProcessInfo+AltStore.swift"; sourceTree = "<group>"; };
+		A8DB21822D73070600434EF6 /* EmotionalManglingProxy.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = EmotionalManglingProxy.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A8DB21832D73070600434EF6 /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
+		A8DB219B2D7309F800434EF6 /* EmotionalManglingProxy.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = EmotionalManglingProxy.entitlements; sourceTree = "<group>"; };
+		A8DB219D2D7309F800434EF6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A8DB21A52D730B1000434EF6 /* client_privatekey */ = {isa = PBXFileReference; lastKnownFileType = text; path = client_privatekey; sourceTree = "<group>"; };
+		A8DB21A72D730B1F00434EF6 /* client_publickey */ = {isa = PBXFileReference; lastKnownFileType = text; path = client_publickey; sourceTree = "<group>"; };
+		A8DB21A92D730B2500434EF6 /* server_privatekey */ = {isa = PBXFileReference; lastKnownFileType = text; path = server_privatekey; sourceTree = "<group>"; };
+		A8DB21AB2D730B2B00434EF6 /* server_publickey_client */ = {isa = PBXFileReference; lastKnownFileType = text; path = server_publickey_client; sourceTree = "<group>"; };
+		A8DB21AD2D730B3500434EF6 /* emp.conf */ = {isa = PBXFileReference; lastKnownFileType = text; path = emp.conf; sourceTree = "<group>"; };
+		A8DB21AF2D730B3A00434EF6 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		A8DB21B42D73354C00434EF6 /* EmotionalDamage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionalDamage.swift; sourceTree = "<group>"; };
+		A8DB21B62D73355800434EF6 /* UDPTester.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UDPTester.swift; sourceTree = "<group>"; };
+		A8DB21B82D73356100434EF6 /* EmotionalProxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionalProxy.swift; sourceTree = "<group>"; };
+		A8DB21BA2D73356700434EF6 /* TunnelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelManager.swift; sourceTree = "<group>"; };
+		A8DB21BC2D73356B00434EF6 /* WireGuardConfigBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireGuardConfigBuilder.swift; sourceTree = "<group>"; };
+		A8DB21BE2D73356F00434EF6 /* WireGuardExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireGuardExtensions.swift; sourceTree = "<group>"; };
+		A8DB21C02D73359500434EF6 /* UDPSocket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UDPSocket.swift; sourceTree = "<group>"; };
+		A8DB21C22D73359A00434EF6 /* SocketAddress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketAddress.swift; sourceTree = "<group>"; };
+		A8DB21C42D7335A000434EF6 /* NetworkSettingsBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkSettingsBuilder.swift; sourceTree = "<group>"; };
+		A8DB21C62D7335A600434EF6 /* LoggerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggerService.swift; sourceTree = "<group>"; };
+		A8DB21C82D7335AD00434EF6 /* PacketTunnelProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketTunnelProvider.swift; sourceTree = "<group>"; };
+		A8DB21DD2D73498000434EF6 /* SimplePacketTunnelProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimplePacketTunnelProvider.swift; sourceTree = "<group>"; };
+		A8DB21DE2D734A7600434EF6 /* WireGuardService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireGuardService.swift; sourceTree = "<group>"; };
 		A8E2DB212D684CBD009E5D31 /* UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A8E2DB2C2D684D39009E5D31 /* UITests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = UITests.xcconfig; sourceTree = "<group>"; };
 		A8E2DB2E2D684E2A009E5D31 /* UITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITests.swift; sourceTree = "<group>"; };
@@ -1098,6 +1154,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A8DB217F2D73070600434EF6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A8DB21942D7307D900434EF6 /* WireGuardKit in Frameworks */,
+				A8DB21842D73070600434EF6 /* NetworkExtension.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A8E2DB1E2D684CBD009E5D31 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -1399,6 +1464,66 @@
 				A8C38C2B2D206AD900E83DBD /* AbstractClassError.swift */,
 			);
 			path = common;
+			sourceTree = "<group>";
+		};
+		A8DB219F2D7309F800434EF6 /* EmotionalManglingProxy */ = {
+			isa = PBXGroup;
+			children = (
+				A8DB21DE2D734A7600434EF6 /* WireGuardService.swift */,
+				A8DB21DD2D73498000434EF6 /* SimplePacketTunnelProvider.swift */,
+				A8DB21B32D73354400434EF6 /* modular */,
+				A8DB21A42D730AF300434EF6 /* keys */,
+				A8DB219D2D7309F800434EF6 /* Info.plist */,
+				A8DB219B2D7309F800434EF6 /* EmotionalManglingProxy.entitlements */,
+			);
+			path = EmotionalManglingProxy;
+			sourceTree = "<group>";
+		};
+		A8DB21A42D730AF300434EF6 /* keys */ = {
+			isa = PBXGroup;
+			children = (
+				A8DB21A52D730B1000434EF6 /* client_privatekey */,
+				A8DB21A72D730B1F00434EF6 /* client_publickey */,
+				A8DB21A92D730B2500434EF6 /* server_privatekey */,
+				A8DB21AB2D730B2B00434EF6 /* server_publickey_client */,
+				A8DB21AD2D730B3500434EF6 /* emp.conf */,
+				A8DB21AF2D730B3A00434EF6 /* README.md */,
+			);
+			path = keys;
+			sourceTree = "<group>";
+		};
+		A8DB21B32D73354400434EF6 /* modular */ = {
+			isa = PBXGroup;
+			children = (
+				A8DB21C82D7335AD00434EF6 /* PacketTunnelProvider.swift */,
+				A8DB21B82D73356100434EF6 /* EmotionalProxy.swift */,
+				A8DB21B42D73354C00434EF6 /* EmotionalDamage.swift */,
+				A8DB21BA2D73356700434EF6 /* TunnelManager.swift */,
+				A8DB21BE2D73356F00434EF6 /* WireGuardExtensions.swift */,
+				A8DB21CC2D7335C400434EF6 /* Networking */,
+				A8DB21CD2D7335D100434EF6 /* Utils */,
+			);
+			path = modular;
+			sourceTree = "<group>";
+		};
+		A8DB21CC2D7335C400434EF6 /* Networking */ = {
+			isa = PBXGroup;
+			children = (
+				A8DB21C22D73359A00434EF6 /* SocketAddress.swift */,
+				A8DB21C02D73359500434EF6 /* UDPSocket.swift */,
+				A8DB21B62D73355800434EF6 /* UDPTester.swift */,
+			);
+			path = Networking;
+			sourceTree = "<group>";
+		};
+		A8DB21CD2D7335D100434EF6 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				A8DB21C42D7335A000434EF6 /* NetworkSettingsBuilder.swift */,
+				A8DB21BC2D73356B00434EF6 /* WireGuardConfigBuilder.swift */,
+				A8DB21C62D7335A600434EF6 /* LoggerService.swift */,
+			);
+			path = Utils;
 			sourceTree = "<group>";
 		};
 		A8E2DB302D684E2A009E5D31 /* UITests */ = {
@@ -1995,6 +2120,7 @@
 				BF58047C246A28F7008AE704 /* AltBackup */,
 				BF98916C250AABF3002ACF50 /* AltWidget */,
 				D586D39928EF58B0000E101F /* AltTests */,
+				A8DB219F2D7309F800434EF6 /* EmotionalManglingProxy */,
 				BFD247852284BB3300981D42 /* Frameworks */,
 				BFD2476B2284B9A500981D42 /* Products */,
 				C2B79346E83FCBDE76D501CB /* Pods */,
@@ -2018,6 +2144,7 @@
 				D586D39828EF58B0000E101F /* AltTests.xctest */,
 				A8E2DB212D684CBD009E5D31 /* UITests.xctest */,
 				A81A8CC52D68BA610086C96F /* DataStructureTests.xctest */,
+				A8DB21822D73070600434EF6 /* EmotionalManglingProxy.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -2067,6 +2194,7 @@
 				A805C3CC2D0C316A00E76BDD /* Pods_SideStore.framework */,
 				A8945AA52D059B6100D86CBE /* Roxas.framework */,
 				707E746318F0B6F1A44935D3 /* Pods_AltStoreCore.framework */,
+				A8DB21832D73070600434EF6 /* NetworkExtension.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -2464,6 +2592,25 @@
 		};
 /* End PBXHeadersBuildPhase section */
 
+/* Begin PBXLegacyTarget section */
+		A87F0D6C2D726D6E004B2BC2 /* WireGuardGoBridgeiOS */ = {
+			isa = PBXLegacyTarget;
+			buildArgumentsString = "-c \"export PATH=/opt/homebrew/bin:$PATH && /usr/bin/make\"";
+			buildConfigurationList = A87F0D6D2D726D6E004B2BC2 /* Build configuration list for PBXLegacyTarget "WireGuardGoBridgeiOS" */;
+			buildPhases = (
+			);
+			buildToolPath = /bin/sh;
+			buildWorkingDirectory = "$(PROJECT_DIR)/SideStore/wireguard-apple/Sources/WireGuardKitGo";
+			dependencies = (
+			);
+			name = WireGuardGoBridgeiOS;
+			packageProductDependencies = (
+			);
+			passBuildSettingsInEnvironment = 1;
+			productName = WireGuardGoBridgeiOS;
+		};
+/* End PBXLegacyTarget section */
+
 /* Begin PBXNativeTarget section */
 		19104DB12909C06C00C49C7B /* EmotionalDamage */ = {
 			isa = PBXNativeTarget;
@@ -2516,6 +2663,27 @@
 			productName = DataStructuresTests;
 			productReference = A81A8CC52D68BA610086C96F /* DataStructureTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		A8DB21812D73070600434EF6 /* EmotionalManglingProxy */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A8DB218E2D73070600434EF6 /* Build configuration list for PBXNativeTarget "EmotionalManglingProxy" */;
+			buildPhases = (
+				A8DB217E2D73070600434EF6 /* Sources */,
+				A8DB217F2D73070600434EF6 /* Frameworks */,
+				A8DB21802D73070600434EF6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A8DB21962D7307E400434EF6 /* PBXTargetDependency */,
+			);
+			name = EmotionalManglingProxy;
+			packageProductDependencies = (
+				A8DB21932D7307D900434EF6 /* WireGuardKit */,
+			);
+			productName = EmotionalManglingProxy;
+			productReference = A8DB21822D73070600434EF6 /* EmotionalManglingProxy.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		A8E2DB202D684CBD009E5D31 /* UITests */ = {
 			isa = PBXNativeTarget;
@@ -2636,6 +2804,7 @@
 				19104DBA2909C0F200C49C7B /* PBXTargetDependency */,
 				BF66EE842501AE50007EE018 /* PBXTargetDependency */,
 				BF989176250AABF4002ACF50 /* PBXTargetDependency */,
+				A8DB218B2D73070600434EF6 /* PBXTargetDependency */,
 			);
 			name = SideStore;
 			productName = AltStore;
@@ -2659,6 +2828,12 @@
 						CreatedOnToolsVersion = 14.0;
 					};
 					A81A8CC42D68BA610086C96F = {
+						CreatedOnToolsVersion = 16.2;
+					};
+					A87F0D6C2D726D6E004B2BC2 = {
+						CreatedOnToolsVersion = 16.2;
+					};
+					A8DB21812D73070600434EF6 = {
 						CreatedOnToolsVersion = 16.2;
 					};
 					A8E2DB202D684CBD009E5D31 = {
@@ -2706,6 +2881,7 @@
 				D5FB7A2C2AA2859400EF863D /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
 				A82067C22D03E0DE00645C0D /* XCRemoteSwiftPackageReference "SemanticVersion" */,
 				A8B645FD2D70C1AD00125819 /* XCRemoteSwiftPackageReference "MarkdownKit" */,
+				A8DB21D02D7341EF00434EF6 /* XCRemoteSwiftPackageReference "wireguard-apple" */,
 			);
 			productRefGroup = BFD2476B2284B9A500981D42 /* Products */;
 			projectDirPath = "";
@@ -2734,6 +2910,8 @@
 				191E5FAA290A5D92001A3B7C /* minimuxer */,
 				A8E2DB202D684CBD009E5D31 /* UITests */,
 				A81A8CC42D68BA610086C96F /* DataStructureTests */,
+				A87F0D6C2D726D6E004B2BC2 /* WireGuardGoBridgeiOS */,
+				A8DB21812D73070600434EF6 /* EmotionalManglingProxy */,
 			);
 		};
 /* End PBXProject section */
@@ -2795,6 +2973,18 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A8DB21802D73070600434EF6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A8DB21AA2D730B2500434EF6 /* server_privatekey in Resources */,
+				A8DB21A82D730B1F00434EF6 /* client_publickey in Resources */,
+				A8DB21A62D730B1000434EF6 /* client_privatekey in Resources */,
+				A8DB21AC2D730B2B00434EF6 /* server_publickey_client in Resources */,
+				A8DB21AE2D730B3500434EF6 /* emp.conf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2988,6 +3178,23 @@
 				A81A8CD12D68BA9B0086C96F /* TreeMap.swift in Sources */,
 				A81A8CCE2D68BA8D0086C96F /* LinkedHashMapTests.swift in Sources */,
 				A81A8CCF2D68BA8D0086C96F /* TreeMapTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A8DB217E2D73070600434EF6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A8DB21BB2D73356700434EF6 /* TunnelManager.swift in Sources */,
+				A8DB21C92D7335AD00434EF6 /* PacketTunnelProvider.swift in Sources */,
+				A8DB21C12D73359500434EF6 /* UDPSocket.swift in Sources */,
+				A8DB21C32D73359A00434EF6 /* SocketAddress.swift in Sources */,
+				A8DB21C52D7335A000434EF6 /* NetworkSettingsBuilder.swift in Sources */,
+				A8DB21B52D73354C00434EF6 /* EmotionalDamage.swift in Sources */,
+				A8DB21B72D73355800434EF6 /* UDPTester.swift in Sources */,
+				A8DB21BD2D73356B00434EF6 /* WireGuardConfigBuilder.swift in Sources */,
+				A8DB21B92D73356100434EF6 /* EmotionalProxy.swift in Sources */,
+				A8DB21C72D7335A600434EF6 /* LoggerService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3384,6 +3591,16 @@
 			name = "minimuxer-staticlib";
 			targetProxy = A809F6A02D04D7CB00F0F0F3 /* PBXContainerItemProxy */;
 		};
+		A8DB218B2D73070600434EF6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A8DB21812D73070600434EF6 /* EmotionalManglingProxy */;
+			targetProxy = A8DB218A2D73070600434EF6 /* PBXContainerItemProxy */;
+		};
+		A8DB21962D7307E400434EF6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A87F0D6C2D726D6E004B2BC2 /* WireGuardGoBridgeiOS */;
+			targetProxy = A8DB21952D7307E400434EF6 /* PBXContainerItemProxy */;
+		};
 		A8E00D3E2D0C95B5000DD2C7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = BF58047A246A28F7008AE704 /* AltBackup */;
@@ -3607,6 +3824,122 @@
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		A87F0D6E2D726D6E004B2BC2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEBUGGING_SYMBOLS = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		A87F0D6F2D726D6E004B2BC2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		A8DB218F2D73070600434EF6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CODE_SIGN_ENTITLEMENTS = EmotionalManglingProxy/EmotionalManglingProxy.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = EmotionalManglingProxy/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = EmotionalManglingProxy;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2025 SideStore. All rights reserved.";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = "-v";
+				PRODUCT_BUNDLE_IDENTIFIER = com.SideStore.SideStore.B6C58C4T52.EmotionalManglingProxy;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A8DB21902D73070600434EF6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CODE_SIGN_ENTITLEMENTS = EmotionalManglingProxy/EmotionalManglingProxy.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = EmotionalManglingProxy/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = EmotionalManglingProxy;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2025 SideStore. All rights reserved.";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = "-v";
+				PRODUCT_BUNDLE_IDENTIFIER = com.SideStore.SideStore.B6C58C4T52.EmotionalManglingProxy;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -4016,7 +4349,6 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG BETA";
 				SWIFT_ENFORCE_EXCLUSIVE_ACCESS = "debug-only";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SYSTEM_HEADER_SEARCH_PATHS = "\"$(SRCROOT)/Dependencies/AltSign/Dependencies\"";
 			};
 			name = Debug;
 		};
@@ -4082,7 +4414,6 @@
 				SWIFT_COMPILATION_MODE = singlefile;
 				SWIFT_ENFORCE_EXCLUSIVE_ACCESS = "debug-only";
 				SWIFT_OPTIMIZATION_LEVEL = "-Osize";
-				SYSTEM_HEADER_SEARCH_PATHS = "\"$(SRCROOT)/Dependencies/AltSign/Dependencies\"";
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -4210,6 +4541,24 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		A87F0D6D2D726D6E004B2BC2 /* Build configuration list for PBXLegacyTarget "WireGuardGoBridgeiOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A87F0D6E2D726D6E004B2BC2 /* Debug */,
+				A87F0D6F2D726D6E004B2BC2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A8DB218E2D73070600434EF6 /* Build configuration list for PBXNativeTarget "EmotionalManglingProxy" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A8DB218F2D73070600434EF6 /* Debug */,
+				A8DB21902D73070600434EF6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		A8E2DB292D684CBD009E5D31 /* Build configuration list for PBXNativeTarget "UITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -4292,6 +4641,14 @@
 				minimumVersion = 1.7.1;
 			};
 		};
+		A8DB21D02D7341EF00434EF6 /* XCRemoteSwiftPackageReference "wireguard-apple" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/WireGuard/wireguard-apple.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 		D58D5F2C26DFE68E00E55E38 /* XCRemoteSwiftPackageReference "LaunchAtLogin" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sindresorhus/LaunchAtLogin.git";
@@ -4333,6 +4690,10 @@
 		A8C6D5112D1EE8AF00DF01F1 /* AltSign-Static */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = "AltSign-Static";
+		};
+		A8DB21932D7307D900434EF6 /* WireGuardKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = WireGuardKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 
