@@ -310,7 +310,7 @@ extension MinimuxerError: LocalizedError {
         case .NoConnection:
             return NSLocalizedString("Unable to connect to the device, make sure StosVPN is enabled and you're connected to WiFi. This could mean an invalid pairing.", comment: "")
         case .PairingFile:
-            return NSLocalizedString("Invalid pairing file. Your pairing file either didn't have a UDID, or it wasn't a valid plist. Please use jitterbugpair to generate it", comment: "")
+            return NSLocalizedString("Invalid pairing file. Your pairing file either didn't have a UDID, or it wasn't a valid plist. Please use idevice_pair to regenerate it", comment: "")
             
         case .CreateDebug:
             return self.createService(name: "debug")
