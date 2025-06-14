@@ -175,7 +175,7 @@ final class LaunchViewController: RSTLaunchViewController, UIDocumentPickerDeleg
             
             //Add "help" button to take user to wiki
             let wikiOption = UIAlertAction(title: "Help", style: .default) { (action) in
-                let wikiURL: String = "https://docs.sidestore.io/docs/getting-started/pairing-file"
+                let wikiURL: String = "https://docs.sidestore.io/docs/installation/pairing-file"
                 if let url = URL(string: wikiURL) {
                     UIApplication.shared.open(url)
                 }
