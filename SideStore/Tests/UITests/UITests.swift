@@ -55,7 +55,7 @@ final class UITests: XCTestCase {
 //        printAllMethods(of: "XCUIApplicationProcess")
     
         // Put setup code here. This method is called before the invocation of each test method in the class.
-        Self.dismissSpotlight()
+//        Self.dismissSpotlight()
 //        Self.deleteMyApp()
         Self.deleteMyApp2()
 
