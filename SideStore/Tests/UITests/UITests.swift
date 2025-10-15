@@ -19,7 +19,41 @@ final class UITests: XCTestCase {
 
     private static let APP_NAME = "SideStore"
     
+    func printAllMethods(of className: String) {
+        guard let cls: AnyClass = objc_getClass(className) as? AnyClass else {
+            print("Class \(className) not found")
+            return
+        }
+
+        var methodCount: UInt32 = 0
+        if let methodList = class_copyMethodList(cls, &methodCount) {
+            for i in 0..<Int(methodCount) {
+                let method = methodList[i]
+                let sel = method_getName(method)
+                print(String(describing: sel))
+            }
+            free(methodList)
+        }
+    }
+    
     override func setUpWithError() throws {
+        // ensure the swizzle only happens once
+        if !Self.mockIdlingPrivateApiToNoOp {
+            let original = class_getInstanceMethod(
+                objc_getClass("XCUIApplicationProcess") as? AnyClass,
+                // this is the new method signature obtained via reflection
+                Selector(("waitForQuiescenceIncludingAnimationsIdle:isPreEvent:"))
+            )
+            let replaced = class_getInstanceMethod(type(of: self), #selector(Self.replace))
+            if let original, let replaced{
+                method_exchangeImplementations(original, replaced)
+            }
+            Self.mockIdlingPrivateApiToNoOp = true
+        }
+        
+        /* UNCOMMENT below to enable the printing of private members of XCUIApplicationProcess */
+//        printAllMethods(of: "XCUIApplicationProcess")
+    
         // Put setup code here. This method is called before the invocation of each test method in the class.
 //        Self.dismissSpotlight()
 //        Self.deleteMyApp()
@@ -55,6 +89,7 @@ final class UITests: XCTestCase {
     
     func testBulkAddInputSources() throws {
         
+//        let app = XCUIApplication()
         let app = XCUIApplication()
         app.launch()
 
@@ -157,6 +192,13 @@ private extension UITests {
         springboard_app.tap()
     }
     
+    @objc func replace() {
+        return
+    }
+    
+    static var mockIdlingPrivateApiToNoOp = false
+
+    
     class func deleteMyApp2() {
         XCUIApplication().terminate()
         dismissSpringboardAlerts()
@@ -171,16 +213,19 @@ private extension UITests {
                 let button = springboard_app.buttons["Remove App"]
                 _ = button.exists || button.waitForExistence(timeout: 5)
                 button.tap()
+                _ = springboard_app.waitForExistence(timeout: 0.3)
             }
             do {
                 let button = springboard_app.buttons["Delete App"]
                 _ = button.waitForExistence(timeout: 0.3)
                 button.tap()
+                _ = springboard_app.waitForExistence(timeout: 0.3)
             }
             do {
                 let button = springboard_app.buttons["Delete"]
                 _ = button.waitForExistence(timeout: 0.3)
                 button.tap()
+                _ = springboard_app.waitForExistence(timeout: 0.3)
             }
 
 //            // Press home once to make the icons stop wiggling
@@ -263,13 +308,16 @@ private extension UITests {
         let app = XCUIApplication()
         app.tabBars["Tab Bar"].buttons["Sources"].tap()
         app.navigationBars["Sources"].buttons["Add"].tap()
+        _ = app.waitForExistence(timeout: 0.5)
 
         let collectionViewsQuery = app.collectionViews
         let appsSidestoreIoTextField = collectionViewsQuery.textFields["apps.sidestore.io"]
         _ = appsSidestoreIoTextField.exists || appsSidestoreIoTextField.waitForExistence(timeout: 5)
+        _ = app.waitForExistence(timeout: 0.5)
         appsSidestoreIoTextField.tap()
         appsSidestoreIoTextField.tap()
         collectionViewsQuery.staticTexts["Paste"].tap()
+        _ = app.waitForExistence(timeout: 0.5)
 
 //        if app.keyboards.buttons["Return"].exists {
 //            app.keyboards.buttons["Return"].tap()
@@ -282,6 +330,7 @@ private extension UITests {
         
         if app.keyboards.count > 0 {
             appsSidestoreIoTextField.typeText("\n") // Fallback to newline so that soft kb is dismissed
+            _ = app.waitForExistence(timeout: 0.5)
         }
         
         let cellsQuery = collectionViewsQuery.cells
@@ -318,17 +367,22 @@ private extension UITests {
         let app = XCUIApplication()
         app.tabBars["Tab Bar"].buttons["Sources"].tap()
         app.navigationBars["Sources"].buttons["Add"].tap()
+        _ = app.waitForExistence(timeout: 0.5)
 
         let collectionViewsQuery = app.collectionViews
         let appsSidestoreIoTextField = collectionViewsQuery.textFields["apps.sidestore.io"]
         _ = appsSidestoreIoTextField.exists || appsSidestoreIoTextField.waitForExistence(timeout: 5)
+        _ = app.waitForExistence(timeout: 0.5)
         appsSidestoreIoTextField.tap()
         appsSidestoreIoTextField.tap()
         _ = appsSidestoreIoTextField.exists || appsSidestoreIoTextField.waitForExistence(timeout: 5)
         collectionViewsQuery.staticTexts["Paste"].tap()
+        _ = app.waitForExistence(timeout: 0.5)
+
         
         if app.keyboards.count > 0 {
             appsSidestoreIoTextField.typeText("\n") // Fallback to newline so that soft kb is dismissed
+            _ = app.waitForExistence(timeout: 0.5)
         }
         
         let cellsQuery = collectionViewsQuery.cells
@@ -380,14 +434,24 @@ private extension UITests {
                 .containing(.button, identifier: source.identifier)
                 .children(matching: .button)[source.identifier]
             XCTAssert(sourceButton.exists || sourceButton.waitForExistence(timeout: 10), "Source preview for id: '\(source.alertTitle)' not found in the view")
-            
+
+            _ = sourceButton.waitForExistence(timeout: 0.5)
+
 //            let addButton = sourceButton.children(matching: .button).firstMatch
+//            let addButton = sourceButton.descendants(matching: .button)["add"]
+//            XCTAssert(addButton.exists || addButton.waitForExistence(timeout: 0.3), " `+` button for id: '\(source.alertTitle)' not found in the preview container")
+//            addButton.tap()
+            
             let addButton = sourceButton.children(matching: .button)["add"]
-            XCTAssert(addButton.exists || addButton.waitForExistence(timeout: 0.3), " `+` button for id: '\(source.alertTitle)' not found in the preview container")
-            addButton.tap()
+            XCTAssert(addButton.waitForExistence(timeout: 1))    //TODO: fine tune down the value to make tests faster (but validate tests still works)
+//            addButton.tap()
+
+            let coord = addButton.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            coord.tap()
             
             if source.requiresSwipe {
                 sourceButton.swipeUp(velocity: .slow)  // Swipe up if needed.
+                _ = sourceButton.waitForExistence(timeout: 0.1)
             }
         }
     }
@@ -396,7 +460,8 @@ private extension UITests {
         // Navigate to the Sources screen and open the Add Source view.
         app.tabBars["Tab Bar"].buttons["Sources"].tap()
         app.navigationBars["Sources"].buttons["Add"].tap()
-        
+        _ = app.waitForExistence(timeout: 0.5)
+
         let cellsQuery = app.collectionViews.cells
         
         // Data model for recommended sources. NOTE: This list order is required to be the same as that of "Add Source" Screen
@@ -421,7 +486,8 @@ private extension UITests {
         // Navigate to the Sources screen and open the Add Source view.
         app.tabBars["Tab Bar"].buttons["Sources"].tap()
         app.navigationBars["Sources"].buttons["Add"].tap()
-        
+        _ = app.waitForExistence(timeout: 0.5)
+
         let cellsQuery = app.collectionViews.cells
         
         // Data model for recommended sources. NOTE: This list order is required to be the same as that of "Add Source" Screen
