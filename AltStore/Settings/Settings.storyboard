@@ -1450,6 +1450,8 @@
                         <autoresizingMask key="autoresizingMask"/>
                         <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <color key="barTintColor" name="SettingsBackground"/>
+                        <edgeInsets key="layoutMargins" top="8" left="20" bottom="8" right="8"/>
+
                         <textAttributes key="titleTextAttributes">
                             <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         </textAttributes>
@@ -1923,6 +1925,7 @@ Settings by i cons from the Noun Project</string>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="dI0-sh-yGf">
                         <rect key="frame" x="0.0" y="16" width="402" height="54"/>
                         <autoresizingMask key="autoresizingMask"/>
+                        <edgeInsets key="layoutMargins" top="8" left="20" bottom="8" right="8"/>
                     </navigationBar>
                     <nil name="viewControllers"/>
                     <connections>
