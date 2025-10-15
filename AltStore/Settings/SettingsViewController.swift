@@ -202,6 +202,16 @@ final class SettingsViewController: UITableViewController
     {
         super.viewDidLoad()
         
+        // --- iOS 26 fix ---
+        if #available(iOS 26.0, *) {
+            let appearance = UINavigationBarAppearance()
+//            appearance.configureWithOpaqueBackground()  // or .defaultBackground if you want blur
+//            appearance.backgroundColor = UIColor(named: "SettingsBackground")
+            appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
+            appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
+            navigationController?.navigationBar.standardAppearance = appearance
+            navigationController?.navigationBar.scrollEdgeAppearance = appearance       // required for iOS 26, maybe enforce it in storyboard?
+        } 
         let nib = UINib(nibName: "SettingsHeaderFooterView", bundle: nil)
         self.prototypeHeaderFooterView = nib.instantiate(withOwner: nil, options: nil)[0] as? SettingsHeaderFooterView
         
