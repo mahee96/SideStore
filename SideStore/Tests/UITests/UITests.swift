@@ -55,7 +55,7 @@ final class UITests: XCTestCase {
 //        printAllMethods(of: "XCUIApplicationProcess")
     
         // Put setup code here. This method is called before the invocation of each test method in the class.
-//        Self.dismissSpotlight()
+        Self.dismissSpotlight()
 //        Self.deleteMyApp()
         Self.deleteMyApp2()
 
@@ -81,7 +81,9 @@ final class UITests: XCTestCase {
 
         // if it exists keep going immediately else wait for upto 5 sec with polling every 1 sec for existence
         XCTAssertTrue(systemAlert.exists || systemAlert.waitForExistence(timeout: 5), "Notifications alert did not appear")
-        systemAlert.scrollViews.otherElements.buttons["Allow"].tap()
+        let allowButton = systemAlert.scrollViews.otherElements.buttons["Allow"]
+        _ = allowButton.exists || allowButton.waitForExistence(timeout: 0.5)
+        allowButton.tap()
         
         // Do the actual validation
         try performBulkAddingRecommendedSources(for: app)
@@ -97,8 +99,10 @@ final class UITests: XCTestCase {
 
         // if it exists keep going immediately else wait for upto 5 sec with polling every 1 sec for existence
         XCTAssertTrue(systemAlert.exists || systemAlert.waitForExistence(timeout: 5), "Notifications alert did not appear")
-        systemAlert.scrollViews.otherElements.buttons["Allow"].tap()
-        
+        let allowButton = systemAlert.scrollViews.otherElements.buttons["Allow"]
+        _ = allowButton.exists || allowButton.waitForExistence(timeout: 0.5)
+        allowButton.tap()
+
         // Do the actual validation
         try performBulkAddingInputSources(for: app)
     }
@@ -112,8 +116,10 @@ final class UITests: XCTestCase {
 
         // if it exists keep going immediately else wait for upto 5 sec with polling every 1 sec for existence
         XCTAssertTrue(systemAlert.exists || systemAlert.waitForExistence(timeout: 5), "Notifications alert did not appear")
-        systemAlert.scrollViews.otherElements.buttons["Allow"].tap()
-        
+        let allowButton = systemAlert.scrollViews.otherElements.buttons["Allow"]
+        _ = allowButton.exists || allowButton.waitForExistence(timeout: 0.5)
+        allowButton.tap()
+
         // Do the actual validation
         try performRepeatabilityForStagingInputSources(for: app)
     }
@@ -127,8 +133,10 @@ final class UITests: XCTestCase {
 
         // if it exists keep going immediately else wait for upto 5 sec with polling every 1 sec for existence
         XCTAssertTrue(systemAlert.exists || systemAlert.waitForExistence(timeout: 5), "Notifications alert did not appear")
-        systemAlert.scrollViews.otherElements.buttons["Allow"].tap()
-        
+        let allowButton = systemAlert.scrollViews.otherElements.buttons["Allow"]
+        _ = allowButton.exists || allowButton.waitForExistence(timeout: 0.5)
+        allowButton.tap()
+
         // Do the actual validation
         try performRepeatabilityForStagingRecommendedSources(for: app)
     }
@@ -213,19 +221,19 @@ private extension UITests {
                 let button = springboard_app.buttons["Remove App"]
                 _ = button.exists || button.waitForExistence(timeout: 5)
                 button.tap()
-                _ = springboard_app.waitForExistence(timeout: 0.3)
+                _ = springboard_app.waitForExistence(timeout: 0.5)
             }
             do {
                 let button = springboard_app.buttons["Delete App"]
-                _ = button.waitForExistence(timeout: 0.3)
+                _ = button.waitForExistence(timeout: 0.5)
                 button.tap()
-                _ = springboard_app.waitForExistence(timeout: 0.3)
+                _ = springboard_app.waitForExistence(timeout: 0.5)
             }
             do {
                 let button = springboard_app.buttons["Delete"]
-                _ = button.waitForExistence(timeout: 0.3)
+                _ = button.waitForExistence(timeout: 0.5)
                 button.tap()
-                _ = springboard_app.waitForExistence(timeout: 0.3)
+                _ = springboard_app.waitForExistence(timeout: 0.5)
             }
 
 //            // Press home once to make the icons stop wiggling
@@ -275,20 +283,50 @@ private extension UITests {
         try tapAddForThesePickedSources(app: app, sourceMappings: sourceMappings, cellsQuery: cellsQuery)
         
         // Commit the changes by tapping "Done".
-        app.navigationBars["Add Source"].buttons["Done"].tap()
+        let doneButton = app.navigationBars["Add Source"].buttons["Done"]
+        _ = doneButton.waitForExistence(timeout: 0.5)
+        doneButton.tap()
         
         // Accept each source addition via alert.
         for source in sourceMappings {
             let alertIdentifier = "Would you like to add the source “\(source.alertTitle)”?"
             let addSourceButton = app.alerts[alertIdentifier]
                 .scrollViews.otherElements.buttons["Add Source"]
-            _ = addSourceButton.exists || addSourceButton.waitForExistence(timeout: 0.3)
+            _ = addSourceButton.waitForExistence(timeout: 0.5)
             addSourceButton.tap()
         }
     }
     
     
-    
+    private func performBulkAddingRecommendedSources(for app: XCUIApplication) throws {
+        // Navigate to the Sources screen and open the Add Source view.
+        let srcTab = app.tabBars["Tab Bar"].buttons["Sources"]
+        _ =  srcTab.waitForExistence(timeout: 0.5)
+        srcTab.tap()
+        let srcAdd = app.navigationBars["Sources"].buttons["Add"]
+        _ = srcAdd.waitForExistence(timeout: 0.5)
+        srcAdd.tap()
+
+        let cellsQuery = app.collectionViews.cells
+        
+        // Data model for recommended sources. NOTE: This list order is required to be the same as that of "Add Source" Screen
+        let recommendedSources: [(identifier: String, alertTitle: String, requiresSwipe: Bool)] = [
+            ("SideStore Team Picks\ncommunity-apps.sidestore.io/sidecommunity.json", "SideStore Team Picks", false),
+            ("Provenance EMU\nprovenance-emu.com/apps.json", "Provenance EMU", false),
+            ("Countdown Respository\nneoarz.github.io/Countdown-App/Countdown.json", "Countdown Respository", false),
+            ("OatmealDome's AltStore Source\naltstore.oatmealdome.me", "OatmealDome's AltStore Source", true),
+            ("UTM Repository\nVirtual machines for iOS", "UTM Repository", false),
+            ("Flyinghead\nflyinghead.github.io/flycast-builds/altstore.json", "Flyinghead", false),
+//            ("PojavLauncher Repository\nalt.crystall1ne.dev", "PojavLauncher Repository", false),            // not a stable source, sometimes becomes unreachable, so disabled
+            ("PokeMMO\npokemmo.eu/altstore/", "PokeMMO", true),
+            ("Odyssey\ntheodyssey.dev/altstore/odysseysource.json", "Odyssey", false),
+            ("Yattee\nrepos.yattee.stream/alt/apps.json", "Yattee", false),
+            ("ThatStella7922 Source\nThe home for all apps ThatStella7922", "ThatStella7922 Source", false)
+        ]
+        
+        try performBulkAdd(app: app, sourceMappings: recommendedSources, cellsQuery: cellsQuery)
+    }
+
     private func performBulkAddingInputSources(for app: XCUIApplication) throws {
         
         // set content into clipboard (for bulk add (paste))
@@ -305,20 +343,23 @@ private extension UITests {
             https://bit.ly/Quantumsource
         """.trimmedIndentation
         
-        let app = XCUIApplication()
-        app.tabBars["Tab Bar"].buttons["Sources"].tap()
-        app.navigationBars["Sources"].buttons["Add"].tap()
-        _ = app.waitForExistence(timeout: 0.5)
+        let srcTab = app.tabBars["Tab Bar"].buttons["Sources"]
+        _ =  srcTab.waitForExistence(timeout: 0.5)
+        srcTab.tap()
+        let srcAdd = app.navigationBars["Sources"].buttons["Add"]
+        _ = srcAdd.waitForExistence(timeout: 0.5)
+        srcAdd.tap()
 
         let collectionViewsQuery = app.collectionViews
         let appsSidestoreIoTextField = collectionViewsQuery.textFields["apps.sidestore.io"]
-        _ = appsSidestoreIoTextField.exists || appsSidestoreIoTextField.waitForExistence(timeout: 5)
-        _ = app.waitForExistence(timeout: 0.5)
+        _ = appsSidestoreIoTextField.waitForExistence(timeout: 0.5)
         appsSidestoreIoTextField.tap()
         appsSidestoreIoTextField.tap()
-        collectionViewsQuery.staticTexts["Paste"].tap()
-        _ = app.waitForExistence(timeout: 0.5)
-
+        _ = appsSidestoreIoTextField.waitForExistence(timeout: 0.5)
+        let pasteButton = collectionViewsQuery.staticTexts["Paste"]
+        _ = pasteButton.waitForExistence(timeout: 0.5)
+        pasteButton.tap()
+        
 //        if app.keyboards.buttons["Return"].exists {
 //            app.keyboards.buttons["Return"].tap()
 //        } else if app.keyboards.buttons["Done"].exists {
@@ -330,7 +371,7 @@ private extension UITests {
         
         if app.keyboards.count > 0 {
             appsSidestoreIoTextField.typeText("\n") // Fallback to newline so that soft kb is dismissed
-            _ = app.waitForExistence(timeout: 0.5)
+            _ =  app.exists || app.waitForExistence(timeout: 0.5)
         }
         
         let cellsQuery = collectionViewsQuery.cells
@@ -351,7 +392,32 @@ private extension UITests {
         try performBulkAdd(app: app, sourceMappings: textInputSources, cellsQuery: cellsQuery)
     }
     
-    
+    private func performRepeatabilityForStagingRecommendedSources(for app: XCUIApplication) throws {
+        // Navigate to the Sources screen and open the Add Source view.
+        let srcTab = app.tabBars["Tab Bar"].buttons["Sources"]
+        srcTab.tap()
+        _ =  srcTab.waitForExistence(timeout: 0.5)
+        let srcAdd = app.navigationBars["Sources"].buttons["Add"]
+        srcAdd.tap()
+        _ = srcAdd.waitForExistence(timeout: 0.5)
+
+        let cellsQuery = app.collectionViews.cells
+        
+        // Data model for recommended sources. NOTE: This list order is required to be the same as that of "Add Source" Screen
+        let recommendedSources: [(identifier: String, alertTitle: String, requiresSwipe: Bool)] = [
+            ("SideStore Team Picks\ncommunity-apps.sidestore.io/sidecommunity.json", "SideStore Team Picks", false),
+            ("Provenance EMU\nprovenance-emu.com/apps.json", "Provenance EMU", false),
+            ("Countdown Respository\nneoarz.github.io/Countdown-App/Countdown.json", "Countdown Respository", false),
+            ("OatmealDome's AltStore Source\naltstore.oatmealdome.me", "OatmealDome's AltStore Source", false),
+            ("UTM Repository\nVirtual machines for iOS", "UTM Repository", false),
+        ]
+        
+        let repeatCount = 3                                     // number of times to run the entire sequence
+        let timeSeed = UInt64(Date().timeIntervalSince1970)     // time is unique (upto microseconds) - uncomment this to use non-deterministic seed based RNG (random number generator)
+
+        try repeatabilityTest(app: app, sourceMappings: recommendedSources, cellsQuery: cellsQuery, repeatCount: repeatCount, seed: timeSeed)
+    }
+
     private func performRepeatabilityForStagingInputSources(for app: XCUIApplication) throws {
         
         // set content into clipboard (for bulk add (paste))
@@ -364,25 +430,28 @@ private extension UITests {
             https://bit.ly/40Isul6
         """.trimmedIndentation
         
-        let app = XCUIApplication()
-        app.tabBars["Tab Bar"].buttons["Sources"].tap()
-        app.navigationBars["Sources"].buttons["Add"].tap()
-        _ = app.waitForExistence(timeout: 0.5)
+        let srcTab = app.tabBars["Tab Bar"].buttons["Sources"]
+        _ =  srcTab.waitForExistence(timeout: 0.5)
+        srcTab.tap()
+        let srcAdd = app.navigationBars["Sources"].buttons["Add"]
+        _ = srcAdd.waitForExistence(timeout: 0.5)
+        srcAdd.tap()
+
 
         let collectionViewsQuery = app.collectionViews
         let appsSidestoreIoTextField = collectionViewsQuery.textFields["apps.sidestore.io"]
-        _ = appsSidestoreIoTextField.exists || appsSidestoreIoTextField.waitForExistence(timeout: 5)
-        _ = app.waitForExistence(timeout: 0.5)
+        _ = appsSidestoreIoTextField.waitForExistence(timeout: 0.5)
         appsSidestoreIoTextField.tap()
         appsSidestoreIoTextField.tap()
-        _ = appsSidestoreIoTextField.exists || appsSidestoreIoTextField.waitForExistence(timeout: 5)
-        collectionViewsQuery.staticTexts["Paste"].tap()
-        _ = app.waitForExistence(timeout: 0.5)
+        _ = appsSidestoreIoTextField.waitForExistence(timeout: 0.5)
+        let pasteButton = collectionViewsQuery.staticTexts["Paste"]
+        _ = pasteButton.waitForExistence(timeout: 0.5)
+        pasteButton.tap()
 
         
         if app.keyboards.count > 0 {
             appsSidestoreIoTextField.typeText("\n") // Fallback to newline so that soft kb is dismissed
-            _ = app.waitForExistence(timeout: 0.5)
+            _ =  app.exists || app.waitForExistence(timeout: 0.5)
         }
         
         let cellsQuery = collectionViewsQuery.cells
@@ -435,11 +504,11 @@ private extension UITests {
                 .children(matching: .button)[source.identifier]
             XCTAssert(sourceButton.exists || sourceButton.waitForExistence(timeout: 10), "Source preview for id: '\(source.alertTitle)' not found in the view")
 
-            _ = sourceButton.waitForExistence(timeout: 0.5)
+            _ =  sourceButton.exists || sourceButton.waitForExistence(timeout: 0.5)
 
 //            let addButton = sourceButton.children(matching: .button).firstMatch
 //            let addButton = sourceButton.descendants(matching: .button)["add"]
-//            XCTAssert(addButton.exists || addButton.waitForExistence(timeout: 0.3), " `+` button for id: '\(source.alertTitle)' not found in the preview container")
+//            XCTAssert(addButton.exists || addButton.waitForExistence(timeout: 0.5), " `+` button for id: '\(source.alertTitle)' not found in the preview container")
 //            addButton.tap()
             
             let addButton = sourceButton.children(matching: .button)["add"]
@@ -451,58 +520,9 @@ private extension UITests {
             
             if source.requiresSwipe {
                 sourceButton.swipeUp(velocity: .slow)  // Swipe up if needed.
-                _ = sourceButton.waitForExistence(timeout: 0.1)
+                _ = sourceButton.waitForExistence(timeout: 0.5)
             }
         }
-    }
-
-    private func performBulkAddingRecommendedSources(for app: XCUIApplication) throws {
-        // Navigate to the Sources screen and open the Add Source view.
-        app.tabBars["Tab Bar"].buttons["Sources"].tap()
-        app.navigationBars["Sources"].buttons["Add"].tap()
-        _ = app.waitForExistence(timeout: 0.5)
-
-        let cellsQuery = app.collectionViews.cells
-        
-        // Data model for recommended sources. NOTE: This list order is required to be the same as that of "Add Source" Screen
-        let recommendedSources: [(identifier: String, alertTitle: String, requiresSwipe: Bool)] = [
-            ("SideStore Team Picks\ncommunity-apps.sidestore.io/sidecommunity.json", "SideStore Team Picks", false),
-            ("Provenance EMU\nprovenance-emu.com/apps.json", "Provenance EMU", false),
-            ("Countdown Respository\nneoarz.github.io/Countdown-App/Countdown.json", "Countdown Respository", false),
-            ("OatmealDome's AltStore Source\naltstore.oatmealdome.me", "OatmealDome's AltStore Source", true),
-            ("UTM Repository\nVirtual machines for iOS", "UTM Repository", false),
-            ("Flyinghead\nflyinghead.github.io/flycast-builds/altstore.json", "Flyinghead", false),
-//            ("PojavLauncher Repository\nalt.crystall1ne.dev", "PojavLauncher Repository", false),            // not a stable source, sometimes becomes unreachable, so disabled
-            ("PokeMMO\npokemmo.eu/altstore/", "PokeMMO", true),
-            ("Odyssey\ntheodyssey.dev/altstore/odysseysource.json", "Odyssey", false),
-            ("Yattee\nrepos.yattee.stream/alt/apps.json", "Yattee", false),
-            ("ThatStella7922 Source\nThe home for all apps ThatStella7922", "ThatStella7922 Source", false)
-        ]
-        
-        try performBulkAdd(app: app, sourceMappings: recommendedSources, cellsQuery: cellsQuery)
-    }
-    
-    private func performRepeatabilityForStagingRecommendedSources(for app: XCUIApplication) throws {
-        // Navigate to the Sources screen and open the Add Source view.
-        app.tabBars["Tab Bar"].buttons["Sources"].tap()
-        app.navigationBars["Sources"].buttons["Add"].tap()
-        _ = app.waitForExistence(timeout: 0.5)
-
-        let cellsQuery = app.collectionViews.cells
-        
-        // Data model for recommended sources. NOTE: This list order is required to be the same as that of "Add Source" Screen
-        let recommendedSources: [(identifier: String, alertTitle: String, requiresSwipe: Bool)] = [
-            ("SideStore Team Picks\ncommunity-apps.sidestore.io/sidecommunity.json", "SideStore Team Picks", false),
-            ("Provenance EMU\nprovenance-emu.com/apps.json", "Provenance EMU", false),
-            ("Countdown Respository\nneoarz.github.io/Countdown-App/Countdown.json", "Countdown Respository", false),
-            ("OatmealDome's AltStore Source\naltstore.oatmealdome.me", "OatmealDome's AltStore Source", false),
-            ("UTM Repository\nVirtual machines for iOS", "UTM Repository", false),
-        ]
-        
-        let repeatCount = 3                                     // number of times to run the entire sequence
-        let timeSeed = UInt64(Date().timeIntervalSince1970)     // time is unique (upto microseconds) - uncomment this to use non-deterministic seed based RNG (random number generator)
-
-        try repeatabilityTest(app: app, sourceMappings: recommendedSources, cellsQuery: cellsQuery, repeatCount: repeatCount, seed: timeSeed)
     }
 }
 
