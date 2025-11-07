@@ -131,22 +131,6 @@ final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
         displayError("Choosing a pairing file was cancelled. Please re-open the app and try again.")
     }
     
-    func start_minimuxer_threads(_ pairing_file: String) {
-        target_minimuxer_address()
-        let documentsDirectory = FileManager.default.documentsDirectory.absoluteString
-        do {
-            // enable minimuxer console logging only if enabled in settings
-            let isMinimuxerConsoleLoggingEnabled = UserDefaults.standard.isMinimuxerConsoleLoggingEnabled
-            try minimuxer.startWithLogger(pairing_file, documentsDirectory, isMinimuxerConsoleLoggingEnabled)
-        } catch {
-            try! FileManager.default.removeItem(at: FileManager.default.documentsDirectory.appendingPathComponent("\(pairingFileName)"))
-            displayError("minimuxer failed to start, please restart SideStore. \((error as? LocalizedError)?.failureReason ?? "UNKNOWN ERROR!!!!!! REPORT TO GITHUB ISSUES!")")
-        }
-        start_auto_mounter(documentsDirectory)
-        // Create destinationViewController now so view controllers can register for receiving Notifications.
-        self.destinationViewController = self.storyboard!.instantiateViewController(withIdentifier: "tabBarController") as? TabBarController
-    }
-    
     func importAccountAtFile(_ file: URL, remove: Bool = false) {
         _ = file.startAccessingSecurityScopedResource()
         defer { file.stopAccessingSecurityScopedResource() }
