@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -86,6 +86,8 @@
 		A83FE36A2EC904FD005ACE9A /* AppCenterAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = A83FE3692EC904FD005ACE9A /* AppCenterAnalytics */; };
 		A83FE36C2EC904FD005ACE9A /* AppCenterCrashes in Frameworks */ = {isa = PBXBuildFile; productRef = A83FE36B2EC904FD005ACE9A /* AppCenterCrashes */; };
 		A83FE3772EC905E3005ACE9A /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = A83FE3762EC905E3005ACE9A /* KeychainAccess */; };
+		A83FE3CF2EC9219C005ACE9A /* libem_proxy_static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A83FE3CE2EC9219C005ACE9A /* libem_proxy_static.a */; };
+		A83FE3D42EC92495005ACE9A /* libEmotionalDamage.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A83FE3CD2EC9217F005ACE9A /* libEmotionalDamage.a */; };
 		A859ED5C2D1EE827003DCC58 /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; };
 		A859ED5D2D1EE827003DCC58 /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A86315DF2D3EB2DE0048FA40 /* ErrorProcessing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A86315DE2D3EB2D80048FA40 /* ErrorProcessing.swift */; };
@@ -480,6 +482,13 @@
 			remoteGlobalIDString = CA609C732349A560B9642892;
 			remoteInfo = "minimuxer-staticlib";
 		};
+		A83FE3D52EC92495005ACE9A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BFD247622284B9A500981D42 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A83FE3C22EC9217F005ACE9A;
+			remoteInfo = EmotionalDamage;
+		};
 		A8A543282D04F0C100D72399 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = B343F886295F7F9B002B1159 /* libfragmentzip.xcodeproj */;
@@ -668,6 +677,10 @@
 		A81BF9E12D84C9E900768940 /* AltStore 17_1.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "AltStore 17_1.xcdatamodel"; sourceTree = "<group>"; };
 		A81BF9E22D84CB0C00768940 /* AppPermission17To17_1MigrationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPermission17To17_1MigrationPolicy.swift; sourceTree = "<group>"; };
 		A81BF9E32D84CB0C00768940 /* Source17To17_1MigrationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Source17To17_1MigrationPolicy.swift; sourceTree = "<group>"; };
+		A83FE3A32EC91F35005ACE9A /* em_proxy.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = em_proxy.xcodeproj; sourceTree = "<group>"; };
+		A83FE3CD2EC9217F005ACE9A /* libEmotionalDamage.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libEmotionalDamage.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		A83FE3CE2EC9219C005ACE9A /* libem_proxy_static.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libem_proxy_static.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		A83FE3D02EC921B2005ACE9A /* libresolv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libresolv.tbd; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.1.sdk/usr/lib/libresolv.tbd; sourceTree = DEVELOPER_DIR; };
 		A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */ = {isa = PBXFileReference; expectedSignature = "AppleDeveloperProgram:67RAULRX93:Marcin Krzyzanowski"; lastKnownFileType = wrapper.xcframework; name = OpenSSL.xcframework; path = SideStore/AltSign/Dependencies/OpenSSL/Frameworks/OpenSSL.xcframework; sourceTree = "<group>"; };
 		A85ACB8E2D1F31C400AA3DE7 /* AltBackup.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = AltBackup.xcconfig; sourceTree = "<group>"; };
 		A85ACB8F2D1F31C400AA3DE7 /* AltStore.debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = AltStore.debug.xcconfig; sourceTree = "<group>"; };
@@ -1064,6 +1077,44 @@
 		D5FD4ECA2A9532960097BEE8 /* DatabaseManager+Async.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DatabaseManager+Async.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A83FE3D22EC9229A005ACE9A /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				EmotionalDamage.swift,
+			);
+			target = A83FE3C22EC9217F005ACE9A /* EmotionalDamage */;
+		};
+		A83FE3D32EC922F8005ACE9A /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				.github/CODEOWNERS,
+				.github/workflows/build.yml,
+				.gitignore,
+				build.rs,
+				Cargo.toml,
+				cbindgen.toml,
+				keys/client_privatekey,
+				keys/client_publickey,
+				keys/emp.conf,
+				keys/README.md,
+				keys/server_privatekey,
+				keys/server_publickey_client,
+				"libem_proxy-ios.a",
+				LICENSE,
+				README.md,
+				src/lib.rs,
+				src/run.rs,
+			);
+			target = BFD247692284B9A500981D42 /* SideStore */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		A83FE3A22EC91F35005ACE9A /* em_proxy */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A83FE3D32EC922F8005ACE9A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = em_proxy; sourceTree = "<group>"; };
+		A83FE3A52EC91F35005ACE9A /* EmotionalDamage */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A83FE3D22EC9229A005ACE9A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = EmotionalDamage; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
 		191E5FA8290A5D92001A3B7C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
@@ -1084,6 +1135,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A83FE3C82EC9217F005ACE9A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A83FE3CF2EC9219C005ACE9A /* libem_proxy_static.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1129,6 +1188,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A8C6D5172D1EE95B00DF01F1 /* OpenSSL.xcframework in Frameworks */,
+				A83FE3D42EC92495005ACE9A /* libEmotionalDamage.a in Frameworks */,
 				A83FE36C2EC904FD005ACE9A /* AppCenterCrashes in Frameworks */,
 				A8A543302D04F14400D72399 /* libfragmentzip.a in Frameworks */,
 				A8B646012D70C23E00125819 /* MarkdownKit in Frameworks */,
@@ -1458,6 +1518,9 @@
 				0E214ADD2E6DD75200B3D63D /* SideStoreDebug.entitlements */,
 				A8B645F82D70C0DD00125819 /* Views */,
 				A8E2DB352D6850A9009E5D31 /* Tests */,
+				A83FE3A22EC91F35005ACE9A /* em_proxy */,
+				A83FE3A32EC91F35005ACE9A /* em_proxy.xcodeproj */,
+				A83FE3A52EC91F35005ACE9A /* EmotionalDamage */,
 				A8F66C5C2D04D433009689E6 /* minimuxer */,
 				A8F66C602D04D464009689E6 /* minimuxer.xcodeproj */,
 				B343F886295F7F9B002B1159 /* libfragmentzip.xcodeproj */,
@@ -2016,6 +2079,7 @@
 				D586D39828EF58B0000E101F /* AltTests.xctest */,
 				A8E2DB212D684CBD009E5D31 /* UITests.xctest */,
 				A81A8CC52D68BA610086C96F /* DataStructureTests.xctest */,
+				A83FE3CD2EC9217F005ACE9A /* libEmotionalDamage.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -2058,6 +2122,8 @@
 		BFD247852284BB3300981D42 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A83FE3D02EC921B2005ACE9A /* libresolv.tbd */,
+				A83FE3CE2EC9219C005ACE9A /* libem_proxy_static.a */,
 				0ED4AEC22E6DD9FC0039E2C0 /* KeychainAccess.framework */,
 				0ED4AEBC2E6DD9CE0039E2C0 /* KeychainAccess.framework */,
 				A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */,
@@ -2487,6 +2553,22 @@
 			productReference = A81A8CC52D68BA610086C96F /* DataStructureTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		A83FE3C22EC9217F005ACE9A /* EmotionalDamage */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A83FE3CA2EC9217F005ACE9A /* Build configuration list for PBXNativeTarget "EmotionalDamage" */;
+			buildPhases = (
+				A83FE3C52EC9217F005ACE9A /* Sources */,
+				A83FE3C82EC9217F005ACE9A /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = EmotionalDamage;
+			productName = minimuxer;
+			productReference = A83FE3CD2EC9217F005ACE9A /* libEmotionalDamage.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 		A8E2DB202D684CBD009E5D31 /* UITests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A8E2DB292D684CBD009E5D31 /* Build configuration list for PBXNativeTarget "UITests" */;
@@ -2601,6 +2683,11 @@
 				191E5FB3290A5D9B001A3B7C /* PBXTargetDependency */,
 				BF66EE842501AE50007EE018 /* PBXTargetDependency */,
 				BF989176250AABF4002ACF50 /* PBXTargetDependency */,
+				A83FE3D62EC92495005ACE9A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A83FE3A22EC91F35005ACE9A /* em_proxy */,
+				A83FE3A52EC91F35005ACE9A /* EmotionalDamage */,
 			);
 			name = SideStore;
 			productName = AltStore;
@@ -2695,6 +2782,7 @@
 				191E5FAA290A5D92001A3B7C /* minimuxer */,
 				A8E2DB202D684CBD009E5D31 /* UITests */,
 				A81A8CC42D68BA610086C96F /* DataStructureTests */,
+				A83FE3C22EC9217F005ACE9A /* EmotionalDamage */,
 			);
 		};
 /* End PBXProject section */
@@ -2825,7 +2913,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "bash ./SideStore/fetch-prebuilt.sh minimuxer\n";
+			shellScript = "bash ./SideStore/fetch-prebuilt.sh minimuxer em_proxy\n";
 		};
 		A8E00D3F2D0C9C6D000DD2C7 /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -2867,6 +2955,13 @@
 				A81A8CD12D68BA9B0086C96F /* TreeMap.swift in Sources */,
 				A81A8CCE2D68BA8D0086C96F /* LinkedHashMapTests.swift in Sources */,
 				A81A8CCF2D68BA8D0086C96F /* TreeMapTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A83FE3C52EC9217F005ACE9A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3275,6 +3370,11 @@
 			name = "minimuxer-staticlib";
 			targetProxy = A809F6A02D04D7CB00F0F0F3 /* PBXContainerItemProxy */;
 		};
+		A83FE3D62EC92495005ACE9A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A83FE3C22EC9217F005ACE9A /* EmotionalDamage */;
+			targetProxy = A83FE3D52EC92495005ACE9A /* PBXContainerItemProxy */;
+		};
 		A8E2DB282D684CBD009E5D31 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = BFD247692284B9A500981D42 /* SideStore */;
@@ -3431,6 +3531,64 @@
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		A83FE3CB2EC9217F005ACE9A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = "$(inherited)";
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_WARN_DUPLICATE_LIBRARIES = YES;
+				LD_WARN_UNUSED_DYLIBS = YES;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/SideStore/em_proxy",
+				);
+				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				OTHER_LDFLAGS = (
+					"-ObjC",
+					"$(inherited)",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OBJC_BRIDGING_HEADER = SideStore/em_proxy/em_proxy.h;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A83FE3CC2EC9217F005ACE9A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = "$(inherited)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_WARN_DUPLICATE_LIBRARIES = YES;
+				LD_WARN_UNUSED_DYLIBS = YES;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/SideStore/em_proxy",
+				);
+				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				OTHER_LDFLAGS = (
+					"-ObjC",
+					"$(inherited)",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = SideStore/em_proxy/em_proxy.h;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -3942,6 +4100,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/SideStore/libfragmentzip",
 					"$(PROJECT_DIR)/Dependencies/libcurl",
+					"$(PROJECT_DIR)/SideStore/em_proxy",
 				);
 				LLVM_LTO = YES_THIN;
 				MARKETING_VERSION = "$(inherited)";
@@ -3988,6 +4147,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/SideStore/libfragmentzip",
 					"$(PROJECT_DIR)/Dependencies/libcurl",
+					"$(PROJECT_DIR)/SideStore/em_proxy",
 				);
 				LLVM_LTO = YES_THIN;
 				MARKETING_VERSION = "$(inherited)";
@@ -4023,6 +4183,15 @@
 			buildConfigurations = (
 				A81A8CCA2D68BA610086C96F /* Debug */,
 				A81A8CCB2D68BA610086C96F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A83FE3CA2EC9217F005ACE9A /* Build configuration list for PBXNativeTarget "EmotionalDamage" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A83FE3CB2EC9217F005ACE9A /* Debug */,
+				A83FE3CC2EC9217F005ACE9A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
