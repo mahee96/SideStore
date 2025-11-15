@@ -489,6 +489,20 @@
 			remoteGlobalIDString = A83FE3C22EC9217F005ACE9A;
 			remoteInfo = EmotionalDamage;
 		};
+		A83FE40C2EC93DCD005ACE9A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A83FE3A32EC91F35005ACE9A /* em_proxy.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = CA60C44C93D7916DE57E6EBD;
+			remoteInfo = "em_proxy-staticlib";
+		};
+		A83FE40E2EC93DCD005ACE9A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A83FE3A32EC91F35005ACE9A /* em_proxy.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = CA60058A9FBE4D17AF51A7D5;
+			remoteInfo = "run-bin";
+		};
 		A8A543282D04F0C100D72399 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = B343F886295F7F9B002B1159 /* libfragmentzip.xcodeproj */;
@@ -1308,6 +1322,15 @@
 				A81A8CC72D68BA610086C96F /* DataStructuresTests.swift */,
 			);
 			path = datastructures;
+			sourceTree = "<group>";
+		};
+		A83FE4082EC93DCD005ACE9A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A83FE40D2EC93DCD005ACE9A /* libem_proxy_static.a */,
+				A83FE40F2EC93DCD005ACE9A /* run */,
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 		A85ACB942D1F31C400AA3DE7 /* xcconfigs */ = {
@@ -2765,6 +2788,10 @@
 			projectDirPath = "";
 			projectReferences = (
 				{
+					ProductGroup = A83FE4082EC93DCD005ACE9A /* Products */;
+					ProjectRef = A83FE3A32EC91F35005ACE9A /* em_proxy.xcodeproj */;
+				},
+				{
 					ProductGroup = A8A543222D04F0C100D72399 /* Products */;
 					ProjectRef = B343F886295F7F9B002B1159 /* libfragmentzip.xcodeproj */;
 				},
@@ -2794,6 +2821,20 @@
 			fileType = archive.ar;
 			path = libminimuxer_static.a;
 			remoteRef = A809F68D2D04D71200F0F0F3 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A83FE40D2EC93DCD005ACE9A /* libem_proxy_static.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libem_proxy_static.a;
+			remoteRef = A83FE40C2EC93DCD005ACE9A /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A83FE40F2EC93DCD005ACE9A /* run */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = run;
+			remoteRef = A83FE40E2EC93DCD005ACE9A /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		A8A543292D04F0C100D72399 /* libfragmentzip */ = {
@@ -4080,6 +4121,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				ASSETCATALOG_COMPILER_OPTIMIZATION = space;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = "$(CODE_SIGN_ENTITLEMENTS)";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(inherited)";
@@ -4127,6 +4169,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				ASSETCATALOG_COMPILER_OPTIMIZATION = space;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = "$(CODE_SIGN_ENTITLEMENTS)";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(inherited)";
