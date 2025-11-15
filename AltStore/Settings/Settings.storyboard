@@ -381,7 +381,7 @@
                                         <edgeInsets key="layoutMargins" top="8" left="30" bottom="8" right="30"/>
                                         <userDefinedRuntimeAttributes>
                                             <userDefinedRuntimeAttribute type="number" keyPath="style">
-                                                <integer key="value" value="1"/>
+                                                <integer key="value" value="2"/>
                                             </userDefinedRuntimeAttribute>
                                         </userDefinedRuntimeAttributes>
                                     </tableViewCell>
@@ -1457,6 +1457,7 @@
                         <outlet property="betaUpdatesSwitch" destination="e32-w4-5fk" id="kdn-ZR-cNU"/>
                         <outlet property="disableAppLimitSwitch" destination="1aa-og-ZXD" id="oVL-Md-yZ8"/>
                         <outlet property="disableResponseCachingSwitch" destination="AAh-cu-qw8" id="aVT-Md-yZ8"/>
+                        <outlet property="enableEMPforWireguard" destination="8qE-hE-Ujn" id="VC2-PV-cea"/>
                         <outlet property="exportResignedAppsSwitch" destination="GYP-qn-wzh" id="aVL-Md-yZ8"/>
                         <outlet property="githubButton" destination="oqj-4S-I9l" id="sxB-LE-gA2"/>
                         <outlet property="mastodonButton" destination="B8Q-e7-beR" id="Kbe-Og-rsg"/>
