@@ -121,6 +121,7 @@ final class SettingsViewController: UITableViewController
     @IBOutlet private var accountTypeLabel: UILabel!
     
     @IBOutlet private var backgroundRefreshSwitch: UISwitch!
+    @IBOutlet private var enableEMPforWireguard: UISwitch!
     @IBOutlet private var noIdleTimeoutSwitch: UISwitch!
     @IBOutlet private var disableAppLimitSwitch: UISwitch!
     @IBOutlet private var betaUpdatesSwitch: UISwitch!
@@ -470,6 +471,7 @@ private extension SettingsViewController
         
         // AppRefreshRow
         self.backgroundRefreshSwitch.isOn = UserDefaults.standard.isBackgroundRefreshEnabled
+        self.enableEMPforWireguard.isOn = UserDefaults.standard.enableEMPforWireguard
         self.noIdleTimeoutSwitch.isOn = UserDefaults.standard.isIdleTimeoutDisableEnabled
         self.disableAppLimitSwitch.isOn = UserDefaults.standard.isAppLimitDisabled
 
@@ -745,6 +747,11 @@ private extension SettingsViewController
     @IBAction func toggleIsBackgroundRefreshEnabled(_ sender: UISwitch)
     {
         UserDefaults.standard.isBackgroundRefreshEnabled = sender.isOn
+    }
+    
+    @IBAction func toggleEnableEMPforWireguard(_ sender: UISwitch)
+    {
+        UserDefaults.standard.enableEMPforWireguard = sender.isOn
     }
     
     @IBAction func toggleNoIdleTimeoutEnabled(_ sender: UISwitch)
