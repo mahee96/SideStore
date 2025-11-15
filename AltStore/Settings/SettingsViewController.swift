@@ -257,7 +257,9 @@ final class SettingsViewController: UITableViewController
         }
         
         configureReleaseChannelButton()
+        #if !targetEnvironment(simulator)
         detectAndImportAccountFile()
+        #endif
     }
     
     func importAccountAtFile(_ file: URL, remove: Bool = false) {
