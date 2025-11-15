@@ -1101,6 +1101,7 @@
 				keys/server_privatekey,
 				keys/server_publickey_client,
 				"libem_proxy-ios.a",
+				"libem_proxy-sim.a",
 				LICENSE,
 				README.md,
 				src/lib.rs,
