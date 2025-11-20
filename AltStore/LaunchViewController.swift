@@ -8,6 +8,7 @@
 
 import UIKit
 import Roxas
+import EmotionalDamage
 import minimuxer
 import WidgetKit
 
@@ -74,6 +75,10 @@ final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
         #if !targetEnvironment(simulator)
         
         detectAndImportAccountFile()
+        
+        if UserDefaults.standard.enableEMPforWireguard {
+            start_em_proxy(bind_addr: Consts.Proxy.serverURL)
+        }
         guard let pf = fetchPairingFile() else {
             displayError("Device pairing file not found.")
             return
