@@ -1153,38 +1153,10 @@ private extension AppManager
                     
                 case .activate(let app) where UserDefaults.standard.isLegacyDeactivationSupported: fallthrough
                 case .refresh(let app):
-                    // Check if backup app is installed in place of real app.
-//                    let altBackupUti = UTTypeCopyDeclaration(app.installedBackupAppUTI as CFString)?.takeRetainedValue() as NSDictionary?
-
-//                    if app.certificateSerialNumber != group.context.certificate?.serialNumber ||
-//                        altBackupUti != nil ||        // why would altbackup requires reinstall? it shouldn't cause we are just renewing profiles
-//                        app.needsResign ||            // why would an app require resign during refresh? it shouldn't!
-                        // We need to reinstall ourselves on refresh to ensure the new provisioning profile is used
-                        //  => mahee96: jkcoxson confirmed misagent manages profiles independently without requiring lockdownd or installd intervention, so sidestore profile renewal shouldn't require reinstall
-//                        app.bundleIdentifier == StoreApp.altstoreAppID    
-//                    {
-                        // Resign app instead of just refreshing profiles because either:
-                        // * Refreshing using different certificate     // when can this happen?, lets assume, refreshing with different certificate, why not just ask user to re-install manually? (probably we need re-install button)
-                        // * Backup app is still installed              // but why? I mean the AltBackup was put in place for a reason? ie during refresh just renew appIDs don't care about the app itself.
-                        // * App explicitly needs resigning             // when can this happen?
-                        // * Device is jailbroken and using AltDaemon on iOS 14.0 or later (b/c refreshing with provisioning profiles is broken)
-                        
-//                        let installProgress = self._install(app, operation: operation, group: group) { (result) in
-//                            self.finish(operation, result: result, group: group, progress: progress)
-//                        }
-//                        progress?.addChild(installProgress, withPendingUnitCount: 80)
-//                    }
-//                    else
-//                    {
-                        // Refreshing with same certificate as last time, and backup app isn't still installed,
-                        // so we can just refresh provisioning profiles.
-                        
-                        let refreshProgress = self._refresh(app, operation: operation, group: group) { (result) in
-                            self.finish(operation, result: result, group: group, progress: progress)
-                        }
-                        progress?.addChild(refreshProgress, withPendingUnitCount: 80)
-//                    }
-                    
+                    let refreshProgress = self._refresh(app, operation: operation, group: group) { (result) in
+                        self.finish(operation, result: result, group: group, progress: progress)
+                    }
+                    progress?.addChild(refreshProgress, withPendingUnitCount: 80)
                 case .activate(let app):
                     let activateProgress = self._activate(app, operation: operation, group: group) { (result) in
                         self.finish(operation, result: result, group: group, progress: progress)
