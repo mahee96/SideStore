@@ -1320,7 +1320,8 @@ private extension AppManager
                 
                 if cacheApp
                 {
-                    try FileManager.default.copyItem(at: app.fileURL, to: InstalledApp.fileURL(for: app), shouldReplace: true)
+                    let updatedApp = AnyApp(from: app, bundleId: context.bundleIdentifier)
+                    try FileManager.default.copyItem(at: app.fileURL, to: InstalledApp.fileURL(for: updatedApp), shouldReplace: true)
                 }
             }
             catch
