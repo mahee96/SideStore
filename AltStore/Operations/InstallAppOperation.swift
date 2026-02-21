@@ -98,22 +98,22 @@ final class InstallAppOperation: ResultOperation<InstalledApp>
                     let resignedParentBundleID = resignedApp.bundleIdentifier
                     
                     let resignedBundleID = appExtension.bundleIdentifier
-                    let originalBundleID = resignedBundleID.replacingOccurrences(of: resignedParentBundleID, with: parentBundleID)
+                    let appExBundleID = resignedBundleID.replacingOccurrences(of: resignedParentBundleID, with: parentBundleID)
                     
                     print("`parentBundleID`: \(parentBundleID)")
                     print("`resignedParentBundleID`: \(resignedParentBundleID)")
-                    print("`resignedBundleID`: \(resignedBundleID)")
-                    print("`originalBundleID`: \(originalBundleID)")
+                    print("`appExBundleID`: \(appExBundleID)")
+                    print("`resignedAppExBundleID`: \(resignedBundleID)")
                     
                     let installedExtension: InstalledExtension
                     
-                    if let appExtension = installedApp.appExtensions.first(where: { $0.bundleIdentifier == originalBundleID })
+                    if let appExtension = installedApp.appExtensions.first(where: { $0.bundleIdentifier == appExBundleID })
                     {
                         installedExtension = appExtension
                     }
                     else
                     {
-                        installedExtension = InstalledExtension(resignedAppExtension: appExtension, originalBundleIdentifier: originalBundleID, context: backgroundContext)
+                        installedExtension = InstalledExtension(resignedAppExtension: appExtension, originalBundleIdentifier: appExBundleID, context: backgroundContext)
                     }
                     
                     installedExtension.update(resignedAppExtension: appExtension)
