@@ -745,7 +745,6 @@ private extension SettingsViewController
     }
     
     @IBAction func toggleEnableAppIdCustomization(_ sender: UISwitch) {
-        customizeAppIdSwitch.isEnabled = sender.isOn
         // update it in database
         UserDefaults.standard.customizeAppId = sender.isOn
     }
