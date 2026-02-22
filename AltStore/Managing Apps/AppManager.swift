@@ -1533,7 +1533,7 @@ private extension AppManager
                 return
             }
             
-            if let app = context.app, let profile = context.provisioningProfiles?[app.bundleIdentifier] {
+            if let app = context.app, let profile = context.provisioningProfiles?[context.bundleIdentifier] {
                 var appexBundleIds: [String: String] = [:]
                 for appex in app.appExtensions {
                     appexBundleIds[appex.bundleIdentifier] = appex.bundleIdentifier.replacingOccurrences(of: app.bundleIdentifier, with: profile.bundleIdentifier)
