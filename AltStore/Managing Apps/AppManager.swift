@@ -708,7 +708,7 @@ extension AppManager
         Task{
             var app: AppProtocol = app
             // ---- Preflight bundle ID resolution ----
-            if UserDefaults.shared.customizeAppId,      // only show prompt when enabled by user
+            if UserDefaults.standard.customizeAppId,      // only show prompt when enabled by user
                let presentingViewController {
                 let originalBundleID = app.bundleIdentifier
 
