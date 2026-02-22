@@ -33,7 +33,6 @@ final class TabBarController: UITabBarController
     {
         super.init(coder: aDecoder)
         
-        NotificationCenter.default.addObserver(self, selector: #selector(TabBarController.openPatreonSettings(_:)), name: AppDelegate.openPatreonSettingsDeepLinkNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(TabBarController.importApp(_:)), name: AppDelegate.importAppDeepLinkNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(TabBarController.presentSources(_:)), name: AppDelegate.addSourceDeepLinkNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(TabBarController.exportFiles(_:)), name: AppDelegate.exportCertificateNotification, object: nil)
@@ -128,11 +127,6 @@ extension TabBarController
 
 private extension TabBarController
 {
-    @objc func openPatreonSettings(_ notification: Notification)
-    {
-        self.selectedIndex = Tab.settings.rawValue
-    }
-    
     @objc func importApp(_ notification: Notification)
     {
         self.selectedIndex = Tab.myApps.rawValue

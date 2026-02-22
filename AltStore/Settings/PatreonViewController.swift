@@ -8,12 +8,8 @@
 
 import UIKit
 import SafariServices
-import AuthenticationServices
 
-import AltStoreCore
-import Roxas
-
-final class PatreonViewController: UICollectionViewController
+final class PatreonViewController: UICollectionViewController, UICollectionViewDelegateFlowLayout
 {
     private var prototypeAboutHeader: AboutPatreonHeaderView!
     
@@ -46,10 +42,7 @@ final class PatreonViewController: UICollectionViewController
         // TODO: if the intention here is to hide the cells, we should just modify the data source. @JoeMatt
         layout.itemSize = CGSize(width: 0, height: 0)
     }
-}
 
-private extension PatreonViewController
-{
     func prepare(_ headerView: AboutPatreonHeaderView)
     {
         headerView.layoutMargins = self.view.layoutMargins
@@ -57,10 +50,24 @@ private extension PatreonViewController
         headerView.twitterButton.addTarget(self, action: #selector(PatreonViewController.openTwitterURL(_:)), for: .primaryActionTriggered)
         headerView.instagramButton.addTarget(self, action: #selector(PatreonViewController.openInstagramURL(_:)), for: .primaryActionTriggered)
     }
-}
+    
+    override func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView
+    {
+        let headerView = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: "AboutHeader", for: indexPath) as! AboutPatreonHeaderView
+        self.prepare(headerView)
+        return headerView
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, referenceSizeForHeaderInSection section: Int) -> CGSize
+    {
+        let widthConstraint = self.prototypeAboutHeader.widthAnchor.constraint(equalToConstant: collectionView.bounds.width)
+        NSLayoutConstraint.activate([widthConstraint])
+        defer { NSLayoutConstraint.deactivate([widthConstraint]) }
+        
+        self.prepare(self.prototypeAboutHeader)
+        return self.prototypeAboutHeader.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
+    }
 
-private extension PatreonViewController
-{
     @objc func openPatreonURL(_ sender: UIButton)
     {
         let patreonURL = URL(string: "https://www.patreon.com/SideStoreIO")!
@@ -89,25 +96,41 @@ private extension PatreonViewController
     }
 }
 
-extension PatreonViewController
+final class AboutPatreonHeaderView: UICollectionReusableView
 {
-    override func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView
+    @IBOutlet var supportButton: UIButton!
+    @IBOutlet var twitterButton: UIButton!
+    @IBOutlet var instagramButton: UIButton!
+    @IBOutlet var textView: UITextView!
+    
+    @IBOutlet private var teamIcon: UIImageView!
+    @IBOutlet private var teamLabel: UILabel!
+    
+    override func awakeFromNib()
     {
-        let headerView = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: "AboutHeader", for: indexPath) as! AboutPatreonHeaderView
-        self.prepare(headerView)
-        return headerView
+        super.awakeFromNib()
+        
+        self.textView.clipsToBounds = true
+        self.textView.layer.cornerRadius = 20
+        self.textView.textContainer.lineFragmentPadding = 0
+        
+        for imageView in [self.teamIcon].compactMap({$0})
+        {
+            imageView.clipsToBounds = true
+            imageView.layer.cornerRadius = imageView.bounds.midY
+        }
+        
+        for button in [self.supportButton, self.twitterButton, self.instagramButton].compactMap({$0})
+        {
+            button.clipsToBounds = true
+            button.layer.cornerRadius = 16
+        }
+    }
+    
+    override func layoutMarginsDidChange()
+    {
+        super.layoutMarginsDidChange()
+        self.textView.textContainerInset = UIEdgeInsets(top: self.layoutMargins.left, left: self.layoutMargins.left, bottom: self.layoutMargins.right, right: self.layoutMargins.right)
     }
 }
 
-extension PatreonViewController: UICollectionViewDelegateFlowLayout
-{
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, referenceSizeForHeaderInSection section: Int) -> CGSize
-    {
-        let widthConstraint = self.prototypeAboutHeader.widthAnchor.constraint(equalToConstant: collectionView.bounds.width)
-        NSLayoutConstraint.activate([widthConstraint])
-        defer { NSLayoutConstraint.deactivate([widthConstraint]) }
-        
-        self.prepare(self.prototypeAboutHeader)
-        return self.prototypeAboutHeader.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
-    }
-}

@@ -246,13 +246,6 @@ private extension AppDelegate
             
             switch host
             {
-            case "patreon":
-                DispatchQueue.main.async {
-                    NotificationCenter.default.post(name: AppDelegate.openPatreonSettingsDeepLinkNotification, object: nil)
-                }
-                
-                return true
-                
             case "appbackupresponse":
                 let result: Result<Void, Error>
                 
