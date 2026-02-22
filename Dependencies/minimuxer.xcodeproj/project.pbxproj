@@ -24,14 +24,13 @@
 			outputFiles = (
 				"$(OBJECT_FILE_DIR)/$(CARGO_XCODE_TARGET_ARCH)-$(EXECUTABLE_NAME)",
 			);
-			script = "# generated with cargo-xcode 1.5.0\n# modified to use prebuilt binaries\n\nset -eu;\n\nBUILT_SRC=\"./minimuxer/${LIB_FILE_NAME}.a\"\necho Generating Static lib: $BUILT_SRC\nln -f -- \"$BUILT_SRC\" \"$TARGET_BUILD_DIR/$EXECUTABLE_PATH\" || cp \"$BUILT_SRC\" \"$TARGET_BUILD_DIR/$EXECUTABLE_PATH\"\necho \"$BUILT_SRC -> $TARGET_BUILD_DIR/$EXECUTABLE_PATH\"\n\n# xcode generates dep file, but for its own path, so append our rename to it\n#DEP_FILE_SRC=\"minimuxer/target/${CARGO_XCODE_TARGET_TRIPLE}/release/${CARGO_XCODE_CARGO_DEP_FILE_NAME}\"\n#if [ -f \"$DEP_FILE_SRC\" ]; then\n#    DEP_FILE_DST=\"${DERIVED_FILE_DIR}/${CARGO_XCODE_TARGET_ARCH}-${EXECUTABLE_NAME}.d\"\n#    cp -f \"$DEP_FILE_SRC\" \"$DEP_FILE_DST\"\n#    echo >> \"$DEP_FILE_DST\" \"$SCRIPT_OUTPUT_FILE_0: $BUILT_SRC\"\n#fi\n\n# lipo script needs to know all the platform-specific files that have been built\n# archs is in the file name, so that paths don't stay around after archs change\n# must match input for LipoScript\n#FILE_LIST=\"${DERIVED_FILE_DIR}/${ARCHS}-${EXECUTABLE_NAME}.xcfilelist\"\n#touch \"$FILE_LIST\"\n#if ! egrep -q \"$SCRIPT_OUTPUT_FILE_0\" \"$FILE_LIST\" ; then\n#    echo >> \"$FILE_LIST\" \"$SCRIPT_OUTPUT_FILE_0\"\n#fi\n";
+			script = "# generated with cargo-xcode 1.5.0\n# modified to use prebuilt binaries\n\nset -eu;\n\npwd\nBUILT_SRC=\"./minimuxer/${LIB_FILE_NAME}.a\"\necho Generating Static lib: $BUILT_SRC\nln -f -- \"$BUILT_SRC\" \"$TARGET_BUILD_DIR/$EXECUTABLE_PATH\" || cp \"$BUILT_SRC\" \"$TARGET_BUILD_DIR/$EXECUTABLE_PATH\"\necho \"$BUILT_SRC -> $TARGET_BUILD_DIR/$EXECUTABLE_PATH\"\n\n# xcode generates dep file, but for its own path, so append our rename to it\n#DEP_FILE_SRC=\"minimuxer/target/${CARGO_XCODE_TARGET_TRIPLE}/release/${CARGO_XCODE_CARGO_DEP_FILE_NAME}\"\n#if [ -f \"$DEP_FILE_SRC\" ]; then\n#    DEP_FILE_DST=\"${DERIVED_FILE_DIR}/${CARGO_XCODE_TARGET_ARCH}-${EXECUTABLE_NAME}.d\"\n#    cp -f \"$DEP_FILE_SRC\" \"$DEP_FILE_DST\"\n#    echo >> \"$DEP_FILE_DST\" \"$SCRIPT_OUTPUT_FILE_0: $BUILT_SRC\"\n#fi\n\n# lipo script needs to know all the platform-specific files that have been built\n# archs is in the file name, so that paths don't stay around after archs change\n# must match input for LipoScript\n#FILE_LIST=\"${DERIVED_FILE_DIR}/${ARCHS}-${EXECUTABLE_NAME}.xcfilelist\"\n#touch \"$FILE_LIST\"\n#if ! egrep -q \"$SCRIPT_OUTPUT_FILE_0\" \"$FILE_LIST\" ; then\n#    echo >> \"$FILE_LIST\" \"$SCRIPT_OUTPUT_FILE_0\"\n#fi\n";
 		};
 /* End PBXBuildRule section */
 
 /* Begin PBXFileReference section */
 		9961EC2729BE9C1200AF2C6F /* SwiftBridgeCore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SwiftBridgeCore.h; path = minimuxer/SwiftBridgeCore.h; sourceTree = "<group>"; };
 		9987603229A454B500818586 /* minimuxer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = minimuxer.h; path = minimuxer/minimuxer.h; sourceTree = "<group>"; };
-		ADDEDBA66A6E1 /* libresolv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libresolv.tbd; path = usr/lib/libresolv.tbd; sourceTree = SDKROOT; };
 		CA609C732349C7AAD9FA67C4 /* libminimuxer_static.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libminimuxer_static.a; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -45,14 +44,6 @@
 			name = Generated;
 			sourceTree = "<group>";
 		};
-		ADDEDBA66A6E2 /* Required for static linking */ = {
-			isa = PBXGroup;
-			children = (
-				ADDEDBA66A6E1 /* libresolv.tbd */,
-			);
-			name = "Required for static linking";
-			sourceTree = "<group>";
-		};
 		CA6012A875F922869D176AE5 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -61,20 +52,11 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		CA6012A875F998AF0B5890DB /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				ADDEDBA66A6E2 /* Required for static linking */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 		CA6012A875F9D65BC3C892A8 = {
 			isa = PBXGroup;
 			children = (
 				99F87D1529D8E41100B40039 /* Generated */,
 				CA6012A875F922869D176AE5 /* Products */,
-				CA6012A875F998AF0B5890DB /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -85,9 +67,8 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = CA600589A243A560B9642892 /* Build configuration list for PBXNativeTarget "minimuxer-staticlib" */;
 			buildPhases = (
-				9987603629A4611D00818586 /* Run Script */,
+				9987603629A4611D00818586 /* Fetch prebuilt binaries */,
 				CA600F638141A560B9642892 /* Sources */,
-				CA6012A875F9AF6EBB7F357C /* Universal Binary lipo */,
 			);
 			buildRules = (
 				CA6012A875F9AC6C1400ACA8 /* PBXBuildRule */,
@@ -132,7 +113,7 @@
 /* End PBXProject section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		9987603629A4611D00818586 /* Run Script */ = {
+		9987603629A4611D00818586 /* Fetch prebuilt binaries */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -141,7 +122,7 @@
 			);
 			inputPaths = (
 			);
-			name = "Run Script";
+			name = "Fetch prebuilt binaries";
 			outputFileListPaths = (
 			);
 			outputPaths = (
@@ -153,27 +134,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "bash ./fetch-prebuilt.sh minimuxer\n";
-		};
-		CA6012A875F9AF6EBB7F357C /* Universal Binary lipo */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(DERIVED_FILE_DIR)/$(ARCHS)-$(EXECUTABLE_NAME).xcfilelist",
-			);
-			name = "Universal Binary lipo";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# generated with cargo-xcode 1.5.0\n\n#set -eux; cat \"$DERIVED_FILE_DIR/$ARCHS-$EXECUTABLE_NAME.xcfilelist\" | tr '\\n' '\\0' | xargs -0 lipo -create -output \"$TARGET_BUILD_DIR/$EXECUTABLE_PATH\"\n#if [ ${LD_DYLIB_INSTALL_NAME:+1} ]; then\n#    install_name_tool -id \"$LD_DYLIB_INSTALL_NAME\" \"$TARGET_BUILD_DIR/$EXECUTABLE_PATH\"\n#fi\n";
+			shellScript = "#!bash\npwd\nchmod +x ./fetch-prebuilt.sh \n./fetch-prebuilt.sh minimuxer\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

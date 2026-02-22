@@ -9,10 +9,8 @@
 import Foundation
 import Roxas
 import Network
-
 import AltStoreCore
 import AltSign
-import minimuxer
 
 private extension UIColor
 {

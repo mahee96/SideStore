@@ -8,10 +8,8 @@
 
 import Foundation
 import Roxas
-
 import AltStoreCore
 import AltSign
-import minimuxer
 
 @objc(ResignAppOperation)
 final class ResignAppOperation: ResultOperation<ALTApplication>

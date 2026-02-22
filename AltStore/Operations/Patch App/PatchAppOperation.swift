@@ -10,7 +10,6 @@ import UIKit
 import Combine
 import AppleArchive
 import System
-
 import AltStoreCore
 import AltSign
 import Roxas

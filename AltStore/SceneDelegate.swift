@@ -8,7 +8,7 @@
 
 import UIKit
 import AltStoreCore
-import EmotionalDamage
+
 
 @available(iOS 13, *)
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate
@@ -41,7 +41,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
         
         AppManager.shared.update()
         if UserDefaults.standard.enableEMPforWireguard {
-            start_em_proxy(bind_addr: AppConstants.Proxy.serverURL)
+            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
         }
     }
 
@@ -57,7 +57,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
 
         // TODO: @mahee96: find if we need to stop em_proxy as in altstore?
         if UserDefaults.standard.enableEMPforWireguard {
-            stop_em_proxy()
+            stopEMProxy()
         }
 
         guard let oneMonthAgo = Calendar.current.date(byAdding: .month, value: -1, to: Date()) else { return }

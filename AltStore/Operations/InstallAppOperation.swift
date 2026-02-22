@@ -7,11 +7,9 @@
 //
 import Foundation
 import Network
-
 import AltStoreCore
 import AltSign
 import Roxas
-import minimuxer
 
 @objc(InstallAppOperation)
 final class InstallAppOperation: ResultOperation<InstalledApp>

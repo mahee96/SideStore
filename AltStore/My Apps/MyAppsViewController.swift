@@ -11,11 +11,9 @@ import MobileCoreServices
 import Intents
 import Combine
 import UniformTypeIdentifiers
-
 import AltStoreCore
 import AltSign
 import Roxas
-import minimuxer
 import SemanticVersion
 
 import Nuke
@@ -168,7 +166,7 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
 
     var minimuxerStatus: Bool {
         // added isMinimuxerStatusCheckEnabled to forcefully ignore minimuxer status if status check is disabled in settings
-        guard !UserDefaults.standard.isMinimuxerStatusCheckEnabled || minimuxer.ready() else {
+        guard !UserDefaults.standard.isMinimuxerStatusCheckEnabled || isMinimuxerReady else {
             ToastView(error: (OperationError.noWiFi as NSError).withLocalizedTitle("No Wi-Fi or VPN!")).show(in: self)
             return false
         }

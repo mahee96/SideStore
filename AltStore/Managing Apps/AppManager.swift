@@ -13,8 +13,6 @@ import MobileCoreServices
 import Intents
 import Combine
 import WidgetKit
-
-import minimuxer
 import AltStoreCore
 import AltSign
 import Roxas
@@ -1681,7 +1679,7 @@ private extension AppManager
                 // Fall back to installation if AltServer doesn't support newer provisioning profile requests,
                 // OR if the cached app could not be found and we may need to redownload it.
                 app.managedObjectContext?.performAndWait { // Must performAndWait to ensure we add operations before we return.
-                    if minimuxer.ready() {
+                    if isMinimuxerReady {
                         let installProgress = self._install(app, operation: operation, group: group) { (result) in
                             completionHandler(result)
                         }

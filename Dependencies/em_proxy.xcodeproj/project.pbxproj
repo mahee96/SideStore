@@ -23,41 +23,22 @@
 			outputFiles = (
 				"$(OBJECT_FILE_DIR)/$(CARGO_XCODE_TARGET_ARCH)-$(EXECUTABLE_NAME)",
 			);
-			script = "# generated with cargo-xcode 1.5.0\n# modified to use prebuilt binaries\n\nset -eu;\n\nBUILT_SRC=\"./em_proxy/$LIB_FILE_NAME.a\"\necho Generating Static lib: $BUILT_SRC\nln -f -- \"$BUILT_SRC\" \"$TARGET_BUILD_DIR/$EXECUTABLE_PATH\" || cp \"$BUILT_SRC\" \"$TARGET_BUILD_DIR/$EXECUTABLE_PATH\"\necho \"$BUILT_SRC -> $TARGET_BUILD_DIR/$EXECUTABLE_PATH\"\n\n# xcode generates dep file, but for its own path, so append our rename to it\n#DEP_FILE_SRC=\"minimuxer/target/${CARGO_XCODE_TARGET_TRIPLE}/release/${CARGO_XCODE_CARGO_DEP_FILE_NAME}\"\n#if [ -f \"$DEP_FILE_SRC\" ]; then\n#    DEP_FILE_DST=\"${DERIVED_FILE_DIR}/${CARGO_XCODE_TARGET_ARCH}-${EXECUTABLE_NAME}.d\"\n#    cp -f \"$DEP_FILE_SRC\" \"$DEP_FILE_DST\"\n#    echo >> \"$DEP_FILE_DST\" \"$SCRIPT_OUTPUT_FILE_0: $BUILT_SRC\"\n#fi\n\n# lipo script needs to know all the platform-specific files that have been built\n# archs is in the file name, so that paths don't stay around after archs change\n# must match input for LipoScript\n#FILE_LIST=\"${DERIVED_FILE_DIR}/${ARCHS}-${EXECUTABLE_NAME}.xcfilelist\"\n#touch \"$FILE_LIST\"\n#if ! egrep -q \"$SCRIPT_OUTPUT_FILE_0\" \"$FILE_LIST\" ; then\n#    echo >> \"$FILE_LIST\" \"$SCRIPT_OUTPUT_FILE_0\"\n#fi\n";
+			script = "# generated with cargo-xcode 1.5.0\n# modified to use prebuilt binaries\n\nset -eu;\n\npwd\nBUILT_SRC=\"./em_proxy/$LIB_FILE_NAME.a\"\necho Generating Static lib: $BUILT_SRC\nln -f -- \"$BUILT_SRC\" \"$TARGET_BUILD_DIR/$EXECUTABLE_PATH\" || cp \"$BUILT_SRC\" \"$TARGET_BUILD_DIR/$EXECUTABLE_PATH\"\necho \"$BUILT_SRC -> $TARGET_BUILD_DIR/$EXECUTABLE_PATH\"\n\n# xcode generates dep file, but for its own path, so append our rename to it\n#DEP_FILE_SRC=\"minimuxer/target/${CARGO_XCODE_TARGET_TRIPLE}/release/${CARGO_XCODE_CARGO_DEP_FILE_NAME}\"\n#if [ -f \"$DEP_FILE_SRC\" ]; then\n#    DEP_FILE_DST=\"${DERIVED_FILE_DIR}/${CARGO_XCODE_TARGET_ARCH}-${EXECUTABLE_NAME}.d\"\n#    cp -f \"$DEP_FILE_SRC\" \"$DEP_FILE_DST\"\n#    echo >> \"$DEP_FILE_DST\" \"$SCRIPT_OUTPUT_FILE_0: $BUILT_SRC\"\n#fi\n\n# lipo script needs to know all the platform-specific files that have been built\n# archs is in the file name, so that paths don't stay around after archs change\n# must match input for LipoScript\n#FILE_LIST=\"${DERIVED_FILE_DIR}/${ARCHS}-${EXECUTABLE_NAME}.xcfilelist\"\n#touch \"$FILE_LIST\"\n#if ! egrep -q \"$SCRIPT_OUTPUT_FILE_0\" \"$FILE_LIST\" ; then\n#    echo >> \"$FILE_LIST\" \"$SCRIPT_OUTPUT_FILE_0\"\n#fi\n";
 		};
 /* End PBXBuildRule section */
 
 /* Begin PBXFileReference section */
 		9999259129A45319005CF020 /* em_proxy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = em_proxy.h; path = em_proxy/em_proxy.h; sourceTree = "<group>"; };
-		ADDEDBA66A6E1 /* libresolv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libresolv.tbd; path = usr/lib/libresolv.tbd; sourceTree = SDKROOT; };
-		CA60058A9FBE4D17AF51A7D5 /* run */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = run; sourceTree = BUILT_PRODUCTS_DIR; };
 		CA60C44C93D7916DE57E6EBD /* libem_proxy_static.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libem_proxy_static.a; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
-		ADDEDBA66A6E2 /* Required for static linking */ = {
-			isa = PBXGroup;
-			children = (
-				ADDEDBA66A6E1 /* libresolv.tbd */,
-			);
-			name = "Required for static linking";
-			sourceTree = "<group>";
-		};
 		CA6094FFF69222869D176AE5 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				CA60C44C93D7916DE57E6EBD /* libem_proxy_static.a */,
-				CA60058A9FBE4D17AF51A7D5 /* run */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		CA6094FFF69298AF0B5890DB /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				ADDEDBA66A6E2 /* Required for static linking */,
-			);
-			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		CA6094FFF692D65BC3C892A8 = {
@@ -65,37 +46,18 @@
 			children = (
 				9999259129A45319005CF020 /* em_proxy.h */,
 				CA6094FFF69222869D176AE5 /* Products */,
-				CA6094FFF69298AF0B5890DB /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		CA60058A9FBE37FC563E4BCC /* run-bin */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = CA603DD75FB437FC563E4BCC /* Build configuration list for PBXNativeTarget "run-bin" */;
-			buildPhases = (
-				CA60445C303637FC563E4BCC /* Sources */,
-				CA6094FFF692AF6EBB7F357C /* Universal Binary lipo */,
-			);
-			buildRules = (
-				CA6094FFF692AC6C1400ACA8 /* PBXBuildRule */,
-			);
-			dependencies = (
-			);
-			name = "run-bin";
-			productName = run;
-			productReference = CA60058A9FBE4D17AF51A7D5 /* run */;
-			productType = "com.apple.product-type.tool";
-		};
 		CA60C44C93D7A30E3695DD59 /* em_proxy-staticlib */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = CA603DD75FB4A30E3695DD59 /* Build configuration list for PBXNativeTarget "em_proxy-staticlib" */;
 			buildPhases = (
-				9987603529A4610700818586 /* ShellScript */,
+				9987603529A4610700818586 /* Fetch prebuilt binaries */,
 				CA60445C3036A30E3695DD59 /* Sources */,
-				CA6094FFF692AF6EBB7F357C /* Universal Binary lipo */,
 			);
 			buildRules = (
 				CA6094FFF692AC6C1400ACA8 /* PBXBuildRule */,
@@ -115,10 +77,6 @@
 			attributes = {
 				LastUpgradeCheck = 1300;
 				TargetAttributes = {
-					CA60058A9FBE37FC563E4BCC = {
-						CreatedOnToolsVersion = 9.2;
-						ProvisioningStyle = Automatic;
-					};
 					CA60C44C93D7A30E3695DD59 = {
 						CreatedOnToolsVersion = 9.2;
 						ProvisioningStyle = Automatic;
@@ -139,13 +97,12 @@
 			projectRoot = "";
 			targets = (
 				CA60C44C93D7A30E3695DD59 /* em_proxy-staticlib */,
-				CA60058A9FBE37FC563E4BCC /* run-bin */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		9987603529A4610700818586 /* ShellScript */ = {
+		9987603529A4610700818586 /* Fetch prebuilt binaries */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -154,6 +111,7 @@
 			);
 			inputPaths = (
 			);
+			name = "Fetch prebuilt binaries";
 			outputFileListPaths = (
 			);
 			outputPaths = (
@@ -161,38 +119,11 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "bash ./fetch-prebuilt.sh em_proxy\n";
-		};
-		CA6094FFF692AF6EBB7F357C /* Universal Binary lipo */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(DERIVED_FILE_DIR)/$(ARCHS)-$(EXECUTABLE_NAME).xcfilelist",
-			);
-			name = "Universal Binary lipo";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# generated with cargo-xcode 1.5.0\n\n#set -eux; cat \"$DERIVED_FILE_DIR/$ARCHS-$EXECUTABLE_NAME.xcfilelist\" | tr '\\n' '\\0' | xargs -0 lipo -create -output \"$TARGET_BUILD_DIR/$EXECUTABLE_PATH\"\n#if [ ${LD_DYLIB_INSTALL_NAME:+1} ]; then\n#    install_name_tool -id \"$LD_DYLIB_INSTALL_NAME\" \"$TARGET_BUILD_DIR/$EXECUTABLE_PATH\"\n#fi\n";
+			shellScript = "#!bash\npwd\nchmod +x ./fetch-prebuilt.sh \n./fetch-prebuilt.sh em_proxy\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		CA60445C303637FC563E4BCC /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		CA60445C3036A30E3695DD59 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -204,16 +135,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		CA604DFE779B37FC563E4BCC /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CARGO_XCODE_CARGO_DEP_FILE_NAME = run.d;
-				CARGO_XCODE_CARGO_FILE_NAME = run;
-				PRODUCT_NAME = run;
-				SUPPORTED_PLATFORMS = macosx;
-			};
-			name = Release;
-		};
 		CA604DFE779BA30E3695DD59 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -280,16 +201,6 @@
 			};
 			name = Release;
 		};
-		CA60DE07A83F37FC563E4BCC /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CARGO_XCODE_CARGO_DEP_FILE_NAME = run.d;
-				CARGO_XCODE_CARGO_FILE_NAME = run;
-				PRODUCT_NAME = run;
-				SUPPORTED_PLATFORMS = macosx;
-			};
-			name = Debug;
-		};
 		CA60DE07A83FA30E3695DD59 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -310,15 +221,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		CA603DD75FB437FC563E4BCC /* Build configuration list for PBXNativeTarget "run-bin" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				CA604DFE779B37FC563E4BCC /* Release */,
-				CA60DE07A83F37FC563E4BCC /* Debug */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		CA603DD75FB4A30E3695DD59 /* Build configuration list for PBXNativeTarget "em_proxy-staticlib" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

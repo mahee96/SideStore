@@ -8,9 +8,7 @@
 
 import UIKit
 import Combine
-import minimuxer
 import UniformTypeIdentifiers
-
 import AltStoreCore
 
 enum SideJITServerErrorType: Error {
