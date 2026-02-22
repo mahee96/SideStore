@@ -196,7 +196,7 @@ extension AltAppIconsViewController
     override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath)
     {
         let icon = self.dataSource.item(at: indexPath)
-        guard UIApplication.shared.alternateIconName != icon.imageName else { return }
+        guard UIApplication.shared.alternateIconName != icon.iconName else { return }
         
         // Deselect previous icon + select new icon
         collectionView.reloadData()
