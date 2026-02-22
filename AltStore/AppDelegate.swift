@@ -99,7 +99,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 
         // TODO: @mahee96: find if we need to start em_proxy as in altstore?
         if UserDefaults.standard.enableEMPforWireguard {
-            start_em_proxy(bind_addr: Consts.Proxy.serverURL)
+            start_em_proxy(bind_addr: AppConstants.Proxy.serverURL)
         }
 
         SecureValueTransformer.register()        
@@ -145,7 +145,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
     {
         AppManager.shared.update()
         if UserDefaults.standard.enableEMPforWireguard {
-            start_em_proxy(bind_addr: Consts.Proxy.serverURL)
+            start_em_proxy(bind_addr: AppConstants.Proxy.serverURL)
         }
     }
     

@@ -1,5 +1,5 @@
 //
-//  Proxy.swift
+//  AppConstants.swift
 //  SideStore
 //
 //  Created by Joseph Mattiello on 11/7/22.
@@ -8,7 +8,7 @@
 
 import Foundation
 
-public extension Consts {
+public enum AppConstants {
    enum Proxy {
         static let address = "127.0.0.1"
         static let port = "51820"
