@@ -147,8 +147,6 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         if UserDefaults.standard.enableEMPforWireguard {
             start_em_proxy(bind_addr: Consts.Proxy.serverURL)
         }
-
-        PatreonAPI.shared.refreshPatreonAccount()
     }
     
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any]) -> Bool

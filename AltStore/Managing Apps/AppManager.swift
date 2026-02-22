@@ -22,7 +22,6 @@ import Roxas
 extension AppManager
 {
     static let didFetchSourceNotification = Notification.Name("io.sidestore.AppManager.didFetchSource")
-    static let didUpdatePatronsNotification = Notification.Name("io.sidestore.AppManager.didUpdatePatrons")
     static let didAddSourceNotification = Notification.Name("io.sidestore.AppManager.didAddSource")
     static let didRemoveSourceNotification = Notification.Name("io.sidestore.AppManager.didRemoveSource")
     static let willInstallAppFromNewSourceNotification = Notification.Name("io.sidestore.AppManager.willInstallAppFromNewSource")
@@ -588,34 +587,6 @@ extension AppManager
         self.run([updateKnownSourcesOperation], context: nil)
         
         return updateKnownSourcesOperation
-    }
-    
-    func updatePatronsIfNeeded()
-    {
-//        guard self.operationQueue.operations.allSatisfy({ !($0 is UpdatePatronsOperation) }) else {
-//            // There's already an UpdatePatronsOperation running.
-//            return
-//        }
-//        
-//        self.updatePatronsResult = nil
-//        
-//        let updatePatronsOperation = UpdatePatronsOperation()
-//        updatePatronsOperation.resultHandler = { (result) in
-//            do
-//            {
-//                try result.get()
-//                self.updatePatronsResult = .success(())
-//            }
-//            catch
-//            {
-//                print("Error updating Friend Zone Patrons:", error)
-//                self.updatePatronsResult = .failure(error)
-//            }
-//            
-//            NotificationCenter.default.post(name: AppManager.didUpdatePatronsNotification, object: self)
-//        }
-//        
-//        self.run([updatePatronsOperation], context: nil)
     }
     
     func updateAllSources(completion: @escaping (Result<Void, Error>) -> Void)
@@ -1285,20 +1256,6 @@ private extension AppManager
             }
         }
         
-        var verifyPledgeOperation: VerifyAppPledgeOperation?
-        if let storeApp = app.storeApp
-        {
-            verifyPledgeOperation = VerifyAppPledgeOperation(storeApp: storeApp, presentingViewController: context.presentingViewController)
-            verifyPledgeOperation?.resultHandler = { result in
-                switch result
-                {
-                case .failure(let error):
-                    context.error = error
-                case .success: break
-                }
-            }
-        }
-        
         /* Download */
         let downloadedAppURL = context.temporaryDirectory.appendingPathComponent("Cached.app")
         let downloadOperation = DownloadAppOperation(app: downloadingApp, destinationURL: downloadedAppURL, context: context)
@@ -1320,12 +1277,6 @@ private extension AppManager
             }
         }
         progress.addChild(downloadOperation.progress, withPendingUnitCount: 25)
-        
-        if let verifyPledgeOperation
-        {
-            downloadOperation.addDependency(verifyPledgeOperation)
-        }
-        
         
         /* Verify App */
         let permissionsMode = UserDefaults.shared.permissionCheckingDisabled ? .none : permissionReviewMode
@@ -1594,7 +1545,6 @@ private extension AppManager
         
         // Operations picked for request
         var operations = [
-            verifyPledgeOperation,
             downloadOperation,
             verifyOperation,
             removeAppExtensionsOperation,
@@ -2226,7 +2176,7 @@ private extension AppManager
             switch operation
             {
             case _ where requiresSerialQueue: fallthrough
-            case is InstallAppOperation, is RefreshAppOperation, is BackupAppOperation, is VerifyAppPledgeOperation:
+            case is InstallAppOperation, is RefreshAppOperation, is BackupAppOperation:
                 if let installAltStoreOperation = operation as? InstallAppOperation, installAltStoreOperation.context.bundleIdentifier == StoreApp.altstoreAppID
                 {
                     // Add dependencies on previous serial operations in `context` to ensure re-installing AltStore goes last.
