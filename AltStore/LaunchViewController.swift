@@ -199,8 +199,6 @@ extension LaunchViewController {
         didFinishLaunching = true
         
         AppManager.shared.update()
-        AppManager.shared.updatePatronsIfNeeded()
-        PatreonAPI.shared.refreshPatreonAccount()
         AppManager.shared.updateAllSources { result in
             guard case .failure(let error) = result else { return }
             Logger.main.error("Failed to update sources on launch. \(error.localizedDescription, privacy: .public)")

@@ -544,11 +544,6 @@ private extension MyAppsViewController
         {
             print("[ALTLog] Failed to fetch updates:", error)
         }
-        
-        if let patreonAccount = DatabaseManager.shared.patreonAccount(), patreonAccount.isAltStorePatron, PatreonAPI.shared.isAuthenticated
-        {
-            self.dataSource.predicate = nil
-        }
     }
 }
 

@@ -43,8 +43,6 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
         if UserDefaults.standard.enableEMPforWireguard {
             start_em_proxy(bind_addr: Consts.Proxy.serverURL)
         }
-
-        PatreonAPI.shared.refreshPatreonAccount()
     }
 
     func sceneDidEnterBackground(_ scene: UIScene)
