@@ -707,10 +707,7 @@ public extension StoreApp
         let placeholderSourceID = Source.altStoreIdentifier
         let placeholderVersion = "0.0.0"
         let placeholderDate = Date.distantPast
-        // let placeholderDate = Date(timeIntervalSinceReferenceDate: 0)
-        // let placeholderDate = Date(timeIntervalSince1970: 0)
         var placeholderChannel = ReleaseTracks.stable.stringValue      // placeholder is always assumed to be from stable channel
-        let placeholderSize: Int32 = 0
         
         #if BETA
         placeholderChannel = ReleaseTracks.nightly.stringValue
