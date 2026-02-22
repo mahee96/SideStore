@@ -21,7 +21,7 @@ import UniformTypeIdentifiers
 
 extension SettingsViewController
 {
-    fileprivate enum Section: Int, CaseIterable
+    private enum Section: Int, CaseIterable
     {
         case signIn
         case account
@@ -31,14 +31,14 @@ extension SettingsViewController
         case instructions
         case techyThings
         case credits
+        case betaTesting
         case advancedSettings
         case signing
-        // diagnostics section, will be enabled on release builds only on swipe down with 3 fingers 3 times
-        case diagnostics
+        case diagnostics    // diagnostics section, will be enabled on release builds only on swipe down with 3 fingers 3 times
         // case macDirtyCow
     }
     
-    fileprivate enum AppRefreshRow: Int, CaseIterable
+    private enum AppRefreshRow: Int, CaseIterable
     {
         case backgroundRefresh
         case noIdleTimeout        
@@ -57,7 +57,7 @@ extension SettingsViewController
         }
     }
     
-    fileprivate enum CreditsRow: Int, CaseIterable
+    private enum CreditsRow: Int, CaseIterable
     {
         case developer
         case operations
@@ -65,33 +65,35 @@ extension SettingsViewController
         case softwareLicenses
     }
     
-    fileprivate enum TechyThingsRow: Int, CaseIterable
+    private enum TechyThingsRow: Int, CaseIterable
     {
         case errorLog
         case clearCache
     }
     
-    fileprivate enum AdvancedSettingsRow: Int, CaseIterable
+    private enum AdvancedSettingsRow: Int, CaseIterable
     {
         case sendFeedback
         case refreshAttempts
         case refreshSideJITServer
         case resetPairingFile
         case anisetteServers
-        case betaUpdates
-        case betaTrack
         case customizeAppId
-//        case hiddenSettings
     }
     
-    fileprivate enum SigningSettingsRow: Int, CaseIterable {
+    private enum SigningSettingsRow: Int, CaseIterable {
         case importAccount
         case exportAccount
         case importCert
         case exportCert
     }
 
-    fileprivate enum DiagnosticsRow: Int, CaseIterable
+    private enum BetaTestingRow: Int, CaseIterable {
+        case betaUpdates
+        case betaTrack
+    }
+
+    private enum DiagnosticsRow: Int, CaseIterable
     {
         case responseCaching
         case exportResignedApp
@@ -476,8 +478,10 @@ private extension SettingsViewController
         self.disableAppLimitSwitch.isOn = UserDefaults.standard.isAppLimitDisabled
 
         // AdvancedSettingsRow
-        self.betaUpdatesSwitch.isOn = UserDefaults.standard.isBetaUpdatesEnabled
         self.customizeAppIdSwitch.isOn = UserDefaults.standard.customizeAppId
+        
+        // BetaTestingRow
+        self.betaUpdatesSwitch.isOn = UserDefaults.standard.isBetaUpdatesEnabled
         self.betaTrackPopupButton.isEnabled = UserDefaults.standard.isBetaUpdatesEnabled
 
         // DiagnosticsRow
@@ -494,7 +498,7 @@ private extension SettingsViewController
         }
     }
     
-    func prepare(_ settingsHeaderFooterView: SettingsHeaderFooterView, for section: Section, isHeader: Bool)
+    private func prepare(_ settingsHeaderFooterView: SettingsHeaderFooterView, for section: Section, isHeader: Bool)
     {
         settingsHeaderFooterView.primaryLabel.isHidden = !isHeader
         settingsHeaderFooterView.secondaryLabel.isHidden = isHeader
@@ -572,7 +576,6 @@ private extension SettingsViewController
             settingsHeaderFooterView.primaryLabel.text = NSLocalizedString("ADVANCED SETTINGS", comment: "")
             
         case .signing:
-            // FIXME: Why "Enable Background Refresh ..." appear here if secondaryLabel is not specified???
             if isHeader
             {
                 settingsHeaderFooterView.primaryLabel.text = NSLocalizedString("SIGNING", comment: "")
@@ -581,6 +584,23 @@ private extension SettingsViewController
             {
                 settingsHeaderFooterView.secondaryLabel.text = NSLocalizedString("", comment: "")
             }
+        
+        case .betaTesting:
+            if isHeader
+            {
+                settingsHeaderFooterView.primaryLabel.text = NSLocalizedString("BETA TESTING", comment: "")
+            }
+            else
+            {
+                settingsHeaderFooterView.secondaryLabel.text = NSLocalizedString(
+                    """
+                    Opt in for beta testing to receive regular updates and early previews of upcoming releases.\n
+                    Please note that these builds are experimental and may be unstable or break unexpectedly.
+                    """,
+                    comment: ""
+                )
+            }
+            
 
             
         case .diagnostics:
@@ -599,7 +619,7 @@ private extension SettingsViewController
         }
     }
     
-    func preferredHeight(for settingsHeaderFooterView: SettingsHeaderFooterView, in section: Section, isHeader: Bool) -> CGFloat
+    private func preferredHeight(for settingsHeaderFooterView: SettingsHeaderFooterView, in section: Section, isHeader: Bool) -> CGFloat
     {
         let widthConstraint = settingsHeaderFooterView.contentView.widthAnchor.constraint(equalToConstant: tableView.bounds.width)
         NSLayoutConstraint.activate([widthConstraint])
@@ -611,7 +631,7 @@ private extension SettingsViewController
         return size.height
     }
     
-    func isSectionHidden(_ section: Section) -> Bool
+    private func isSectionHidden(_ section: Section) -> Bool
     {
         switch section
         {
@@ -1033,7 +1053,7 @@ extension SettingsViewController
         case _ where isSectionHidden(section): return nil
         case .signIn where self.activeTeam != nil: return nil
         case .account where self.activeTeam == nil: return nil
-        case .signIn, .account, .patreon, .display, .appRefresh, .techyThings, .credits, .advancedSettings, .signing ,.diagnostics /* ,.macDirtyCow */:
+        case .signIn, .account, .patreon, .display, .appRefresh, .techyThings, .credits, .advancedSettings, .signing, .betaTesting, .diagnostics /* ,.macDirtyCow */:
             let headerView = tableView.dequeueReusableHeaderFooterView(withIdentifier: "HeaderFooterView") as! SettingsHeaderFooterView
             self.prepare(headerView, for: section, isHeader: true)
             return headerView
@@ -1050,7 +1070,7 @@ extension SettingsViewController
         case _ where isSectionHidden(section): return nil
         case .signIn where self.activeTeam != nil: return nil
         // case .signIn, .patreon, .display, .appRefresh, .techyThings, .macDirtyCow:
-        case .signIn, .patreon, .display, .appRefresh, .techyThings, .signing:
+        case .signIn, .patreon, .display, .appRefresh, .techyThings, .signing, .betaTesting:
             let footerView = tableView.dequeueReusableHeaderFooterView(withIdentifier: "HeaderFooterView") as! SettingsHeaderFooterView
             self.prepare(footerView, for: section, isHeader: false)
             return footerView
@@ -1067,8 +1087,7 @@ extension SettingsViewController
         case _ where isSectionHidden(section): return 1.0
         case .signIn where self.activeTeam != nil: return 1.0
         case .account where self.activeTeam == nil: return 1.0
-        // case .signIn, .account, .patreon, .display, .appRefresh, .techyThings, .credits, .macDirtyCow, .advanced:
-        case .signIn, .account, .patreon, .display, .appRefresh, .techyThings, .credits, .advancedSettings, .signing, .diagnostics:
+        case .signIn, .account, .patreon, .display, .appRefresh, .techyThings, .credits, .advancedSettings, .signing, .betaTesting, .diagnostics:
             let height = self.preferredHeight(for: self.prototypeHeaderFooterView, in: section, isHeader: true)
             return height
             
@@ -1085,7 +1104,7 @@ extension SettingsViewController
         case .signIn where self.activeTeam != nil: return 1.0
         case .account where self.activeTeam == nil: return 1.0            
         // case .signIn, .patreon, .display, .appRefresh, .techyThings, .macDirtyCow:
-        case .signIn, .patreon, .display, .appRefresh, .techyThings, .signing, .diagnostics:
+        case .signIn, .patreon, .display, .appRefresh, .techyThings, .signing, .diagnostics, .betaTesting:
             let height = self.preferredHeight(for: self.prototypeHeaderFooterView, in: section, isHeader: false)
             return height
             
@@ -1348,17 +1367,7 @@ extension SettingsViewController
                 let anisetteServersController = UIHostingController(rootView: anisetteServersView)
 
                 self.prepare(for: UIStoryboardSegue(identifier: "anisetteServers", source: self, destination: anisetteServersController), sender: nil)
-                
-//            case .hiddenSettings:
-//                // Create the URL that deep links to your app's custom settings.
-//                if let url = URL(string: UIApplication.openSettingsURLString) {
-//                    // Ask the system to open that URL.
-//                    UIApplication.shared.open(url)
-//                } else {
-//                    ELOG("UIApplication.openSettingsURLString invalid")
-//                }
-            case .refreshAttempts, .betaUpdates, .betaTrack, .customizeAppId: break
-
+            case .refreshAttempts, .customizeAppId: break
             }
         case .signing:
             let row = SigningSettingsRow.allCases[indexPath.row]
@@ -1515,7 +1524,7 @@ extension SettingsViewController
                     self.present(exportVC, animated: true)
                 }
             }
-            
+        
         case .diagnostics:
             let row = DiagnosticsRow.allCases[indexPath.row]
             switch row {
@@ -1567,7 +1576,7 @@ extension SettingsViewController
             
             
         // case .account, .patreon, .display, .instructions, .macDirtyCow: break
-        case .account, .patreon, .display, .instructions: break
+        case .account, .patreon, .display, .instructions, .betaTesting: break
         }
         
         
