@@ -9,7 +9,6 @@
 import UIKit
 import Roxas
 
-import minimuxer
 import WidgetKit
 
 import AltSign
