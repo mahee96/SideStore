@@ -709,7 +709,7 @@ extension AppManager
             var app: AppProtocol = app
             // ---- Preflight bundle ID resolution ----
             if UserDefaults.standard.customizeAppId,      // only show prompt when enabled by user
-               let presentingViewController {
+                let presentingViewController {
                 let originalBundleID = app.bundleIdentifier
 
                 let resolution = await self.resolveBundleID(
@@ -2360,9 +2360,12 @@ private extension AppManager {
         completion: @escaping (BundleIDResolution) -> Void
     ) -> UIAlertController {
 
+        let titleText = NSLocalizedString("AppID Customization", comment: "")
+        let messageText = NSLocalizedString("Customize the AppID if required and press 'Confirm' to proceed.", comment: "")
+        
         let alert = UIAlertController(
-            title: NSLocalizedString("Override Bundle Identifier", comment: ""),
-            message: nil,
+            title: titleText,
+            message: messageText,
             preferredStyle: .alert
         )
 
@@ -2379,7 +2382,7 @@ private extension AppManager {
             )
         }
 
-        okAction = UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .default) { _ in
+        okAction = UIAlertAction(title: NSLocalizedString("Confirm", comment: ""), style: .default) { _ in
             completion(.resolved(alert.textFields?.first?.text ?? initialBundleID))
         }
 
