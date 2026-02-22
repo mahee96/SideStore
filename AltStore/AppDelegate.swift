@@ -93,8 +93,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
             }
         }
         
-        AnalyticsManager.shared.start()
-        
+        self.setTintColor()
         self.setTintColor()
         self.prepareImageCache()
 

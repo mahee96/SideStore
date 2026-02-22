@@ -1265,17 +1265,6 @@ private extension AppManager
         assert(context.authenticatedContext === group.context)
         
         context.beginInstallationHandler = { (installedApp) in
-            switch appOperation
-            {
-            case .update where installedApp.bundleIdentifier == StoreApp.altstoreAppID:
-                // AltStore will quit before installation finishes,
-                // so assume if we get this far the update will finish successfully.
-                let event = AnalyticsManager.Event.updatedApp(installedApp)
-                AnalyticsManager.shared.trackEvent(event)
-                
-            default: break
-            }
-            
             group.beginInstallationHandler?(installedApp)
         }
         
@@ -2151,27 +2140,6 @@ private extension AppManager
             if installedApp.bundleIdentifier == StoreApp.altstoreAppID
             {
                 self.scheduleExpirationWarningLocalNotification(for: installedApp)
-            }
-            
-            let event: AnalyticsManager.Event?
-            
-            switch operation
-            {
-            case .install: event = .installedApp(installedApp)
-            case .refresh: event = .refreshedApp(installedApp)
-            case .update where installedApp.bundleIdentifier == StoreApp.altstoreAppID:
-                // AltStore quits before update finishes, so we've preemptively logged this update event.
-                // In case AltStore doesn't quit, such as when update has a different bundle identifier,
-                // make sure we don't log this update event a second time.
-                event = nil
-                
-            case .update: event = .updatedApp(installedApp)
-            case .activate, .deactivate, .backup, .restore: event = nil
-            }
-            
-            if let event = event
-            {
-                AnalyticsManager.shared.trackEvent(event)
             }
             
             // Ask widgets to be refreshed

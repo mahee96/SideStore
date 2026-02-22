@@ -10,10 +10,6 @@ import Foundation
 
 import AltStoreCore
 
-import AppCenter
-import AppCenterAnalytics
-import AppCenterCrashes
-
 #if DEBUG
 private let appCenterAppSecret = "73532d3e-e573-4693-99a4-9f85840bbb44"
 #elseif RELEASE
@@ -82,34 +78,5 @@ extension AnalyticsManager
             
             return properties.compactMapValues { $0 }
         }
-    }
-}
-
-final class AnalyticsManager
-{
-    static let shared = AnalyticsManager()
-    
-    private init()
-    {
-    }
-}
-
-extension AnalyticsManager
-{
-    func start()
-    {
-        AppCenter.start(withAppSecret: appCenterAppSecret, services: [
-            Analytics.self,
-            Crashes.self
-        ])
-    }
-    
-    func trackEvent(_ event: Event)
-    {
-        let properties = event.properties.reduce(into: [:]) { (properties, item) in
-            properties[item.key.rawValue] = item.value
-        }
-        
-        Analytics.trackEvent(event.name, withProperties: properties)
     }
 }
