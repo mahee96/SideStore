@@ -8,7 +8,7 @@
 
 import UIKit
 import Roxas
-import EmotionalDamage
+
 import minimuxer
 import WidgetKit
 
@@ -88,11 +88,11 @@ final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
     }
 
     func start_minimuxer_threads(_ pairing_file: String) {
-        target_minimuxer_address()
+        targetMinimuxerAddress()
         let documentsDirectory = FileManager.default.documentsDirectory.absoluteString
         do {
             let loggingEnabled = UserDefaults.standard.isMinimuxerConsoleLoggingEnabled
-            try minimuxer.startWithLogger(pairing_file, documentsDirectory, loggingEnabled)
+            try minimuxerStartWithLogger(pairing_file, documentsDirectory, loggingEnabled)
         } catch {
             try! FileManager.default.removeItem(at: FileManager.default.documentsDirectory.appendingPathComponent(pairingFileName))
             displayError("minimuxer failed to start, please restart SideStore. \((error as? LocalizedError)?.failureReason ?? "UNKNOWN ERROR")")

@@ -7,11 +7,9 @@
 //
 
 import Foundation
-
 import AltStoreCore
 import AltSign
 import Roxas
-import minimuxer
 
 @objc(DeactivateAppOperation)
 final class DeactivateAppOperation: ResultOperation<InstalledApp>

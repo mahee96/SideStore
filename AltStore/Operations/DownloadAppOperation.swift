@@ -9,7 +9,6 @@
 import Foundation
 import WebKit
 import UniformTypeIdentifiers
-
 import AltStoreCore
 import AltSign
 import Roxas

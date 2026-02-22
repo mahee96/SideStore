@@ -14,7 +14,6 @@ import Intents
 import IntentsUI
 
 import SemanticVersion
-
 import AltStoreCore
 import CAltSign
 import UniformTypeIdentifiers

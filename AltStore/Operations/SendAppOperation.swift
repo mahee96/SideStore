@@ -7,9 +7,7 @@
 //
 import Foundation
 import Network
-
 import AltStoreCore
-import minimuxer
 
 @objc(SendAppOperation)
 final class SendAppOperation: ResultOperation<()>

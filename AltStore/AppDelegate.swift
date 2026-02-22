@@ -10,11 +10,10 @@ import UIKit
 import UserNotifications
 import AVFoundation
 import Intents
-
 import AltStoreCore
 import AltSign
 import Roxas
-import EmotionalDamage
+
 
 import Nuke
 
@@ -99,7 +98,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 
         // TODO: @mahee96: find if we need to start em_proxy as in altstore?
         if UserDefaults.standard.enableEMPforWireguard {
-            start_em_proxy(bind_addr: AppConstants.Proxy.serverURL)
+            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
         }
 
         SecureValueTransformer.register()        
@@ -126,7 +125,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         // Make sure to update SceneDelegate.sceneDidEnterBackground() as well.
         // TODO: @mahee96: find if we need to stop em_proxy as in altstore?
         if UserDefaults.standard.enableEMPforWireguard {
-            stop_em_proxy()
+            stopEMProxy()
         }
         guard let oneMonthAgo = Calendar.current.date(byAdding: .month, value: -1, to: Date()) else { return }
         
@@ -145,7 +144,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
     {
         AppManager.shared.update()
         if UserDefaults.standard.enableEMPforWireguard {
-            start_em_proxy(bind_addr: AppConstants.Proxy.serverURL)
+            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
         }
     }
     

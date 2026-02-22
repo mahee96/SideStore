@@ -7,9 +7,7 @@
 //
 
 import Foundation
-
 import AltStoreCore
-import minimuxer
 
 @objc(RemoveAppOperation)
 final class RemoveAppOperation: ResultOperation<InstalledApp>

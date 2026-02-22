@@ -5,7 +5,7 @@
       location = "group:AltStore.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:SideStore/AltSign">
+      location = "group:Dependencies/AltSign">
    </FileRef>
    <FileRef
       location = "group:Dependencies/Roxas/Roxas.xcodeproj">

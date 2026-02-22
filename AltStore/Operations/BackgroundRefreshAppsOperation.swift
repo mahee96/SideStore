@@ -8,10 +8,8 @@
 
 import UIKit
 import CoreData
-
 import AltStoreCore
-import EmotionalDamage
-import minimuxer
+
 
 typealias RefreshError = RefreshErrorCode.Error
 enum RefreshErrorCode: Int, ALTErrorEnum, CaseIterable
@@ -101,15 +99,15 @@ final class BackgroundRefreshAppsOperation: ResultOperation<[String: Result<Inst
         }
 
         if UserDefaults.standard.enableEMPforWireguard {
-            start_em_proxy(bind_addr: AppConstants.Proxy.serverURL)
+            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
         }
-        target_minimuxer_address()
+        targetMinimuxerAddress()
         let documentsDirectory = FileManager.default.documentsDirectory.absoluteString
         do {
             // enable minimuxer console logging only if enabled in settings
             let isMinimuxerConsoleLoggingEnabled = UserDefaults.standard.isMinimuxerConsoleLoggingEnabled
 
-            try minimuxer.startWithLogger(
+            try minimuxerStartWithLogger(
                 try String(contentsOf: FileManager.default.documentsDirectory.appendingPathComponent("\(pairingFileName)")),
                 documentsDirectory,
                 isMinimuxerConsoleLoggingEnabled
