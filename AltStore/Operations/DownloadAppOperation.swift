@@ -30,8 +30,6 @@ final class DownloadAppOperation: ResultOperation<ALTApplication>
     private let session = URLSession(configuration: .default)
     private let temporaryDirectory = FileManager.default.uniqueTemporaryURL()
 
-    private var downloadPatreonAppContinuation: CheckedContinuation<URL, Error>?
-
     init(app: AppProtocol, destinationURL: URL, context: InstallAppOperationContext)
     {
         self.app = app
@@ -317,61 +315,6 @@ private extension DownloadAppOperation
                 self.printWithTid("download started: \(downloadURL)")
             }
         }
-    }
-}
-
-extension DownloadAppOperation: WebViewControllerDelegate
-{
-    func webViewControllerDidFinish(_ webViewController: WebViewController)
-    {
-        guard let continuation = self.downloadPatreonAppContinuation else { return }
-        self.downloadPatreonAppContinuation = nil
-
-        continuation.resume(throwing: CancellationError())
-    }
-}
-
-extension DownloadAppOperation: WKNavigationDelegate
-{
-    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy
-    {
-        guard #available(iOS 14.5, *), navigationAction.shouldPerformDownload else { return .allow }
-
-        guard let continuation = self.downloadPatreonAppContinuation else { return .allow }
-        self.downloadPatreonAppContinuation = nil
-
-        if let downloadURL = navigationAction.request.url
-        {
-            continuation.resume(returning: downloadURL)
-        }
-        else
-        {
-            continuation.resume(throwing: URLError(.badURL))
-        }
-
-        return .cancel
-    }
-
-    func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse) async -> WKNavigationResponsePolicy
-    {
-        // Called for Patreon attachments
-
-        guard !navigationResponse.canShowMIMEType else { return .allow }
-
-        guard let continuation = self.downloadPatreonAppContinuation else { return .allow }
-        self.downloadPatreonAppContinuation = nil
-
-        guard let response = navigationResponse.response as? HTTPURLResponse, let responseURL = response.url,
-              let mimeType = response.mimeType, let type = UTType(mimeType: mimeType),
-              type.conforms(to: .ipa) || type.conforms(to: .zip) || type.conforms(to: .application)
-        else {
-            continuation.resume(throwing: OperationError.invalidApp)
-            return .cancel
-        }
-
-        continuation.resume(returning: responseURL)
-
-        return .cancel
     }
 }
 

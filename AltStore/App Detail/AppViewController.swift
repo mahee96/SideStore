@@ -392,7 +392,6 @@ private extension AppViewController
     {
         var buttonAction: AppBannerView.AppAction?
         
-        // if let installedApp = self.app.installedApp, let latestVersion = self.app.latestAvailableVersion, !installedApp.matches(latestVersion), !self.app.isPledgeRequired || self.app.isPledged
         if let installedApp = self.app.installedApp, installedApp.hasUpdate
         {
             // Explicitly set button action to .update if there is an update available, even if it's not supported.
@@ -543,7 +542,6 @@ extension AppViewController
     {
         if let installedApp = self.app.installedApp
         {
-            // if let latestVersion = self.app.latestAvailableVersion, !installedApp.matches(latestVersion), !self.app.isPledgeRequired || self.app.isPledged
             if let latestVersion = self.app.latestAvailableVersion, installedApp.hasUpdate
             {
                 self.updateApp(installedApp, to: latestVersion)

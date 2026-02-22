@@ -1562,8 +1562,6 @@ private extension AppManager
         
         if let storeApp = downloadingApp.storeApp, storeApp.isPledgeRequired
         {
-            // Patreon apps may require authenticating with WebViewController,
-            // so make sure to run DownloadAppOperation serially.
             self.run([downloadOperation], context: group.context, requiresSerialQueue: true)
             
             if let index = operations.firstIndex(of: downloadOperation)
