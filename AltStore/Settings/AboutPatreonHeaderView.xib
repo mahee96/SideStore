@@ -122,9 +122,9 @@ Following us on social media allows us to give quick updates and spread the word
             </constraints>
             <connections>
                 <outlet property="instagramButton" destination="VdY-7Q-amF" id="5kj-9x-k4F"/>
-                <outlet property="rileyImageView" destination="pn6-Ic-MJm" id="60i-Q0-ojz"/>
-                <outlet property="rileyLabel" destination="DTd-Yu-HXr" id="O0y-JB-gWp"/>
                 <outlet property="supportButton" destination="yEi-L6-kQ8" id="Dzo-vd-SnD"/>
+                <outlet property="teamIcon" destination="pn6-Ic-MJm" id="60i-Q0-ojz"/>
+                <outlet property="teamLabel" destination="DTd-Yu-HXr" id="O0y-JB-gWp"/>
                 <outlet property="textView" destination="FeG-e5-LJl" id="K0M-lF-I6u"/>
                 <outlet property="twitterButton" destination="hov-Ce-LaM" id="gib-Lt-qtY"/>
             </connections>

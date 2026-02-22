@@ -99,11 +99,6 @@ private extension SceneDelegate
             
             switch host
             {
-            case "patreon":
-                DispatchQueue.main.async {
-                    NotificationCenter.default.post(name: AppDelegate.openPatreonSettingsDeepLinkNotification, object: nil)
-                }
-                
             case "appbackupresponse":
                 let result: Result<Void, Error>
                 
