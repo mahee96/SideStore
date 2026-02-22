@@ -120,7 +120,6 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
     {
         super.viewIsAppearing(animated)
         
-        // Ensure the button for each app reflects correct Patreon status.
         self.collectionView.reloadData()
         
         self.update()
@@ -1990,8 +1989,6 @@ extension MyAppsViewController
             
             for action in actions where !allowedActions.contains(action)
             {
-                // Disable options for Patreon apps that we are no longer pledged to.
-                
                 if let action = action as? UIAction
                 {
                     action.attributes = .disabled

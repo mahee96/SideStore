@@ -8,10 +8,10 @@
 
 import UIKit
 
-final class PatronCollectionViewCell: UICollectionViewCell
-{
-    @IBOutlet var textLabel: UILabel!
-}
+//final class PatronCollectionViewCell: UICollectionViewCell
+//{
+//    @IBOutlet var textLabel: UILabel!
+//}
 
 
 final class AboutPatreonHeaderView: UICollectionReusableView
@@ -45,7 +45,7 @@ final class AboutPatreonHeaderView: UICollectionReusableView
             button.clipsToBounds = true
             button.layer.cornerRadius = 16
         }
-}
+    }
     
     override func layoutMarginsDidChange()
     {
