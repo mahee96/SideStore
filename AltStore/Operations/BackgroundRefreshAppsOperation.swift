@@ -101,7 +101,7 @@ final class BackgroundRefreshAppsOperation: ResultOperation<[String: Result<Inst
         }
 
         if UserDefaults.standard.enableEMPforWireguard {
-            start_em_proxy(bind_addr: Consts.Proxy.serverURL)
+            start_em_proxy(bind_addr: AppConstants.Proxy.serverURL)
         }
         target_minimuxer_address()
         let documentsDirectory = FileManager.default.documentsDirectory.absoluteString

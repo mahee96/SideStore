@@ -41,7 +41,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
         
         AppManager.shared.update()
         if UserDefaults.standard.enableEMPforWireguard {
-            start_em_proxy(bind_addr: Consts.Proxy.serverURL)
+            start_em_proxy(bind_addr: AppConstants.Proxy.serverURL)
         }
     }
 

@@ -77,7 +77,7 @@ final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
         detectAndImportAccountFile()
         
         if UserDefaults.standard.enableEMPforWireguard {
-            start_em_proxy(bind_addr: Consts.Proxy.serverURL)
+            start_em_proxy(bind_addr: AppConstants.Proxy.serverURL)
         }
         guard let pf = fetchPairingFile() else {
             displayError("Device pairing file not found.")
