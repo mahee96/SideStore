@@ -78,6 +78,7 @@ extension SettingsViewController
         case refreshSideJITServer
         case resetPairingFile
         case anisetteServers
+        case enableEMPForWiregaurd
         case customizeAppId
     }
     
@@ -1367,7 +1368,7 @@ extension SettingsViewController
                 let anisetteServersController = UIHostingController(rootView: anisetteServersView)
 
                 self.prepare(for: UIStoryboardSegue(identifier: "anisetteServers", source: self, destination: anisetteServersController), sender: nil)
-            case .refreshAttempts, .customizeAppId: break
+            case .refreshAttempts, .enableEMPForWiregaurd, .customizeAppId: break
             }
         case .signing:
             let row = SigningSettingsRow.allCases[indexPath.row]
