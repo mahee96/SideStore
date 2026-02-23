@@ -78,8 +78,6 @@ def reserve_build_number(repo, max_attempts=5):
         version_json.write_text(json.dumps(data, indent=2) + "\n")
         return data
 
-    return json.loads(version_json.read_text())
-
     def write(data):
         version_json.write_text(json.dumps(data, indent=2) + "\n")
 
