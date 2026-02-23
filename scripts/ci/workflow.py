@@ -328,21 +328,32 @@ COMMANDS = {
 }
 
 def main():
+    def usage():
+        lines = ["Available commands:"]
+        for name, (_, argc, arg_usage) in COMMANDS.items():
+            suffix = f" {arg_usage}" if arg_usage else ""
+            lines.append(f"  - {name}{suffix}")
+        return "\n".join(lines)
+
     if len(sys.argv) < 2:
-        raise SystemExit("No command")
+        raise SystemExit(usage())
 
     cmd = sys.argv[1]
 
     if cmd not in COMMANDS:
-        raise SystemExit(f"Unknown command '{cmd}'")
+        raise SystemExit(
+            f"Unknown command '{cmd}'.\n\n{usage()}"
+        )
 
-    func, argc, _ = COMMANDS[cmd]
+    func, argc, arg_usage = COMMANDS[cmd]
+
+    if len(sys.argv) - 2 < argc:
+        suffix = f" {arg_usage}" if arg_usage else ""
+        raise SystemExit(f"Usage: workflow.py {cmd}{suffix}")
 
     args = sys.argv[2:2 + argc]
-    result = func(*args) if argc else func()
+    func(*args) if argc else func()
 
-    if result is not None:
-        print(result)
 
 if __name__ == "__main__":
     main()
