@@ -228,45 +228,52 @@ def release_notes(tag):
 # ----------------------------------------------------------
 # DEPLOY SOURCE.JSON
 # ----------------------------------------------------------
-
-def deploy(repo, release_tag, short_commit, marketing_version, version):
+def deploy(repo, source_json, release_tag, short_commit, marketing_version, version, channel, bundle_id, ipa_name):
     repo = Path(repo).resolve()
+    ipa_path = ROOT / ipa_name
 
     if not repo.exists():
         raise SystemExit(f"{repo} repo missing")
 
-    run(
-        f"python3 generate_source_metadata.py "
-        f"--repo-root {ROOT} "
-        f"--ipa {ROOT}/SideStore.ipa "
-        f"--output-dir {repo} "
-        f"--release-notes-dir {repo} "
-        f"--release-tag {release_tag} "
-        f"--version {version} "
-        f"--marketing-version {marketing_version} "
-        f"--short-commit {short_commit} "
-        f"--release-channel nightly "
-        f"--bundle-id com.SideStore.SideStore"
-    )
+    if not ipa_path.exists():
+        raise SystemExit(f"{ipa_path} missing")
 
+    run(f"pushd {repo}", check=True)
     try:
-        run("git config user.name 'GitHub Actions'", check=False, cwd=repo)
-        run("git config user.email 'github-actions@github.com'", check=False, cwd=repo)
+        # source_json is RELATIVE to repo
+        if not Path(source_json).exists():
+            raise SystemExit(f"{source_json} missing inside repo")
 
         run(
-            "python3 ../../scripts/update_source_metadata.py './_includes/source.json'",
-            cwd=repo,
+            f"python3 {ROOT}/generate_source_metadata.py "
+            f"--repo-root {ROOT} "
+            f"--ipa {ipa_path} "
+            f"--output-dir . "
+            f"--release-notes-dir . "
+            f"--release-tag {release_tag} "
+            f"--version {version} "
+            f"--marketing-version {marketing_version} "
+            f"--short-commit {short_commit} "
+            f"--release-channel {channel} "
+            f"--bundle-id {bundle_id}"
         )
 
-        run("git add --verbose ./_includes/source.json", check=False, cwd=repo)
+        run("git config user.name 'GitHub Actions'", check=False)
+        run("git config user.email 'github-actions@github.com'", check=False)
+
         run(
-            f"git commit -m ' - updated for {short_commit} deployment' || true",
+            f"python3 {ROOT}/scripts/update_source_metadata.py '{source_json}'"
+        )
+
+        run(f"git add --verbose {source_json}", check=False)
+        run(
+            f"git commit -m '{release_tag} - deployed {version}' || true",
             check=False,
-            cwd=repo,
         )
-        run("git push --verbose", check=False, cwd=repo)
+        run("git push --verbose", check=False)
+
     finally:
-        pass
+        run("popd", check=False)
 
 # ----------------------------------------------------------
 # ENTRYPOINT
@@ -281,8 +288,7 @@ COMMANDS = {
     # ----------------------------------------------------------
     # VERSION / MARKETING
     # ----------------------------------------------------------
-    "bump-beta"               : (bump_beta,                 0, ""),
-    "version"                 : (get_marketing_version,     0, ""),
+    "get-marketing-version"   : (set_marketing_version,     1, "<qualified_version>"),
     "set-marketing-version"   : (set_marketing_version,     1, "<qualified_version>"),
     "compute-qualified"       : (compute_qualified_version, 4, "<marketing> <build_num> <channel> <short_commit>"),
     "reserve_build_number"    : (reserve_build_number,      1, "<repo>"),
@@ -305,7 +311,7 @@ COMMANDS = {
     "tests-build"             : (tests_build,               0, ""),
     "tests-run"               : (tests_run,                 1, "<model>"),
     "boot-sim-async"          : (boot_sim_async,            1, "<model>"),
-    "boot-sim-sync"           : (boot_sim_sync,             0, ""),
+    "boot-sim-sync"           : (boot_sim_sync,             1, "<model>"),
 
     # ----------------------------------------------------------
     # LOG ENCRYPTION
@@ -318,7 +324,7 @@ COMMANDS = {
     # RELEASE / DEPLOY
     # ----------------------------------------------------------
     "release-notes"           : (release_notes,             1, "<tag>"),
-    "deploy"                  : (deploy,                    5, "<repo> <release_tag> <short_commit> <marketing_version> <version>"),
+    "deploy"                  : (deploy,                    9, "<repo> <source_json> <release_tag> <short_commit> <marketing_version> <version> <channel> <bundle_id> <ipa_name>"),
 }
 
 def main():

@@ -153,7 +153,11 @@ jobs:
         run: |
           python3 scripts/ci/workflow.py deploy \
             Dependencies/apps-v2.json \
+            "_includes/source.json" \
             nightly \
             "$SHORT_COMMIT" \
             "$MARKETING_VERSION" \
-            "$VERSION"
+            "$VERSION" \
+            "${{ github.ref_name }}" \
+            "com.SideStore.SideStore" \
+            "SideStore.ipa"
