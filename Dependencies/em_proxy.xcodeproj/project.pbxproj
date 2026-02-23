@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		9987603429A4555300818586 /* em_proxy.h in Sources */ = {isa = PBXBuildFile; fileRef = 9999259129A45319005CF020 /* em_proxy.h */; };
+		A8A5B08D2F4C387300572B4A /* em_proxy.h in Sources */ = {isa = PBXBuildFile; fileRef = 9999259129A45319005CF020 /* em_proxy.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -118,6 +118,9 @@
 			);
 			outputPaths = (
 				./em_proxy/em_proxy.h,
+				./em_proxy/em_proxy.swift,
+				"./em_proxy/libem_proxy-ios.a",
+				"./em_proxy/libem_proxy-sim.a",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -130,7 +133,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9987603429A4555300818586 /* em_proxy.h in Sources */,
+				A8A5B08D2F4C387300572B4A /* em_proxy.h in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

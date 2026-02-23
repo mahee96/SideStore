@@ -75,14 +75,16 @@ check_for_update() {
         if [ "$FORCE_DOWNLOAD" = true ] || [ "$NOT_UPTODATE" = true ] ;then
             echo "downloading binaries"
             echo
-            wget -O "$1/lib$1-sim.a" "https://github.com/SideStore/$1/releases/latest/download/lib$1-sim.a"
             if [[ "$1" != "minimuxer" ]]; then
-                wget -O "$1/lib$1-ios.a" "https://github.com/SideStore/$1/releases/latest/download/lib$1.a"
-                wget -O "$1/$1.h" "https://github.com/SideStore/$1/releases/latest/download/$1.h"
+                wget -O "$1/lib$1-sim.a"    "https://github.com/SideStore/$1/releases/latest/download/lib$1-sim.a"
+                wget -O "$1/lib$1-ios.a"    "https://github.com/SideStore/$1/releases/latest/download/lib$1-ios.a"
+                wget -O "$1/$1.h"           "https://github.com/SideStore/$1/releases/latest/download/$1.h"
+                wget -O "$1/$1.swift"       "https://github.com/SideStore/$1/releases/latest/download/$1.swift"
                 echo
             else
-                wget -O "$1/lib$1-ios.a" "https://github.com/SideStore/$1/releases/latest/download/lib$1-ios.a"
-                wget -O "$1/generated.zip" "https://github.com/SideStore/$1/releases/latest/download/generated.zip"
+                wget -O "$1/lib$1-sim.a"    "https://github.com/SideStore/$1/releases/latest/download/lib$1-sim.a"
+                wget -O "$1/lib$1-ios.a"    "https://github.com/SideStore/$1/releases/latest/download/lib$1-ios.a"
+                wget -O "$1/generated.zip"  "https://github.com/SideStore/$1/releases/latest/download/generated.zip"
                 echo
                 echo "Unzipping generated.zip"
                 cd "$1"
