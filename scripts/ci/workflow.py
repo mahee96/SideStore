@@ -65,7 +65,8 @@ def reserve_build_number(repo, max_attempts=5):
         version_json.write_text(json.dumps(data, indent=2) + "\n")
 
     for _ in range(max_attempts):
-        run("git pull --rebase", check=False, cwd=repo)
+        run("git fetch --depth=1 origin HEAD", check=False, cwd=repo)
+        run("git reset --hard FETCH_HEAD", check=False, cwd=repo)
 
         data = read()
         data["build"] += 1
@@ -229,6 +230,7 @@ def release_notes(tag):
 # ----------------------------------------------------------
 # DEPLOY SOURCE.JSON
 # ----------------------------------------------------------
+
 def deploy(repo, source_json, release_tag, short_commit, marketing_version, version, channel, bundle_id, ipa_name):
     repo = Path(repo).resolve()
     ipa_path = ROOT / ipa_name
@@ -266,12 +268,26 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
             f"python3 {ROOT}/scripts/update_source_metadata.py '{source_json}'"
         )
 
-        run(f"git add --verbose {source_json}", check=False)
-        run(
-            f"git commit -m '{release_tag} - deployed {version}' || true",
-            check=False,
-        )
-        run("git push --verbose", check=False)
+        max_attempts = 5
+        for attempt in range(1, max_attempts + 1):
+            run("git fetch --depth=1 origin HEAD", check=False)
+            run("git reset --hard FETCH_HEAD", check=False)
+
+            # regenerate after reset so we don't lose changes
+            run(f"python3 {ROOT}/scripts/update_source_metadata.py '{source_json}'")
+            run(f"git add --verbose {source_json}", check=False)
+            run(f"git commit -m '{release_tag} - deployed {version}' || true", check=False)
+
+            rc = subprocess.call("git push", shell=True)
+
+            if rc == 0:
+                print("Deploy push succeeded")
+                break
+
+            print(f"Push rejected (attempt {attempt}/{max_attempts}), retrying...")
+            time.sleep(0.5)
+        else:
+            raise SystemExit("Deploy push failed after retries")
 
     finally:
         run("popd", check=False)
