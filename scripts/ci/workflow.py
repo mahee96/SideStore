@@ -253,7 +253,7 @@ def release_notes(tag):
 # DEPLOY SOURCE.JSON
 # ----------------------------------------------------------
 
-def deploy(repo, source_json, release_tag, short_commit, marketing_version, version, channel, bundle_id, ipa_name):
+def deploy(repo, source_json, release_tag, short_commit, marketing_version, version, channel, bundle_id, ipa_name, last_successful_commit=None):
     repo = (ROOT / repo).resolve()
     ipa_path = ROOT / ipa_name
     source_path = repo / source_json
@@ -268,8 +268,7 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
     if not source_path.exists():
         raise SystemExit(f"{source_json} missing inside repo")
 
-
-    run(
+    cmd = (
         f"python3 {SCRIPTS}/generate_source_metadata.py "
         f"--repo-root {ROOT} "
         f"--ipa {ipa_path} "
@@ -283,6 +282,12 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
         f"--release-channel {channel} "
         f"--bundle-id {bundle_id}"
     )
+
+    # pass only if provided
+    if last_successful_commit:
+        cmd += f" --last-successful-commit {last_successful_commit}"
+
+    run(cmd)
 
     run("git config user.name 'GitHub Actions'", check=False)
     run("git config user.email 'github-actions@github.com'", check=False)
@@ -308,6 +313,27 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
         time.sleep(0.5)
     else:
         raise SystemExit("Deploy push failed after retries")
+
+def last_successful_commit(workflow, branch):
+    import json
+
+    try:
+        out = runAndGet(
+            f'gh run list '
+            f'--workflow "{workflow}" '
+            f'--json headSha,conclusion,headBranch'
+        )
+
+        runs = json.loads(out)
+
+        for r in runs:
+            if r.get("conclusion") == "success" and r.get("headBranch") == branch:
+                return r["headSha"]
+
+    except Exception:
+        pass
+
+    return None
 
 # ----------------------------------------------------------
 # ENTRYPOINT
@@ -357,8 +383,10 @@ COMMANDS = {
     # ----------------------------------------------------------
     # RELEASE / DEPLOY
     # ----------------------------------------------------------
-    "release-notes"           : (release_notes,             1, "<tag>"),
-    "deploy"                  : (deploy,                    9, "<repo> <source_json> <release_tag> <short_commit> <marketing_version> <version> <channel> <bundle_id> <ipa_name>"),
+    "last-successful-commit"  : (last_successful_commit,    2,  "<workflow_name> <branch>"),
+    "release-notes"           : (release_notes,             1,  "<tag>"),
+    "deploy"                  : (deploy,                    10, 
+                "<repo> <source_json> <release_tag> <short_commit> <marketing_version> <version> <channel> <bundle_id> <ipa_name> [last_successful_commit]"),
 }
 
 def main():

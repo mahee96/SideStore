@@ -5,16 +5,33 @@ import json
 import subprocess
 from pathlib import Path
 import argparse
+import sys
+
+SCRIPT_DIR = Path(__file__).resolve().parent
 
 
 # ----------------------------------------------------------
 # helpers
 # ----------------------------------------------------------
 
+def resolve_script(name: str) -> Path:
+    p = Path.cwd() / name
+    if p.exists():
+        return p
+    return SCRIPT_DIR / name
+
+
 def sh(cmd: str, cwd: Path) -> str:
-    return subprocess.check_output(
-        cmd, shell=True, cwd=cwd
-    ).decode().strip()
+    try:
+        return subprocess.check_output(
+            cmd,
+            shell=True,
+            cwd=cwd,
+            stderr=subprocess.STDOUT,
+        ).decode().strip()
+    except subprocess.CalledProcessError as e:
+        print(e.output.decode(), file=sys.stderr)
+        raise SystemExit(f"Command failed: {cmd}")
 
 
 def file_size(path: Path) -> int:
@@ -38,35 +55,16 @@ def sha256(path: Path) -> str:
 def main():
     p = argparse.ArgumentParser()
 
-    p.add_argument(
-        "--repo-root",
-        required=True,
-        help="Repo used for git history + release notes",
-    )
+    p.add_argument("--repo-root", required=True)
+    p.add_argument("--ipa", required=True)
+    p.add_argument("--output-dir", required=True)
 
-    p.add_argument(
-        "--ipa",
-        required=True,
-        help="Path to IPA file",
-    )
-
-    p.add_argument(
-        "--output-dir",
-        required=True,
-        help="Output Directory where source_metadata.json is written",
-    )
- 
     p.add_argument(
         "--output-name",
         default="source_metadata.json",
-        help="Output metadata filename",
     )
 
-    p.add_argument(
-        "--release-notes-dir",
-        required=True,
-        help="Output Directory where release-notes.md is generated/read",
-    )
+    p.add_argument("--release-notes-dir", required=True)
 
     p.add_argument("--release-tag", required=True)
     p.add_argument("--version", required=True)
@@ -74,6 +72,10 @@ def main():
     p.add_argument("--short-commit", required=True)
     p.add_argument("--release-channel", required=True)
     p.add_argument("--bundle-id", required=True)
+
+    # optional
+    p.add_argument("--last-successful-commit")
+
     p.add_argument("--is-beta", action="store_true")
 
     args = p.parse_args()
@@ -95,19 +97,27 @@ def main():
     out_file = out_dir / args.output_name
 
     # ------------------------------------------------------
-    # ensure release notes exist
+    # generate release notes
     # ------------------------------------------------------
 
     print("Generating release notes…")
 
-    sh(
-        (
-            "python3 generate_release_notes.py "
+    script = resolve_script("generate_release_notes.py")
+
+    if args.last_successful_commit:
+        gen_cmd = (
+            f"python3 {script} "
+            f"{args.last_successful_commit} {args.release_tag} "
+            f"--output-dir \"{notes_dir}\""
+        )
+    else:
+        gen_cmd = (
+            f"python3 {script} "
             f"{args.short_commit} {args.release_tag} "
             f"--output-dir \"{notes_dir}\""
-        ),
-        cwd=repo_root,
-    )
+        )
+
+    sh(gen_cmd, cwd=repo_root)
 
     # ------------------------------------------------------
     # retrieve release notes
@@ -115,7 +125,7 @@ def main():
 
     notes = sh(
         (
-            "python3 generate_release_notes.py "
+            f"python3 {script} "
             f"--retrieve {args.release_tag} "
             f"--output-dir \"{notes_dir}\""
         ),
@@ -126,7 +136,7 @@ def main():
     # compute metadata
     # ------------------------------------------------------
 
-    now = datetime.datetime.now(datetime.UTC)
+    now = datetime.datetime.now(datetime.timezone.utc)
     formatted = now.strftime("%Y-%m-%dT%H:%M:%SZ")
     human = now.strftime("%c")
 

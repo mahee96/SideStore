@@ -1,0 +1,11 @@
+{
+  "is_beta": false,
+  "bundle_identifier": "com.SideStore.SideStore",
+  "version_ipa": "0.6.3",
+  "version_date": "2026-02-23T23:38:22Z",
+  "release_channel": "nightly",
+  "size": 29313346,
+  "sha256": "51ec327bca0b0056ccd4c2eb1a130cb7c5bb21de2f303251eea3e0a7336699c4",
+  "download_url": "https://github.com/SideStore/SideStore/releases/download/nightly/SideStore.ipa",
+  "localized_description": "This is release for:\n  - version: \"0.6.3-nightly.2026.02.24.42+abc123de\"\n  - revision: \"99712f00\"\n  - timestamp: \"Mon Feb 23 23:38:22 2026\"\n\nRelease Notes:\n#### What's Changed\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- altsign updated to latest\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- re added openSSL from new path\n- updated altsign to use xcframework for openSSL which was causing huge download of 1.2 GB each time\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: improve more ci worflow\n- CI: full rewrite - moved logic into ci.py and kept workflow scripts mostly dummy\n\n#### Full Changelog: [38715283...99712f00](https://github.com/SideStore/SideStore/compare/38715283073ea37949a462b889ce3cad403ea499...99712f0020a4f2ae57d8d781514fa735f893c23a)"
+}
