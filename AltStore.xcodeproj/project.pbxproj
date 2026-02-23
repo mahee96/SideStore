@@ -7,9 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A811734B2F4B8DC40013ABD0 /* libminimuxer_static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A81173352F4B8DBD0013ABD0 /* libminimuxer_static.a */; };
-		A811734C2F4B8DDA0013ABD0 /* libem_proxy_static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A81173232F4B8DBD0013ABD0 /* libem_proxy_static.a */; };
 		A81173512F4B8E9E0013ABD0 /* libfragmentzip.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A811732F2F4B8DBD0013ABD0 /* libfragmentzip.a */; };
+		A811986A2F4C1D830013ABD0 /* libminimuxer_static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A81198522F4C1D550013ABD0 /* libminimuxer_static.a */; };
+		A811986D2F4C1DBB0013ABD0 /* libem_proxy_static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A81198402F4C1D550013ABD0 /* libem_proxy_static.a */; };
 		A82067C42D03E0DE00645C0D /* SemanticVersion in Frameworks */ = {isa = PBXBuildFile; productRef = A82067C32D03E0DE00645C0D /* SemanticVersion */; };
 		A83FE3672EC90482005ACE9A /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = A83FE3662EC90482005ACE9A /* Starscream */; };
 		A83FE3772EC905E3005ACE9A /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = A83FE3762EC905E3005ACE9A /* KeychainAccess */; };
@@ -142,19 +142,313 @@
 			remoteGlobalIDString = 44962FDA23E7A54A00E2A598;
 			remoteInfo = SwiftSampleApp;
 		};
-		A811734D2F4B8DE70013ABD0 /* PBXContainerItemProxy */ = {
+		A81189592F4C1BA30013ABD0 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = A811720B2F4B8BA80013ABD0 /* em_proxy.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = CA60C44C93D7A30E3695DD59;
+			containerPortal = A81180D32F4C1B230013ABD0 /* em_proxy.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = CA60C44C93D7916DE57E6EBD;
 			remoteInfo = "em_proxy-staticlib";
 		};
-		A811734F2F4B8E090013ABD0 /* PBXContainerItemProxy */ = {
+		A811895F2F4C1BA30013ABD0 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = A811720D2F4B8BA80013ABD0 /* minimuxer.xcodeproj */;
+			containerPortal = A8117DA52F4C1B230013ABD0 /* libfragmentzip.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 87B8C3401E0E9C37002F817D;
+			remoteInfo = "fragmentzip-cli-macOS";
+		};
+		A81189612F4C1BA30013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8117DA52F4C1B230013ABD0 /* libfragmentzip.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = B315FDB02866CCF8002E243C;
+			remoteInfo = "fragmentzip-cli-iOS";
+		};
+		A81189632F4C1BA30013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8117DA52F4C1B230013ABD0 /* libfragmentzip.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = B315FDB52866CD91002E243C;
+			remoteInfo = "fragmentzip-macOS";
+		};
+		A81189652F4C1BA30013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8117DA52F4C1B230013ABD0 /* libfragmentzip.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = B315FDCE2866CDD3002E243C;
+			remoteInfo = "fragmentzip-iOS";
+		};
+		A81189682F4C1BA30013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8117D812F4C1B230013ABD0 /* libgeneral.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 87977F6F227C4B71004F31DA;
+			remoteInfo = libgeneral;
+		};
+		A811896B2F4C1BA30013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81180D52F4C1B230013ABD0 /* minimuxer.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = CA609C732349C7AAD9FA67C4;
+			remoteInfo = "minimuxer-staticlib";
+		};
+		A81189702F4C1BA30013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81180D02F4C1B230013ABD0 /* Roxas.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = BFADAFF819AE7BB70050CF31;
+			remoteInfo = Roxas;
+		};
+		A81189722F4C1BA30013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81180D02F4C1B230013ABD0 /* Roxas.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = BF8624801BB742E700C12EEE;
+			remoteInfo = RoxasTV;
+		};
+		A81189742F4C1BA30013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81180D02F4C1B230013ABD0 /* Roxas.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = BFADB00319AE7BB80050CF31;
+			remoteInfo = RoxasTests;
+		};
+		A81189772F4C1BA30013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81180302F4C1B230013ABD0 /* SampleApp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 44E8FA8923D90632009E1D13;
+			remoteInfo = SampleApp;
+		};
+		A811897B2F4C1BA30013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81180172F4C1B230013ABD0 /* SampleApp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 44B1EE7C23DB90D5004E2E29;
+			remoteInfo = SampleApp;
+		};
+		A811897D2F4C1BA30013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81180172F4C1B230013ABD0 /* SampleApp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 445A906A2400612800B487B4;
+			remoteInfo = "NSAttributedString+MarkdownTests";
+		};
+		A81189802F4C1BA30013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A811803C2F4C1B230013ABD0 /* SwiftSampleApp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 44962FDA23E7A54A00E2A598;
+			remoteInfo = SwiftSampleApp;
+		};
+		A81190C82F4C1C4D0013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8118FBD2F4C1C250013ABD0 /* em_proxy.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = CA60C44C93D7916DE57E6EBD;
+			remoteInfo = "em_proxy-staticlib";
+		};
+		A81190CE2F4C1C4D0013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8118C8F2F4C1C250013ABD0 /* libfragmentzip.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 87B8C3401E0E9C37002F817D;
+			remoteInfo = "fragmentzip-cli-macOS";
+		};
+		A81190D02F4C1C4D0013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8118C8F2F4C1C250013ABD0 /* libfragmentzip.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = B315FDB02866CCF8002E243C;
+			remoteInfo = "fragmentzip-cli-iOS";
+		};
+		A81190D22F4C1C4D0013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8118C8F2F4C1C250013ABD0 /* libfragmentzip.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = B315FDB52866CD91002E243C;
+			remoteInfo = "fragmentzip-macOS";
+		};
+		A81190D42F4C1C4D0013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8118C8F2F4C1C250013ABD0 /* libfragmentzip.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = B315FDCE2866CDD3002E243C;
+			remoteInfo = "fragmentzip-iOS";
+		};
+		A81190D72F4C1C4D0013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8118C6B2F4C1C250013ABD0 /* libgeneral.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 87977F6F227C4B71004F31DA;
+			remoteInfo = libgeneral;
+		};
+		A81190DA2F4C1C4D0013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8118FBF2F4C1C250013ABD0 /* minimuxer.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = CA609C732349C7AAD9FA67C4;
+			remoteInfo = "minimuxer-staticlib";
+		};
+		A81190DF2F4C1C4D0013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8118FBA2F4C1C250013ABD0 /* Roxas.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = BFADAFF819AE7BB70050CF31;
+			remoteInfo = Roxas;
+		};
+		A81190E12F4C1C4D0013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8118FBA2F4C1C250013ABD0 /* Roxas.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = BF8624801BB742E700C12EEE;
+			remoteInfo = RoxasTV;
+		};
+		A81190E32F4C1C4D0013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8118FBA2F4C1C250013ABD0 /* Roxas.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = BFADB00319AE7BB80050CF31;
+			remoteInfo = RoxasTests;
+		};
+		A81190E72F4C1C4D0013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8118F012F4C1C250013ABD0 /* SampleApp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 44B1EE7C23DB90D5004E2E29;
+			remoteInfo = SampleApp;
+		};
+		A81190E92F4C1C4D0013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8118F012F4C1C250013ABD0 /* SampleApp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 445A906A2400612800B487B4;
+			remoteInfo = "NSAttributedString+MarkdownTests";
+		};
+		A81190EC2F4C1C4D0013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8118F1A2F4C1C250013ABD0 /* SampleApp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 44E8FA8923D90632009E1D13;
+			remoteInfo = SampleApp;
+		};
+		A81190EF2F4C1C4D0013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8118F262F4C1C250013ABD0 /* SwiftSampleApp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 44962FDA23E7A54A00E2A598;
+			remoteInfo = SwiftSampleApp;
+		};
+		A811983F2F4C1D550013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81197342F4C1C710013ABD0 /* em_proxy.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = CA60C44C93D7916DE57E6EBD;
+			remoteInfo = "em_proxy-staticlib";
+		};
+		A81198452F4C1D550013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81194062F4C1C710013ABD0 /* libfragmentzip.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 87B8C3401E0E9C37002F817D;
+			remoteInfo = "fragmentzip-cli-macOS";
+		};
+		A81198472F4C1D550013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81194062F4C1C710013ABD0 /* libfragmentzip.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = B315FDB02866CCF8002E243C;
+			remoteInfo = "fragmentzip-cli-iOS";
+		};
+		A81198492F4C1D550013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81194062F4C1C710013ABD0 /* libfragmentzip.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = B315FDB52866CD91002E243C;
+			remoteInfo = "fragmentzip-macOS";
+		};
+		A811984B2F4C1D550013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81194062F4C1C710013ABD0 /* libfragmentzip.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = B315FDCE2866CDD3002E243C;
+			remoteInfo = "fragmentzip-iOS";
+		};
+		A811984E2F4C1D550013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81193E22F4C1C710013ABD0 /* libgeneral.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 87977F6F227C4B71004F31DA;
+			remoteInfo = libgeneral;
+		};
+		A81198512F4C1D550013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81197362F4C1C710013ABD0 /* minimuxer.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = CA609C732349C7AAD9FA67C4;
+			remoteInfo = "minimuxer-staticlib";
+		};
+		A81198562F4C1D550013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81197312F4C1C710013ABD0 /* Roxas.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = BFADAFF819AE7BB70050CF31;
+			remoteInfo = Roxas;
+		};
+		A81198582F4C1D550013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81197312F4C1C710013ABD0 /* Roxas.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = BF8624801BB742E700C12EEE;
+			remoteInfo = RoxasTV;
+		};
+		A811985A2F4C1D550013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81197312F4C1C710013ABD0 /* Roxas.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = BFADB00319AE7BB80050CF31;
+			remoteInfo = RoxasTests;
+		};
+		A811985E2F4C1D550013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81196782F4C1C710013ABD0 /* SampleApp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 44B1EE7C23DB90D5004E2E29;
+			remoteInfo = SampleApp;
+		};
+		A81198602F4C1D550013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81196782F4C1C710013ABD0 /* SampleApp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 445A906A2400612800B487B4;
+			remoteInfo = "NSAttributedString+MarkdownTests";
+		};
+		A81198632F4C1D550013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81196912F4C1C710013ABD0 /* SampleApp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 44E8FA8923D90632009E1D13;
+			remoteInfo = SampleApp;
+		};
+		A81198662F4C1D550013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A811969D2F4C1C710013ABD0 /* SwiftSampleApp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 44962FDA23E7A54A00E2A598;
+			remoteInfo = SwiftSampleApp;
+		};
+		A81198682F4C1D740013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81197362F4C1C710013ABD0 /* minimuxer.xcodeproj */;
 			proxyType = 1;
 			remoteGlobalIDString = CA609C732349A560B9642892;
 			remoteInfo = "minimuxer-staticlib";
+		};
+		A811986B2F4C1DB50013ABD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A81197342F4C1C710013ABD0 /* em_proxy.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = CA60C44C93D7A30E3695DD59;
+			remoteInfo = "em_proxy-staticlib";
 		};
 		A85A13052F4B3515002E2E11 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -1519,6 +1813,30 @@
 		A81172062F4B8BA80013ABD0 /* Roxas.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Roxas.xcodeproj; sourceTree = "<group>"; };
 		A811720B2F4B8BA80013ABD0 /* em_proxy.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = em_proxy.xcodeproj; sourceTree = "<group>"; };
 		A811720D2F4B8BA80013ABD0 /* minimuxer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = minimuxer.xcodeproj; sourceTree = "<group>"; };
+		A8117D812F4C1B230013ABD0 /* libgeneral.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libgeneral.xcodeproj; sourceTree = "<group>"; };
+		A8117DA52F4C1B230013ABD0 /* libfragmentzip.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libfragmentzip.xcodeproj; sourceTree = "<group>"; };
+		A81180172F4C1B230013ABD0 /* SampleApp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = SampleApp.xcodeproj; sourceTree = "<group>"; };
+		A81180302F4C1B230013ABD0 /* SampleApp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = SampleApp.xcodeproj; sourceTree = "<group>"; };
+		A811803C2F4C1B230013ABD0 /* SwiftSampleApp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = SwiftSampleApp.xcodeproj; sourceTree = "<group>"; };
+		A81180D02F4C1B230013ABD0 /* Roxas.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Roxas.xcodeproj; sourceTree = "<group>"; };
+		A81180D32F4C1B230013ABD0 /* em_proxy.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = em_proxy.xcodeproj; sourceTree = "<group>"; };
+		A81180D52F4C1B230013ABD0 /* minimuxer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = minimuxer.xcodeproj; sourceTree = "<group>"; };
+		A8118C6B2F4C1C250013ABD0 /* libgeneral.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libgeneral.xcodeproj; sourceTree = "<group>"; };
+		A8118C8F2F4C1C250013ABD0 /* libfragmentzip.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libfragmentzip.xcodeproj; sourceTree = "<group>"; };
+		A8118F012F4C1C250013ABD0 /* SampleApp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = SampleApp.xcodeproj; sourceTree = "<group>"; };
+		A8118F1A2F4C1C250013ABD0 /* SampleApp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = SampleApp.xcodeproj; sourceTree = "<group>"; };
+		A8118F262F4C1C250013ABD0 /* SwiftSampleApp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = SwiftSampleApp.xcodeproj; sourceTree = "<group>"; };
+		A8118FBA2F4C1C250013ABD0 /* Roxas.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Roxas.xcodeproj; sourceTree = "<group>"; };
+		A8118FBD2F4C1C250013ABD0 /* em_proxy.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = em_proxy.xcodeproj; sourceTree = "<group>"; };
+		A8118FBF2F4C1C250013ABD0 /* minimuxer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = minimuxer.xcodeproj; sourceTree = "<group>"; };
+		A81193E22F4C1C710013ABD0 /* libgeneral.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libgeneral.xcodeproj; sourceTree = "<group>"; };
+		A81194062F4C1C710013ABD0 /* libfragmentzip.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libfragmentzip.xcodeproj; sourceTree = "<group>"; };
+		A81196782F4C1C710013ABD0 /* SampleApp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = SampleApp.xcodeproj; sourceTree = "<group>"; };
+		A81196912F4C1C710013ABD0 /* SampleApp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = SampleApp.xcodeproj; sourceTree = "<group>"; };
+		A811969D2F4C1C710013ABD0 /* SwiftSampleApp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = SwiftSampleApp.xcodeproj; sourceTree = "<group>"; };
+		A81197312F4C1C710013ABD0 /* Roxas.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Roxas.xcodeproj; sourceTree = "<group>"; };
+		A81197342F4C1C710013ABD0 /* em_proxy.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = em_proxy.xcodeproj; sourceTree = "<group>"; };
+		A81197362F4C1C710013ABD0 /* minimuxer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = minimuxer.xcodeproj; sourceTree = "<group>"; };
 		A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */ = {isa = PBXFileReference; expectedSignature = "AppleDeveloperProgram:67RAULRX93:Marcin Krzyzanowski"; lastKnownFileType = wrapper.xcframework; name = OpenSSL.xcframework; path = Dependencies/AltSign/Dependencies/OpenSSL/Frameworks/OpenSSL.xcframework; sourceTree = "<group>"; };
 		A85A0E472F4B34EF002E2E11 /* libgeneral.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libgeneral.xcodeproj; sourceTree = "<group>"; };
 		A85A0E6B2F4B34EF002E2E11 /* libfragmentzip.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libfragmentzip.xcodeproj; sourceTree = "<group>"; };
@@ -1761,15 +2079,6 @@
 			);
 			target = A85A51412F4B4532002E2E11 /* em_proxy */;
 		};
-		A8CCC46F2F4B6A6600B0089A /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"minimuxer/minimuxer-helpers.swift",
-				minimuxer/minimuxer.swift,
-				minimuxer/SwiftBridgeCore.swift,
-			);
-			target = 191E5FAA290A5D92001A3B7C /* minimuxer */;
-		};
 		A8EEC0BF2F4AF7FB00F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -1899,7 +2208,7 @@
 		A8EEC3482F4B0D8600F2436D /* Shared */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC36A2F4B0D8700F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8EEC36C2F4B0D8700F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8EEC36B2F4B0D8700F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Shared; sourceTree = "<group>"; };
 		A8EEC3B92F4B0EFC00F2436D /* AltWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC3CA2F4B0EFC00F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = AltWidget; sourceTree = "<group>"; };
 		A8EEC3D92F4B0FC800F2436D /* AltBackup */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC3E22F4B0FC800F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = AltBackup; sourceTree = "<group>"; };
-		A8EEC6EF2F4B106C00F2436D /* Dependencies */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A81173592F4B8F4B0013ABD0 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A85A51AD2F4B4CB8002E2E11 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8CCC46F2F4B6A6600B0089A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8CCC46C2F4B6A5600B0089A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Dependencies; sourceTree = "<group>"; };
+		A8EEC6EF2F4B106C00F2436D /* Dependencies */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A81173592F4B8F4B0013ABD0 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A85A51AD2F4B4CB8002E2E11 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8CCC46C2F4B6A5600B0089A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Dependencies; sourceTree = "<group>"; };
 		A8EEC71D2F4B10D900F2436D /* xcconfigs */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = xcconfigs; sourceTree = "<group>"; };
 		A8EEC8412F4B146A00F2436D /* AltStore */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC8CB2F4B146B00F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8EEC8CC2F4B146B00F2436D /* PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet */, A8FAC1FE2F4B52F40061A851 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8EEC8CD2F4B146B00F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = AltStore; sourceTree = "<group>"; };
 		A8EECF2A2F4B195000F2436D /* SideStore */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EECF492F4B195000F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8EECF4A2F4B195000F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = SideStore; sourceTree = "<group>"; };
@@ -1910,7 +2219,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A811734B2F4B8DC40013ABD0 /* libminimuxer_static.a in Frameworks */,
+				A811986A2F4C1D830013ABD0 /* libminimuxer_static.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1918,7 +2227,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A811734C2F4B8DDA0013ABD0 /* libem_proxy_static.a in Frameworks */,
+				A811986D2F4C1DBB0013ABD0 /* libem_proxy_static.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1956,10 +2265,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A81173512F4B8E9E0013ABD0 /* libfragmentzip.a in Frameworks */,
 				A8FAC1CC2F4B51980061A851 /* libimobiledevice.a in Frameworks */,
 				A8FAC1F72F4B519A0061A851 /* libem_proxy.a in Frameworks */,
 				A85AED4C2F4B2D32002E2E11 /* libminimuxer.a in Frameworks */,
+				A81173512F4B8E9E0013ABD0 /* libfragmentzip.a in Frameworks */,
 				A8B646012D70C23E00125819 /* MarkdownKit in Frameworks */,
 				A8C2260E2EC9039A00047C0D /* Nuke in Frameworks */,
 				A83FE3672EC90482005ACE9A /* Starscream in Frameworks */,
@@ -2038,6 +2347,216 @@
 			children = (
 				A81173452F4B8DBD0013ABD0 /* SampleApp.app */,
 				A81173472F4B8DBD0013ABD0 /* NSAttributedString+MarkdownTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A81180D62F4C1B230013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A811897C2F4C1BA30013ABD0 /* SampleApp.app */,
+				A811897E2F4C1BA30013ABD0 /* NSAttributedString+MarkdownTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A81180D82F4C1B230013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A811895A2F4C1BA30013ABD0 /* libem_proxy_static.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A81180DA2F4C1B230013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A81189812F4C1BA30013ABD0 /* SwiftSampleApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A81180DC2F4C1B230013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A81189782F4C1BA30013ABD0 /* SampleApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A81180DE2F4C1B230013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A81189712F4C1BA30013ABD0 /* Roxas.framework */,
+				A81189732F4C1BA30013ABD0 /* Roxas.framework */,
+				A81189752F4C1BA30013ABD0 /* RoxasTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A81180E02F4C1B230013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A81189602F4C1BA30013ABD0 /* libfragmentzip */,
+				A81189622F4C1BA30013ABD0 /* libfragmentzip */,
+				A81189642F4C1BA30013ABD0 /* libfragmentzip.a */,
+				A81189662F4C1BA30013ABD0 /* libfragmentzip.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A81180E22F4C1B230013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A81189692F4C1BA30013ABD0 /* libgeneral */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A81180E42F4C1B230013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A811896C2F4C1BA30013ABD0 /* libminimuxer_static.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A8118FC02F4C1C250013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A81190CF2F4C1C4D0013ABD0 /* libfragmentzip */,
+				A81190D12F4C1C4D0013ABD0 /* libfragmentzip */,
+				A81190D32F4C1C4D0013ABD0 /* libfragmentzip.a */,
+				A81190D52F4C1C4D0013ABD0 /* libfragmentzip.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A8118FC22F4C1C250013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A81190D82F4C1C4D0013ABD0 /* libgeneral */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A8118FC42F4C1C250013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A81190E02F4C1C4D0013ABD0 /* Roxas.framework */,
+				A81190E22F4C1C4D0013ABD0 /* Roxas.framework */,
+				A81190E42F4C1C4D0013ABD0 /* RoxasTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A8118FC62F4C1C250013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A81190DB2F4C1C4D0013ABD0 /* libminimuxer_static.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A8118FC82F4C1C250013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A81190ED2F4C1C4D0013ABD0 /* SampleApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A8118FCA2F4C1C250013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A81190F02F4C1C4D0013ABD0 /* SwiftSampleApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A8118FCC2F4C1C250013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A81190E82F4C1C4D0013ABD0 /* SampleApp.app */,
+				A81190EA2F4C1C4D0013ABD0 /* NSAttributedString+MarkdownTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A8118FCE2F4C1C250013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A81190C92F4C1C4D0013ABD0 /* libem_proxy_static.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A81197372F4C1C710013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A81198642F4C1D550013ABD0 /* SampleApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A81197392F4C1C710013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A81198672F4C1D550013ABD0 /* SwiftSampleApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A811973B2F4C1C710013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A81198402F4C1D550013ABD0 /* libem_proxy_static.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A811973D2F4C1C710013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A811985F2F4C1D550013ABD0 /* SampleApp.app */,
+				A81198612F4C1D550013ABD0 /* NSAttributedString+MarkdownTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A811973F2F4C1C710013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A81198462F4C1D550013ABD0 /* libfragmentzip */,
+				A81198482F4C1D550013ABD0 /* libfragmentzip */,
+				A811984A2F4C1D550013ABD0 /* libfragmentzip.a */,
+				A811984C2F4C1D550013ABD0 /* libfragmentzip.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A81197412F4C1C710013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A811984F2F4C1D550013ABD0 /* libgeneral */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A81197432F4C1C710013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A81198522F4C1D550013ABD0 /* libminimuxer_static.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A81197452F4C1C710013ABD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A81198572F4C1D550013ABD0 /* Roxas.framework */,
+				A81198592F4C1D550013ABD0 /* Roxas.framework */,
+				A811985B2F4C1D550013ABD0 /* RoxasTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -2989,7 +3508,7 @@
 			buildRules = (
 			);
 			dependencies = (
-				A81173502F4B8E090013ABD0 /* PBXTargetDependency */,
+				A81198692F4C1D740013ABD0 /* PBXTargetDependency */,
 			);
 			name = minimuxer;
 			productName = minimuxer;
@@ -3006,7 +3525,7 @@
 			buildRules = (
 			);
 			dependencies = (
-				A811734E2F4B8DE70013ABD0 /* PBXTargetDependency */,
+				A811986C2F4C1DB50013ABD0 /* PBXTargetDependency */,
 			);
 			name = em_proxy;
 			productName = minimuxer;
@@ -3190,10 +3709,6 @@
 			projectDirPath = "";
 			projectReferences = (
 				{
-					ProductGroup = A8CCD9CB2F4B745B00B0089A /* Products */;
-					ProjectRef = A8CCD9C02F4B745B00B0089A /* em_proxy.xcodeproj */;
-				},
-				{
 					ProductGroup = A8FACF9F2F4B5CD40061A851 /* Products */;
 					ProjectRef = A8FACF982F4B5CD40061A851 /* em_proxy.xcodeproj */;
 				},
@@ -3218,10 +3733,6 @@
 					ProjectRef = A8EEDA9B2F4B19B000F2436D /* em_proxy.xcodeproj */;
 				},
 				{
-					ProductGroup = A8CCD22C2F4B6B0000B0089A /* Products */;
-					ProjectRef = A8CCD21D2F4B6B0000B0089A /* em_proxy.xcodeproj */;
-				},
-				{
 					ProductGroup = A8CCC24C2F4B654400B0089A /* Products */;
 					ProjectRef = A8CCC2412F4B654400B0089A /* em_proxy.xcodeproj */;
 				},
@@ -3230,8 +3741,8 @@
 					ProjectRef = A8FAD7252F4B61310061A851 /* em_proxy.xcodeproj */;
 				},
 				{
-					ProductGroup = A85AEC6D2F4B22F6002E2E11 /* Products */;
-					ProjectRef = A85AEC662F4B22F6002E2E11 /* em_proxy.xcodeproj */;
+					ProductGroup = A8118FCE2F4C1C250013ABD0 /* Products */;
+					ProjectRef = A8118FBD2F4C1C250013ABD0 /* em_proxy.xcodeproj */;
 				},
 				{
 					ProductGroup = A8FAC0652F4B50D10061A851 /* Products */;
@@ -3242,8 +3753,44 @@
 					ProjectRef = A8EECF272F4B195000F2436D /* em_proxy.xcodeproj */;
 				},
 				{
+					ProductGroup = A8CCD9CB2F4B745B00B0089A /* Products */;
+					ProjectRef = A8CCD9C02F4B745B00B0089A /* em_proxy.xcodeproj */;
+				},
+				{
+					ProductGroup = A81180D82F4C1B230013ABD0 /* Products */;
+					ProjectRef = A81180D32F4C1B230013ABD0 /* em_proxy.xcodeproj */;
+				},
+				{
+					ProductGroup = A8CCD22C2F4B6B0000B0089A /* Products */;
+					ProjectRef = A8CCD21D2F4B6B0000B0089A /* em_proxy.xcodeproj */;
+				},
+				{
+					ProductGroup = A811973B2F4C1C710013ABD0 /* Products */;
+					ProjectRef = A81197342F4C1C710013ABD0 /* em_proxy.xcodeproj */;
+				},
+				{
+					ProductGroup = A85AEC6D2F4B22F6002E2E11 /* Products */;
+					ProjectRef = A85AEC662F4B22F6002E2E11 /* em_proxy.xcodeproj */;
+				},
+				{
 					ProductGroup = A8FACFA72F4B5CD40061A851 /* Products */;
 					ProjectRef = A8FACC262F4B5CD40061A851 /* libfragmentzip.xcodeproj */;
+				},
+				{
+					ProductGroup = A8118FC02F4C1C250013ABD0 /* Products */;
+					ProjectRef = A8118C8F2F4C1C250013ABD0 /* libfragmentzip.xcodeproj */;
+				},
+				{
+					ProductGroup = A8FAC0612F4B50D10061A851 /* Products */;
+					ProjectRef = A8FABCE72F4B50D10061A851 /* libfragmentzip.xcodeproj */;
+				},
+				{
+					ProductGroup = A8FAD7362F4B61310061A851 /* Products */;
+					ProjectRef = A8FAD3B32F4B61310061A851 /* libfragmentzip.xcodeproj */;
+				},
+				{
+					ProductGroup = A85AEC6B2F4B22F6002E2E11 /* Products */;
+					ProjectRef = A85AE43E2F4B22F6002E2E11 /* libfragmentzip.xcodeproj */;
 				},
 				{
 					ProductGroup = A8EEDA252F4B19B000F2436D /* Products */;
@@ -3262,12 +3809,16 @@
 					ProjectRef = A85AD8822F4B1E70002E2E11 /* libfragmentzip.xcodeproj */;
 				},
 				{
+					ProductGroup = A81172162F4B8BA80013ABD0 /* Products */;
+					ProjectRef = A8116ED12F4B8BA80013ABD0 /* libfragmentzip.xcodeproj */;
+				},
+				{
 					ProductGroup = A8CCC2482F4B654400B0089A /* Products */;
 					ProjectRef = A8CCBF072F4B654400B0089A /* libfragmentzip.xcodeproj */;
 				},
 				{
-					ProductGroup = A81172162F4B8BA80013ABD0 /* Products */;
-					ProjectRef = A8116ED12F4B8BA80013ABD0 /* libfragmentzip.xcodeproj */;
+					ProductGroup = A811973F2F4C1C710013ABD0 /* Products */;
+					ProjectRef = A81194062F4C1C710013ABD0 /* libfragmentzip.xcodeproj */;
 				},
 				{
 					ProductGroup = A8CCE1692F4B76CF00B0089A /* Products */;
@@ -3282,20 +3833,36 @@
 					ProjectRef = A8EEC9CD2F4B18D800F2436D /* libfragmentzip.xcodeproj */;
 				},
 				{
-					ProductGroup = A8FAC0612F4B50D10061A851 /* Products */;
-					ProjectRef = A8FABCE72F4B50D10061A851 /* libfragmentzip.xcodeproj */;
-				},
-				{
-					ProductGroup = A8FAD7362F4B61310061A851 /* Products */;
-					ProjectRef = A8FAD3B32F4B61310061A851 /* libfragmentzip.xcodeproj */;
-				},
-				{
-					ProductGroup = A85AEC6B2F4B22F6002E2E11 /* Products */;
-					ProjectRef = A85AE43E2F4B22F6002E2E11 /* libfragmentzip.xcodeproj */;
-				},
-				{
 					ProductGroup = A85A11E82F4B34EF002E2E11 /* Products */;
 					ProjectRef = A85A0E6B2F4B34EF002E2E11 /* libfragmentzip.xcodeproj */;
+				},
+				{
+					ProductGroup = A81180E02F4C1B230013ABD0 /* Products */;
+					ProjectRef = A8117DA52F4C1B230013ABD0 /* libfragmentzip.xcodeproj */;
+				},
+				{
+					ProductGroup = A8118FC22F4C1C250013ABD0 /* Products */;
+					ProjectRef = A8118C6B2F4C1C250013ABD0 /* libgeneral.xcodeproj */;
+				},
+				{
+					ProductGroup = A85AE0B32F4B1E70002E2E11 /* Products */;
+					ProjectRef = A85AD85E2F4B1E70002E2E11 /* libgeneral.xcodeproj */;
+				},
+				{
+					ProductGroup = A8CCD9C72F4B745B00B0089A /* Products */;
+					ProjectRef = A8CCD6622F4B745B00B0089A /* libgeneral.xcodeproj */;
+				},
+				{
+					ProductGroup = A8CCD22A2F4B6B0000B0089A /* Products */;
+					ProjectRef = A8CCCEBF2F4B6B0000B0089A /* libgeneral.xcodeproj */;
+				},
+				{
+					ProductGroup = A8FAC05B2F4B50D10061A851 /* Products */;
+					ProjectRef = A8FABCC32F4B50D10061A851 /* libgeneral.xcodeproj */;
+				},
+				{
+					ProductGroup = A81180E22F4C1B230013ABD0 /* Products */;
+					ProjectRef = A8117D812F4C1B230013ABD0 /* libgeneral.xcodeproj */;
 				},
 				{
 					ProductGroup = A8FAD7302F4B61310061A851 /* Products */;
@@ -3304,6 +3871,10 @@
 				{
 					ProductGroup = A8EEDA212F4B19B000F2436D /* Products */;
 					ProjectRef = A8EED1D72F4B19B000F2436D /* libgeneral.xcodeproj */;
+				},
+				{
+					ProductGroup = A81197412F4C1C710013ABD0 /* Products */;
+					ProjectRef = A81193E22F4C1C710013ABD0 /* libgeneral.xcodeproj */;
 				},
 				{
 					ProductGroup = A81172122F4B8BA80013ABD0 /* Products */;
@@ -3318,20 +3889,12 @@
 					ProjectRef = A8FACC022F4B5CD40061A851 /* libgeneral.xcodeproj */;
 				},
 				{
-					ProductGroup = A85AE0B32F4B1E70002E2E11 /* Products */;
-					ProjectRef = A85AD85E2F4B1E70002E2E11 /* libgeneral.xcodeproj */;
-				},
-				{
 					ProductGroup = A8CCE16D2F4B76CF00B0089A /* Products */;
 					ProjectRef = A8CCDE022F4B76CF00B0089A /* libgeneral.xcodeproj */;
 				},
 				{
 					ProductGroup = A85A11EA2F4B34EF002E2E11 /* Products */;
 					ProjectRef = A85A0E472F4B34EF002E2E11 /* libgeneral.xcodeproj */;
-				},
-				{
-					ProductGroup = A8CCD9C72F4B745B00B0089A /* Products */;
-					ProjectRef = A8CCD6622F4B745B00B0089A /* libgeneral.xcodeproj */;
 				},
 				{
 					ProductGroup = A8EEC9D72F4B18D800F2436D /* Products */;
@@ -3342,32 +3905,12 @@
 					ProjectRef = A8CCBEE32F4B654400B0089A /* libgeneral.xcodeproj */;
 				},
 				{
-					ProductGroup = A8CCD22A2F4B6B0000B0089A /* Products */;
-					ProjectRef = A8CCCEBF2F4B6B0000B0089A /* libgeneral.xcodeproj */;
-				},
-				{
 					ProductGroup = A85A27D22F4B370D002E2E11 /* Products */;
 					ProjectRef = A85A24322F4B370D002E2E11 /* libgeneral.xcodeproj */;
 				},
 				{
-					ProductGroup = A8FAC05B2F4B50D10061A851 /* Products */;
-					ProjectRef = A8FABCC32F4B50D10061A851 /* libgeneral.xcodeproj */;
-				},
-				{
 					ProductGroup = A8CCE1672F4B76CF00B0089A /* Products */;
 					ProjectRef = A8CCE1622F4B76CF00B0089A /* minimuxer.xcodeproj */;
-				},
-				{
-					ProductGroup = A8EECF2B2F4B195000F2436D /* Products */;
-					ProjectRef = A8EECF292F4B195000F2436D /* minimuxer.xcodeproj */;
-				},
-				{
-					ProductGroup = A85A27D62F4B370D002E2E11 /* Products */;
-					ProjectRef = A85A27C72F4B370D002E2E11 /* minimuxer.xcodeproj */;
-				},
-				{
-					ProductGroup = A8CCD2262F4B6B0000B0089A /* Products */;
-					ProjectRef = A8CCD21F2F4B6B0000B0089A /* minimuxer.xcodeproj */;
 				},
 				{
 					ProductGroup = A85AE1842F4B228C002E2E11 /* Products */;
@@ -3382,6 +3925,42 @@
 					ProjectRef = A8FAD7272F4B61310061A851 /* minimuxer.xcodeproj */;
 				},
 				{
+					ProductGroup = A8FAC05D2F4B50D10061A851 /* Products */;
+					ProjectRef = A8FAC0582F4B50D10061A851 /* minimuxer.xcodeproj */;
+				},
+				{
+					ProductGroup = A85A11E22F4B34EF002E2E11 /* Products */;
+					ProjectRef = A85A11DF2F4B34EF002E2E11 /* minimuxer.xcodeproj */;
+				},
+				{
+					ProductGroup = A81197432F4C1C710013ABD0 /* Products */;
+					ProjectRef = A81197362F4C1C710013ABD0 /* minimuxer.xcodeproj */;
+				},
+				{
+					ProductGroup = A8CCC24A2F4B654400B0089A /* Products */;
+					ProjectRef = A8CCC2432F4B654400B0089A /* minimuxer.xcodeproj */;
+				},
+				{
+					ProductGroup = A81180E42F4C1B230013ABD0 /* Products */;
+					ProjectRef = A81180D52F4C1B230013ABD0 /* minimuxer.xcodeproj */;
+				},
+				{
+					ProductGroup = A8FACFA12F4B5CD40061A851 /* Products */;
+					ProjectRef = A8FACF9A2F4B5CD40061A851 /* minimuxer.xcodeproj */;
+				},
+				{
+					ProductGroup = A8EECF2B2F4B195000F2436D /* Products */;
+					ProjectRef = A8EECF292F4B195000F2436D /* minimuxer.xcodeproj */;
+				},
+				{
+					ProductGroup = A85A27D62F4B370D002E2E11 /* Products */;
+					ProjectRef = A85A27C72F4B370D002E2E11 /* minimuxer.xcodeproj */;
+				},
+				{
+					ProductGroup = A8CCD2262F4B6B0000B0089A /* Products */;
+					ProjectRef = A8CCD21F2F4B6B0000B0089A /* minimuxer.xcodeproj */;
+				},
+				{
 					ProductGroup = A8CCD9C52F4B745B00B0089A /* Products */;
 					ProjectRef = A8CCD9C22F4B745B00B0089A /* minimuxer.xcodeproj */;
 				},
@@ -3390,24 +3969,12 @@
 					ProjectRef = A85AEC682F4B22F6002E2E11 /* minimuxer.xcodeproj */;
 				},
 				{
-					ProductGroup = A8FAC05D2F4B50D10061A851 /* Products */;
-					ProjectRef = A8FAC0582F4B50D10061A851 /* minimuxer.xcodeproj */;
+					ProductGroup = A8118FC62F4C1C250013ABD0 /* Products */;
+					ProjectRef = A8118FBF2F4C1C250013ABD0 /* minimuxer.xcodeproj */;
 				},
 				{
 					ProductGroup = A8EEDAA02F4B19B000F2436D /* Products */;
 					ProjectRef = A8EEDA9D2F4B19B000F2436D /* minimuxer.xcodeproj */;
-				},
-				{
-					ProductGroup = A85A11E22F4B34EF002E2E11 /* Products */;
-					ProjectRef = A85A11DF2F4B34EF002E2E11 /* minimuxer.xcodeproj */;
-				},
-				{
-					ProductGroup = A8CCC24A2F4B654400B0089A /* Products */;
-					ProjectRef = A8CCC2432F4B654400B0089A /* minimuxer.xcodeproj */;
-				},
-				{
-					ProductGroup = A8FACFA12F4B5CD40061A851 /* Products */;
-					ProjectRef = A8FACF9A2F4B5CD40061A851 /* minimuxer.xcodeproj */;
 				},
 				{
 					ProductGroup = A8CCD9CF2F4B745B00B0089A /* Products */;
@@ -3418,20 +3985,16 @@
 					ProjectRef = A8CCC23C2F4B654400B0089A /* Roxas.xcodeproj */;
 				},
 				{
-					ProductGroup = A8EEDA272F4B19B000F2436D /* Products */;
-					ProjectRef = A8EEDA1E2F4B19B000F2436D /* Roxas.xcodeproj */;
-				},
-				{
 					ProductGroup = A85AEC732F4B22F6002E2E11 /* Products */;
 					ProjectRef = A85AEC612F4B22F6002E2E11 /* Roxas.xcodeproj */;
 				},
 				{
-					ProductGroup = A8CCD2242F4B6B0000B0089A /* Products */;
-					ProjectRef = A8CCD2182F4B6B0000B0089A /* Roxas.xcodeproj */;
-				},
-				{
 					ProductGroup = A8FAC05F2F4B50D10061A851 /* Products */;
 					ProjectRef = A8FAC0512F4B50D10061A851 /* Roxas.xcodeproj */;
+				},
+				{
+					ProductGroup = A81180DE2F4C1B230013ABD0 /* Products */;
+					ProjectRef = A81180D02F4C1B230013ABD0 /* Roxas.xcodeproj */;
 				},
 				{
 					ProductGroup = A85AE0B52F4B1E70002E2E11 /* Products */;
@@ -3450,16 +4013,36 @@
 					ProjectRef = A8FACF932F4B5CD40061A851 /* Roxas.xcodeproj */;
 				},
 				{
-					ProductGroup = A8CCE16B2F4B76CF00B0089A /* Products */;
-					ProjectRef = A8CCE15B2F4B76CF00B0089A /* Roxas.xcodeproj */;
-				},
-				{
 					ProductGroup = A85A27CA2F4B370D002E2E11 /* Products */;
 					ProjectRef = A85A27C02F4B370D002E2E11 /* Roxas.xcodeproj */;
 				},
 				{
 					ProductGroup = A85A11E42F4B34EF002E2E11 /* Products */;
 					ProjectRef = A85A11D82F4B34EF002E2E11 /* Roxas.xcodeproj */;
+				},
+				{
+					ProductGroup = A8118FC42F4C1C250013ABD0 /* Products */;
+					ProjectRef = A8118FBA2F4C1C250013ABD0 /* Roxas.xcodeproj */;
+				},
+				{
+					ProductGroup = A8EEDA272F4B19B000F2436D /* Products */;
+					ProjectRef = A8EEDA1E2F4B19B000F2436D /* Roxas.xcodeproj */;
+				},
+				{
+					ProductGroup = A81197452F4C1C710013ABD0 /* Products */;
+					ProjectRef = A81197312F4C1C710013ABD0 /* Roxas.xcodeproj */;
+				},
+				{
+					ProductGroup = A8CCD2242F4B6B0000B0089A /* Products */;
+					ProjectRef = A8CCD2182F4B6B0000B0089A /* Roxas.xcodeproj */;
+				},
+				{
+					ProductGroup = A8CCE16B2F4B76CF00B0089A /* Products */;
+					ProjectRef = A8CCE15B2F4B76CF00B0089A /* Roxas.xcodeproj */;
+				},
+				{
+					ProductGroup = A811973D2F4C1C710013ABD0 /* Products */;
+					ProjectRef = A81196782F4C1C710013ABD0 /* SampleApp.xcodeproj */;
 				},
 				{
 					ProductGroup = A8CCD2202F4B6B0000B0089A /* Products */;
@@ -3470,18 +4053,6 @@
 					ProjectRef = A8FABF592F4B50D10061A851 /* SampleApp.xcodeproj */;
 				},
 				{
-					ProductGroup = A8FAD7322F4B61310061A851 /* Products */;
-					ProjectRef = A8FAD63E2F4B61310061A851 /* SampleApp.xcodeproj */;
-				},
-				{
-					ProductGroup = A811720E2F4B8BA80013ABD0 /* Products */;
-					ProjectRef = A811715C2F4B8BA80013ABD0 /* SampleApp.xcodeproj */;
-				},
-				{
-					ProductGroup = A8FAC0632F4B50D10061A851 /* Products */;
-					ProjectRef = A8FABF722F4B50D10061A851 /* SampleApp.xcodeproj */;
-				},
-				{
 					ProductGroup = A8FAD7342F4B61310061A851 /* Products */;
 					ProjectRef = A8FAD6252F4B61310061A851 /* SampleApp.xcodeproj */;
 				},
@@ -3490,28 +4061,16 @@
 					ProjectRef = A85A26C82F4B370D002E2E11 /* SampleApp.xcodeproj */;
 				},
 				{
-					ProductGroup = A8FACFA52F4B5CD40061A851 /* Products */;
-					ProjectRef = A8FACE982F4B5CD40061A851 /* SampleApp.xcodeproj */;
+					ProductGroup = A81180DC2F4C1B230013ABD0 /* Products */;
+					ProjectRef = A81180302F4C1B230013ABD0 /* SampleApp.xcodeproj */;
 				},
 				{
-					ProductGroup = A85AE0AD2F4B1E70002E2E11 /* Products */;
-					ProjectRef = A85ADAF42F4B1E70002E2E11 /* SampleApp.xcodeproj */;
-				},
-				{
-					ProductGroup = A85A11EC2F4B34EF002E2E11 /* Products */;
-					ProjectRef = A85A10F62F4B34EF002E2E11 /* SampleApp.xcodeproj */;
-				},
-				{
-					ProductGroup = A8CCD9CD2F4B745B00B0089A /* Products */;
-					ProjectRef = A8CCD9112F4B745B00B0089A /* SampleApp.xcodeproj */;
+					ProductGroup = A81197372F4C1C710013ABD0 /* Products */;
+					ProjectRef = A81196912F4C1C710013ABD0 /* SampleApp.xcodeproj */;
 				},
 				{
 					ProductGroup = A811721C2F4B8BA80013ABD0 /* Products */;
 					ProjectRef = A81171432F4B8BA80013ABD0 /* SampleApp.xcodeproj */;
-				},
-				{
-					ProductGroup = A85A11E02F4B34EF002E2E11 /* Products */;
-					ProjectRef = A85A10DD2F4B34EF002E2E11 /* SampleApp.xcodeproj */;
 				},
 				{
 					ProductGroup = A85AEC692F4B22F6002E2E11 /* Products */;
@@ -3530,6 +4089,50 @@
 					ProjectRef = A85AE6C92F4B22F6002E2E11 /* SampleApp.xcodeproj */;
 				},
 				{
+					ProductGroup = A8118FCC2F4C1C250013ABD0 /* Products */;
+					ProjectRef = A8118F012F4C1C250013ABD0 /* SampleApp.xcodeproj */;
+				},
+				{
+					ProductGroup = A85A27D42F4B370D002E2E11 /* Products */;
+					ProjectRef = A85A26E12F4B370D002E2E11 /* SampleApp.xcodeproj */;
+				},
+				{
+					ProductGroup = A8CCE16F2F4B76CF00B0089A /* Products */;
+					ProjectRef = A8CCE0982F4B76CF00B0089A /* SampleApp.xcodeproj */;
+				},
+				{
+					ProductGroup = A8FAD7322F4B61310061A851 /* Products */;
+					ProjectRef = A8FAD63E2F4B61310061A851 /* SampleApp.xcodeproj */;
+				},
+				{
+					ProductGroup = A811720E2F4B8BA80013ABD0 /* Products */;
+					ProjectRef = A811715C2F4B8BA80013ABD0 /* SampleApp.xcodeproj */;
+				},
+				{
+					ProductGroup = A8FAC0632F4B50D10061A851 /* Products */;
+					ProjectRef = A8FABF722F4B50D10061A851 /* SampleApp.xcodeproj */;
+				},
+				{
+					ProductGroup = A8FACFA52F4B5CD40061A851 /* Products */;
+					ProjectRef = A8FACE982F4B5CD40061A851 /* SampleApp.xcodeproj */;
+				},
+				{
+					ProductGroup = A85AE0AD2F4B1E70002E2E11 /* Products */;
+					ProjectRef = A85ADAF42F4B1E70002E2E11 /* SampleApp.xcodeproj */;
+				},
+				{
+					ProductGroup = A85A11EC2F4B34EF002E2E11 /* Products */;
+					ProjectRef = A85A10F62F4B34EF002E2E11 /* SampleApp.xcodeproj */;
+				},
+				{
+					ProductGroup = A8CCD9CD2F4B745B00B0089A /* Products */;
+					ProjectRef = A8CCD9112F4B745B00B0089A /* SampleApp.xcodeproj */;
+				},
+				{
+					ProductGroup = A85A11E02F4B34EF002E2E11 /* Products */;
+					ProjectRef = A85A10DD2F4B34EF002E2E11 /* SampleApp.xcodeproj */;
+				},
+				{
 					ProductGroup = A8CCC24E2F4B654400B0089A /* Products */;
 					ProjectRef = A8CCC1792F4B654400B0089A /* SampleApp.xcodeproj */;
 				},
@@ -3540,6 +4143,10 @@
 				{
 					ProductGroup = A8CCE1632F4B76CF00B0089A /* Products */;
 					ProjectRef = A8CCE0B12F4B76CF00B0089A /* SampleApp.xcodeproj */;
+				},
+				{
+					ProductGroup = A81180D62F4C1B230013ABD0 /* Products */;
+					ProjectRef = A81180172F4C1B230013ABD0 /* SampleApp.xcodeproj */;
 				},
 				{
 					ProductGroup = A8CCD2222F4B6B0000B0089A /* Products */;
@@ -3554,12 +4161,8 @@
 					ProjectRef = A8EED4862F4B19B000F2436D /* SampleApp.xcodeproj */;
 				},
 				{
-					ProductGroup = A85A27D42F4B370D002E2E11 /* Products */;
-					ProjectRef = A85A26E12F4B370D002E2E11 /* SampleApp.xcodeproj */;
-				},
-				{
-					ProductGroup = A8CCE16F2F4B76CF00B0089A /* Products */;
-					ProjectRef = A8CCE0982F4B76CF00B0089A /* SampleApp.xcodeproj */;
+					ProductGroup = A8118FC82F4C1C250013ABD0 /* Products */;
+					ProjectRef = A8118F1A2F4C1C250013ABD0 /* SampleApp.xcodeproj */;
 				},
 				{
 					ProductGroup = A8CCD9C32F4B745B00B0089A /* Products */;
@@ -3570,20 +4173,16 @@
 					ProjectRef = A85ADB192F4B1E70002E2E11 /* SwiftSampleApp.xcodeproj */;
 				},
 				{
-					ProductGroup = A8CCD9D12F4B745B00B0089A /* Products */;
-					ProjectRef = A8CCD91D2F4B745B00B0089A /* SwiftSampleApp.xcodeproj */;
+					ProductGroup = A8118FCA2F4C1C250013ABD0 /* Products */;
+					ProjectRef = A8118F262F4C1C250013ABD0 /* SwiftSampleApp.xcodeproj */;
 				},
 				{
 					ProductGroup = A8CCE1652F4B76CF00B0089A /* Products */;
 					ProjectRef = A8CCE0BD2F4B76CF00B0089A /* SwiftSampleApp.xcodeproj */;
 				},
 				{
-					ProductGroup = A8CCC2462F4B654400B0089A /* Products */;
-					ProjectRef = A8CCC19E2F4B654400B0089A /* SwiftSampleApp.xcodeproj */;
-				},
-				{
-					ProductGroup = A85A11E62F4B34EF002E2E11 /* Products */;
-					ProjectRef = A85A11022F4B34EF002E2E11 /* SwiftSampleApp.xcodeproj */;
+					ProductGroup = A81197392F4C1C710013ABD0 /* Products */;
+					ProjectRef = A811969D2F4C1C710013ABD0 /* SwiftSampleApp.xcodeproj */;
 				},
 				{
 					ProductGroup = A8FAC0592F4B50D10061A851 /* Products */;
@@ -3610,12 +4209,28 @@
 					ProjectRef = A8FACEBD2F4B5CD40061A851 /* SwiftSampleApp.xcodeproj */;
 				},
 				{
-					ProductGroup = A8FAD72C2F4B61310061A851 /* Products */;
-					ProjectRef = A8FAD64A2F4B61310061A851 /* SwiftSampleApp.xcodeproj */;
-				},
-				{
 					ProductGroup = A85A27CC2F4B370D002E2E11 /* Products */;
 					ProjectRef = A85A26ED2F4B370D002E2E11 /* SwiftSampleApp.xcodeproj */;
+				},
+				{
+					ProductGroup = A8CCD9D12F4B745B00B0089A /* Products */;
+					ProjectRef = A8CCD91D2F4B745B00B0089A /* SwiftSampleApp.xcodeproj */;
+				},
+				{
+					ProductGroup = A81180DA2F4C1B230013ABD0 /* Products */;
+					ProjectRef = A811803C2F4C1B230013ABD0 /* SwiftSampleApp.xcodeproj */;
+				},
+				{
+					ProductGroup = A8CCC2462F4B654400B0089A /* Products */;
+					ProjectRef = A8CCC19E2F4B654400B0089A /* SwiftSampleApp.xcodeproj */;
+				},
+				{
+					ProductGroup = A85A11E62F4B34EF002E2E11 /* Products */;
+					ProjectRef = A85A11022F4B34EF002E2E11 /* SwiftSampleApp.xcodeproj */;
+				},
+				{
+					ProductGroup = A8FAD72C2F4B61310061A851 /* Products */;
+					ProjectRef = A8FAD64A2F4B61310061A851 /* SwiftSampleApp.xcodeproj */;
 				},
 			);
 			projectRoot = "";
@@ -3728,6 +4343,300 @@
 			fileType = wrapper.application;
 			path = SwiftSampleApp.app;
 			remoteRef = A81173492F4B8DBD0013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A811895A2F4C1BA30013ABD0 /* libem_proxy_static.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libem_proxy_static.a;
+			remoteRef = A81189592F4C1BA30013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81189602F4C1BA30013ABD0 /* libfragmentzip */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = libfragmentzip;
+			remoteRef = A811895F2F4C1BA30013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81189622F4C1BA30013ABD0 /* libfragmentzip */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = libfragmentzip;
+			remoteRef = A81189612F4C1BA30013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81189642F4C1BA30013ABD0 /* libfragmentzip.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libfragmentzip.a;
+			remoteRef = A81189632F4C1BA30013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81189662F4C1BA30013ABD0 /* libfragmentzip.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libfragmentzip.a;
+			remoteRef = A81189652F4C1BA30013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81189692F4C1BA30013ABD0 /* libgeneral */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = libgeneral;
+			remoteRef = A81189682F4C1BA30013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A811896C2F4C1BA30013ABD0 /* libminimuxer_static.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libminimuxer_static.a;
+			remoteRef = A811896B2F4C1BA30013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81189712F4C1BA30013ABD0 /* Roxas.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Roxas.framework;
+			remoteRef = A81189702F4C1BA30013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81189732F4C1BA30013ABD0 /* Roxas.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Roxas.framework;
+			remoteRef = A81189722F4C1BA30013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81189752F4C1BA30013ABD0 /* RoxasTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = RoxasTests.xctest;
+			remoteRef = A81189742F4C1BA30013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81189782F4C1BA30013ABD0 /* SampleApp.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = SampleApp.app;
+			remoteRef = A81189772F4C1BA30013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A811897C2F4C1BA30013ABD0 /* SampleApp.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = SampleApp.app;
+			remoteRef = A811897B2F4C1BA30013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A811897E2F4C1BA30013ABD0 /* NSAttributedString+MarkdownTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = "NSAttributedString+MarkdownTests.xctest";
+			remoteRef = A811897D2F4C1BA30013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81189812F4C1BA30013ABD0 /* SwiftSampleApp.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = SwiftSampleApp.app;
+			remoteRef = A81189802F4C1BA30013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81190C92F4C1C4D0013ABD0 /* libem_proxy_static.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libem_proxy_static.a;
+			remoteRef = A81190C82F4C1C4D0013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81190CF2F4C1C4D0013ABD0 /* libfragmentzip */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = libfragmentzip;
+			remoteRef = A81190CE2F4C1C4D0013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81190D12F4C1C4D0013ABD0 /* libfragmentzip */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = libfragmentzip;
+			remoteRef = A81190D02F4C1C4D0013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81190D32F4C1C4D0013ABD0 /* libfragmentzip.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libfragmentzip.a;
+			remoteRef = A81190D22F4C1C4D0013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81190D52F4C1C4D0013ABD0 /* libfragmentzip.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libfragmentzip.a;
+			remoteRef = A81190D42F4C1C4D0013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81190D82F4C1C4D0013ABD0 /* libgeneral */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = libgeneral;
+			remoteRef = A81190D72F4C1C4D0013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81190DB2F4C1C4D0013ABD0 /* libminimuxer_static.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libminimuxer_static.a;
+			remoteRef = A81190DA2F4C1C4D0013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81190E02F4C1C4D0013ABD0 /* Roxas.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Roxas.framework;
+			remoteRef = A81190DF2F4C1C4D0013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81190E22F4C1C4D0013ABD0 /* Roxas.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Roxas.framework;
+			remoteRef = A81190E12F4C1C4D0013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81190E42F4C1C4D0013ABD0 /* RoxasTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = RoxasTests.xctest;
+			remoteRef = A81190E32F4C1C4D0013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81190E82F4C1C4D0013ABD0 /* SampleApp.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = SampleApp.app;
+			remoteRef = A81190E72F4C1C4D0013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81190EA2F4C1C4D0013ABD0 /* NSAttributedString+MarkdownTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = "NSAttributedString+MarkdownTests.xctest";
+			remoteRef = A81190E92F4C1C4D0013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81190ED2F4C1C4D0013ABD0 /* SampleApp.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = SampleApp.app;
+			remoteRef = A81190EC2F4C1C4D0013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81190F02F4C1C4D0013ABD0 /* SwiftSampleApp.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = SwiftSampleApp.app;
+			remoteRef = A81190EF2F4C1C4D0013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81198402F4C1D550013ABD0 /* libem_proxy_static.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libem_proxy_static.a;
+			remoteRef = A811983F2F4C1D550013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81198462F4C1D550013ABD0 /* libfragmentzip */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = libfragmentzip;
+			remoteRef = A81198452F4C1D550013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81198482F4C1D550013ABD0 /* libfragmentzip */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = libfragmentzip;
+			remoteRef = A81198472F4C1D550013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A811984A2F4C1D550013ABD0 /* libfragmentzip.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libfragmentzip.a;
+			remoteRef = A81198492F4C1D550013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A811984C2F4C1D550013ABD0 /* libfragmentzip.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libfragmentzip.a;
+			remoteRef = A811984B2F4C1D550013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A811984F2F4C1D550013ABD0 /* libgeneral */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = libgeneral;
+			remoteRef = A811984E2F4C1D550013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81198522F4C1D550013ABD0 /* libminimuxer_static.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libminimuxer_static.a;
+			remoteRef = A81198512F4C1D550013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81198572F4C1D550013ABD0 /* Roxas.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Roxas.framework;
+			remoteRef = A81198562F4C1D550013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81198592F4C1D550013ABD0 /* Roxas.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Roxas.framework;
+			remoteRef = A81198582F4C1D550013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A811985B2F4C1D550013ABD0 /* RoxasTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = RoxasTests.xctest;
+			remoteRef = A811985A2F4C1D550013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A811985F2F4C1D550013ABD0 /* SampleApp.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = SampleApp.app;
+			remoteRef = A811985E2F4C1D550013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81198612F4C1D550013ABD0 /* NSAttributedString+MarkdownTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = "NSAttributedString+MarkdownTests.xctest";
+			remoteRef = A81198602F4C1D550013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81198642F4C1D550013ABD0 /* SampleApp.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = SampleApp.app;
+			remoteRef = A81198632F4C1D550013ABD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A81198672F4C1D550013ABD0 /* SwiftSampleApp.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = SwiftSampleApp.app;
+			remoteRef = A81198662F4C1D550013ABD0 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		A85A13062F4B3515002E2E11 /* libem_proxy_static.a */ = {
@@ -5102,15 +6011,15 @@
 			target = BF58047A246A28F7008AE704 /* AltBackup */;
 			targetProxy = 0ED4AEC82E6DDB2A0039E2C0 /* PBXContainerItemProxy */;
 		};
-		A811734E2F4B8DE70013ABD0 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = "em_proxy-staticlib";
-			targetProxy = A811734D2F4B8DE70013ABD0 /* PBXContainerItemProxy */;
-		};
-		A81173502F4B8E090013ABD0 /* PBXTargetDependency */ = {
+		A81198692F4C1D740013ABD0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = "minimuxer-staticlib";
-			targetProxy = A811734F2F4B8E090013ABD0 /* PBXContainerItemProxy */;
+			targetProxy = A81198682F4C1D740013ABD0 /* PBXContainerItemProxy */;
+		};
+		A811986C2F4C1DB50013ABD0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = "em_proxy-staticlib";
+			targetProxy = A811986B2F4C1DB50013ABD0 /* PBXContainerItemProxy */;
 		};
 		A85A51592F4B48DE002E2E11 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -5276,7 +6185,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
 				EXECUTABLE_PREFIX = lib;
 				GCC_ENABLE_CPP_EXCEPTIONS = YES;
 				GCC_ENABLE_CPP_RTTI = YES;
@@ -5318,7 +6226,6 @@
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
 				EXECUTABLE_PREFIX = lib;
 				GCC_ENABLE_CPP_EXCEPTIONS = YES;
 				GCC_ENABLE_CPP_RTTI = YES;
@@ -5594,7 +6501,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = HXY2D2FQXT;
+				DEVELOPMENT_TEAM = B6C58C4T52;
 				EAGER_LINKING = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -5666,7 +6573,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = HXY2D2FQXT;
+				DEVELOPMENT_TEAM = B6C58C4T52;
 				EAGER_LINKING = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
