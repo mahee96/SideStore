@@ -153,16 +153,12 @@ def clean_spm_cache():
 # ----------------------------------------------------------
 
 def build():
-    run("make clean")
-    run("rm -rf ~/Library/Developer/Xcode/DerivedData/*", check=False)
     run("mkdir -p build/logs")
-
     run(
         "set -o pipefail && "
         "NSUnbufferedIO=YES make -B build "
         "2>&1 | tee -a build/logs/build.log | xcbeautify --renderer github-actions"
     )
-
     run("make fakesign | tee -a build/logs/build.log")
     run("make ipa | tee -a build/logs/build.log")
     run("zip -r -9 ./SideStore.dSYMs.zip ./SideStore.xcarchive/dSYMs")
