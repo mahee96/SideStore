@@ -253,7 +253,7 @@ def release_notes(tag):
 # ----------------------------------------------------------
 
 def deploy(repo, source_json, release_tag, short_commit, marketing_version, version, channel, bundle_id, ipa_name):
-    repo = Path(repo).resolve()
+    repo = (ROOT / repo).resolve()
     ipa_path = ROOT / ipa_name
 
     if not repo.exists():
