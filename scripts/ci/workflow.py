@@ -4,83 +4,114 @@ import sys
 import subprocess
 import datetime
 from pathlib import Path
+import time
+import json
 
 # REPO ROOT relative to script dir
 ROOT = Path(__file__).resolve().parents[2]
-
 
 # ----------------------------------------------------------
 # helpers
 # ----------------------------------------------------------
 
-def run(cmd, check=True):
+def run(cmd, check=True, cwd=None):
+    wd = cwd if cwd is not None else ROOT
     print(f"$ {cmd}", flush=True)
-    subprocess.run(cmd, shell=True, cwd=ROOT, check=check)
+    subprocess.run(cmd, shell=True, cwd=wd, check=check)
     print("", flush=True)
 
+def runAndGet(cmd, cwd=None):
+    wd = cwd if cwd is not None else ROOT
+    print(f"$ {cmd}", flush=True)
+    out = subprocess.check_output(
+        cmd,
+        shell=True,
+        cwd=wd,
+        text=True,
+    ).strip()
+    print(out, flush=True)
+    print("", flush=True)
+    return out
 
 def getenv(name, default=""):
     return os.environ.get(name, default)
-
 
 # ----------------------------------------------------------
 # SHARED
 # ----------------------------------------------------------
 
 def short_commit():
-    sha = subprocess.check_output(
-        "git rev-parse --short HEAD",
-        shell=True,
-        cwd=ROOT
-    ).decode().strip()
-    return sha
-
+    return runAndGet("git rev-parse --short HEAD")
 
 # ----------------------------------------------------------
-# VERSION BUMP
+# BUILD NUMBER RESERVATION
 # ----------------------------------------------------------
 
-def bump_beta():
-    date = datetime.datetime.now(datetime.UTC).strftime("%Y.%m.%d")
-    release_channel = getenv("RELEASE_CHANNEL", "beta")
-    build_file = ROOT / "build_number.txt"
+def reserve_build_number(repo, max_attempts=5):
+    repo = Path(repo).resolve()
+    version_json = repo / "version.json"
 
-    short = subprocess.check_output(
-        "git rev-parse --short HEAD",
-        shell=True,
-        cwd=ROOT
-    ).decode().strip()
+    def utc_now():
+        return datetime.datetime.now(datetime.UTC)\
+            .strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    def write(num):
+    def read():
+        if not version_json.exists():
+            return {"build": 0, "issued_at": utc_now()}
+        return json.loads(version_json.read_text())
+
+    def write(data):
+        version_json.write_text(json.dumps(data, indent=2) + "\n")
+
+    for _ in range(max_attempts):
+        run("git pull --rebase", check=False, cwd=repo)
+
+        data = read()
+        data["build"] += 1
+        data["issued_at"] = utc_now()
+
+        write(data)
+
+        run("git add version.json", check=False, cwd=repo)
         run(
-            f"""sed -e "/MARKETING_VERSION = .*/s/$/-{release_channel}.{date}.{num}+{short}/" -i '' {ROOT}/Build.xcconfig"""
+            f"git commit -m '{data.get('tag','build')} build no - {data['build']}' || true",
+            check=False,
+            cwd=repo,
         )
-        build_file.write_text(f"{date},{num}")
 
-    if not build_file.exists():
-        write(1)
-        return
+        rc = subprocess.call("git push", shell=True, cwd=repo)
 
-    last = build_file.read_text().strip().split(",")[1]
-    write(int(last) + 1)
+        if rc == 0:
+            print(f"Reserved build #{data['build']}")
+            return data["build"]
 
+        print("Push rejected, retrying...")
+        time.sleep(2)
+
+    raise SystemExit("Failed reserving build number")
 
 # ----------------------------------------------------------
-# VERSION EXTRACTION
+# MARKETING VERSION
 # ----------------------------------------------------------
 
-def extract_version():
-    v = subprocess.check_output(
-        "grep MARKETING_VERSION Build.xcconfig | sed -e 's/MARKETING_VERSION = //g'",
-        shell=True,
-        cwd=ROOT
-    ).decode().strip()
-    return v
+def get_marketing_version():
+    return runAndGet("grep MARKETING_VERSION Build.xcconfig | sed -e 's/MARKETING_VERSION = //g'")
 
+def set_marketing_version(qualified):
+    run(
+        f"sed -E "
+        f"'s/^MARKETING_VERSION = .*/MARKETING_VERSION = {qualified}/' "
+        f"-i '' {ROOT}/Build.xcconfig"
+    )
+
+def compute_qualified_version(marketing, build_num, channel, short):
+    date = datetime.datetime.now(datetime.UTC).strftime("%Y.%m.%d")
+    return f"{marketing}-{channel}.{date}.{build_num}+{short}"
 
 # ----------------------------------------------------------
 # CLEAN
 # ----------------------------------------------------------
+
 def clean():
     run("make clean")
 
@@ -107,9 +138,7 @@ def build():
 
     run("make fakesign | tee -a build/logs/build.log")
     run("make ipa | tee -a build/logs/build.log")
-
     run("zip -r -9 ./SideStore.dSYMs.zip ./SideStore.xcarchive/dSYMs")
-
 
 # ----------------------------------------------------------
 # TESTS BUILD
@@ -122,117 +151,192 @@ def tests_build():
         "2>&1 | tee -a build/logs/tests-build.log | xcbeautify --renderer github-actions"
     )
 
-
 # ----------------------------------------------------------
 # TESTS RUN
 # ----------------------------------------------------------
 
-def tests_run():
-    run("mkdir -p build/logs")
-    run("nohup make -B boot-sim-async </dev/null >> build/logs/tests-run.log 2>&1 &")
+def is_sim_booted(model):
+    out = runAndGet(f'xcrun simctl list devices "{model}"')
+    return "Booted" in out
 
-    run("make -B sim-boot-check | tee -a build/logs/tests-run.log")
+def boot_sim_async(model):
+    log = ROOT / "build/logs/tests-run.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
+
+    if is_sim_booted(model):
+        run(f'echo "Simulator {model} already booted." | tee -a {log}')
+        return
+
+    run(f'echo "Booting simulator {model} asynchronously..." | tee -a {log}')
+
+    with open(log, "a") as f:
+        subprocess.Popen(
+            ["xcrun", "simctl", "boot", model],
+            cwd=ROOT,
+            stdout=f,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+
+def boot_sim_sync(model):
+    run("mkdir -p build/logs")
+
+    for i in range(1, 7):
+        if is_sim_booted(model):
+            run('echo "Simulator booted." | tee -a build/logs/tests-run.log')
+            return
+
+        run(f'echo "Simulator not ready (attempt {i}/6), retrying in 10s..." | tee -a build/logs/tests-run.log')
+        time.sleep(10)
+
+    raise SystemExit("Simulator failed to boot")
+
+def tests_run(model):
+    run("mkdir -p build/logs")
+
+    if not is_sim_booted(model):
+        boot_sim_sync(model)
 
     run("make run-tests 2>&1 | tee -a build/logs/tests-run.log")
-
     run("zip -r -9 ./test-results.zip ./build/tests")
-
 
 # ----------------------------------------------------------
 # LOG ENCRYPTION
 # ----------------------------------------------------------
 
 def encrypt_logs(name):
-    pwd = getenv("BUILD_LOG_ZIP_PASSWORD", "12345")
-    run(
-        f'cd build/logs && zip -e -P "{pwd}" ../../{name}.zip *'
-    )
+    default_pwd = "12345"
+    pwd = getenv("BUILD_LOG_ZIP_PASSWORD", default_pwd)
 
+    if pwd == default_pwd:
+        print("Warning: BUILD_LOG_ZIP_PASSWORD not set, using fallback password")
+
+    run(f'cd build/logs && zip -e -P "{pwd}" ../../{name}.zip *')
 
 # ----------------------------------------------------------
 # RELEASE NOTES
 # ----------------------------------------------------------
+
 def release_notes(tag):
-    run(f"python3 generate_release_notes.py {tag}")
-
-
-# ----------------------------------------------------------
-# PUBLISH SOURCE.JSON
-# ----------------------------------------------------------
-def publish_apps(release_tag, short_commit):
-    repo = ROOT / "Dependencies/apps-v2.json"
-
-    if not repo.exists():
-        raise SystemExit("Dependencies/apps-v2.json repo missing")
-
-    # generate metadata + release notes
     run(
-        f"python3 generate_source_metadata.py "
-        f"--release-tag {release_tag} "
-        f"--short-commit {short_commit}"
+        f"python3 generate_release_notes.py "
+        f"{tag} "
+        f"--repo-root {ROOT} "
+        f"--output-dir {ROOT}"
     )
 
-    # update source.json using generated metadata
-    run("pushd Dependencies/apps-v2.json", check=False)
+# ----------------------------------------------------------
+# DEPLOY SOURCE.JSON
+# ----------------------------------------------------------
 
-    run("git config user.name 'GitHub Actions'", check=False)
-    run("git config user.email 'github-actions@github.com'", check=False)
+def deploy(repo, release_tag, short_commit, marketing_version, version):
+    repo = Path(repo).resolve()
 
-    run("python3 ../../scripts/update_source_metadata.py './_includes/source.json'")
+    if not repo.exists():
+        raise SystemExit(f"{repo} repo missing")
 
-    run("git add --verbose ./_includes/source.json", check=False)
-    run(f"git commit -m ' - updated for {short_commit} deployment' || true",check=False)
-    run("git push --verbose", check=False)
+    run(
+        f"python3 generate_source_metadata.py "
+        f"--repo-root {ROOT} "
+        f"--ipa {ROOT}/SideStore.ipa "
+        f"--output-dir {repo} "
+        f"--release-notes-dir {repo} "
+        f"--release-tag {release_tag} "
+        f"--version {version} "
+        f"--marketing-version {marketing_version} "
+        f"--short-commit {short_commit} "
+        f"--release-channel nightly "
+        f"--bundle-id com.SideStore.SideStore"
+    )
 
-    run("popd", check=False)
-    
+    try:
+        run("git config user.name 'GitHub Actions'", check=False, cwd=repo)
+        run("git config user.email 'github-actions@github.com'", check=False, cwd=repo)
+
+        run(
+            "python3 ../../scripts/update_source_metadata.py './_includes/source.json'",
+            cwd=repo,
+        )
+
+        run("git add --verbose ./_includes/source.json", check=False, cwd=repo)
+        run(
+            f"git commit -m ' - updated for {short_commit} deployment' || true",
+            check=False,
+            cwd=repo,
+        )
+        run("git push --verbose", check=False, cwd=repo)
+    finally:
+        pass
+
 # ----------------------------------------------------------
 # ENTRYPOINT
 # ----------------------------------------------------------
+
 COMMANDS = {
-    "commid-id"          : (short_commit,        0, ""),
-    "bump-beta"          : (bump_beta,           0, ""),
-    "version"            : (extract_version,     0, ""),
-    "clean"              : (clean,               0, ""),
-    "clean-derived-data" : (clean_derived_data,  0, ""),
-    "clean-spm-cache"    : (clean_spm_cache,     0, ""),
-    "build"              : (build,               0, ""),
-    "tests-build"        : (tests_build,         0, ""),
-    "tests-run"          : (tests_run,           0, ""),
-    "encrypt-build"      : (lambda: encrypt_logs("encrypted-build-logs"),       0, ""),
-    "encrypt-tests-build": (lambda: encrypt_logs("encrypted-tests-build-logs"), 0, ""),
-    "encrypt-tests-run"  : (lambda: encrypt_logs("encrypted-tests-run-logs"),   0, ""),
-    "release-notes"      : (release_notes,       1, "<tag>"),
-    "deploy"             : (publish_apps,        2, "<release_tag> <short_commit>"),
+    # ----------------------------------------------------------
+    # SHARED
+    # ----------------------------------------------------------
+    "commid-id"               : (short_commit,              0, ""),
+
+    # ----------------------------------------------------------
+    # VERSION / MARKETING
+    # ----------------------------------------------------------
+    "bump-beta"               : (bump_beta,                 0, ""),
+    "version"                 : (get_marketing_version,     0, ""),
+    "set-marketing-version"   : (set_marketing_version,     1, "<qualified_version>"),
+    "compute-qualified"       : (compute_qualified_version, 4, "<marketing> <build_num> <channel> <short_commit>"),
+    "reserve_build_number"    : (reserve_build_number,      1, "<repo>"),
+
+    # ----------------------------------------------------------
+    # CLEAN
+    # ----------------------------------------------------------
+    "clean"                   : (clean,                     0, ""),
+    "clean-derived-data"      : (clean_derived_data,        0, ""),
+    "clean-spm-cache"         : (clean_spm_cache,           0, ""),
+
+    # ----------------------------------------------------------
+    # BUILD
+    # ----------------------------------------------------------
+    "build"                   : (build,                     0, ""),
+
+    # ----------------------------------------------------------
+    # TESTS
+    # ----------------------------------------------------------
+    "tests-build"             : (tests_build,               0, ""),
+    "tests-run"               : (tests_run,                 1, "<model>"),
+    "boot-sim-async"          : (boot_sim_async,            1, "<model>"),
+    "boot-sim-sync"           : (boot_sim_sync,             0, ""),
+
+    # ----------------------------------------------------------
+    # LOG ENCRYPTION
+    # ----------------------------------------------------------
+    "encrypt-build"           : (lambda: encrypt_logs("encrypted-build-logs"),        0, ""),
+    "encrypt-tests-build"     : (lambda: encrypt_logs("encrypted-tests-build-logs"),  0, ""),
+    "encrypt-tests-run"       : (lambda: encrypt_logs("encrypted-tests-run-logs"),    0, ""),
+
+    # ----------------------------------------------------------
+    # RELEASE / DEPLOY
+    # ----------------------------------------------------------
+    "release-notes"           : (release_notes,             1, "<tag>"),
+    "deploy"                  : (deploy,                    5, "<repo> <release_tag> <short_commit> <marketing_version> <version>"),
 }
 
 def main():
-    def usage():
-        lines = ["Available commands:"]
-        for name, (_, argc, arg_usage) in COMMANDS.items():
-            suffix = f" {arg_usage}" if arg_usage else ""
-            lines.append(f"  - {name}{suffix}")
-        return "\n".join(lines)
-
     if len(sys.argv) < 2:
-        raise SystemExit(usage())
+        raise SystemExit("No command")
 
     cmd = sys.argv[1]
 
     if cmd not in COMMANDS:
-        raise SystemExit(
-            f"Unknown command '{cmd}'.\n\n{usage()}"
-        )
+        raise SystemExit(f"Unknown command '{cmd}'")
 
-    func, argc, arg_usage = COMMANDS[cmd]
-
-    if len(sys.argv) - 2 < argc:
-        suffix = f" {arg_usage}" if arg_usage else ""
-        raise SystemExit(f"Usage: workflow.py {cmd}{suffix}")
+    func, argc, _ = COMMANDS[cmd]
 
     args = sys.argv[2:2 + argc]
-    func(*args) if argc else func()
+    result = func(*args) if argc else func()
 
+    if result is not None:
+        print(result)
 
 if __name__ == "__main__":
     main()

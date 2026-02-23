@@ -23,87 +23,103 @@ jobs:
 
       - run: brew install ldid xcbeautify
 
-      - name: Restore Xcode/SwiftPM Cache (Exact match)
-        id: xcode-cache-restore
-        uses: actions/cache/restore@v3
-        with:
-          path: |
-            ~/Library/Developer/Xcode/DerivedData
-            ~/Library/Caches/org.swift.swiftpm
-          key: xcode-cache-build-${{ github.ref_name }}-${{ github.sha }}
-
-      - name: Restore Xcode/SwiftPM Cache (Last Available)
-        uses: actions/cache/restore@v3
-        with:
-          path: |
-            ~/Library/Developer/Xcode/DerivedData
-            ~/Library/Caches/org.swift.swiftpm
-          key: xcode-cache-build-${{ github.ref_name }}-
-
       # --------------------------------------------------
       # runtime env setup
       # --------------------------------------------------
+      - uses: actions/checkout@v4
+        if: ${{ inputs.is_beta }}
+        with:
+          repository: 'SideStore/beta-build-num'
+          ref: ${{ env.ref }}
+          token: ${{ secrets.CROSS_REPO_PUSH_KEY }}
+          path: 'Dependencies/beta-build-num'
+          fetch-depth: 1
 
-      - name: Short Commit SHA
+      - name: Setup
         run: |
-          echo "SHORT_COMMIT=$(python3 scripts/ci/workflow.py commid-id)" >> $GITHUB_ENV
+          BUILD_NUM=$(python3 scripts/ci/workflow.py reserve_build_number 'Dependencies/beta-build-num')
+          MARKETING_VERSION=$(python3 scripts/ci/workflow.py get-marketing-version)
+          SHORT_COMMIT=$(python3 scripts/ci/workflow.py commid-id)
 
-      - name: Version
-        run: |
-          echo "VERSION=$(python3 scripts/ci/workflow.py version)" >> $GITHUB_ENV
+          QUALIFIED_VERSION=$(python3 scripts/ci/workflow.py compute-qualified \
+              "$MARKETING_VERSION" \
+              "$BUILD_NUM" \
+              "${{ env.ref }}" \
+              "$SHORT_COMMIT")
+
+          echo "BUILD_NUM=$BUILD_NUM" >> $GITHUB_ENV
+          echo "MARKETING_VERSION=$MARKETING_VERSION" >> $GITHUB_ENV
+          echo "SHORT_COMMIT=$SHORT_COMMIT" >> $GITHUB_ENV
+          echo "VERSION=$QUALIFIED_VERSION" >> $GITHUB_ENV
+
+      - name: Restore Cache
+        id: xcode-cache
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData
+            ~/Library/Caches/org.swift.swiftpm
+          key: xcode-build-cache-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            xcode-build-cache-${{ github.ref_name }}-
 
      # --------------------------------------------------
       # build and test
       # --------------------------------------------------
-
-      - name: Clean previous build artifacts
+      - name: Clean
         if: contains(github.event.head_commit.message, '[--clean-build]')
         run: |
           python3 scripts/ci/workflow.py clean
           python3 scripts/ci/workflow.py clean-derived-data
           python3 scripts/ci/workflow.py clean-spm-cache
 
+      - name: Boot simulator (async)
+        run: |
+          mkdir -p build/logs
+          python3 scripts/ci/workflow.py boot-sim-async "iPhone 17 Pro"
+
       - name: Build
-        run: python3 scripts/ci/workflow.py build
+        id: build
+        env:
+          BUILD_LOG_ZIP_PASSWORD: ${{ secrets.BUILD_LOG_ZIP_PASSWORD }}
+        run: |
+          python3 scripts/ci/workflow.py build; STATUS=$?
+          python3 scripts/ci/workflow.py encrypt-build
+          echo "encrypted=true" >> $GITHUB_OUTPUT
+          exit $STATUS
 
       - name: Tests Build
+        id: test-build
         if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_BUILD == '1' }}
-        run: python3 scripts/ci/workflow.py tests-build
+        env:
+          BUILD_LOG_ZIP_PASSWORD: ${{ secrets.BUILD_LOG_ZIP_PASSWORD }}
+        run: |
+          python3 scripts/ci/workflow.py tests-build; STATUS=$?
+          python3 scripts/ci/workflow.py encrypt-tests-build
+          exit $STATUS
 
-      - name: Save Xcode & SwiftPM Cache
-        if: ${{ steps.xcode-cache-restore.outputs.cache-hit != 'true' }}
+      - name: Save Cache
+        if: ${{ steps.xcode-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v3
         with:
           path: |
             ~/Library/Developer/Xcode/DerivedData
             ~/Library/Caches/org.swift.swiftpm
-          key: xcode-cache-build-${{ github.ref_name }}-${{ github.sha }}
+          key: xcode-build-cache-${{ github.ref_name }}-${{ github.sha }}
 
       - name: Tests Run
-        if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_RUN == '1' }}
-        run: python3 scripts/ci/workflow.py tests-run
-
-      - name: Encrypt build logs
-        env:
-          BUILD_LOG_ZIP_PASSWORD: ${{ secrets.BUILD_LOG_ZIP_PASSWORD }}
-        run: python3 scripts/ci/workflow.py encrypt-build
-
-      - name: Encrypt tests-build logs
-        if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_BUILD == '1' }}
-        env:
-          BUILD_LOG_ZIP_PASSWORD: ${{ secrets.BUILD_LOG_ZIP_PASSWORD }}
-        run: python3 scripts/ci/workflow.py encrypt-tests-build
-
-      - name: Encrypt tests-run logs
+        id: test-run
         if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_RUN == '1' }}
         env:
           BUILD_LOG_ZIP_PASSWORD: ${{ secrets.BUILD_LOG_ZIP_PASSWORD }}
-        run: python3 scripts/ci/workflow.py encrypt-tests-run
+        run: |
+          python3 scripts/ci/workflow.py tests-run "iPhone 17 Pro"; STATUS=$?
+          python3 scripts/ci/workflow.py encrypt-tests-run
+          exit $STATUS
 
       # --------------------------------------------------
       # artifacts 
       # --------------------------------------------------
-
       - uses: actions/upload-artifact@v4
         with:
           name: encrypted-build-logs-${{ env.VERSION }}.zip
@@ -125,14 +141,19 @@ jobs:
         with:
           name: SideStore-${{ env.VERSION }}.ipa
           path: SideStore.ipa
-
       - uses: actions/upload-artifact@v4
         with:
           name: SideStore-${{ env.VERSION }}-dSYMs.zip
           path: SideStore.dSYMs.zip
 
       # --------------------------------------------------
-
+      # deploy 
+      # --------------------------------------------------
       - name: Deploy
         run: |
-          python3 scripts/ci/workflow.py deploy nightly $SHORT_COMMIT
+          python3 scripts/ci/workflow.py deploy \
+            Dependencies/apps-v2.json \
+            nightly \
+            "$SHORT_COMMIT" \
+            "$MARKETING_VERSION" \
+            "$VERSION"
