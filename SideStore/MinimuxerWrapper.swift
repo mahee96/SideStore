@@ -14,7 +14,6 @@ var isMinimuxerReady: Bool {
     return true
     #else
     return minimuxer.ready()
-    return true
     #endif
 }
 
@@ -38,7 +37,7 @@ func installProvisioningProfiles(_ profileData: Data) throws {
     #if targetEnvironment(simulator)
     print("installProvisioningProfiles(\(profileData)) is no-op on simulator")
     #else
-    minimuxer.install_provisioning_profile(profileData.toRustByteSlice().forRust())
+    try minimuxer.install_provisioning_profile(profileData.toRustByteSlice().forRust())
     #endif
 }
 
@@ -47,7 +46,7 @@ func removeApp(_ bundleId: String) throws {
     #if targetEnvironment(simulator)
     print("removeApp(\(bundleId)) is no-op on simulator")
     #else
-    minimuxer.remove_app(bundleId)
+    try minimuxer.remove_app(bundleId)
     #endif
 }
 
@@ -56,7 +55,7 @@ func yeetAppAFC(_ bundleId: String, _ rawBytes: Data) throws {
     #if targetEnvironment(simulator)
     print("yeetAppAFC(\(bundleId), \(rawBytes)) is no-op on simulator")
     #else
-    minimuxer.yeetAppAFC(bundleId, rawBytes.toRustByteSlice().forRust())
+    try minimuxer.yeet_app_afc(bundleId, rawBytes.toRustByteSlice().forRust())
     #endif
 }
 
@@ -65,7 +64,7 @@ func installIPA(_ bundleId: String) throws {
     #if targetEnvironment(simulator)
     print("installIPA(\(bundleId), \(rawBytes)) is no-op on simulator")
     #else
-    minimuxer.installIPA(bundleId)
+    try minimuxer.install_ipa(bundleId)
     #endif
 }
 
@@ -75,7 +74,7 @@ func fetchUDID() -> String? {
     print("fetchUDID() is no-op on simulator")
     return "XXXXX-XXXX-XXXXX-XXXX"
     #else
-    minimuxer.fetchUDID()?.toString()
+    return minimuxer.fetch_udid()?.toString()
     #endif
 }
 
