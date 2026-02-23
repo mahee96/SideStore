@@ -388,7 +388,13 @@ def main():
         raise SystemExit(f"Usage: workflow.py {cmd}{suffix}")
 
     args = sys.argv[2:2 + argc]
-    func(*args) if argc else func()
+
+    result = func(*args) if argc else func()
+
+    # ONLY real outputs go to stdout
+    if result is not None:
+        sys.stdout.write(str(result))
+        sys.stdout.flush()
 
 
 if __name__ == "__main__":
