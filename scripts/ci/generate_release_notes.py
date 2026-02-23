@@ -19,6 +19,20 @@ def run(cmd: str) -> str:
     return subprocess.check_output(cmd, shell=True, text=True).strip()
 
 
+def commit_exists(rev: str) -> bool:
+    if not rev:
+        return False
+    try:
+        subprocess.check_output(
+            f"git rev-parse --verify {rev}^{{commit}}",
+            shell=True,
+            stderr=subprocess.DEVNULL,
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
 def head_commit():
     return run("git rev-parse HEAD")
 
@@ -35,12 +49,8 @@ def repo_url():
 
 
 def commit_messages(start, end="HEAD"):
-    try:
-        out = run(f"git log {start}..{end} --pretty=format:%s")
-        return out.splitlines() if out else []
-    except subprocess.CalledProcessError:
-        fallback = run("git rev-parse HEAD~5")
-        return run(f"git log {fallback}..{end} --pretty=format:%s").splitlines()
+    out = run(f"git log {start}..{end} --pretty=format:%s")
+    return out.splitlines() if out else []
 
 
 def authors(range_expr, fmt="%an"):
@@ -76,9 +86,34 @@ def fmt_author(author):
 # release note generation
 # ----------------------------------------------------------
 
+def resolve_start_commit(last_successful: str):
+    if commit_exists(last_successful):
+        return last_successful
+
+    try:
+        return run("git rev-parse HEAD~10")
+    except Exception:
+        return first_commit()
+
 def generate_release_notes(last_successful, tag, branch):
     current = head_commit()
+
+    # fallback if missing/invalid
+    if not last_successful or not commit_exists(last_successful):
+        try:
+            last_successful = run("git rev-parse HEAD~10")
+        except Exception:
+            last_successful = first_commit()
+
     messages = commit_messages(last_successful, current)
+
+    # fallback if empty range
+    if not messages:
+        try:
+            last_successful = run("git rev-parse HEAD~10")
+        except Exception:
+            last_successful = first_commit()
+        messages = commit_messages(last_successful, current)
 
     section = f"{TAG_MARKER} {tag}\n"
     section += f"{HEADER_MARKER} What's Changed\n"
@@ -90,7 +125,8 @@ def generate_release_notes(last_successful, tag, branch):
             section += f"{fmt_msg(m)}\n"
 
     prev_authors = authors(branch)
-    new_authors = authors(f"{last_successful}..{current}") - prev_authors
+    recent_authors = authors(f"{last_successful}..{current}")
+    new_authors = recent_authors - prev_authors
 
     if new_authors:
         section += f"\n{HEADER_MARKER} New Contributors\n"
@@ -170,7 +206,7 @@ def update_release_md(existing, new_section, tag):
 # retrieval
 # ----------------------------------------------------------
 
-def retrieve_tag(tag, file_path):
+def retrieve_tag(tag, file_path: Path):
     if not file_path.exists():
         return ""
 
@@ -209,30 +245,20 @@ def main():
             "  generate_release_notes.py --retrieve <tag> [--output-dir DIR]"
         )
 
-    # parse optional output dir
     output_dir = Path.cwd()
 
     if "--output-dir" in args:
         idx = args.index("--output-dir")
-        try:
-            output_dir = Path(args[idx + 1]).resolve()
-        except IndexError:
-            sys.exit("Missing value for --output-dir")
-
+        output_dir = Path(args[idx + 1]).resolve()
         del args[idx:idx + 2]
 
     output_dir.mkdir(parents=True, exist_ok=True)
     release_file = output_dir / "release-notes.md"
 
-    # retrieval mode
     if args[0] == "--retrieve":
-        if len(args) < 2:
-            sys.exit("Missing tag after --retrieve")
-
         print(retrieve_tag(args[1], release_file))
         return
 
-    # generation mode
     last_successful = args[0]
     tag = args[1] if len(args) > 1 else head_commit()
     branch = args[2] if len(args) > 2 else (
@@ -241,12 +267,7 @@ def main():
 
     new_section = generate_release_notes(last_successful, tag, branch)
 
-    existing = (
-        release_file.read_text()
-        if release_file.exists()
-        else ""
-    )
-
+    existing = release_file.read_text() if release_file.exists() else ""
     updated = update_release_md(existing, new_section, tag)
 
     release_file.write_text(updated)

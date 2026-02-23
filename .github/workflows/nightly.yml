@@ -16,6 +16,8 @@ jobs:
     runs-on: macos-26
     env:
       REF_NAME: nightly
+      CHANNEL: nightly
+      BUNDLE_ID: com.SideStore.SideStore
 
     steps:
       - uses: actions/checkout@v4
@@ -166,13 +168,22 @@ jobs:
       # --------------------------------------------------
       - name: Deploy
         run: |
+          PRODUCT_NAME=$(python3 scripts/ci/workflow.py get-product-name)
+          BUNDLE_ID=$(python3 scripts/ci/workflow.py get-bundle-id)
+          SOURCE_JSON="_includes/source.json"
+          IPA_NAME="$PRODUCT_NAME.ipa"
+          LAST_SUCCESSFUL_COMMIT=$(python3 scripts/ci/workflow.py last-successful-commit \
+            "${{ github.workflow }}" "$CHANNEL")
+
+
           python3 scripts/ci/workflow.py deploy \
             Dependencies/apps-v2.json \
-            "_includes/source.json" \
-            "${{ env.REF_NAME }}" \
+            "$SOURCE_JSON" \
+            "$REF_NAME" \
             "$SHORT_COMMIT" \
             "$MARKETING_VERSION" \
             "$VERSION" \
-            "${{ env.REF_NAME }}" \
-            "com.SideStore.SideStore" \
-            "SideStore.ipa"
+            "$CHANNEL" \
+            "$BUNDLE_ID" \
+            "$IPA_NAME" \
+            "$LAST_SUCCESSFUL_COMMIT"

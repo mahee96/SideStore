@@ -5,23 +5,6 @@ import sys
 from pathlib import Path
 
 
-'''
-metadata.json template
-
-{
-  "version_ipa": "0.0.0",
-  "version_date": "2000-12-18T00:00:00Z",
-  "is_beta": true,
-  "release_channel": "alpha",
-  "size": 0,
-  "sha256": "",
-  "localized_description": "Invalid Update",
-  "download_url": "https://github.com/SideStore/SideStore/releases/download/0.0.0/SideStore.ipa",
-  "bundle_identifier": "com.SideStore.SideStore"
-}
-'''
-
-
 # ----------------------------------------------------------
 # args
 # ----------------------------------------------------------
@@ -89,7 +72,7 @@ RELEASE_CHANNEL = RELEASE_CHANNEL.lower()
 
 
 # ----------------------------------------------------------
-# load or create source.json
+# load source.json
 # ----------------------------------------------------------
 
 if source_file.exists():
@@ -108,7 +91,7 @@ if int(data.get("version", 1)) < 2:
 
 
 # ----------------------------------------------------------
-# ensure app entry exists
+# locate app
 # ----------------------------------------------------------
 
 apps = data.setdefault("apps", [])
@@ -128,7 +111,7 @@ if app is None:
 
 
 # ----------------------------------------------------------
-# update logic 
+# update storefront metadata (stable only)
 # ----------------------------------------------------------
 
 if RELEASE_CHANNEL == "stable":
@@ -141,6 +124,11 @@ if RELEASE_CHANNEL == "stable":
         "downloadURL": DOWNLOAD_URL,
     })
 
+
+# ----------------------------------------------------------
+# releaseChannels update (ORIGINAL FORMAT)
+# ----------------------------------------------------------
+
 channels = app.setdefault("releaseChannels", [])
 
 new_version = {
@@ -152,19 +140,31 @@ new_version = {
     "sha256": SHA256,
 }
 
-tracks = [t for t in channels if t.get("track") == RELEASE_CHANNEL]
+# find track
+tracks = [
+    t for t in channels
+    if isinstance(t, dict) and t.get("track") == RELEASE_CHANNEL
+]
 
 if len(tracks) > 1:
     print(f"Multiple tracks named {RELEASE_CHANNEL}")
     sys.exit(1)
 
 if not tracks:
+    # create new track at top (original behaviour)
     channels.insert(0, {
         "track": RELEASE_CHANNEL,
         "releases": [new_version],
     })
 else:
-    tracks[0]["releases"][0] = new_version
+    track = tracks[0]
+    releases = track.setdefault("releases", [])
+
+    if not releases:
+        releases.append(new_version)
+    else:
+        # replace top entry only (original logic)
+        releases[0] = new_version
 
 
 # ----------------------------------------------------------
