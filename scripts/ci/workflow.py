@@ -17,21 +17,32 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def run(cmd, check=True, cwd=None):
     wd = cwd if cwd is not None else ROOT
-    print(f"$ {cmd}", flush=True)
-    subprocess.run(cmd, shell=True, cwd=wd, check=check)
-    print("", flush=True)
-
-def runAndGet(cmd, cwd=None):
-    wd = cwd if cwd is not None else ROOT
-    print(f"$ {cmd}", flush=True)
-    out = subprocess.check_output(
+    print(f"$ {cmd}", flush=True, file=sys.stderr)
+    subprocess.run(
         cmd,
         shell=True,
         cwd=wd,
+        check=check,
+        stdout=sys.stderr,
+        stderr=sys.stderr,
+    )
+    print("", flush=True, file=sys.stderr)
+
+def runAndGet(cmd, cwd=None):
+    wd = cwd if cwd is not None else ROOT
+    print(f"$ {cmd}", flush=True, file=sys.stderr)
+    result = subprocess.run(
+        cmd,
+        shell=True,
+        cwd=wd,
+        stdout=subprocess.PIPE,
+        stderr=sys.stderr,
         text=True,
-    ).strip()
-    print(out, flush=True)
-    print("", flush=True)
+        check=True,
+    )
+    out = result.stdout.strip()
+    print(out, flush=True, file=sys.stderr)
+    print("", flush=True, file=sys.stderr)
     return out
 
 def getenv(name, default=""):
@@ -84,10 +95,10 @@ def reserve_build_number(repo, max_attempts=5):
         rc = subprocess.call("git push", shell=True, cwd=repo)
 
         if rc == 0:
-            print(f"Reserved build #{data['build']}")
+            print(f"Reserved build #{data['build']}", file=sys.stderr)
             return data["build"]
 
-        print("Push rejected, retrying...")
+        print("Push rejected, retrying...", file=sys.stderr)
         time.sleep(2)
 
     raise SystemExit("Failed reserving build number")
@@ -211,7 +222,7 @@ def encrypt_logs(name):
     pwd = getenv("BUILD_LOG_ZIP_PASSWORD", default_pwd)
 
     if pwd == default_pwd:
-        print("Warning: BUILD_LOG_ZIP_PASSWORD not set, using fallback password")
+        print("Warning: BUILD_LOG_ZIP_PASSWORD not set, using fallback password", file=sys.stderr)
 
     run(f'cd build/logs && zip -e -P "{pwd}" ../../{name}.zip *')
 
@@ -279,10 +290,10 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
             rc = subprocess.call("git push", shell=True)
 
             if rc == 0:
-                print("Deploy push succeeded")
+                print("Deploy push succeeded", file=sys.stderr)
                 break
 
-            print(f"Push rejected (attempt {attempt}/{max_attempts}), retrying...")
+            print(f"Push rejected (attempt {attempt}/{max_attempts}), retrying...", file=sys.stderr)
             time.sleep(0.5)
         else:
             raise SystemExit("Deploy push failed after retries")
