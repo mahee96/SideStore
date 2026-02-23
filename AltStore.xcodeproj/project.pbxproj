@@ -10,9 +10,13 @@
 		A82067C42D03E0DE00645C0D /* SemanticVersion in Frameworks */ = {isa = PBXBuildFile; productRef = A82067C32D03E0DE00645C0D /* SemanticVersion */; };
 		A83FE3672EC90482005ACE9A /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = A83FE3662EC90482005ACE9A /* Starscream */; };
 		A83FE3772EC905E3005ACE9A /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = A83FE3762EC905E3005ACE9A /* KeychainAccess */; };
-		A859ED5C2D1EE827003DCC58 /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; };
-		A859ED5D2D1EE827003DCC58 /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A85AED4C2F4B2D32002E2E11 /* libminimuxer_swift.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 191E5FAB290A5D92001A3B7C /* libminimuxer_swift.a */; };
+		A8635D062F4CF16D00E66784 /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A8635D052F4CF16D00E66784 /* OpenSSL.xcframework */; };
+		A8635D072F4CF16D00E66784 /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A8635D052F4CF16D00E66784 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		A8635D082F4CF17A00E66784 /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A8635D052F4CF16D00E66784 /* OpenSSL.xcframework */; };
+		A8635D092F4CF17A00E66784 /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A8635D052F4CF16D00E66784 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		A8635D0B2F4CF1A100E66784 /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A8635D052F4CF16D00E66784 /* OpenSSL.xcframework */; };
+		A8635D0C2F4CF1A100E66784 /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A8635D052F4CF16D00E66784 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A8945AA62D059B6100D86CBE /* Roxas.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A8945AA52D059B6100D86CBE /* Roxas.framework */; };
 		A8A5ABEE2F4C2CFC00572B4A /* em_proxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A5A7ED2F4C2CFC00572B4A /* em_proxy.swift */; };
 		A8A5AC192F4C2D1800572B4A /* libminimuxer_static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8A5AC032F4C2CFC00572B4A /* libminimuxer_static.a */; };
@@ -25,10 +29,6 @@
 		A8C2260E2EC9039A00047C0D /* Nuke in Frameworks */ = {isa = PBXBuildFile; productRef = A8C2260D2EC9039A00047C0D /* Nuke */; };
 		A8C6D50C2D1EE87600DF01F1 /* AltSign-Static in Frameworks */ = {isa = PBXBuildFile; productRef = A8C6D50B2D1EE87600DF01F1 /* AltSign-Static */; };
 		A8C6D5122D1EE8AF00DF01F1 /* AltSign-Static in Frameworks */ = {isa = PBXBuildFile; productRef = A8C6D5112D1EE8AF00DF01F1 /* AltSign-Static */; };
-		A8C6D5132D1EE8D700DF01F1 /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; };
-		A8C6D5142D1EE8D700DF01F1 /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		A8EEDAF32F4B1A0F00F2436D /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; };
-		A8EEDAF42F4B1A0F00F2436D /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A8FAC1CC2F4B51980061A851 /* libimobiledevice.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8FABA492F4B50D00061A851 /* libimobiledevice.a */; };
 		A8FAC1F72F4B519A0061A851 /* libem_proxy_swift.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8FABA4A2F4B50D00061A851 /* libem_proxy_swift.a */; };
 		BF1614F1250822F100767AEA /* Roxas.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BFD247862284BB3B00981D42 /* Roxas.framework */; };
@@ -2053,13 +2053,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		A859ED5E2D1EE827003DCC58 /* Embed Frameworks */ = {
+		A8635D0A2F4CF17A00E66784 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				A859ED5D2D1EE827003DCC58 /* OpenSSL.xcframework in Embed Frameworks */,
+				A8635D092F4CF17A00E66784 /* OpenSSL.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2070,7 +2070,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				A8C6D5142D1EE8D700DF01F1 /* OpenSSL.xcframework in Embed Frameworks */,
+				A8635D0C2F4CF1A100E66784 /* OpenSSL.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2081,7 +2081,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				A8EEDAF42F4B1A0F00F2436D /* OpenSSL.xcframework in Embed Frameworks */,
+				A8635D072F4CF16D00E66784 /* OpenSSL.xcframework in Embed Frameworks */,
 				BF1614F2250822F100767AEA /* Roxas.framework in Embed Frameworks */,
 				BF66EE862501AE50007EE018 /* AltStoreCore.framework in Embed Frameworks */,
 			);
@@ -2135,7 +2135,6 @@
 		A81197312F4C1C710013ABD0 /* Roxas.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Roxas.xcodeproj; sourceTree = "<group>"; };
 		A81197342F4C1C710013ABD0 /* em_proxy.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = em_proxy.xcodeproj; sourceTree = "<group>"; };
 		A81197362F4C1C710013ABD0 /* minimuxer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = minimuxer.xcodeproj; sourceTree = "<group>"; };
-		A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */ = {isa = PBXFileReference; expectedSignature = "AppleDeveloperProgram:67RAULRX93:Marcin Krzyzanowski"; lastKnownFileType = wrapper.xcframework; name = OpenSSL.xcframework; path = Dependencies/AltSign/Dependencies/OpenSSL/Frameworks/OpenSSL.xcframework; sourceTree = "<group>"; };
 		A85A0E472F4B34EF002E2E11 /* libgeneral.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libgeneral.xcodeproj; sourceTree = "<group>"; };
 		A85A0E6B2F4B34EF002E2E11 /* libfragmentzip.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libfragmentzip.xcodeproj; sourceTree = "<group>"; };
 		A85A10DD2F4B34EF002E2E11 /* SampleApp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = SampleApp.xcodeproj; sourceTree = "<group>"; };
@@ -2168,6 +2167,7 @@
 		A85AEC612F4B22F6002E2E11 /* Roxas.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Roxas.xcodeproj; sourceTree = "<group>"; };
 		A85AEC662F4B22F6002E2E11 /* em_proxy.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = em_proxy.xcodeproj; sourceTree = "<group>"; };
 		A85AEC682F4B22F6002E2E11 /* minimuxer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = minimuxer.xcodeproj; sourceTree = "<group>"; };
+		A8635D052F4CF16D00E66784 /* OpenSSL.xcframework */ = {isa = PBXFileReference; expectedSignature = "AppleDeveloperProgram:67RAULRX93:Marcin Krzyzanowski"; lastKnownFileType = wrapper.xcframework; name = OpenSSL.xcframework; path = Dependencies/AltSign/Dependencies/OpenSSL.xcframework; sourceTree = "<group>"; };
 		A8945AA52D059B6100D86CBE /* Roxas.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Roxas.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A8A5A7E82F4C2CFC00572B4A /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		A8A5A7E92F4C2CFC00572B4A /* build.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = build.rs; sourceTree = "<group>"; };
@@ -2621,7 +2621,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A8C6D5132D1EE8D700DF01F1 /* OpenSSL.xcframework in Frameworks */,
+				A8635D0B2F4CF1A100E66784 /* OpenSSL.xcframework in Frameworks */,
 				BF580498246A3D19008AE704 /* UIKit.framework in Frameworks */,
 				A8C6D5122D1EE8AF00DF01F1 /* AltSign-Static in Frameworks */,
 			);
@@ -2631,9 +2631,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A8635D082F4CF17A00E66784 /* OpenSSL.xcframework in Frameworks */,
 				A8945AA62D059B6100D86CBE /* Roxas.framework in Frameworks */,
 				A82067C42D03E0DE00645C0D /* SemanticVersion in Frameworks */,
-				A859ED5C2D1EE827003DCC58 /* OpenSSL.xcframework in Frameworks */,
 				A8C6D50C2D1EE87600DF01F1 /* AltSign-Static in Frameworks */,
 				A83FE3772EC905E3005ACE9A /* KeychainAccess in Frameworks */,
 			);
@@ -2656,11 +2656,11 @@
 				A85AED4C2F4B2D32002E2E11 /* libminimuxer_swift.a in Frameworks */,
 				A8B646012D70C23E00125819 /* MarkdownKit in Frameworks */,
 				A8C2260E2EC9039A00047C0D /* Nuke in Frameworks */,
+				A8635D062F4CF16D00E66784 /* OpenSSL.xcframework in Frameworks */,
 				A83FE3672EC90482005ACE9A /* Starscream in Frameworks */,
 				BF1614F1250822F100767AEA /* Roxas.framework in Frameworks */,
 				A8A5C8722F4C68F600572B4A /* libfragmentzip.a in Frameworks */,
 				BF66EE852501AE50007EE018 /* AltStoreCore.framework in Frameworks */,
-				A8EEDAF32F4B1A0F00F2436D /* OpenSSL.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4174,11 +4174,11 @@
 		BFD247852284BB3300981D42 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A8635D052F4CF16D00E66784 /* OpenSSL.xcframework */,
 				A8A5C8712F4C68F600572B4A /* libfragmentzip.a */,
 				A8A5C86F2F4C68EA00572B4A /* libfragmentzip.a */,
 				A8A5B0A52F4C4C7200572B4A /* libem_proxy_static.a */,
 				A8A5B0A32F4C4C6700572B4A /* libem_proxy_static.a */,
-				A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */,
 				BF580497246A3D19008AE704 /* UIKit.framework */,
 				BFD247862284BB3B00981D42 /* Roxas.framework */,
 				A8945AA52D059B6100D86CBE /* Roxas.framework */,
@@ -4285,7 +4285,7 @@
 				BF66EE7A2501AE50007EE018 /* Sources */,
 				BF66EE7B2501AE50007EE018 /* Frameworks */,
 				BF66EE7C2501AE50007EE018 /* Resources */,
-				A859ED5E2D1EE827003DCC58 /* Embed Frameworks */,
+				A8635D0A2F4CF17A00E66784 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
