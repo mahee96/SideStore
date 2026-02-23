@@ -1,13 +1,13 @@
 //
 //  EMProxyWrwapper.swift
-//  AltStore
+//  SideStore
 //
 //  Created by Magesh K on 22/02/26.
 //  Copyright © 2026 SideStore. All rights reserved.
 //
 
 import Foundation
-import em_proxy
+private import em_proxy
 
 public func startEMProxy(bind_addr: String) {
     #if targetEnvironment(simulator)
