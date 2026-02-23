@@ -93,7 +93,7 @@ def reserve_build_number(repo, max_attempts=5):
     def write(data):
         version_json.write_text(json.dumps(data, indent=2) + "\n")
 
-    for _ in range(max_attempts):
+    for attempt in range(max_attempts):
         run("git fetch --depth=1 origin HEAD", check=False, cwd=repo)
         run("git reset --hard FETCH_HEAD", check=False, cwd=repo)
 
@@ -104,6 +104,13 @@ def reserve_build_number(repo, max_attempts=5):
         write(data)
 
         run("git add version.json", check=False, cwd=repo)
+        
+        print("---- DEBUG reserve_build_number ----", file=sys.stderr)
+        print(f"attempt: {attempt}", file=sys.stderr)
+        print(f"data: {data!r}", file=sys.stderr)
+        print(version_json.read_text(), file=sys.stderr)
+        print("------------------------------------", file=sys.stderr)
+
         run(f"git commit -m '{data['tag']} - build no: {data['build']}' || true", check=False, cwd=repo)
 
         rc = subprocess.call("git push", shell=True, cwd=repo)
