@@ -56,16 +56,24 @@ jobs:
         with:
           xcode-version: '26.2'
 
-      - name: Restore Cache
-        id: xcode-cache
+      - name: Restore Cache (exact)
+        id: xcode-cache-exact
         uses: actions/cache/restore@v3
         with:
           path: |
             ~/Library/Developer/Xcode/DerivedData
             ~/Library/Caches/org.swift.swiftpm
           key: xcode-build-cache-${{ github.ref_name }}-${{ github.sha }}
-          restore-keys: |
-            xcode-build-cache-${{ github.ref_name }}-
+
+      - name: Restore Cache (last)
+        if: steps.xcode-cache-exact.outputs.cache-hit != 'true'
+        id: xcode-cache-fallback
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData
+            ~/Library/Caches/org.swift.swiftpm
+          key: xcode-build-cache-${{ github.ref_name }}-
 
      # --------------------------------------------------
       # build and test
@@ -104,7 +112,7 @@ jobs:
           exit $STATUS
 
       - name: Save Cache
-        if: ${{ steps.xcode-cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.xcode-cache-fallback.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v3
         with:
           path: |
