@@ -264,8 +264,8 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
 
     run(f"pushd {repo}", check=True)
     try:
-        # source_json is RELATIVE to repo
-        if not Path(source_json).exists():
+        source_path = repo / source_json
+        if not source_path.exists():
             raise SystemExit(f"{source_json} missing inside repo")
 
         run(

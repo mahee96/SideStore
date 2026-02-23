@@ -167,10 +167,10 @@ jobs:
           python3 scripts/ci/workflow.py deploy \
             Dependencies/apps-v2.json \
             "_includes/source.json" \
-            "${{ env.ref_name }}" \
+            "${{ env.ref }}" \
             "$SHORT_COMMIT" \
             "$MARKETING_VERSION" \
             "$VERSION" \
-            "${{ env.ref_name }}" \
+            "${{ env.ref }}" \
             "com.SideStore.SideStore" \
             "SideStore.ipa"
