@@ -255,7 +255,7 @@ def release_notes(tag):
 def deploy(repo, source_json, release_tag, short_commit, marketing_version, version, channel, bundle_id, ipa_name):
     repo = (ROOT / repo).resolve()
     ipa_path = ROOT / ipa_name
-
+    source_path = repo / source_json
 
     if not repo.exists():
         raise SystemExit(f"{repo} repo missing")
@@ -263,58 +263,47 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
     if not ipa_path.exists():
         raise SystemExit(f"{ipa_path} missing")
 
-    pushed = False
-    if Path.cwd().resolve() != repo:
-        run(f"pushd {repo}", check=True)
-        pushed = True
+    if not source_path.exists():
+        raise SystemExit(f"{source_json} missing inside repo")
 
-    try:
-        source_path = repo / source_json
-        if not source_path.exists():
-            raise SystemExit(f"{source_json} missing inside repo")
+    run(
+        f"python3 {ROOT}/generate_source_metadata.py "
+        f"--repo-root {ROOT} "
+        f"--ipa {ipa_path} "
+        f"--output-dir . "
+        f"--release-notes-dir . "
+        f"--release-tag {release_tag} "
+        f"--version {version} "
+        f"--marketing-version {marketing_version} "
+        f"--short-commit {short_commit} "
+        f"--release-channel {channel} "
+        f"--bundle-id {bundle_id}"
+    )
 
-        run(
-            f"python3 {ROOT}/generate_source_metadata.py "
-            f"--repo-root {ROOT} "
-            f"--ipa {ipa_path} "
-            f"--output-dir . "
-            f"--release-notes-dir . "
-            f"--release-tag {release_tag} "
-            f"--version {version} "
-            f"--marketing-version {marketing_version} "
-            f"--short-commit {short_commit} "
-            f"--release-channel {channel} "
-            f"--bundle-id {bundle_id}"
-        )
+    run("git config user.name 'GitHub Actions'", check=False)
+    run("git config user.email 'github-actions@github.com'", check=False)
 
-        run("git config user.name 'GitHub Actions'", check=False)
-        run("git config user.email 'github-actions@github.com'", check=False)
+    max_attempts = 5
+    for attempt in range(1, max_attempts + 1):
+        if attempt > 1:
+            run("git fetch --depth=1 origin HEAD", check=False, cwd=repo)
+            run("git reset --hard FETCH_HEAD", check=False, cwd=repo)
 
+        # regenerate after reset so we don't lose changes
         run(f"python3 {ROOT}/scripts/update_source_metadata.py '{source_json}'")
+        run(f"git add --verbose {source_json}", check=False)
+        run(f"git commit -m '{release_tag} - deployed {version}' || true", check=False)
 
-        max_attempts = 5
-        for attempt in range(1, max_attempts + 1):
-            run("git fetch --depth=1 origin HEAD", check=False)
-            run("git reset --hard FETCH_HEAD", check=False)
+        rc = subprocess.call("git push", shell=True)
 
-            # regenerate after reset so we don't lose changes
-            run(f"python3 {ROOT}/scripts/update_source_metadata.py '{source_json}'")
-            run(f"git add --verbose {source_json}", check=False)
-            run(f"git commit -m '{release_tag} - deployed {version}' || true", check=False)
+        if rc == 0:
+            print("Deploy push succeeded", file=sys.stderr)
+            break
 
-            rc = subprocess.call("git push", shell=True)
-
-            if rc == 0:
-                print("Deploy push succeeded", file=sys.stderr)
-                break
-
-            print(f"Push rejected (attempt {attempt}/{max_attempts}), retrying...", file=sys.stderr)
-            time.sleep(0.5)
-        else:
-            raise SystemExit("Deploy push failed after retries")
-
-    finally:
-        if pushed: run("popd", check=False)
+        print(f"Push rejected (attempt {attempt}/{max_attempts}), retrying...", file=sys.stderr)
+        time.sleep(0.5)
+    else:
+        raise SystemExit("Deploy push failed after retries")
 
 # ----------------------------------------------------------
 # ENTRYPOINT
