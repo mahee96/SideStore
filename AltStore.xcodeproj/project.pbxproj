@@ -7,9 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A81173512F4B8E9E0013ABD0 /* libfragmentzip.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A811732F2F4B8DBD0013ABD0 /* libfragmentzip.a */; };
 		A811986A2F4C1D830013ABD0 /* libminimuxer_static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A81198522F4C1D550013ABD0 /* libminimuxer_static.a */; };
 		A811986D2F4C1DBB0013ABD0 /* libem_proxy_static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A81198402F4C1D550013ABD0 /* libem_proxy_static.a */; };
+		A81198842F4C27640013ABD0 /* libfragmentzip.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A811984C2F4C1D550013ABD0 /* libfragmentzip.a */; };
 		A82067C42D03E0DE00645C0D /* SemanticVersion in Frameworks */ = {isa = PBXBuildFile; productRef = A82067C32D03E0DE00645C0D /* SemanticVersion */; };
 		A83FE3672EC90482005ACE9A /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = A83FE3662EC90482005ACE9A /* Starscream */; };
 		A83FE3772EC905E3005ACE9A /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = A83FE3762EC905E3005ACE9A /* KeychainAccess */; };
@@ -1959,6 +1959,15 @@
 			);
 			target = BFD247692284B9A500981D42 /* SideStore */;
 		};
+		A81198822F4C253E0013ABD0 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"minimuxer/minimuxer-helpers.swift",
+				minimuxer/minimuxer.swift,
+				minimuxer/SwiftBridgeCore.swift,
+			);
+			target = 191E5FAA290A5D92001A3B7C /* minimuxer */;
+		};
 		A85A51AD2F4B4CB8002E2E11 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -2208,7 +2217,7 @@
 		A8EEC3482F4B0D8600F2436D /* Shared */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC36A2F4B0D8700F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8EEC36C2F4B0D8700F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8EEC36B2F4B0D8700F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Shared; sourceTree = "<group>"; };
 		A8EEC3B92F4B0EFC00F2436D /* AltWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC3CA2F4B0EFC00F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = AltWidget; sourceTree = "<group>"; };
 		A8EEC3D92F4B0FC800F2436D /* AltBackup */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC3E22F4B0FC800F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = AltBackup; sourceTree = "<group>"; };
-		A8EEC6EF2F4B106C00F2436D /* Dependencies */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A81173592F4B8F4B0013ABD0 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A85A51AD2F4B4CB8002E2E11 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8CCC46C2F4B6A5600B0089A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Dependencies; sourceTree = "<group>"; };
+		A8EEC6EF2F4B106C00F2436D /* Dependencies */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A81173592F4B8F4B0013ABD0 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A85A51AD2F4B4CB8002E2E11 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A81198822F4C253E0013ABD0 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8CCC46C2F4B6A5600B0089A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Dependencies; sourceTree = "<group>"; };
 		A8EEC71D2F4B10D900F2436D /* xcconfigs */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = xcconfigs; sourceTree = "<group>"; };
 		A8EEC8412F4B146A00F2436D /* AltStore */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC8CB2F4B146B00F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8EEC8CC2F4B146B00F2436D /* PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet */, A8FAC1FE2F4B52F40061A851 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8EEC8CD2F4B146B00F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = AltStore; sourceTree = "<group>"; };
 		A8EECF2A2F4B195000F2436D /* SideStore */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EECF492F4B195000F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8EECF4A2F4B195000F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = SideStore; sourceTree = "<group>"; };
@@ -2268,10 +2277,10 @@
 				A8FAC1CC2F4B51980061A851 /* libimobiledevice.a in Frameworks */,
 				A8FAC1F72F4B519A0061A851 /* libem_proxy.a in Frameworks */,
 				A85AED4C2F4B2D32002E2E11 /* libminimuxer.a in Frameworks */,
-				A81173512F4B8E9E0013ABD0 /* libfragmentzip.a in Frameworks */,
 				A8B646012D70C23E00125819 /* MarkdownKit in Frameworks */,
 				A8C2260E2EC9039A00047C0D /* Nuke in Frameworks */,
 				A83FE3672EC90482005ACE9A /* Starscream in Frameworks */,
+				A81198842F4C27640013ABD0 /* libfragmentzip.a in Frameworks */,
 				BF1614F1250822F100767AEA /* Roxas.framework in Frameworks */,
 				BF66EE852501AE50007EE018 /* AltStoreCore.framework in Frameworks */,
 				A8EEDAF32F4B1A0F00F2436D /* OpenSSL.xcframework in Frameworks */,
@@ -6634,9 +6643,8 @@
 				LD_WARN_UNUSED_DYLIBS = YES;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/SideStore/libfragmentzip",
+					"$(PROJECT_DIR)/Dependencies/libfragmentzip",
 					"$(PROJECT_DIR)/Dependencies/libcurl",
-					"$(PROJECT_DIR)/SideStore/em_proxy",
 				);
 				LLVM_LTO = YES_THIN;
 				MARKETING_VERSION = "$(inherited)";
@@ -6683,9 +6691,8 @@
 				LD_WARN_UNUSED_DYLIBS = YES;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/SideStore/libfragmentzip",
+					"$(PROJECT_DIR)/Dependencies/libfragmentzip",
 					"$(PROJECT_DIR)/Dependencies/libcurl",
-					"$(PROJECT_DIR)/SideStore/em_proxy",
 				);
 				LLVM_LTO = YES_THIN;
 				MARKETING_VERSION = "$(inherited)";
