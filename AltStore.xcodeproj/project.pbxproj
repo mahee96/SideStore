@@ -20,7 +20,7 @@
 		A8A5B0822F4C373200572B4A /* minimuxer-helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A5AAF02F4C2CFC00572B4A /* minimuxer-helpers.swift */; };
 		A8A5B0832F4C374400572B4A /* SwiftBridgeCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A5AAF42F4C2CFC00572B4A /* SwiftBridgeCore.swift */; };
 		A8A5B7E82F4C4CDB00572B4A /* libem_proxy_static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8A5B7C32F4C4C8600572B4A /* libem_proxy_static.a */; };
-		A8A5BFCD2F4C4E1F00572B4A /* libfragmentzip.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8A5BFC92F4C4E0700572B4A /* libfragmentzip.a */; };
+		A8A5C7242F4C515F00572B4A /* libfragmentzip.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8A5C7092F4C503C00572B4A /* libfragmentzip.a */; };
 		A8B646012D70C23E00125819 /* MarkdownKit in Frameworks */ = {isa = PBXBuildFile; productRef = A8B646002D70C23E00125819 /* MarkdownKit */; };
 		A8C2260E2EC9039A00047C0D /* Nuke in Frameworks */ = {isa = PBXBuildFile; productRef = A8C2260D2EC9039A00047C0D /* Nuke */; };
 		A8C6D50C2D1EE87600DF01F1 /* AltSign-Static in Frameworks */ = {isa = PBXBuildFile; productRef = A8C6D50B2D1EE87600DF01F1 /* AltSign-Static */; };
@@ -1140,6 +1140,97 @@
 			remoteGlobalIDString = 87977F6F227C4B71004F31DA;
 			remoteInfo = libgeneral;
 		};
+		A8A5C7022F4C503C00572B4A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8A5C2E52F4C4FEC00572B4A /* libfragmentzip.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 87B8C3401E0E9C37002F817D;
+			remoteInfo = "fragmentzip-cli-macOS";
+		};
+		A8A5C7042F4C503C00572B4A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8A5C2E52F4C4FEC00572B4A /* libfragmentzip.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = B315FDB02866CCF8002E243C;
+			remoteInfo = "fragmentzip-cli-iOS";
+		};
+		A8A5C7062F4C503C00572B4A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8A5C2E52F4C4FEC00572B4A /* libfragmentzip.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = B315FDB52866CD91002E243C;
+			remoteInfo = "fragmentzip-macOS";
+		};
+		A8A5C7082F4C503C00572B4A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8A5C2E52F4C4FEC00572B4A /* libfragmentzip.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = B315FDCE2866CDD3002E243C;
+			remoteInfo = "fragmentzip-iOS";
+		};
+		A8A5C70B2F4C503C00572B4A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8A5C2C12F4C4FEC00572B4A /* libgeneral.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 87977F6F227C4B71004F31DA;
+			remoteInfo = libgeneral;
+		};
+		A8A5C7102F4C503C00572B4A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8A5C6642F4C4FEC00572B4A /* Roxas.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = BFADAFF819AE7BB70050CF31;
+			remoteInfo = Roxas;
+		};
+		A8A5C7122F4C503C00572B4A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8A5C6642F4C4FEC00572B4A /* Roxas.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = BF8624801BB742E700C12EEE;
+			remoteInfo = RoxasTV;
+		};
+		A8A5C7142F4C503C00572B4A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8A5C6642F4C4FEC00572B4A /* Roxas.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = BFADB00319AE7BB80050CF31;
+			remoteInfo = RoxasTests;
+		};
+		A8A5C7182F4C503C00572B4A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8A5C5C12F4C4FEC00572B4A /* SampleApp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 44B1EE7C23DB90D5004E2E29;
+			remoteInfo = SampleApp;
+		};
+		A8A5C71A2F4C503C00572B4A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8A5C5C12F4C4FEC00572B4A /* SampleApp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 445A906A2400612800B487B4;
+			remoteInfo = "NSAttributedString+MarkdownTests";
+		};
+		A8A5C71D2F4C503C00572B4A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8A5C5DA2F4C4FEC00572B4A /* SampleApp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 44E8FA8923D90632009E1D13;
+			remoteInfo = SampleApp;
+		};
+		A8A5C7202F4C503C00572B4A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8A5C5E62F4C4FEC00572B4A /* SwiftSampleApp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 44962FDA23E7A54A00E2A598;
+			remoteInfo = SwiftSampleApp;
+		};
+		A8A5C7222F4C510D00572B4A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8A5C2E52F4C4FEC00572B4A /* libfragmentzip.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = B315FDC52866CDD3002E243C;
+			remoteInfo = "fragmentzip-iOS";
+		};
 		A8CCC3922F4B655000B0089A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A8CCC2412F4B654400B0089A /* em_proxy.xcodeproj */;
@@ -2187,6 +2278,12 @@
 		A8A5BE7D2F4C4D6800572B4A /* Roxas.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Roxas.xcodeproj; sourceTree = "<group>"; };
 		A8A5BF8E2F4C4E0700572B4A /* libgeneral.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libgeneral.xcodeproj; sourceTree = "<group>"; };
 		A8A5BFB22F4C4E0700572B4A /* libfragmentzip.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libfragmentzip.xcodeproj; sourceTree = "<group>"; };
+		A8A5C2C12F4C4FEC00572B4A /* libgeneral.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libgeneral.xcodeproj; sourceTree = "<group>"; };
+		A8A5C2E52F4C4FEC00572B4A /* libfragmentzip.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libfragmentzip.xcodeproj; sourceTree = "<group>"; };
+		A8A5C5C12F4C4FEC00572B4A /* SampleApp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = SampleApp.xcodeproj; sourceTree = "<group>"; };
+		A8A5C5DA2F4C4FEC00572B4A /* SampleApp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = SampleApp.xcodeproj; sourceTree = "<group>"; };
+		A8A5C5E62F4C4FEC00572B4A /* SwiftSampleApp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = SwiftSampleApp.xcodeproj; sourceTree = "<group>"; };
+		A8A5C6642F4C4FEC00572B4A /* Roxas.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Roxas.xcodeproj; sourceTree = "<group>"; };
 		A8CCBEE32F4B654400B0089A /* libgeneral.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libgeneral.xcodeproj; sourceTree = "<group>"; };
 		A8CCBF072F4B654400B0089A /* libfragmentzip.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libfragmentzip.xcodeproj; sourceTree = "<group>"; };
 		A8CCC1792F4B654400B0089A /* SampleApp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = SampleApp.xcodeproj; sourceTree = "<group>"; };
@@ -2596,7 +2693,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A8A5BFCD2F4C4E1F00572B4A /* libfragmentzip.a in Frameworks */,
 				A8FAC1CC2F4B51980061A851 /* libimobiledevice.a in Frameworks */,
 				A8FAC1F72F4B519A0061A851 /* libem_proxy_swift.a in Frameworks */,
 				A85AED4C2F4B2D32002E2E11 /* libminimuxer_swift.a in Frameworks */,
@@ -2604,6 +2700,7 @@
 				A8C2260E2EC9039A00047C0D /* Nuke in Frameworks */,
 				A83FE3672EC90482005ACE9A /* Starscream in Frameworks */,
 				BF1614F1250822F100767AEA /* Roxas.framework in Frameworks */,
+				A8A5C7242F4C515F00572B4A /* libfragmentzip.a in Frameworks */,
 				BF66EE852501AE50007EE018 /* AltStoreCore.framework in Frameworks */,
 				A8EEDAF32F4B1A0F00F2436D /* OpenSSL.xcframework in Frameworks */,
 			);
@@ -3459,6 +3556,60 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		A8A5C2EC2F4C4FEC00572B4A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A8A5C7032F4C503C00572B4A /* libfragmentzip */,
+				A8A5C7052F4C503C00572B4A /* libfragmentzip */,
+				A8A5C7072F4C503C00572B4A /* libfragmentzip.a */,
+				A8A5C7092F4C503C00572B4A /* libfragmentzip.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A8A5C2EE2F4C4FEC00572B4A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A8A5C70C2F4C503C00572B4A /* libgeneral */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A8A5C5EE2F4C4FEC00572B4A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A8A5C7192F4C503C00572B4A /* SampleApp.app */,
+				A8A5C71B2F4C503C00572B4A /* NSAttributedString+MarkdownTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A8A5C5F02F4C4FEC00572B4A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A8A5C71E2F4C503C00572B4A /* SampleApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A8A5C5F22F4C4FEC00572B4A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A8A5C7212F4C503C00572B4A /* SwiftSampleApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A8A5C6652F4C4FEC00572B4A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A8A5C7112F4C503C00572B4A /* Roxas.framework */,
+				A8A5C7132F4C503C00572B4A /* Roxas.framework */,
+				A8A5C7152F4C503C00572B4A /* RoxasTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		A8CCC2442F4B654400B0089A /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -4248,6 +4399,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				A8A5C7232F4C510D00572B4A /* PBXTargetDependency */,
 				A85A51FA2F4B4E3E002E2E11 /* PBXTargetDependency */,
 				A85AED3E2F4B2B42002E2E11 /* PBXTargetDependency */,
 				0ED4AEC92E6DDB2A0039E2C0 /* PBXTargetDependency */,
@@ -4406,6 +4558,10 @@
 					ProjectRef = A8A5B0622F4C347700572B4A /* libfragmentzip.xcodeproj */;
 				},
 				{
+					ProductGroup = A8A5C2EC2F4C4FEC00572B4A /* Products */;
+					ProjectRef = A8A5C2E52F4C4FEC00572B4A /* libfragmentzip.xcodeproj */;
+				},
+				{
 					ProductGroup = A8FAC0612F4B50D10061A851 /* Products */;
 					ProjectRef = A8FABCE72F4B50D10061A851 /* libfragmentzip.xcodeproj */;
 				},
@@ -4512,6 +4668,10 @@
 				{
 					ProductGroup = A8FAD7302F4B61310061A851 /* Products */;
 					ProjectRef = A8FAD38F2F4B61310061A851 /* libgeneral.xcodeproj */;
+				},
+				{
+					ProductGroup = A8A5C2EE2F4C4FEC00572B4A /* Products */;
+					ProjectRef = A8A5C2C12F4C4FEC00572B4A /* libgeneral.xcodeproj */;
 				},
 				{
 					ProductGroup = A8EEDA212F4B19B000F2436D /* Products */;
@@ -4686,6 +4846,10 @@
 					ProjectRef = A8EEDA1E2F4B19B000F2436D /* Roxas.xcodeproj */;
 				},
 				{
+					ProductGroup = A8A5C6652F4C4FEC00572B4A /* Products */;
+					ProjectRef = A8A5C6642F4C4FEC00572B4A /* Roxas.xcodeproj */;
+				},
+				{
 					ProductGroup = A81197452F4C1C710013ABD0 /* Products */;
 					ProjectRef = A81197312F4C1C710013ABD0 /* Roxas.xcodeproj */;
 				},
@@ -4758,6 +4922,10 @@
 					ProjectRef = A85AE6C92F4B22F6002E2E11 /* SampleApp.xcodeproj */;
 				},
 				{
+					ProductGroup = A8A5C5EE2F4C4FEC00572B4A /* Products */;
+					ProjectRef = A8A5C5C12F4C4FEC00572B4A /* SampleApp.xcodeproj */;
+				},
+				{
 					ProductGroup = A8118FCC2F4C1C250013ABD0 /* Products */;
 					ProjectRef = A8118F012F4C1C250013ABD0 /* SampleApp.xcodeproj */;
 				},
@@ -4780,6 +4948,10 @@
 				{
 					ProductGroup = A8CCE16F2F4B76CF00B0089A /* Products */;
 					ProjectRef = A8CCE0982F4B76CF00B0089A /* SampleApp.xcodeproj */;
+				},
+				{
+					ProductGroup = A8A5C5F02F4C4FEC00572B4A /* Products */;
+					ProjectRef = A8A5C5DA2F4C4FEC00572B4A /* SampleApp.xcodeproj */;
 				},
 				{
 					ProductGroup = A8FAD7322F4B61310061A851 /* Products */;
@@ -4896,6 +5068,10 @@
 				{
 					ProductGroup = A85A27CC2F4B370D002E2E11 /* Products */;
 					ProjectRef = A85A26ED2F4B370D002E2E11 /* SwiftSampleApp.xcodeproj */;
+				},
+				{
+					ProductGroup = A8A5C5F22F4C4FEC00572B4A /* Products */;
+					ProjectRef = A8A5C5E62F4C4FEC00572B4A /* SwiftSampleApp.xcodeproj */;
 				},
 				{
 					ProductGroup = A8CCD9D12F4B745B00B0089A /* Products */;
@@ -5997,6 +6173,90 @@
 			remoteRef = A8A5BFCB2F4C4E0700572B4A /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
+		A8A5C7032F4C503C00572B4A /* libfragmentzip */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = libfragmentzip;
+			remoteRef = A8A5C7022F4C503C00572B4A /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A8A5C7052F4C503C00572B4A /* libfragmentzip */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = libfragmentzip;
+			remoteRef = A8A5C7042F4C503C00572B4A /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A8A5C7072F4C503C00572B4A /* libfragmentzip.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libfragmentzip.a;
+			remoteRef = A8A5C7062F4C503C00572B4A /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A8A5C7092F4C503C00572B4A /* libfragmentzip.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libfragmentzip.a;
+			remoteRef = A8A5C7082F4C503C00572B4A /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A8A5C70C2F4C503C00572B4A /* libgeneral */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = libgeneral;
+			remoteRef = A8A5C70B2F4C503C00572B4A /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A8A5C7112F4C503C00572B4A /* Roxas.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Roxas.framework;
+			remoteRef = A8A5C7102F4C503C00572B4A /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A8A5C7132F4C503C00572B4A /* Roxas.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Roxas.framework;
+			remoteRef = A8A5C7122F4C503C00572B4A /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A8A5C7152F4C503C00572B4A /* RoxasTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = RoxasTests.xctest;
+			remoteRef = A8A5C7142F4C503C00572B4A /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A8A5C7192F4C503C00572B4A /* SampleApp.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = SampleApp.app;
+			remoteRef = A8A5C7182F4C503C00572B4A /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A8A5C71B2F4C503C00572B4A /* NSAttributedString+MarkdownTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = "NSAttributedString+MarkdownTests.xctest";
+			remoteRef = A8A5C71A2F4C503C00572B4A /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A8A5C71E2F4C503C00572B4A /* SampleApp.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = SampleApp.app;
+			remoteRef = A8A5C71D2F4C503C00572B4A /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A8A5C7212F4C503C00572B4A /* SwiftSampleApp.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = SwiftSampleApp.app;
+			remoteRef = A8A5C7202F4C503C00572B4A /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		A8CCC3932F4B655000B0089A /* libem_proxy_static.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
@@ -6977,6 +7237,11 @@
 			isa = PBXTargetDependency;
 			name = "em_proxy-staticlib";
 			targetProxy = A8A5B7E92F4C4CE200572B4A /* PBXContainerItemProxy */;
+		};
+		A8A5C7232F4C510D00572B4A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = "fragmentzip-iOS";
+			targetProxy = A8A5C7222F4C510D00572B4A /* PBXContainerItemProxy */;
 		};
 		BF66EE842501AE50007EE018 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
