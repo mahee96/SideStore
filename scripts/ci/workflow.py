@@ -76,7 +76,7 @@ def reserve_build_number(repo, max_attempts=5):
 
         run("git add version.json", check=False, cwd=repo)
         run(
-            f"git commit -m '{data.get('tag','build')} build no - {data['build']}' || true",
+            f"git commit -m '{data['tag']} - build no: {data['build']}' || true",
             check=False,
             cwd=repo,
         )
@@ -264,9 +264,7 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
         run("git config user.name 'GitHub Actions'", check=False)
         run("git config user.email 'github-actions@github.com'", check=False)
 
-        run(
-            f"python3 {ROOT}/scripts/update_source_metadata.py '{source_json}'"
-        )
+        run(f"python3 {ROOT}/scripts/update_source_metadata.py '{source_json}'")
 
         max_attempts = 5
         for attempt in range(1, max_attempts + 1):
