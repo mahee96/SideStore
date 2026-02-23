@@ -64,13 +64,21 @@ def reserve_build_number(repo, max_attempts=5):
     version_json = repo / "version.json"
 
     def utc_now():
-        return datetime.datetime.now(datetime.UTC)\
-            .strftime("%Y-%m-%dT%H:%M:%SZ")
+        return datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     def read():
         if not version_json.exists():
-            return {"build": 0, "issued_at": utc_now()}
-        return json.loads(version_json.read_text())
+            branch = runAndGet("git rev-parse --abbrev-ref HEAD", cwd=repo)
+
+        data = {
+            "build": 0,
+            "issued_at": utc_now(),
+            "tag": branch,
+        }
+        version_json.write_text(json.dumps(data, indent=2) + "\n")
+        return data
+
+    return json.loads(version_json.read_text())
 
     def write(data):
         version_json.write_text(json.dumps(data, indent=2) + "\n")
@@ -86,11 +94,7 @@ def reserve_build_number(repo, max_attempts=5):
         write(data)
 
         run("git add version.json", check=False, cwd=repo)
-        run(
-            f"git commit -m '{data['tag']} - build no: {data['build']}' || true",
-            check=False,
-            cwd=repo,
-        )
+        run(f"git commit -m '{data['tag']} - build no: {data['build']}' || true", check=False, cwd=repo)
 
         rc = subprocess.call("git push", shell=True, cwd=repo)
 
