@@ -10,6 +10,7 @@ import json
 
 # REPO ROOT relative to script dir
 ROOT = Path(__file__).resolve().parents[2]
+SCRIPTS = ROOT / 'scripts'
 
 # ----------------------------------------------------------
 # helpers
@@ -242,7 +243,7 @@ def encrypt_logs(name):
 
 def release_notes(tag):
     run(
-        f"python3 generate_release_notes.py "
+        f"python3 {SCRIPTS}/generate_release_notes.py "
         f"{tag} "
         f"--repo-root {ROOT} "
         f"--output-dir {ROOT}"
@@ -267,7 +268,7 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
         raise SystemExit(f"{source_json} missing inside repo")
 
     run(
-        f"python3 {ROOT}/generate_source_metadata.py "
+        f"python3 {SCRIPTS}/generate_source_metadata.py "
         f"--repo-root {ROOT} "
         f"--ipa {ipa_path} "
         f"--output-dir . "
@@ -290,7 +291,7 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
             run("git reset --hard FETCH_HEAD", check=False, cwd=repo)
 
         # regenerate after reset so we don't lose changes
-        run(f"python3 {ROOT}/scripts/update_source_metadata.py '{source_json}'")
+        run(f"python3 {SCRIPTS}/update_source_metadata.py '{source_json}'")
         run(f"git add --verbose {source_json}", check=False)
         run(f"git commit -m '{release_tag} - deployed {version}' || true", check=False)
 
