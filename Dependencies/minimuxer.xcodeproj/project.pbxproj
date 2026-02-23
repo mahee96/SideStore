@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		9961EC2829BE9C2000AF2C6F /* SwiftBridgeCore.h in Sources */ = {isa = PBXBuildFile; fileRef = 9961EC2729BE9C1200AF2C6F /* SwiftBridgeCore.h */; };
-		9987603329A454B500818586 /* minimuxer.h in Sources */ = {isa = PBXBuildFile; fileRef = 9987603229A454B500818586 /* minimuxer.h */; };
+		A8A5B07F2F4C355800572B4A /* minimuxer.h in Sources */ = {isa = PBXBuildFile; fileRef = A8A5B07D2F4C34FF00572B4A /* minimuxer.h */; };
+		A8A5B0802F4C355800572B4A /* SwiftBridgeCore.h in Sources */ = {isa = PBXBuildFile; fileRef = A8A5B07E2F4C34FF00572B4A /* SwiftBridgeCore.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -31,21 +31,12 @@
 /* End PBXBuildRule section */
 
 /* Begin PBXFileReference section */
-		9961EC2729BE9C1200AF2C6F /* SwiftBridgeCore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SwiftBridgeCore.h; path = minimuxer/SwiftBridgeCore.h; sourceTree = "<group>"; };
-		9987603229A454B500818586 /* minimuxer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = minimuxer.h; path = minimuxer/minimuxer.h; sourceTree = "<group>"; };
+		A8A5B07D2F4C34FF00572B4A /* minimuxer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = minimuxer.h; path = minimuxer/minimuxer.h; sourceTree = "<group>"; };
+		A8A5B07E2F4C34FF00572B4A /* SwiftBridgeCore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SwiftBridgeCore.h; path = minimuxer/SwiftBridgeCore.h; sourceTree = "<group>"; };
 		CA609C732349C7AAD9FA67C4 /* libminimuxer_static.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libminimuxer_static.a; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
-		99F87D1529D8E41100B40039 /* Generated */ = {
-			isa = PBXGroup;
-			children = (
-				9961EC2729BE9C1200AF2C6F /* SwiftBridgeCore.h */,
-				9987603229A454B500818586 /* minimuxer.h */,
-			);
-			name = Generated;
-			sourceTree = "<group>";
-		};
 		CA6012A875F922869D176AE5 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -57,7 +48,8 @@
 		CA6012A875F9D65BC3C892A8 = {
 			isa = PBXGroup;
 			children = (
-				99F87D1529D8E41100B40039 /* Generated */,
+				A8A5B07D2F4C34FF00572B4A /* minimuxer.h */,
+				A8A5B07E2F4C34FF00572B4A /* SwiftBridgeCore.h */,
 				CA6012A875F922869D176AE5 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -146,8 +138,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9961EC2829BE9C2000AF2C6F /* SwiftBridgeCore.h in Sources */,
-				9987603329A454B500818586 /* minimuxer.h in Sources */,
+				A8A5B07F2F4C355800572B4A /* minimuxer.h in Sources */,
+				A8A5B0802F4C355800572B4A /* SwiftBridgeCore.h in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
