@@ -33,6 +33,7 @@
 /* Begin PBXFileReference section */
 		A8A5B07D2F4C34FF00572B4A /* minimuxer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = minimuxer.h; path = minimuxer/minimuxer.h; sourceTree = "<group>"; };
 		A8A5B07E2F4C34FF00572B4A /* SwiftBridgeCore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SwiftBridgeCore.h; path = minimuxer/SwiftBridgeCore.h; sourceTree = "<group>"; };
+		A8A5B09C2F4C454900572B4A /* minimuxer-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "minimuxer-Bridging-Header.h"; path = "minimuxer/minimuxer-Bridging-Header.h"; sourceTree = "<group>"; };
 		CA609C732349C7AAD9FA67C4 /* libminimuxer_static.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libminimuxer_static.a; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -50,6 +51,7 @@
 			children = (
 				A8A5B07D2F4C34FF00572B4A /* minimuxer.h */,
 				A8A5B07E2F4C34FF00572B4A /* SwiftBridgeCore.h */,
+				A8A5B09C2F4C454900572B4A /* minimuxer-Bridging-Header.h */,
 				CA6012A875F922869D176AE5 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -126,6 +128,8 @@
 				./minimuxer/SwiftBridgeCore.swift,
 				"./minimuxer/minimuxer-Bridging-Header.h",
 				"./minimuxer/minimuxer-helpers.swift",
+				"./minimuxer/libminimuxer-ios.a",
+				"./minimuxer/libminimuxer-sim.a",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
