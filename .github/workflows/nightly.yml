@@ -34,7 +34,7 @@ jobs:
           path: 'Dependencies/beta-build-num'
           fetch-depth: 1
 
-      - name: Setup
+      - name: Setup Env
         run: |
           BUILD_NUM=$(python3 scripts/ci/workflow.py reserve_build_number 'Dependencies/beta-build-num')
           MARKETING_VERSION=$(python3 scripts/ci/workflow.py get-marketing-version)
