@@ -257,6 +257,7 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
     repo = (ROOT / repo).resolve()
     ipa_path = ROOT / ipa_name
     source_path = repo / source_json
+    metadata = 'source-metadata.json'
 
     if not repo.exists():
         raise SystemExit(f"{repo} repo missing")
@@ -267,12 +268,14 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
     if not source_path.exists():
         raise SystemExit(f"{source_json} missing inside repo")
 
+
     run(
         f"python3 {SCRIPTS}/generate_source_metadata.py "
         f"--repo-root {ROOT} "
         f"--ipa {ipa_path} "
-        f"--output-dir . "
-        f"--release-notes-dir . "
+        f"--output-dir {ROOT} "
+        f"--output-name {metadata} "
+        f"--release-notes-dir {ROOT} "
         f"--release-tag {release_tag} "
         f"--version {version} "
         f"--marketing-version {marketing_version} "
@@ -291,7 +294,7 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
             run("git reset --hard FETCH_HEAD", check=False, cwd=repo)
 
         # regenerate after reset so we don't lose changes
-        run(f"python3 {SCRIPTS}/update_source_metadata.py '{source_json}'")
+        run(f"python3 {SCRIPTS}/update_source_metadata.py '{ROOT}/{metadata}' '{source_json}'")
         run(f"git add --verbose {source_json}", check=False)
         run(f"git commit -m '{release_tag} - deployed {version}' || true", check=False)
 

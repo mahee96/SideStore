@@ -55,6 +55,12 @@ def main():
         required=True,
         help="Output Directory where source_metadata.json is written",
     )
+ 
+    p.add_argument(
+        "--output-name",
+        default="source_metadata.json",
+        help="Output metadata filename",
+    )
 
     p.add_argument(
         "--release-notes-dir",
@@ -86,7 +92,7 @@ def main():
     notes_dir.mkdir(parents=True, exist_ok=True)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    out_file = out_dir / "source_metadata.json"
+    out_file = out_dir / args.output_name
 
     # ------------------------------------------------------
     # ensure release notes exist
