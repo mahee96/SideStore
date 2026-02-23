@@ -14,11 +14,12 @@
 		A859ED5D2D1EE827003DCC58 /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A859ED5B2D1EE80D003DCC58 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A85AED4C2F4B2D32002E2E11 /* libminimuxer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 191E5FAB290A5D92001A3B7C /* libminimuxer.a */; };
 		A8945AA62D059B6100D86CBE /* Roxas.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A8945AA52D059B6100D86CBE /* Roxas.framework */; };
-		A8A5ABEB2F4C2CFC00572B4A /* minimuxer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A5AAEE2F4C2CFC00572B4A /* minimuxer.swift */; };
-		A8A5ABEC2F4C2CFC00572B4A /* minimuxer-helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A5AAF02F4C2CFC00572B4A /* minimuxer-helpers.swift */; };
-		A8A5ABED2F4C2CFC00572B4A /* SwiftBridgeCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A5AAF42F4C2CFC00572B4A /* SwiftBridgeCore.swift */; };
 		A8A5ABEE2F4C2CFC00572B4A /* em_proxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A5A7ED2F4C2CFC00572B4A /* em_proxy.swift */; };
 		A8A5AC192F4C2D1800572B4A /* libminimuxer_static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8A5AC032F4C2CFC00572B4A /* libminimuxer_static.a */; };
+		A8A5B0812F4C373200572B4A /* minimuxer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A5AAEE2F4C2CFC00572B4A /* minimuxer.swift */; };
+		A8A5B0822F4C373200572B4A /* minimuxer-helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A5AAF02F4C2CFC00572B4A /* minimuxer-helpers.swift */; };
+		A8A5B0832F4C374400572B4A /* SwiftBridgeCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A5AAF42F4C2CFC00572B4A /* SwiftBridgeCore.swift */; };
+		A8A5B08C2F4C375800572B4A /* libem_proxy_static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8A5B08B2F4C374E00572B4A /* libem_proxy_static.a */; };
 		A8B646012D70C23E00125819 /* MarkdownKit in Frameworks */ = {isa = PBXBuildFile; productRef = A8B646002D70C23E00125819 /* MarkdownKit */; };
 		A8C2260E2EC9039A00047C0D /* Nuke in Frameworks */ = {isa = PBXBuildFile; productRef = A8C2260D2EC9039A00047C0D /* Nuke */; };
 		A8C6D50C2D1EE87600DF01F1 /* AltSign-Static in Frameworks */ = {isa = PBXBuildFile; productRef = A8C6D50B2D1EE87600DF01F1 /* AltSign-Static */; };
@@ -955,6 +956,20 @@
 			proxyType = 2;
 			remoteGlobalIDString = 87977F6F227C4B71004F31DA;
 			remoteInfo = libgeneral;
+		};
+		A8A5B0872F4C374E00572B4A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8A5B0842F4C374E00572B4A /* em_proxy.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = CA60C44C93D7A30E3695DD59;
+			remoteInfo = "em_proxy-staticlib";
+		};
+		A8A5B08A2F4C374E00572B4A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8A5B0842F4C374E00572B4A /* em_proxy.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = CA60C44C93D7916DE57E6EBD;
+			remoteInfo = "em_proxy-staticlib";
 		};
 		A8CCC3922F4B655000B0089A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -1989,6 +2004,7 @@
 		A8A5ACDC2F4C339400572B4A /* SwiftSampleApp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = SwiftSampleApp.xcodeproj; sourceTree = "<group>"; };
 		A8A5B03E2F4C347700572B4A /* libgeneral.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libgeneral.xcodeproj; sourceTree = "<group>"; };
 		A8A5B0622F4C347700572B4A /* libfragmentzip.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libfragmentzip.xcodeproj; sourceTree = "<group>"; };
+		A8A5B0842F4C374E00572B4A /* em_proxy.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = em_proxy.xcodeproj; path = /Users/mahee96/Documents/SideStore/Dependencies/em_proxy.xcodeproj; sourceTree = "<absolute>"; };
 		A8CCBEE32F4B654400B0089A /* libgeneral.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libgeneral.xcodeproj; sourceTree = "<group>"; };
 		A8CCBF072F4B654400B0089A /* libfragmentzip.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libfragmentzip.xcodeproj; sourceTree = "<group>"; };
 		A8CCC1792F4B654400B0089A /* SampleApp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = SampleApp.xcodeproj; sourceTree = "<group>"; };
@@ -2360,6 +2376,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A8A5B08C2F4C375800572B4A /* libem_proxy_static.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3143,6 +3160,14 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		A8A5B0852F4C374E00572B4A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A8A5B08B2F4C374E00572B4A /* libem_proxy_static.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		A8CCC2442F4B654400B0089A /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -3748,6 +3773,7 @@
 				B3C39607284F4C8400DA9E2F /* Build.xcconfig */,
 				B3C39606284F4C8400DA9E2F /* CodeSigning.xcconfig */,
 				B3C39608284F4C8400DA9E2F /* CodeSigning.xcconfig.sample */,
+				A8A5B0842F4C374E00572B4A /* em_proxy.xcodeproj */,
 			);
 			sourceTree = "<group>";
 		};
@@ -3823,6 +3849,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				A8A5B0882F4C374E00572B4A /* PBXTargetDependency */,
 			);
 			name = em_proxy;
 			productName = minimuxer;
@@ -4069,6 +4096,10 @@
 				{
 					ProductGroup = A85AEC6D2F4B22F6002E2E11 /* Products */;
 					ProjectRef = A85AEC662F4B22F6002E2E11 /* em_proxy.xcodeproj */;
+				},
+				{
+					ProductGroup = A8A5B0852F4C374E00572B4A /* Products */;
+					ProjectRef = A8A5B0842F4C374E00572B4A /* em_proxy.xcodeproj */;
 				},
 				{
 					ProductGroup = A8FACFA72F4B5CD40061A851 /* Products */;
@@ -5451,6 +5482,13 @@
 			remoteRef = A8A5B07B2F4C347800572B4A /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
+		A8A5B08B2F4C374E00572B4A /* libem_proxy_static.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libem_proxy_static.a;
+			remoteRef = A8A5B08A2F4C374E00572B4A /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		A8CCC3932F4B655000B0089A /* libem_proxy_static.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
@@ -6350,9 +6388,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A8A5ABEB2F4C2CFC00572B4A /* minimuxer.swift in Sources */,
-				A8A5ABEC2F4C2CFC00572B4A /* minimuxer-helpers.swift in Sources */,
-				A8A5ABED2F4C2CFC00572B4A /* SwiftBridgeCore.swift in Sources */,
+				A8A5B0832F4C374400572B4A /* SwiftBridgeCore.swift in Sources */,
+				A8A5B0812F4C373200572B4A /* minimuxer.swift in Sources */,
+				A8A5B0822F4C373200572B4A /* minimuxer-helpers.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -6426,6 +6464,11 @@
 			isa = PBXTargetDependency;
 			name = "minimuxer-staticlib";
 			targetProxy = A8A5AC1A2F4C2D2600572B4A /* PBXContainerItemProxy */;
+		};
+		A8A5B0882F4C374E00572B4A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = "em_proxy-staticlib";
+			targetProxy = A8A5B0872F4C374E00572B4A /* PBXContainerItemProxy */;
 		};
 		BF66EE842501AE50007EE018 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
