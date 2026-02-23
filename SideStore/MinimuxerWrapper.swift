@@ -62,7 +62,7 @@ func yeetAppAFC(_ bundleId: String, _ rawBytes: Data) throws {
 
 func installIPA(_ bundleId: String) throws {
     #if targetEnvironment(simulator)
-    print("installIPA(\(bundleId), \(rawBytes)) is no-op on simulator")
+    print("installIPA(\(bundleId)) is no-op on simulator")
     #else
     try minimuxer.install_ipa(bundleId)
     #endif
