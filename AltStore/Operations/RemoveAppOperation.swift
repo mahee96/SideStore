@@ -41,7 +41,7 @@ final class RemoveAppOperation: ResultOperation<InstalledApp>
             let resignedBundleIdentifier = installedApp.resignedBundleIdentifier
             
             do {
-                try remove_app(resignedBundleIdentifier)
+                try removeApp(resignedBundleIdentifier)
             } catch {
                 return self.finish(.failure(error))
             }

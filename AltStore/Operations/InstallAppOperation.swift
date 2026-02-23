@@ -225,7 +225,7 @@ final class InstallAppOperation: ResultOperation<InstalledApp>
             }
             
             do {
-                try install_ipa(installedApp.bundleIdentifier)
+                try installIPA(installedApp.bundleIdentifier)
                 installing = false
                 installedApp.refreshedDate = Date()
                 self.finish(.success(installedApp))
