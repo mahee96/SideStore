@@ -67,18 +67,28 @@ def reserve_build_number(repo, max_attempts=5):
         return datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     def read():
-        if not version_json.exists():
-            branch = runAndGet("git rev-parse --abbrev-ref HEAD", cwd=repo)
+        branch = runAndGet("git rev-parse --abbrev-ref HEAD", cwd=repo)
 
-            data = {
-                "build": 0,
-                "issued_at": utc_now(),
-                "tag": branch,
-            }
-            version_json.write_text(json.dumps(data, indent=2) + "\n")
-            return data
+        defaults = {
+            "build": 0,
+            "issued_at": utc_now(),
+            "tag": branch,
+        }
 
-        return json.loads(version_json.read_text())
+        if version_json.exists():
+            data = json.loads(version_json.read_text())
+        else:
+            data = {}
+
+        # fill missing fields
+        for k, v in defaults.items():
+            data.setdefault(k, v)
+
+        # ensure tag always tracks current branch
+        data["tag"] = branch
+
+        version_json.write_text(json.dumps(data, indent=2) + "\n")
+        return data
 
     def write(data):
         version_json.write_text(json.dumps(data, indent=2) + "\n")
