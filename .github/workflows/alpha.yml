@@ -1,28 +1,47 @@
-name: Alpha SideStore build
+name: Alpha SideStore Build
+
 on:
   push:
-    branches:
-      - develop-alpha
+    branches: [develop-alpha]
 
-# cancel duplicate run if from same branch
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  Reusable-build:
-    uses: ./.github/workflows/reusable-sidestore-build.yml
-    with:
-      # bundle_id: "com.SideStore.SideStore.Alpha"
-      bundle_id: "com.SideStore.SideStore"
-      # bundle_id_suffix: ".Alpha"
-      is_beta: true
-      publish: ${{ vars.PUBLISH_ALPHA_UPDATES == 'true' }} 
-      is_shared_build_num: false
-      release_tag: "alpha"
-      release_name: "Alpha"
-      upstream_tag: "nightly"
-      upstream_name: "Nightly"
-    secrets:
-      CROSS_REPO_PUSH_KEY: ${{ secrets.CROSS_REPO_PUSH_KEY }}
-      BUILD_LOG_ZIP_PASSWORD: ${{ secrets.BUILD_LOG_ZIP_PASSWORD }}
+  build:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - run: brew install ldid xcbeautify
+
+      - name: Shared
+        id: shared
+        run: python3 scripts/ci/workflow.py shared
+
+      - name: Beta bump
+        env:
+          RELEASE_CHANNEL: alpha
+        run: python3 scripts/ci/workflow.py bump-beta
+
+      - name: Version
+        id: version
+        run: python3 scripts/ci/workflow.py version
+
+      - name: Build
+        run: python3 scripts/ci/workflow.py build
+
+      - name: Encrypt logs
+        env:
+          BUILD_LOG_ZIP_PASSWORD: ${{ secrets.BUILD_LOG_ZIP_PASSWORD }}
+        run: python3 scripts/ci/workflow.py encrypt-build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SideStore-${{ steps.version.outputs.version }}.ipa
+          path: SideStore.ipa
