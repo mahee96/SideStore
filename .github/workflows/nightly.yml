@@ -1,82 +1,138 @@
 name: Nightly SideStore Build
+
 on:
   push:
-    branches:
-      - develop
+    branches: [develop]
   schedule:
-    - cron: '0 0 * * *' # Runs every night at midnight UTC
-  workflow_dispatch: # Allows manual trigger
+    - cron: '0 0 * * *'
+  workflow_dispatch:
 
-# cancel duplicate run if from same branch
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  check-changes:
-    if: github.event_name == 'schedule'
-    runs-on: ubuntu-latest
-    outputs:
-      has_changes: ${{ steps.check.outputs.has_changes }}
+  build:
+    runs-on: macos-26
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Ensure full history
+          submodules: recursive
+          fetch-depth: 0
 
-      - name: Get last successful workflow run
-        id: get_last_success
+      - run: brew install ldid xcbeautify
+
+      - name: Restore Xcode/SwiftPM Cache (Exact match)
+        id: xcode-cache-restore
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData
+            ~/Library/Caches/org.swift.swiftpm
+          key: xcode-cache-build-${{ github.ref_name }}-${{ github.sha }}
+
+      - name: Restore Xcode/SwiftPM Cache (Last Available)
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData
+            ~/Library/Caches/org.swift.swiftpm
+          key: xcode-cache-build-${{ github.ref_name }}-
+
+      # --------------------------------------------------
+      # runtime env setup
+      # --------------------------------------------------
+
+      - name: Short Commit SHA
         run: |
-          LAST_SUCCESS=$(gh run list --workflow "Nightly SideStore Build" --json createdAt,conclusion \
-            --jq '[.[] | select(.conclusion=="success")][0].createdAt' || echo "")
-          echo "Last successful run: $LAST_SUCCESS"
-          echo "last_success=$LAST_SUCCESS" >> $GITHUB_ENV
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "SHORT_COMMIT=$(python3 scripts/ci/workflow.py commid-id)" >> $GITHUB_ENV
 
-      - name: Check for new commits since last successful build
-        id: check
+      - name: Version
         run: |
-          if [ -n "$LAST_SUCCESS" ]; then
-            NEW_COMMITS=$(git rev-list --count --since="$LAST_SUCCESS" origin/develop)
-            COMMIT_LOG=$(git log --since="$LAST_SUCCESS" --pretty=format:"%h %s" origin/develop)
-          else
-            NEW_COMMITS=1
-            COMMIT_LOG=$(git log -n 10 --pretty=format:"%h %s" origin/develop) # Show last 10 commits if no history
-          fi
-          
-          echo "Has changes: $NEW_COMMITS"
-          echo "New commits since last successful build:"
-          echo "$COMMIT_LOG"
-          
-          if [ "$NEW_COMMITS" -gt 0 ]; then
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-          else
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-          fi
+          echo "VERSION=$(python3 scripts/ci/workflow.py version)" >> $GITHUB_ENV
+
+     # --------------------------------------------------
+      # build and test
+      # --------------------------------------------------
+
+      - name: Clean previous build artifacts
+        if: contains(github.event.head_commit.message, '[--clean-build]')
+        run: |
+          python3 scripts/ci/workflow.py clean
+          python3 scripts/ci/workflow.py clean-derived-data
+          python3 scripts/ci/workflow.py clean-spm-cache
+
+      - name: Build
+        run: python3 scripts/ci/workflow.py build
+
+      - name: Tests Build
+        if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_BUILD == '1' }}
+        run: python3 scripts/ci/workflow.py tests-build
+
+      - name: Save Xcode & SwiftPM Cache
+        if: ${{ steps.xcode-cache-restore.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData
+            ~/Library/Caches/org.swift.swiftpm
+          key: xcode-cache-build-${{ github.ref_name }}-${{ github.sha }}
+
+      - name: Tests Run
+        if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_RUN == '1' }}
+        run: python3 scripts/ci/workflow.py tests-run
+
+      - name: Encrypt build logs
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          LAST_SUCCESS: ${{ env.last_success }}
+          BUILD_LOG_ZIP_PASSWORD: ${{ secrets.BUILD_LOG_ZIP_PASSWORD }}
+        run: python3 scripts/ci/workflow.py encrypt-build
 
-  Reusable-build:
-    if: |
-      always() &&
-      (github.event_name == 'push' || 
-      (github.event_name == 'schedule' && needs.check-changes.result == 'success' && needs.check-changes.outputs.has_changes == 'true'))
-    needs: check-changes
-    uses: ./.github/workflows/reusable-sidestore-build.yml
-    with:
-      # bundle_id: "com.SideStore.SideStore.Nightly"
-      bundle_id: "com.SideStore.SideStore"
-      # bundle_id_suffix: ".Nightly"
-      is_beta: true
-      publish: ${{ vars.PUBLISH_NIGHTLY_UPDATES == 'true' }} 
-      is_shared_build_num: false
-      release_tag: "nightly"
-      release_name: "Nightly"
-      upstream_tag: "0.5.10"
-      upstream_name: "Stable"
-    secrets:
-      CROSS_REPO_PUSH_KEY: ${{ secrets.CROSS_REPO_PUSH_KEY }}
-      BUILD_LOG_ZIP_PASSWORD: ${{ secrets.BUILD_LOG_ZIP_PASSWORD }}
+      - name: Encrypt tests-build logs
+        if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_BUILD == '1' }}
+        env:
+          BUILD_LOG_ZIP_PASSWORD: ${{ secrets.BUILD_LOG_ZIP_PASSWORD }}
+        run: python3 scripts/ci/workflow.py encrypt-tests-build
 
+      - name: Encrypt tests-run logs
+        if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_RUN == '1' }}
+        env:
+          BUILD_LOG_ZIP_PASSWORD: ${{ secrets.BUILD_LOG_ZIP_PASSWORD }}
+        run: python3 scripts/ci/workflow.py encrypt-tests-run
+
+      # --------------------------------------------------
+      # artifacts 
+      # --------------------------------------------------
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: encrypted-build-logs-${{ env.VERSION }}.zip
+          path: encrypted-build-logs.zip
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_BUILD == '1' }}
+        with:
+          name: encrypted-tests-build-logs-${{ env.SHORT_COMMIT }}.zip
+          path: encrypted-tests-build-logs.zip
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_RUN == '1' }}
+        with:
+          name: encrypted-tests-run-logs-${{ env.SHORT_COMMIT }}.zip
+          path: encrypted-tests-run-logs.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SideStore-${{ env.VERSION }}.ipa
+          path: SideStore.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SideStore-${{ env.VERSION }}-dSYMs.zip
+          path: SideStore.dSYMs.zip
+
+      # --------------------------------------------------
+
+      - name: Deploy
+        run: |
+          python3 scripts/ci/workflow.py deploy nightly $SHORT_COMMIT
