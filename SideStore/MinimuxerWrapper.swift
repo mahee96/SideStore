@@ -1,12 +1,12 @@
 //
 //  MinimuxerWrapper.swift
-//  SideStore
 //
-//  Created by Jackson Coxson on 10/26/22.
+//  Created by Magesh K on 22/02/26.
+//  Copyright © 2026 SideStore. All rights reserved.
 //
 
 import Foundation
-import minimuxer
+private import minimuxer
 
 var isMinimuxerReady: Bool {
     #if targetEnvironment(simulator)
@@ -80,7 +80,7 @@ func fetchUDID() -> String? {
 
 
 
-extension MinimuxerError: LocalizedError {
+extension MinimuxerError: @retroactive LocalizedError {
     public var failureReason: String? {
         switch self {
         case .NoDevice:
