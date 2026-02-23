@@ -256,13 +256,18 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
     repo = (ROOT / repo).resolve()
     ipa_path = ROOT / ipa_name
 
+
     if not repo.exists():
         raise SystemExit(f"{repo} repo missing")
 
     if not ipa_path.exists():
         raise SystemExit(f"{ipa_path} missing")
 
-    run(f"pushd {repo}", check=True)
+    pushed = False
+    if Path.cwd().resolve() != repo:
+        run(f"pushd {repo}", check=True)
+        pushed = True
+
     try:
         source_path = repo / source_json
         if not source_path.exists():
@@ -309,7 +314,7 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
             raise SystemExit("Deploy push failed after retries")
 
     finally:
-        run("popd", check=False)
+        if pushed: run("popd", check=False)
 
 # ----------------------------------------------------------
 # ENTRYPOINT
