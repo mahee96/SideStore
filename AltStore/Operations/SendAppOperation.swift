@@ -46,8 +46,8 @@ final class SendAppOperation: ResultOperation<()>
         
         if let data = NSData(contentsOf: fileURL) {
             do {
-                let bytes = Data(data).toRustByteSlice()
-                try yeet_app_afc(app.bundleIdentifier, bytes.forRust())
+                let bytes = Data(data)
+                try yeetAppAFC(app.bundleIdentifier, bytes)
                 self.progress.completedUnitCount += 1
                 self.finish(.success(()))
             } catch {

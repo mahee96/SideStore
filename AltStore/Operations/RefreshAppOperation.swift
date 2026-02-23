@@ -46,8 +46,8 @@ final class RefreshAppOperation: ResultOperation<InstalledApp>
 
             for p in profiles {
                 do {
-                    let bytes = p.value.data.toRustByteSlice()
-                    try install_provisioning_profile(bytes.forRust())
+                    let bytes =
+                    try installProvisioningProfiles(p.value.data)
                 } catch {
                     self.finish(.failure(MinimuxerError.ProfileInstall))
                 }
