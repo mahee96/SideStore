@@ -78,6 +78,7 @@ jobs:
           python3 scripts/ci/workflow.py clean-spm-cache
 
       - name: Boot simulator (async)
+        if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_RUN == '1' }}
         run: |
           mkdir -p build/logs
           python3 scripts/ci/workflow.py boot-sim-async "iPhone 17 Pro"
