@@ -7,6 +7,7 @@ from pathlib import Path
 import time
 import json
 
+
 # REPO ROOT relative to script dir
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -288,7 +289,7 @@ COMMANDS = {
     # ----------------------------------------------------------
     # VERSION / MARKETING
     # ----------------------------------------------------------
-    "get-marketing-version"   : (set_marketing_version,     1, "<qualified_version>"),
+    "get-marketing-version"   : (get_marketing_version,     0, ""),
     "set-marketing-version"   : (set_marketing_version,     1, "<qualified_version>"),
     "compute-qualified"       : (compute_qualified_version, 4, "<marketing> <build_num> <channel> <short_commit>"),
     "reserve_build_number"    : (reserve_build_number,      1, "<repo>"),
