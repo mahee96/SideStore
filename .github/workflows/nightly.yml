@@ -15,7 +15,8 @@ jobs:
   build:
     runs-on: macos-26
     env:
-      HAS_DEPLOY_KEY: ${{ secrets.CROSS_REPO_PUSH_KEY }}
+      DEPLOY_KEY: ${{ secrets.CROSS_REPO_PUSH_KEY }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       RELEASE_NAME: Nightly
       CHANNEL: nightly
       UPSTREAM_CHANNEL: ""
@@ -31,8 +32,6 @@ jobs:
           LAST_SUCCESSFUL_COMMIT=$(python3 scripts/ci/workflow.py last-successful-commit \
             "${{ github.workflow }}" "${{ env.CHANNEL }}" || echo "")
           echo "LAST_SUCCESSFUL_COMMIT=$LAST_SUCCESSFUL_COMMIT" | tee -a $GITHUB_ENV
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check for new changes (on schedule)
         id: check_changes
@@ -211,7 +210,7 @@ jobs:
           path: SideStore.dSYMs.zip
 
       - uses: actions/checkout@v4
-        if: steps.build_gate.outputs.should_skip != 'true' && env.HAS_PUSH_KEY != ''
+        if: steps.build_gate.outputs.should_skip != 'true' && env.DEPLOY_KEY != ''
         with:
           repository: "SideStore/apps-v2.json"
           ref: "main"
@@ -222,9 +221,7 @@ jobs:
       # deploy
       # --------------------------------------------------
       - name: Deploy
-        if: steps.build_gate.outputs.should_skip != 'true' && env.HAS_PUSH_KEY != ''
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: steps.build_gate.outputs.should_skip != 'true' && env.DEPLOY_KEY != ''
         run: |
           python3 scripts/ci/workflow.py dump-project-settings
           PRODUCT_NAME=$(python3 scripts/ci/workflow.py read-product-name)
@@ -248,8 +245,6 @@ jobs:
       # --------------------------------------------------
       - name: Upload Release
         if: steps.build_gate.outputs.should_skip != 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python3 scripts/ci/workflow.py upload-release \
             "$RELEASE_NAME" \
