@@ -2,7 +2,7 @@ name: Alpha SideStore Build
 
 on:
   push:
-    branches: [alpha]
+    branches: [staging]
   workflow_dispatch:
 
 concurrency:
@@ -40,7 +40,7 @@ jobs:
         run: |
           BUILD_NUM=$(python3 scripts/ci/workflow.py reserve_build_number 'Dependencies/beta-build-num')
           MARKETING_VERSION=$(python3 scripts/ci/workflow.py get-marketing-version)
-          SHORT_COMMIT=$(python3 scripts/ci/workflow.py commid-id)
+          SHORT_COMMIT=$(python3 scripts/ci/workflow.py commit-id)
 
           QUALIFIED_VERSION=$(python3 scripts/ci/workflow.py compute-qualified \
               "$MARKETING_VERSION" \
