@@ -169,6 +169,7 @@ jobs:
       - name: Deploy
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CROSS_REPO_PUSH_KEY: ${{ secrets.CROSS_REPO_PUSH_KEY }}
         run: |
           PRODUCT_NAME=$(python3 scripts/ci/workflow.py get-product-name)
           BUNDLE_ID=$(python3 scripts/ci/workflow.py get-bundle-id)
