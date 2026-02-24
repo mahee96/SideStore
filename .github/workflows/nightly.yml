@@ -25,7 +25,18 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - run: brew install ldid xcbeautify
+      - uses: actions/cache@v4
+        with:
+          path: |
+            /opt/homebrew/Cellar
+            /opt/homebrew/Homebrew
+            /opt/homebrew/Library
+            ~/Library/Caches/Homebrew
+          key: brew-${{ runner.os }}-ldid-xcbeautify-v1
+
+      - run: |
+          brew list ldid >/dev/null 2>&1 || brew install ldid
+          brew list xcbeautify >/dev/null 2>&1 || brew install xcbeautify
 
       # --------------------------------------------------
       # runtime env setup
@@ -178,8 +189,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PRODUCT_NAME=$(python3 scripts/ci/workflow.py get-product-name)
-          BUNDLE_ID=$(python3 scripts/ci/workflow.py get-bundle-id)
+          python3 scripts/ci/workflow.py dump-project-settings
+          PRODUCT_NAME=$(python3 scripts/ci/workflow.py read-product-name)
+          BUNDLE_ID=$(python3 scripts/ci/workflow.py read-bundle-id)
           SOURCE_JSON="_includes/source.json"
           IPA_NAME="$PRODUCT_NAME.ipa"
 
