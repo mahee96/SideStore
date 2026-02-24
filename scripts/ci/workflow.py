@@ -57,6 +57,21 @@ def getenv(name, default=""):
 def short_commit():
     return runAndGet("git rev-parse --short HEAD")
 
+def count_new_commits(last_commit):
+    if not last_commit or not last_commit.strip():
+        return 0
+
+    try:
+        total = int(runAndGet("git rev-list --count HEAD"))
+        if total == 1:
+            head = runAndGet("git rev-parse HEAD")
+            return 1 if head != last_commit else 0
+
+        out = runAndGet(f"git rev-list --count {last_commit}..HEAD")
+        return int(out)
+    except Exception:
+        return 0
+
 # ----------------------------------------------------------
 # BUILD NUMBER RESERVATION
 # ----------------------------------------------------------
@@ -464,6 +479,7 @@ COMMANDS = {
     # SHARED
     # ----------------------------------------------------------
     "commit-id"               : (short_commit,              0, ""),
+    "count-new-commits"       : (count_new_commits,         1, "<last_successful_commit>"),
 
     # ----------------------------------------------------------
     # PROJECT INFO
