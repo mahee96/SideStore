@@ -184,7 +184,6 @@ jobs:
       # --------------------------------------------------
       - name: Deploy
         if: env.DEPLOY_KEY != ''
-        env:
         run: |
           python3 scripts/ci/workflow.py dump-project-settings
           PRODUCT_NAME=$(python3 scripts/ci/workflow.py read-product-name)
