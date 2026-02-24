@@ -6,12 +6,12 @@ import datetime
 from pathlib import Path
 import time
 import json
-import inspect
 import re
 
 # REPO ROOT relative to script dir
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = ROOT / 'scripts/ci'
+BUILD_SETTINGS_OUTFILE = "project-build-settings.txt"
 
 # ----------------------------------------------------------
 # helpers
@@ -127,22 +127,34 @@ def reserve_build_number(repo, max_attempts=5):
 # ----------------------------------------------------------
 # PROJECT INFO
 # ----------------------------------------------------------
+def dump_project_settings(outdir=None):
+    outfile = Path(outdir).resolve() / BUILD_SETTINGS_OUTFILE if outdir else BUILD_SETTINGS_OUTFILE
+    run(f"xcodebuild -showBuildSettings 2>&1 > '{outfile}'")
 
-def get_product_name():
-    return runAndGet(
-        "xcodebuild -showBuildSettings "
-        "| grep PRODUCT_NAME "
+def _extract_setting(cmd):
+    out = runAndGet(cmd + " || true").strip()   # prevent grep failure from aborting
+    return out if out else None
+
+def _read_dumped_build_setting(name):
+    return _extract_setting(
+        f"cat '{BUILD_SETTINGS_OUTFILE}' "
+        f"| grep '{name} = ' "
         "| tail -1 "
         "| sed -e 's/.*= //g'"
     )
 
-def get_bundle_id():
-    return runAndGet(
-        "xcodebuild -showBuildSettings 2>&1 "
-        "| grep 'PRODUCT_BUNDLE_IDENTIFIER = ' "
+def query_build_setting(name):
+    return _extract_setting(
+        f"xcodebuild -showBuildSettings 2>&1 "
+        f"| grep '{name} = ' "
         "| tail -1 "
         "| sed -e 's/.*= //g'"
     )
+
+def get_product_name():  return query_build_setting("PRODUCT_NAME")
+def get_bundle_id():     return query_build_setting("PRODUCT_BUNDLE_IDENTIFIER")
+def read_product_name(): return _read_dumped_build_setting("PRODUCT_NAME")
+def read_bundle_id():    return _read_dumped_build_setting("PRODUCT_BUNDLE_IDENTIFIER")
 
 def get_marketing_version():
     return runAndGet(f"grep MARKETING_VERSION {ROOT}/Build.xcconfig | sed -e 's/MARKETING_VERSION = //g'")
@@ -462,6 +474,9 @@ COMMANDS = {
     "reserve_build_number"    : (reserve_build_number,      1, "<repo>"),
     "get-product-name"        : (get_product_name,          0, ""),
     "get-bundle-id"           : (get_bundle_id,             0, ""),
+    "dump-project-settings"   : (dump_project_settings,     0, ""),
+    "read-product-name"       : (read_product_name,         0, ""),
+    "read-bundle-id"          : (read_bundle_id,            0, ""),
 
     # ----------------------------------------------------------
     # CLEAN

@@ -5,7 +5,6 @@ import json
 import subprocess
 from pathlib import Path
 import argparse
-import textwrap
 import sys
 
 SCRIPT_DIR = Path(__file__).resolve().parent
