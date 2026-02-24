@@ -36,17 +36,9 @@ jobs:
       # --------------------------------------------------
       # runtime env setup
       # --------------------------------------------------
-      - uses: actions/checkout@v4
-        with:
-          repository: "SideStore/beta-build-num"
-          ref: ${{ env.CHANNEL }}
-          token: ${{ secrets.CROSS_REPO_PUSH_KEY }}
-          path: "Dependencies/beta-build-num"
-          fetch-depth: 1
-
       - name: Setup Env
         run: |
-          BUILD_NUM=$(python3 scripts/ci/workflow.py reserve_build_number 'Dependencies/beta-build-num')
+          BUILD_NUM="${{ github.run_number }}"
           MARKETING_VERSION=$(python3 scripts/ci/workflow.py get-marketing-version)
           SHORT_COMMIT=$(python3 scripts/ci/workflow.py commit-id)
 
@@ -180,6 +172,9 @@ jobs:
           path: SideStore.dSYMs.zip
 
       - uses: actions/checkout@v4
+        if: >
+          steps.build_gate.outputs.should_skip != 'true' &&
+          secrets.CROSS_REPO_PUSH_KEY != ''
         with:
           repository: "SideStore/apps-v2.json"
           ref: "main"
@@ -190,6 +185,9 @@ jobs:
       # deploy
       # --------------------------------------------------
       - name: Deploy
+        if: >
+          steps.build_gate.outputs.should_skip != 'true' &&
+          secrets.CROSS_REPO_PUSH_KEY != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -198,7 +196,7 @@ jobs:
           BUNDLE_ID=$(python3 scripts/ci/workflow.py read-bundle-id)
           SOURCE_JSON="_includes/source.json"
           IPA_NAME="$PRODUCT_NAME.ipa"
-
+          
           python3 scripts/ci/workflow.py deploy \
             SideStore/apps-v2.json \
             "$SOURCE_JSON" \
@@ -210,8 +208,13 @@ jobs:
             "$IPA_NAME" \
             "$LAST_SUCCESSFUL_COMMIT"
 
-          RELEASE_NOTES=$(python3 scripts/ci/workflow.py retrieve-release-notes "$CHANNEL")
-
+      # --------------------------------------------------
+      # upload release
+      # --------------------------------------------------
+      - name: Upload Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
           python3 scripts/ci/workflow.py upload-release \
             "$RELEASE_NAME" \
             "$CHANNEL" \

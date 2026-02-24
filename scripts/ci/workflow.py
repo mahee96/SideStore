@@ -73,73 +73,6 @@ def count_new_commits(last_commit):
         return 0
 
 # ----------------------------------------------------------
-# BUILD NUMBER RESERVATION
-# ----------------------------------------------------------
-def reserve_build_number(repo, max_attempts=5):
-    repo = Path(repo).resolve()
-    version_json = repo / "version.json"
-
-    def utc_now():
-        return datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-    def current_branch():
-        return runAndGet("git rev-parse --abbrev-ref HEAD", cwd=repo)
-
-    def sync_with_remote(branch):
-        run(f"git fetch --depth=1 origin {branch}", check=False, cwd=repo)
-        run(f"git reset --hard origin/{branch}", check=False, cwd=repo)
-
-    def read(branch):
-        defaults = {
-            "build": 0,
-            "issued_at": utc_now(),
-            "tag": branch,
-        }
-
-        if version_json.exists():
-            data = json.loads(version_json.read_text())
-        else:
-            data = {}
-
-        for k, v in defaults.items():
-            data.setdefault(k, v)
-
-        data["tag"] = branch
-        version_json.write_text(json.dumps(data, indent=2) + "\n")
-        return data
-
-    def write(data):
-        version_json.write_text(json.dumps(data, indent=2) + "\n")
-
-    for attempt in range(max_attempts):
-        branch = current_branch()
-        sync_with_remote(branch)
-
-        data = read(branch)
-        data["build"] += 1
-        data["issued_at"] = utc_now()
-
-        write(data)
-
-        run("git add version.json", check=False, cwd=repo)
-        run(
-            f"git commit -m '{branch} - build no: {data['build']}' || true",
-            check=False,
-            cwd=repo,
-        )
-
-        rc = subprocess.call(f"git push origin {branch}", shell=True, cwd=repo)
-
-        if rc == 0:
-            print(f"Reserved build #{data['build']}", file=sys.stderr)
-            return data["build"]
-
-        print("Push rejected, retrying...", file=sys.stderr)
-        time.sleep(2)
-
-    raise SystemExit("Failed reserving build number")
-    
-# ----------------------------------------------------------
 # PROJECT INFO
 # ----------------------------------------------------------
 def dump_project_settings(outdir=None):
@@ -520,8 +453,7 @@ COMMANDS = {
     # ----------------------------------------------------------
     "get-marketing-version"   : (get_marketing_version,     0, ""),
     "set-marketing-version"   : (set_marketing_version,     1, "<normalized_version>"),
-    "compute-normalized"       : (compute_normalized_version, 3, "<marketing> <build_num> <short_commit>"),
-    "reserve_build_number"    : (reserve_build_number,      1, "<repo>"),
+    "compute-normalized"      : (compute_normalized_version,3, "<marketing> <build_num> <short_commit>"),
     "get-product-name"        : (get_product_name,          0, ""),
     "get-bundle-id"           : (get_bundle_id,             0, ""),
     "dump-project-settings"   : (dump_project_settings,     0, ""),
