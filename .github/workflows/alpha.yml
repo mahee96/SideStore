@@ -31,19 +31,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/cache@v4
-        with:
-          path: |
-            /opt/homebrew/Cellar
-            /opt/homebrew/Homebrew
-            /opt/homebrew/Library
-            ~/Library/Caches/Homebrew
-          key: brew-${{ runner.os }}-ldid-xcbeautify-v1
-
-      - name: brew install ldid and xcbeautify
-        run: |
-          brew list ldid >/dev/null 2>&1 || brew install ldid
-          brew list xcbeautify >/dev/null 2>&1 || brew install xcbeautify
+      - run: brew install ldid && xcbeautify
 
       # --------------------------------------------------
       # runtime env setup

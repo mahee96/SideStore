@@ -52,20 +52,7 @@ jobs:
           )
           echo "should_skip=$SHOULD_SKIP" >> $GITHUB_OUTPUT
 
-      - uses: actions/cache@v4
-        if: steps.build_gate.outputs.should_skip != 'true'
-        with:
-          path: |
-            /opt/homebrew/Cellar
-            /opt/homebrew/Homebrew
-            /opt/homebrew/Library
-            ~/Library/Caches/Homebrew
-          key: brew-${{ runner.os }}-ldid-xcbeautify-v1
-
-      - name: brew install ldid and xcbeautify
-        run: |
-          brew list ldid >/dev/null 2>&1 || brew install ldid
-          brew list xcbeautify >/dev/null 2>&1 || brew install xcbeautify
+      - run: brew install ldid && xcbeautify
         if: steps.build_gate.outputs.should_skip != 'true'
 
       # --------------------------------------------------
