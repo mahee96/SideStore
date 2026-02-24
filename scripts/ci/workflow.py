@@ -389,7 +389,7 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_tag_rec
         tag = upstream_tag_recommended.strip()
         upstream_block = (
             f"If you want to try out new features early but want a lower chance of bugs, "
-            f"you can look at [SideStore {tag}]"
+            f"you can look at [{repo} {tag}]"
             f"(https://github.com/{repo}/releases?q={tag}).\n\n"
         )
 
