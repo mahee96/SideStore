@@ -216,12 +216,11 @@ def tests_run(model):
 
 def encrypt_logs(name):
     pwd = getenv("BUILD_LOG_ZIP_PASSWORD")
-
-    # skip encryption entirely if no password provided
-    if not pwd or not pwd.strip():
-        print("BUILD_LOG_ZIP_PASSWORD not set — skipping encryption", file=sys.stderr)
-        return
     cwd = getcwd()
+    if not pwd or not pwd.strip():
+        print("BUILD_LOG_ZIP_PASSWORD not set — logs will be uploaded UNENCRYPTED", file=sys.stderr)
+        run(f'cd {cwd}/build/logs && zip -r {cwd}/{name}.zip *')
+        return
     run(f'cd {cwd}/build/logs && zip -e -P "{pwd}" {cwd}/{name}.zip *')
 
 # ----------------------------------------------------------
