@@ -52,7 +52,7 @@ jobs:
           )
           echo "should_skip=$SHOULD_SKIP" >> $GITHUB_OUTPUT
 
-      - run: brew install ldid && xcbeautify
+      - run: brew install ldid xcbeautify
         if: steps.build_gate.outputs.should_skip != 'true'
 
       # --------------------------------------------------
