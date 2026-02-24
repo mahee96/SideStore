@@ -62,7 +62,7 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: |
-            ~/Library/Alphaer/Xcode/DerivedData
+            ~/Library/Developer/Xcode/DerivedData
             ~/Library/Caches/org.swift.swiftpm
           key: xcode-build-cache-${{ github.ref_name }}-${{ github.sha }}
 
@@ -72,7 +72,7 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: |
-            ~/Library/Alphaer/Xcode/DerivedData
+            ~/Library/Developer/Xcode/DerivedData
             ~/Library/Caches/org.swift.swiftpm
           key: xcode-build-cache-${{ github.ref_name }}-
 
@@ -117,7 +117,7 @@ jobs:
         uses: actions/cache/save@v3
         with:
           path: |
-            ~/Library/Alphaer/Xcode/DerivedData
+            ~/Library/Developer/Xcode/DerivedData
             ~/Library/Caches/org.swift.swiftpm
           key: xcode-build-cache-${{ github.ref_name }}-${{ github.sha }}
 

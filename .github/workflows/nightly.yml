@@ -17,7 +17,6 @@ jobs:
     env:
       REF_NAME: nightly
       CHANNEL: nightly
-      BUNDLE_ID: com.SideStore.SideStore
 
     steps:
       - uses: actions/checkout@v4
@@ -167,6 +166,8 @@ jobs:
       # deploy 
       # --------------------------------------------------
       - name: Deploy
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PRODUCT_NAME=$(python3 scripts/ci/workflow.py get-product-name)
           BUNDLE_ID=$(python3 scripts/ci/workflow.py get-bundle-id)
@@ -175,7 +176,7 @@ jobs:
           LAST_SUCCESSFUL_COMMIT=$(python3 scripts/ci/workflow.py last-successful-commit \
             "${{ github.workflow }}" "$CHANNEL")
 
-
+          
           python3 scripts/ci/workflow.py deploy \
             Dependencies/apps-v2.json \
             "$SOURCE_JSON" \
@@ -187,3 +188,14 @@ jobs:
             "$BUNDLE_ID" \
             "$IPA_NAME" \
             "$LAST_SUCCESSFUL_COMMIT"
+
+          python3 scripts/ci/workflow.py upload-release \
+            "$RELEASE_NAME" \
+            "$RELEASE_TAG" \
+            "$IS_BETA" \
+            "$VERSION" \
+            "$GITHUB_SHA" \
+            "$GITHUB_REPOSITORY" \
+            "$BUILT_DATE" \
+            "$BUILT_DATE_ALT" \
+            "$RELEASE_NOTES"

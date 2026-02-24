@@ -6,175 +6,176 @@ from pathlib import Path
 
 
 # ----------------------------------------------------------
-# args
+# metadata
 # ----------------------------------------------------------
 
-if len(sys.argv) < 3:
-    print("Usage: python3 update_apps.py <metadata.json> <source.json>")
-    sys.exit(1)
+def load_metadata(metadata_file: Path):
+    if not metadata_file.exists():
+        raise SystemExit(f"Missing metadata file: {metadata_file}")
 
-metadata_file = Path(sys.argv[1])
-source_file = Path(sys.argv[2])
+    with open(metadata_file, "r", encoding="utf-8") as f:
+        meta = json.load(f)
 
+    print("  ====> Required parameter list <====")
+    for k, v in meta.items():
+        print(f"{k}: {v}")
 
-# ----------------------------------------------------------
-# load metadata
-# ----------------------------------------------------------
+    required = [
+        "bundle_identifier",
+        "version_ipa",
+        "version_date",
+        "release_channel",
+        "size",
+        "sha256",
+        "localized_description",
+        "download_url",
+    ]
 
-if not metadata_file.exists():
-    print(f"Missing metadata file: {metadata_file}")
-    sys.exit(1)
+    for r in required:
+        if not meta.get(r):
+            raise SystemExit("One or more required metadata fields missing")
 
-with open(metadata_file, "r", encoding="utf-8") as f:
-    meta = json.load(f)
+    meta["size"] = int(meta["size"])
+    meta["release_channel"] = meta["release_channel"].lower()
 
-VERSION_IPA = meta.get("version_ipa")
-VERSION_DATE = meta.get("version_date")
-IS_BETA = meta.get("is_beta")
-RELEASE_CHANNEL = meta.get("release_channel")
-SIZE = meta.get("size")
-SHA256 = meta.get("sha256")
-LOCALIZED_DESCRIPTION = meta.get("localized_description")
-DOWNLOAD_URL = meta.get("download_url")
-BUNDLE_IDENTIFIER = meta.get("bundle_identifier")
-
-print("  ====> Required parameter list <====")
-print("Bundle Identifier:", BUNDLE_IDENTIFIER)
-print("Version:", VERSION_IPA)
-print("Version Date:", VERSION_DATE)
-print("IsBeta:", IS_BETA)
-print("ReleaseChannel:", RELEASE_CHANNEL)
-print("Size:", SIZE)
-print("Sha256:", SHA256)
-print("Localized Description:", LOCALIZED_DESCRIPTION)
-print("Download URL:", DOWNLOAD_URL)
+    return meta
 
 
 # ----------------------------------------------------------
-# validation
+# source loading
 # ----------------------------------------------------------
 
-if (
-    not BUNDLE_IDENTIFIER
-    or not VERSION_IPA
-    or not VERSION_DATE
-    or not RELEASE_CHANNEL
-    or not SIZE
-    or not SHA256
-    or not LOCALIZED_DESCRIPTION
-    or not DOWNLOAD_URL
-):
-    print("One or more required metadata fields missing")
-    sys.exit(1)
+def load_source(source_file: Path):
+    if source_file.exists():
+        with open(source_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    else:
+        print("source.json missing — creating minimal structure")
+        data = {"version": 2, "apps": []}
 
-SIZE = int(SIZE)
-RELEASE_CHANNEL = RELEASE_CHANNEL.lower()
+    if int(data.get("version", 1)) < 2:
+        raise SystemExit("Only v2 and above are supported")
 
-
-# ----------------------------------------------------------
-# load source.json
-# ----------------------------------------------------------
-
-if source_file.exists():
-    with open(source_file, "r", encoding="utf-8") as f:
-        data = json.load(f)
-else:
-    print("source.json missing — creating minimal structure")
-    data = {
-        "version": 2,
-        "apps": []
-    }
-
-if int(data.get("version", 1)) < 2:
-    print("Only v2 and above are supported")
-    sys.exit(1)
+    return data
 
 
 # ----------------------------------------------------------
 # locate app
 # ----------------------------------------------------------
 
-apps = data.setdefault("apps", [])
+def ensure_app(data, bundle_id):
+    apps = data.setdefault("apps", [])
 
-app = next(
-    (a for a in apps if a.get("bundleIdentifier") == BUNDLE_IDENTIFIER),
-    None
-)
+    app = next(
+        (a for a in apps if a.get("bundleIdentifier") == bundle_id),
+        None,
+    )
 
-if app is None:
-    print("App entry missing — creating new app entry")
-    app = {
-        "bundleIdentifier": BUNDLE_IDENTIFIER,
-        "releaseChannels": []
+    if app is None:
+        print("App entry missing — creating new app entry")
+        app = {
+            "bundleIdentifier": bundle_id,
+            "releaseChannels": [],
+        }
+        apps.append(app)
+
+    return app
+
+
+# ----------------------------------------------------------
+# update storefront
+# ----------------------------------------------------------
+
+def update_storefront_if_needed(app, meta):
+    if meta["release_channel"] == "stable":
+        app.update({
+            "version": meta["version_ipa"],
+            "versionDate": meta["version_date"],
+            "size": meta["size"],
+            "sha256": meta["sha256"],
+            "localizedDescription": meta["localized_description"],
+            "downloadURL": meta["download_url"],
+        })
+
+
+# ----------------------------------------------------------
+# update release channel (ORIGINAL FORMAT)
+# ----------------------------------------------------------
+
+def update_release_channel(app, meta):
+    channels = app.setdefault("releaseChannels", [])
+
+    new_version = {
+        "version": meta["version_ipa"],
+        "date": meta["version_date"],
+        "localizedDescription": meta["localized_description"],
+        "downloadURL": meta["download_url"],
+        "size": meta["size"],
+        "sha256": meta["sha256"],
     }
-    apps.append(app)
 
+    tracks = [
+        t for t in channels
+        if isinstance(t, dict)
+        and t.get("track") == meta["release_channel"]
+    ]
 
-# ----------------------------------------------------------
-# update storefront metadata (stable only)
-# ----------------------------------------------------------
+    if len(tracks) > 1:
+        raise SystemExit(f"Multiple tracks named {meta['release_channel']}")
 
-if RELEASE_CHANNEL == "stable":
-    app.update({
-        "version": VERSION_IPA,
-        "versionDate": VERSION_DATE,
-        "size": SIZE,
-        "sha256": SHA256,
-        "localizedDescription": LOCALIZED_DESCRIPTION,
-        "downloadURL": DOWNLOAD_URL,
-    })
-
-
-# ----------------------------------------------------------
-# releaseChannels update (ORIGINAL FORMAT)
-# ----------------------------------------------------------
-
-channels = app.setdefault("releaseChannels", [])
-
-new_version = {
-    "version": VERSION_IPA,
-    "date": VERSION_DATE,
-    "localizedDescription": LOCALIZED_DESCRIPTION,
-    "downloadURL": DOWNLOAD_URL,
-    "size": SIZE,
-    "sha256": SHA256,
-}
-
-# find track
-tracks = [
-    t for t in channels
-    if isinstance(t, dict) and t.get("track") == RELEASE_CHANNEL
-]
-
-if len(tracks) > 1:
-    print(f"Multiple tracks named {RELEASE_CHANNEL}")
-    sys.exit(1)
-
-if not tracks:
-    # create new track at top (original behaviour)
-    channels.insert(0, {
-        "track": RELEASE_CHANNEL,
-        "releases": [new_version],
-    })
-else:
-    track = tracks[0]
-    releases = track.setdefault("releases", [])
-
-    if not releases:
-        releases.append(new_version)
+    if not tracks:
+        channels.insert(0, {
+            "track": meta["release_channel"],
+            "releases": [new_version],
+        })
     else:
-        # replace top entry only (original logic)
-        releases[0] = new_version
+        track = tracks[0]
+        releases = track.setdefault("releases", [])
+
+        if not releases:
+            releases.append(new_version)
+        else:
+            releases[0] = new_version
 
 
 # ----------------------------------------------------------
 # save
 # ----------------------------------------------------------
 
-print("\nUpdated Sources File:\n")
-print(json.dumps(data, indent=2, ensure_ascii=False))
+def save_source(source_file: Path, data):
+    print("\nUpdated Sources File:\n")
+    print(json.dumps(data, indent=2, ensure_ascii=False))
 
-with open(source_file, "w", encoding="utf-8") as f:
-    json.dump(data, f, indent=2, ensure_ascii=False)
+    source_file.parent.mkdir(parents=True, exist_ok=True)
 
-print("JSON successfully updated.")
+    with open(source_file, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+    print("JSON successfully updated.")
+
+
+# ----------------------------------------------------------
+# main
+# ----------------------------------------------------------
+
+def main():
+    if len(sys.argv) < 3:
+        print("Usage: python3 update_apps.py <metadata.json> <source.json>")
+        sys.exit(1)
+
+    metadata_file = Path(sys.argv[1])
+    source_file = Path(sys.argv[2])
+
+    meta = load_metadata(metadata_file)
+    data = load_source(source_file)
+
+    app = ensure_app(data, meta["bundle_identifier"])
+
+    update_storefront_if_needed(app, meta)
+    update_release_channel(app, meta)
+
+    save_source(source_file, data)
+
+
+if __name__ == "__main__":
+    main()

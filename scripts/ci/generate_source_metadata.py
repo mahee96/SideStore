@@ -5,6 +5,7 @@ import json
 import subprocess
 from pathlib import Path
 import argparse
+import textwrap
 import sys
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -140,15 +141,15 @@ def main():
     formatted = now.strftime("%Y-%m-%dT%H:%M:%SZ")
     human = now.strftime("%c")
 
-    localized_description = f"""
-This is release for:
-  - version: "{args.version}"
-  - revision: "{args.short_commit}"
-  - timestamp: "{human}"
+    localized_description = textwrap.dedent(f"""
+        This is release for:
+          - version: "{args.version}"
+          - revision: "{args.short_commit}"
+          - timestamp: "{human}"
 
-Release Notes:
-{notes}
-""".strip()
+        Release Notes:
+        {notes}
+    """).strip()
 
     metadata = {
         "is_beta": bool(args.is_beta),
