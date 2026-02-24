@@ -140,7 +140,7 @@ def get_bundle_id():
     )
 
 def get_marketing_version():
-    return runAndGet("grep MARKETING_VERSION Build.xcconfig | sed -e 's/MARKETING_VERSION = //g'")
+    return runAndGet(f"grep MARKETING_VERSION {ROOT}/Build.xcconfig | sed -e 's/MARKETING_VERSION = //g'")
 
 def set_marketing_version(qualified):
     run(
@@ -277,7 +277,7 @@ def retrieve_release_notes(tag):
 # DEPLOY SOURCE.JSON
 # ----------------------------------------------------------
 
-def deploy(repo, source_json, release_tag, short_commit, marketing_version, version, channel, bundle_id, ipa_name, last_successful_commit=None):
+def deploy(repo, source_json, release_tag, short_commit, marketing_version, channel, bundle_id, ipa_name, last_successful_commit=None):
     repo = (ROOT / repo).resolve()
     ipa_path = ROOT / ipa_name
     source_json_path = repo / source_json
@@ -300,7 +300,6 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
         f"--output-name {metadata} "
         f"--release-notes-dir {ROOT} "
         f"--release-tag {release_tag} "
-        f"--version {version} "
         f"--marketing-version {marketing_version} "
         f"--short-commit {short_commit} "
         f"--release-channel {channel} "
@@ -331,7 +330,7 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
         # regenerate after reset so we don't lose changes
         run(f"python3 {SCRIPTS}/update_source_metadata.py '{ROOT}/{metadata}' '{source_json_path}'", cwd=repo)
         run(f"git add --verbose {source_json}", cwd=repo)
-        run(f"git commit -m '{release_tag} - deployed {version}' || true", cwd=repo)
+        run(f"git commit -m '{release_tag} - deployed {marketing_version}' || true", cwd=repo)
 
         rc = subprocess.call("git push", shell=True, cwd=repo)
 
@@ -365,7 +364,7 @@ def last_successful_commit(workflow, branch):
 
     return None
 
-def upload_release(release_name, release_tag, version, commit_sha, repo, upstream_recommendation):
+def upload_release(release_name, release_tag, commit_sha, repo, upstream_recommendation):
     token = getenv("GH_TOKEN")
     if token:
         os.environ["GH_TOKEN"] = token
@@ -377,6 +376,7 @@ def upload_release(release_name, release_tag, version, commit_sha, repo, upstrea
 
     meta = json.loads(metadata_path.read_text())
 
+    marketing_version = bool(meta.get("version_ipa"))
     is_beta = bool(meta.get("is_beta"))
     build_datetime = meta.get("version_date")
 
@@ -406,7 +406,7 @@ def upload_release(release_name, release_tag, version, commit_sha, repo, upstrea
         Built at (UTC): `{built_time}`
         Built at (UTC date): `{built_date}`
         Commit SHA: `{commit_sha}`
-        Version: `{version}`
+        Version: `{marketing_version}`
     """
 
     header = inspect.cleandoc(raw_body)
@@ -483,9 +483,9 @@ COMMANDS = {
     "last-successful-commit"  : (last_successful_commit,    2,  "<workflow_name> <branch>"),
     "release-notes"           : (release_notes,             1,  "<tag>"),
     "retrieve-release-notes"  : (retrieve_release_notes,    1,  "<tag>"),
-    "deploy"                  : (deploy,                    10,
-                                "<repo> <source_json> <release_tag> <short_commit> <marketing_version> <version> <channel> <bundle_id> <ipa_name> [last_successful_commit]"),
-    "upload-release"          : (upload_release,            6,  "<release_name> <release_tag> <version> <commit_sha> <repo> <upstream_recommendation>"),
+    "deploy"                  : (deploy,                    9,
+                                "<repo> <source_json> <release_tag> <short_commit> <marketing_version> <channel> <bundle_id> <ipa_name> [last_successful_commit]"),
+    "upload-release"          : (upload_release,            5,  "<release_name> <release_tag> <commit_sha> <repo> <upstream_recommendation>"),
 }
 
 def main():

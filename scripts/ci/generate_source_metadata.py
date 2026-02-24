@@ -68,7 +68,6 @@ def main():
     p.add_argument("--release-notes-dir", required=True)
 
     p.add_argument("--release-tag", required=True)
-    p.add_argument("--version", required=True)
     p.add_argument("--marketing-version", required=True)
     p.add_argument("--short-commit", required=True)
     p.add_argument("--release-channel", required=True)
@@ -143,7 +142,7 @@ def main():
 
     localized_description = textwrap.dedent(f"""
         This is release for:
-          - version: "{args.version}"
+          - version: "{args.marketing_version}"
           - revision: "{args.short_commit}"
           - timestamp: "{human}"
 
