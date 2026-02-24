@@ -407,12 +407,29 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_tag_rec
     prerelease_flag = "--prerelease" if prerelease else ""
     latest_flag = "" if update_tag else "--latest=false"
 
-    run(
-        f'gh release edit "{release_tag}" '
-        f'--title "{release_name}" '
-        f'--notes-file "{body_file}" '
-        f'{draft_flag} {prerelease_flag} {latest_flag}'
-    )
+    # create release if it doesn't exist
+    exists = subprocess.call(
+        f'gh release view "{release_tag}"',
+        shell=True,
+        cwd=ROOT,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    ) == 0
+
+    if exists:
+        run(
+            f'gh release edit "{release_tag}" '
+            f'--title "{release_name}" '
+            f'--notes-file "{body_file}" '
+            f'{draft_flag} {prerelease_flag} {latest_flag}'
+        )
+    else:
+        run(
+            f'gh release create "{release_tag}" '
+            f'--title "{release_name}" '
+            f'--notes-file "{body_file}" '
+            f'{draft_flag} {prerelease_flag} {latest_flag}'
+        )
 
     run(
         f'gh release upload "{release_tag}" '
