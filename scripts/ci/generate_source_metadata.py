@@ -165,9 +165,9 @@ def main():
 def getFormattedLocalizedDescription(marketing_version, short_commit, human, notes):
     return f"""
 This is release for:
-    - version: "{marketing_version}"
-    - revision: "{short_commit}"
-    - timestamp: "{human}"
+  - version: "{marketing_version}"
+  - revision: "{short_commit}"
+  - timestamp: "{human}"
 
 Release Notes:
 {notes}
