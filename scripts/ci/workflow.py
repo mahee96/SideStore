@@ -407,11 +407,10 @@ def upload_release(release_name, release_tag, version, commit_sha, repo, upstrea
         Built at (UTC date): `{built_date}`
         Commit SHA: `{commit_sha}`
         Version: `{version}`
-
-        {release_notes}
     """
 
-    body = inspect.cleandoc(raw_body) + "\n"
+    header = inspect.cleandoc(raw_body)
+    body = header + "\n\n" + release_notes.lstrip() + "\n"
 
     body_file = ROOT / "release_body.md"
     body_file.write_text(body, encoding="utf-8")
