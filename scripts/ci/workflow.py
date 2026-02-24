@@ -7,7 +7,7 @@ from pathlib import Path
 import time
 import json
 import inspect
-
+import re
 
 # REPO ROOT relative to script dir
 ROOT = Path(__file__).resolve().parents[2]
@@ -60,7 +60,6 @@ def short_commit():
 # ----------------------------------------------------------
 # BUILD NUMBER RESERVATION
 # ----------------------------------------------------------
-
 def reserve_build_number(repo, max_attempts=5):
     repo = Path(repo).resolve()
     version_json = repo / "version.json"
@@ -68,9 +67,14 @@ def reserve_build_number(repo, max_attempts=5):
     def utc_now():
         return datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    def read():
-        branch = runAndGet("git rev-parse --abbrev-ref HEAD", cwd=repo)
+    def current_branch():
+        return runAndGet("git rev-parse --abbrev-ref HEAD", cwd=repo)
 
+    def sync_with_remote(branch):
+        run(f"git fetch --depth=1 origin {branch}", check=False, cwd=repo)
+        run(f"git reset --hard origin/{branch}", check=False, cwd=repo)
+
+    def read(branch):
         defaults = {
             "build": 0,
             "issued_at": utc_now(),
@@ -82,13 +86,10 @@ def reserve_build_number(repo, max_attempts=5):
         else:
             data = {}
 
-        # fill missing fields
         for k, v in defaults.items():
             data.setdefault(k, v)
 
-        # ensure tag always tracks current branch
         data["tag"] = branch
-
         version_json.write_text(json.dumps(data, indent=2) + "\n")
         return data
 
@@ -96,19 +97,23 @@ def reserve_build_number(repo, max_attempts=5):
         version_json.write_text(json.dumps(data, indent=2) + "\n")
 
     for attempt in range(max_attempts):
-        run("git fetch --depth=1 origin HEAD", check=False, cwd=repo)
-        run("git reset --hard FETCH_HEAD", check=False, cwd=repo)
+        branch = current_branch()
+        sync_with_remote(branch)
 
-        data = read()
+        data = read(branch)
         data["build"] += 1
         data["issued_at"] = utc_now()
 
         write(data)
 
         run("git add version.json", check=False, cwd=repo)
-        run(f"git commit -m '{data['tag']} - build no: {data['build']}' || true", check=False, cwd=repo)
+        run(
+            f"git commit -m '{branch} - build no: {data['build']}' || true",
+            check=False,
+            cwd=repo,
+        )
 
-        rc = subprocess.call("git push", shell=True, cwd=repo)
+        rc = subprocess.call(f"git push origin {branch}", shell=True, cwd=repo)
 
         if rc == 0:
             print(f"Reserved build #{data['build']}", file=sys.stderr)
@@ -118,7 +123,7 @@ def reserve_build_number(repo, max_attempts=5):
         time.sleep(2)
 
     raise SystemExit("Failed reserving build number")
-
+    
 # ----------------------------------------------------------
 # PROJECT INFO
 # ----------------------------------------------------------
@@ -376,7 +381,7 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_recomme
 
     meta = json.loads(metadata_path.read_text())
 
-    marketing_version = bool(meta.get("version_ipa"))
+    marketing_version = meta.get("version_ipa")
     is_beta = bool(meta.get("is_beta"))
     build_datetime = meta.get("version_date")
 
@@ -390,6 +395,13 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_recomme
         f"python3 {SCRIPTS}/generate_release_notes.py "
         f"--retrieve {release_tag} "
         f"--output-dir {ROOT}"
+    )
+    # normalize section header
+    release_notes = re.sub(
+        r'^\s*#{1,6}\s*what(?:\'?s|\s+is)?\s+(?:new|changed).*',
+        "## What's Changed",
+        release_notes,
+        flags=re.IGNORECASE | re.MULTILINE,
     )
 
     upstream_block = ""
@@ -426,7 +438,7 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_recomme
 
     run(
         f'gh release upload "{release_tag}" '
-        f'SideStore.ipa SideStore.dSYMs.zip '
+        f'SideStore.ipa SideStore.dSYMs.zip encrypted-build-logs.zip '
         f'--clobber'
     )
 
@@ -520,7 +532,6 @@ def main():
     if result is not None:
         sys.stdout.write(str(result))
         sys.stdout.flush()
-
 
 if __name__ == "__main__":
     main()
