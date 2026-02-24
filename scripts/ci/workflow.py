@@ -181,9 +181,12 @@ def set_marketing_version(qualified):
         f"{ROOT}/Build.xcconfig"
     )
 
-def compute_qualified_version(marketing, build_num, channel, short):
-    date = datetime.datetime.now(datetime.UTC).strftime("%Y.%m.%d")
-    return f"{marketing}-{channel}.{date}.{build_num}+{short}"
+
+def compute_qualified_version(marketing, build_num, short):
+    now = datetime.datetime.now(datetime.UTC)
+    date = now.strftime("%Y%m%d")   # normalized date
+    base = marketing.strip()
+    return f"{base}-{date}.{build_num}+{short}"
 
 # ----------------------------------------------------------
 # CLEAN
@@ -420,7 +423,6 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_tag_rec
     meta = json.loads(metadata_path.read_text())
 
     marketing_version = meta.get("version_ipa")
-    is_beta = bool(meta.get("is_beta"))
     build_datetime = meta.get("version_date")
 
     dt = datetime.datetime.fromisoformat(
@@ -460,8 +462,6 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_tag_rec
 
     body_file = ROOT / "release_body.md"
     body_file.write_text(body, encoding="utf-8")
-
-    prerelease_flag = "--prerelease" if is_beta else ""
 
     draft_flag = "--draft" if draft else ""
     prerelease_flag = "--prerelease" if prerelease else ""
@@ -517,7 +517,7 @@ COMMANDS = {
     # ----------------------------------------------------------
     "get-marketing-version"   : (get_marketing_version,     0, ""),
     "set-marketing-version"   : (set_marketing_version,     1, "<qualified_version>"),
-    "compute-qualified"       : (compute_qualified_version, 4, "<marketing> <build_num> <channel> <short_commit>"),
+    "compute-qualified"       : (compute_qualified_version, 3, "<marketing> <build_num> <short_commit>"),
     "reserve_build_number"    : (reserve_build_number,      1, "<repo>"),
     "get-product-name"        : (get_product_name,          0, ""),
     "get-bundle-id"           : (get_bundle_id,             0, ""),
