@@ -74,17 +74,16 @@ jobs:
           MARKETING_VERSION=$(python3 scripts/ci/workflow.py get-marketing-version)
           SHORT_COMMIT=$(python3 scripts/ci/workflow.py commit-id)
 
-          QUALIFIED_VERSION=$(python3 scripts/ci/workflow.py compute-qualified \
+          NORMALIZED_VERSION=$(python3 scripts/ci/workflow.py compute-normalized \
               "$MARKETING_VERSION" \
               "$BUILD_NUM" \
-              "${{ env.CHANNEL }}" \
               "$SHORT_COMMIT")
 
-          python3 scripts/ci/workflow.py set-marketing-version "$QUALIFIED_VERSION"
+          python3 scripts/ci/workflow.py set-marketing-version "$NORMALIZED_VERSION"
 
           echo "BUILD_NUM=$BUILD_NUM" | tee -a $GITHUB_ENV
           echo "SHORT_COMMIT=$SHORT_COMMIT" | tee -a $GITHUB_ENV
-          echo "MARKETING_VERSION=$QUALIFIED_VERSION" | tee -a $GITHUB_ENV
+          echo "MARKETING_VERSION=$NORMALIZED_VERSION" | tee -a $GITHUB_ENV
 
       - name: Setup Xcode
         if: steps.build_gate.outputs.should_skip != 'true'
