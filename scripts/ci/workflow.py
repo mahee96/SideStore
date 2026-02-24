@@ -246,21 +246,12 @@ def retrieve_release_notes(tag):
 # ----------------------------------------------------------
 # DEPLOY SOURCE.JSON
 # ----------------------------------------------------------
-
-def deploy(repo, source_json, release_tag, short_commit, marketing_version, channel, bundle_id, ipa_name, last_successful_commit=None):
-    repo = (ROOT / repo).resolve()
+def generate_metadata(release_tag, short_commit, marketing_version, channel, bundle_id, ipa_name, last_successful_commit=None):
     ipa_path = ROOT / ipa_name
-    source_json_path = repo / source_json
     metadata = 'source-metadata.json'
-
-    if not repo.exists():
-        raise SystemExit(f"{repo} repo missing")
 
     if not ipa_path.exists():
         raise SystemExit(f"{ipa_path} missing")
-
-    if not source_json_path.exists():
-        raise SystemExit(f"{source_json} missing inside repo")
 
     cmd = (
         f"python3 {SCRIPTS}/generate_source_metadata.py "
@@ -276,11 +267,25 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, chan
         f"--bundle-id {bundle_id}"
     )
 
-    # pass only if provided
     if last_successful_commit:
         cmd += f" --last-successful-commit {last_successful_commit}"
 
     run(cmd)
+
+def deploy(repo, source_json, release_tag, marketing_version):
+    repo = (ROOT / repo).resolve()
+    source_json_path = repo / source_json
+    metadata = 'source-metadata.json'
+
+    if not repo.exists():
+        raise SystemExit(f"{repo} repo missing")
+
+    if not (repo / ".git").exists():
+        print("Repo is not a git repository, skipping deploy", file=sys.stderr)
+        return
+
+    if not source_json_path.exists():
+        raise SystemExit(f"{source_json} missing inside repo")
 
     run("git config user.name 'GitHub Actions'", check=False)
     run("git config user.email 'github-actions@github.com'", check=False)
@@ -290,7 +295,7 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, chan
     run("git switch main || git switch -c main origin/main", cwd=repo)
     run("git reset --hard origin/main", cwd=repo)
     # ------------------------------------------------------
-    
+
     max_attempts = 5
     for attempt in range(1, max_attempts + 1):
         if attempt > 1:
@@ -312,6 +317,7 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, chan
         time.sleep(0.5)
     else:
         raise SystemExit("Deploy push failed after retries")
+
 
 def last_successful_commit(workflow, branch):
     import json
@@ -492,13 +498,15 @@ COMMANDS = {
     # ----------------------------------------------------------
     # RELEASE / DEPLOY
     # ----------------------------------------------------------
-    "last-successful-commit"  : (last_successful_commit,    2,  "<workflow_name> <branch>"),
-    "release-notes"           : (release_notes,             1,  "<tag>"),
-    "retrieve-release-notes"  : (retrieve_release_notes,    1,  "<tag>"),
-    "deploy"                  : (deploy,                    9,
-                                "<repo> <source_json> <release_tag> <short_commit> <marketing_version> <channel> <bundle_id> <ipa_name> [last_successful_commit]"),
-    "upload-release"          : (upload_release,            5,  "<release_name> <release_tag> <commit_sha> <repo> <upstream_tag_recommended> [is_stable]"),
-}
+    "last-successful-commit"  : (last_successful_commit,     2, "<workflow_name> <branch>"),
+    "release-notes"           : (release_notes,              1, "<tag>"),
+    "retrieve-release-notes"  : (retrieve_release_notes,     1, "<tag>"),
+    "generate-metadata"       : (generate_metadata,          7,
+                                 "<release_tag> <short_commit> <marketing_version> <channel> <bundle_id> <ipa_name> [last_successful_commit]"),
+    "deploy"                  : (deploy,                     4,
+                                 "<repo> <source_json> <release_tag> <marketing_version>"),
+    "upload-release"          : (upload_release,             5,
+                                 "<release_name> <release_tag> <commit_sha> <repo> <upstream_tag_recommended> [is_stable]"),}
 
 def main():
     def usage():
