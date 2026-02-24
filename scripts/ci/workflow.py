@@ -174,15 +174,15 @@ def read_bundle_id():    return _read_dumped_build_setting("PRODUCT_BUNDLE_IDENT
 def get_marketing_version():
     return runAndGet(f"grep MARKETING_VERSION {ROOT}/Build.xcconfig | sed -e 's/MARKETING_VERSION = //g'")
 
-def set_marketing_version(qualified):
+def set_marketing_version(version):
     run(
         f"sed -E -i '' "
-        f"'s/^MARKETING_VERSION = .*/MARKETING_VERSION = {qualified}/' "
+        f"'s/^MARKETING_VERSION = .*/MARKETING_VERSION = {version}/' "
         f"{ROOT}/Build.xcconfig"
     )
 
 
-def compute_qualified_version(marketing, build_num, short):
+def compute_normalized_version(marketing, build_num, short):
     now = datetime.datetime.now(datetime.UTC)
     date = now.strftime("%Y%m%d")   # normalized date
     base = marketing.strip()
@@ -519,8 +519,8 @@ COMMANDS = {
     # PROJECT INFO
     # ----------------------------------------------------------
     "get-marketing-version"   : (get_marketing_version,     0, ""),
-    "set-marketing-version"   : (set_marketing_version,     1, "<qualified_version>"),
-    "compute-qualified"       : (compute_qualified_version, 3, "<marketing> <build_num> <short_commit>"),
+    "set-marketing-version"   : (set_marketing_version,     1, "<normalized_version>"),
+    "compute-normalized"       : (compute_normalized_version, 3, "<marketing> <build_num> <short_commit>"),
     "reserve_build_number"    : (reserve_build_number,      1, "<repo>"),
     "get-product-name"        : (get_product_name,          0, ""),
     "get-bundle-id"           : (get_bundle_id,             0, ""),
