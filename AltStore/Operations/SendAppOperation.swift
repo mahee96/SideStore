@@ -59,8 +59,8 @@ final class SendAppOperation: ResultOperation<()>
         }
 
         do {
-                let bytes = Data(data)
-                try yeetAppAFC(app.bundleIdentifier, bytes)
+            let bytes = Data(data)
+            try yeetAppAFC(bundleIdentifier, bytes)
             self.progress.completedUnitCount += 1
             self.finish(.success(()))
         } catch {
