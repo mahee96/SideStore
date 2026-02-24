@@ -15,6 +15,7 @@ jobs:
     env:
       REF_NAME: alpha
       CHANNEL: alpha
+      UPSTREAM_CHANNEL: 'nightly'
 
     steps:
       - uses: actions/checkout@v4
@@ -164,14 +165,16 @@ jobs:
       # deploy 
       # --------------------------------------------------
       - name: Deploy
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PRODUCT_NAME=$(python3 scripts/ci/workflow.py get-product-name)
           BUNDLE_ID=$(python3 scripts/ci/workflow.py get-bundle-id)
           SOURCE_JSON="_includes/source.json"
           IPA_NAME="$PRODUCT_NAME.ipa"
+
           LAST_SUCCESSFUL_COMMIT=$(python3 scripts/ci/workflow.py last-successful-commit \
             "${{ github.workflow }}" "$CHANNEL")
-
 
           python3 scripts/ci/workflow.py deploy \
             Dependencies/apps-v2.json \
@@ -184,3 +187,12 @@ jobs:
             "$BUNDLE_ID" \
             "$IPA_NAME" \
             "$LAST_SUCCESSFUL_COMMIT"
+
+          RELEASE_NOTES=$(python3 scripts/ci/workflow.py retrieve-release-notes "$REF_NAME")
+          
+          python3 scripts/ci/workflow.py upload-release \
+            "$VERSION" \
+            "$REF_NAME" \
+            "$GITHUB_SHA" \
+            "$GITHUB_REPOSITORY" \
+            "$UPSTREAM_CHANNEL"
