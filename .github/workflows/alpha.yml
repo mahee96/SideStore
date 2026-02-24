@@ -13,7 +13,8 @@ jobs:
   build:
     runs-on: macos-26
     env:
-      HAS_DEPLOY_KEY: ${{ secrets.CROSS_REPO_PUSH_KEY }}
+      DEPLOY_KEY: ${{ secrets.CROSS_REPO_PUSH_KEY }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       RELEASE_NAME: Alpha
       CHANNEL: alpha
       UPSTREAM_CHANNEL: "nightly"
@@ -29,8 +30,6 @@ jobs:
           LAST_SUCCESSFUL_COMMIT=$(python3 scripts/ci/workflow.py last-successful-commit \
             "${{ github.workflow }}" "${{ env.CHANNEL }}" || echo "")
           echo "LAST_SUCCESSFUL_COMMIT=$LAST_SUCCESSFUL_COMMIT" | tee -a $GITHUB_ENV
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - run: brew install ldid xcbeautify
 
@@ -173,7 +172,7 @@ jobs:
           path: SideStore.dSYMs.zip
 
       - uses: actions/checkout@v4
-        if: steps.build_gate.outputs.should_skip != 'true' && env.HAS_PUSH_KEY != ''
+        if: env.DEPLOY_KEY != ''
         with:
           repository: "SideStore/apps-v2.json"
           ref: "main"
@@ -184,9 +183,8 @@ jobs:
       # deploy
       # --------------------------------------------------
       - name: Deploy
-        if: steps.build_gate.outputs.should_skip != 'true' && env.HAS_PUSH_KEY != ''
+        if: env.DEPLOY_KEY != ''
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python3 scripts/ci/workflow.py dump-project-settings
           PRODUCT_NAME=$(python3 scripts/ci/workflow.py read-product-name)
@@ -209,8 +207,6 @@ jobs:
       # upload release
       # --------------------------------------------------
       - name: Upload Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python3 scripts/ci/workflow.py upload-release \
             "$RELEASE_NAME" \
