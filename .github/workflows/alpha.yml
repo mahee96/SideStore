@@ -143,24 +143,24 @@ jobs:
       # --------------------------------------------------
       - uses: actions/upload-artifact@v4
         with:
-          name: encrypted-build-logs-${{ env.MARKETING_VERSION }}.zip
-          path: encrypted-build-logs.zip
+          name: build-logs-${{ env.MARKETING_VERSION }}.zip
+          path: build-logs.zip
 
       - uses: actions/upload-artifact@v4
         if: >
           vars.ENABLE_TESTS == '1' &&
           vars.ENABLE_TESTS_BUILD == '1'
         with:
-          name: encrypted-tests-build-logs-${{ env.SHORT_COMMIT }}.zip
-          path: encrypted-tests-build-logs.zip
+          name: tests-build-logs-${{ env.SHORT_COMMIT }}.zip
+          path: tests-build-logs.zip
 
       - uses: actions/upload-artifact@v4
         if: >
           vars.ENABLE_TESTS == '1' &&
           vars.ENABLE_TESTS_RUN == '1'
         with:
-          name: encrypted-tests-run-logs-${{ env.SHORT_COMMIT }}.zip
-          path: encrypted-tests-run-logs.zip
+          name: tests-run-logs-${{ env.SHORT_COMMIT }}.zip
+          path: tests-run-logs.zip
 
       - uses: actions/upload-artifact@v4
         with:
