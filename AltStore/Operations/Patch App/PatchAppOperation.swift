@@ -211,7 +211,6 @@ private extension PatchAppOperation
             #if targetEnvironment(simulator)
             throw PatchAppError.unsupportedOperatingSystemVersion(ProcessInfo.processInfo.operatingSystemVersion)
             #else
-            
             let spotlightPath = "Applications/Spotlight.app/Spotlight"
             let spotlightFileURL = self.patchDirectory.appendingPathComponent(spotlightPath)
             
