@@ -37,7 +37,8 @@ func installProvisioningProfiles(_ profileData: Data) throws {
     #if targetEnvironment(simulator)
     print("installProvisioningProfiles(\(profileData)) is no-op on simulator")
     #else
-    try minimuxer.install_provisioning_profile(profileData.toRustByteSlice().forRust())
+    let slice = profileData.toRustByteSlice()
+    try minimuxer.install_provisioning_profile(slice.forRust())
     #endif
 }
 
@@ -55,7 +56,8 @@ func yeetAppAFC(_ bundleId: String, _ rawBytes: Data) throws {
     #if targetEnvironment(simulator)
     print("yeetAppAFC(\(bundleId), \(rawBytes)) is no-op on simulator")
     #else
-    try minimuxer.yeet_app_afc(bundleId, rawBytes.toRustByteSlice().forRust())
+    let slice = rawBytes.toRustByteSlice()
+    try minimuxer.yeet_app_afc(bundleId, slice.forRust())
     #endif
 }
 
