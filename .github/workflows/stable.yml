@@ -16,6 +16,7 @@ jobs:
     runs-on: macos-26
 
     env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       RELEASE_NAME: Stable
       CHANNEL: stable
       UPSTREAM_CHANNEL: ""
@@ -102,6 +103,22 @@ jobs:
         with:
           name: SideStore-${{ env.MARKETING_VERSION }}-dSYMs.zip
           path: SideStore.dSYMs.zip
+
+      - name: Generate Metadata
+        run: |
+          python3 scripts/ci/workflow.py dump-project-settings
+          PRODUCT_NAME=$(python3 scripts/ci/workflow.py read-product-name)
+          BUNDLE_ID=$(python3 scripts/ci/workflow.py read-bundle-id)
+          IPA_NAME="$PRODUCT_NAME.ipa"
+
+          python3 scripts/ci/workflow.py generate-metadata \
+            "$CHANNEL" \
+            "$SHORT_COMMIT" \
+            "$MARKETING_VERSION" \
+            "$CHANNEL" \
+            "$BUNDLE_ID" \
+            "$IPA_NAME" \
+            "$LAST_SUCCESSFUL_COMMIT"
 
       - name: Upload to releases
         env:

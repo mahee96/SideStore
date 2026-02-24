@@ -179,21 +179,14 @@ jobs:
           token: ${{ secrets.CROSS_REPO_PUSH_KEY }}
           path: "SideStore/apps-v2.json"
 
-      # --------------------------------------------------
-      # deploy
-      # --------------------------------------------------
-      - name: Deploy
-        if: env.DEPLOY_KEY != ''
+      - name: Generate Metadata
         run: |
           python3 scripts/ci/workflow.py dump-project-settings
           PRODUCT_NAME=$(python3 scripts/ci/workflow.py read-product-name)
           BUNDLE_ID=$(python3 scripts/ci/workflow.py read-bundle-id)
-          SOURCE_JSON="_includes/source.json"
           IPA_NAME="$PRODUCT_NAME.ipa"
-          
-          python3 scripts/ci/workflow.py deploy \
-            SideStore/apps-v2.json \
-            "$SOURCE_JSON" \
+
+          python3 scripts/ci/workflow.py generate-metadata \
             "$CHANNEL" \
             "$SHORT_COMMIT" \
             "$MARKETING_VERSION" \
@@ -202,8 +195,20 @@ jobs:
             "$IPA_NAME" \
             "$LAST_SUCCESSFUL_COMMIT"
 
+      - name: Deploy
+        if: env.DEPLOY_KEY != ''
+        run: |
+          SOURCE_JSON="_includes/source.json"
+
+          python3 scripts/ci/workflow.py deploy \
+            SideStore/apps-v2.json \
+            "$SOURCE_JSON" \
+            "$CHANNEL" \
+            "$MARKETING_VERSION"
+      
+
       # --------------------------------------------------
-      # upload release
+      # upload release to GH
       # --------------------------------------------------
       - name: Upload Release
         run: |
