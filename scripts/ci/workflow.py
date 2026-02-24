@@ -408,20 +408,7 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_recomme
     if upstream_recommendation and upstream_recommendation.strip():
         upstream_block = f"{upstream_recommendation.strip()}\n\n"
 
-    raw_body = f"""
-        This is an ⚠️ **EXPERIMENTAL** ⚠️ {release_name} build for commit [{commit_sha}](https://github.com/{repo}/commit/{commit_sha}).
-
-        {release_name} builds are **extremely experimental builds only meant to be used by developers and beta testers. They often contain bugs and experimental features. Use at your own risk!**
-
-        {upstream_block}## Build Info
-
-        Built at (UTC): `{built_time}`
-        Built at (UTC date): `{built_date}`
-        Commit SHA: `{commit_sha}`
-        Version: `{marketing_version}`
-    """
-
-    header = inspect.cleandoc(raw_body)
+    header = getFormattedUploadMsg(release_name, release_tag, commit_sha, repo, upstream_block, built_time, built_date, marketing_version)
     body = header + "\n\n" + release_notes.lstrip() + "\n"
 
     body_file = ROOT / "release_body.md"
@@ -441,6 +428,20 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_recomme
         f'SideStore.ipa SideStore.dSYMs.zip encrypted-build-logs.zip '
         f'--clobber'
     )
+
+def getFormattedUploadMsg(release_name, release_tag, commit_sha, repo, upstream_block, built_time, built_date, marketing_version):
+    return f"""
+This is an ⚠️ **EXPERIMENTAL** ⚠️ {release_name} build for commit [{commit_sha}](https://github.com/{repo}/commit/{commit_sha}).
+
+{release_name} builds are **extremely experimental builds only meant to be used by developers and beta testers. They often contain bugs and experimental features. Use at your own risk!**
+
+{upstream_block}## Build Info
+
+Built at (UTC): `{built_time}`
+Built at (UTC date): `{built_date}`
+Commit SHA: `{commit_sha}`
+Version: `{marketing_version}`
+""".lstrip("\n")
 
 # ----------------------------------------------------------
 # ENTRYPOINT
