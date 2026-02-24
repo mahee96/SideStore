@@ -23,6 +23,13 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - run: |
+          LAST_SUCCESSFUL_COMMIT=$(python3 scripts/ci/workflow.py last-successful-commit \
+            "${{ github.workflow }}" "${{ env.CHANNEL }}" || echo "")
+          echo "LAST_SUCCESSFUL_COMMIT=$LAST_SUCCESSFUL_COMMIT" | tee -a $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - uses: actions/cache@v4
         with:
           path: |
@@ -99,7 +106,9 @@ jobs:
           python3 scripts/ci/workflow.py clean-spm-cache
 
       - name: Boot simulator (async)
-        if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_RUN == '1' }}
+        if: >
+          vars.ENABLE_TESTS == '1' &&
+          vars.ENABLE_TESTS_RUN == '1'
         run: |
           mkdir -p build/logs
           python3 scripts/ci/workflow.py boot-sim-async "iPhone 17 Pro"
@@ -116,7 +125,9 @@ jobs:
 
       - name: Tests Build
         id: test-build
-        if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_BUILD == '1' }}
+        if: >
+          vars.ENABLE_TESTS == '1' &&
+          vars.ENABLE_TESTS_BUILD == '1'
         env:
           BUILD_LOG_ZIP_PASSWORD: ${{ secrets.BUILD_LOG_ZIP_PASSWORD }}
         run: |
@@ -135,7 +146,9 @@ jobs:
 
       - name: Tests Run
         id: test-run
-        if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_RUN == '1' }}
+        if: >
+          vars.ENABLE_TESTS == '1' &&
+          vars.ENABLE_TESTS_RUN == '1'
         env:
           BUILD_LOG_ZIP_PASSWORD: ${{ secrets.BUILD_LOG_ZIP_PASSWORD }}
         run: |
@@ -152,13 +165,17 @@ jobs:
           path: encrypted-build-logs.zip
 
       - uses: actions/upload-artifact@v4
-        if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_BUILD == '1' }}
+        if: >
+          vars.ENABLE_TESTS == '1' &&
+          vars.ENABLE_TESTS_BUILD == '1'
         with:
           name: encrypted-tests-build-logs-${{ env.SHORT_COMMIT }}.zip
           path: encrypted-tests-build-logs.zip
 
       - uses: actions/upload-artifact@v4
-        if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_RUN == '1' }}
+        if: >
+          vars.ENABLE_TESTS == '1' &&
+          vars.ENABLE_TESTS_RUN == '1'
         with:
           name: encrypted-tests-run-logs-${{ env.SHORT_COMMIT }}.zip
           path: encrypted-tests-run-logs.zip
@@ -191,9 +208,6 @@ jobs:
           BUNDLE_ID=$(python3 scripts/ci/workflow.py read-bundle-id)
           SOURCE_JSON="_includes/source.json"
           IPA_NAME="$PRODUCT_NAME.ipa"
-
-          LAST_SUCCESSFUL_COMMIT=$(python3 scripts/ci/workflow.py last-successful-commit \
-            "${{ github.workflow }}" "$CHANNEL")
 
           python3 scripts/ci/workflow.py deploy \
             SideStore/apps-v2.json \
