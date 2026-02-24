@@ -25,7 +25,8 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - run: |
+      - name: Find Last Successful commit
+        run: |
           LAST_SUCCESSFUL_COMMIT=$(python3 scripts/ci/workflow.py last-successful-commit \
             "${{ github.workflow }}" "${{ env.CHANNEL }}" || echo "")
           echo "LAST_SUCCESSFUL_COMMIT=$LAST_SUCCESSFUL_COMMIT" | tee -a $GITHUB_ENV
@@ -61,7 +62,8 @@ jobs:
             ~/Library/Caches/Homebrew
           key: brew-${{ runner.os }}-ldid-xcbeautify-v1
 
-      - run: |
+      - name: brew install ldid and xcbeautify
+        run: |
           brew list ldid >/dev/null 2>&1 || brew install ldid
           brew list xcbeautify >/dev/null 2>&1 || brew install xcbeautify
         if: steps.build_gate.outputs.should_skip != 'true'
