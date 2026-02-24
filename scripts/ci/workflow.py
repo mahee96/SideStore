@@ -480,6 +480,9 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_tag_rec
         f'--clobber'
     )
 
+    run(f'git tag -f "{release_tag}" "{commit_sha}"')
+    run(f'git push origin "refs/tags/{release_tag}" --force')
+
 
 def getFormattedUploadMsg(release_name, commit_sha, repo, upstream_block, built_time, built_date, marketing_version, is_stable):
     experimental_header = ""
