@@ -119,8 +119,24 @@ def reserve_build_number(repo, max_attempts=5):
     raise SystemExit("Failed reserving build number")
 
 # ----------------------------------------------------------
-# MARKETING VERSION
+# PROJECT INFO
 # ----------------------------------------------------------
+
+def get_product_name():
+    return runAndGet(
+        "xcodebuild -showBuildSettings "
+        "| grep PRODUCT_NAME "
+        "| tail -1 "
+        "| sed -e 's/.*= //g'"
+    )
+
+def get_bundle_id():
+    return runAndGet(
+        "xcodebuild -showBuildSettings 2>&1 "
+        "| grep 'PRODUCT_BUNDLE_IDENTIFIER = ' "
+        "| tail -1 "
+        "| sed -e 's/.*= //g'"
+    )
 
 def get_marketing_version():
     return runAndGet("grep MARKETING_VERSION Build.xcconfig | sed -e 's/MARKETING_VERSION = //g'")
@@ -346,12 +362,14 @@ COMMANDS = {
     "commid-id"               : (short_commit,              0, ""),
 
     # ----------------------------------------------------------
-    # VERSION / MARKETING
+    # PROJECT INFO
     # ----------------------------------------------------------
     "get-marketing-version"   : (get_marketing_version,     0, ""),
     "set-marketing-version"   : (set_marketing_version,     1, "<qualified_version>"),
     "compute-qualified"       : (compute_qualified_version, 4, "<marketing> <build_num> <channel> <short_commit>"),
     "reserve_build_number"    : (reserve_build_number,      1, "<repo>"),
+    "get-product-name"        : (get_product_name,          0, ""),
+    "get-bundle-id"           : (get_bundle_id,             0, ""),
 
     # ----------------------------------------------------------
     # CLEAN

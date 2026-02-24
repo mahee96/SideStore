@@ -2,7 +2,8 @@ name: Alpha SideStore Build
 
 on:
   push:
-    branches: [develop-alpha]
+    branches: [alpha]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.ref }}
@@ -10,7 +11,10 @@ concurrency:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-26
+    env:
+      REF_NAME: alpha
+      CHANNEL: alpha
 
     steps:
       - uses: actions/checkout@v4
@@ -20,28 +24,163 @@ jobs:
 
       - run: brew install ldid xcbeautify
 
-      - name: Shared
-        id: shared
-        run: python3 scripts/ci/workflow.py shared
+      # --------------------------------------------------
+      # runtime env setup
+      # --------------------------------------------------
+      - uses: actions/checkout@v4
+        with:
+          repository: 'SideStore/beta-build-num'
+          ref: ${{ env.REF_NAME }}
+          token: ${{ secrets.CROSS_REPO_PUSH_KEY }}
+          path: 'Dependencies/beta-build-num'
+          fetch-depth: 1
 
-      - name: Beta bump
-        env:
-          RELEASE_CHANNEL: alpha
-        run: python3 scripts/ci/workflow.py bump-beta
+      - name: Setup Env
+        run: |
+          BUILD_NUM=$(python3 scripts/ci/workflow.py reserve_build_number 'Dependencies/beta-build-num')
+          MARKETING_VERSION=$(python3 scripts/ci/workflow.py get-marketing-version)
+          SHORT_COMMIT=$(python3 scripts/ci/workflow.py commid-id)
 
-      - name: Version
-        id: version
-        run: python3 scripts/ci/workflow.py version
+          QUALIFIED_VERSION=$(python3 scripts/ci/workflow.py compute-qualified \
+              "$MARKETING_VERSION" \
+              "$BUILD_NUM" \
+              "${{ env.REF_NAME }}" \
+              "$SHORT_COMMIT")
+
+          echo "BUILD_NUM=$BUILD_NUM" | tee -a $GITHUB_ENV
+          echo "MARKETING_VERSION=$MARKETING_VERSION" | tee -a $GITHUB_ENV
+          echo "SHORT_COMMIT=$SHORT_COMMIT" | tee -a $GITHUB_ENV
+          echo "VERSION=$QUALIFIED_VERSION" | tee -a $GITHUB_ENV
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1.6.0
+        with:
+          xcode-version: '26.2'
+
+      - name: Restore Cache (exact)
+        id: xcode-cache-exact
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            ~/Library/Alphaer/Xcode/DerivedData
+            ~/Library/Caches/org.swift.swiftpm
+          key: xcode-build-cache-${{ github.ref_name }}-${{ github.sha }}
+
+      - name: Restore Cache (last)
+        if: steps.xcode-cache-exact.outputs.cache-hit != 'true'
+        id: xcode-cache-fallback
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            ~/Library/Alphaer/Xcode/DerivedData
+            ~/Library/Caches/org.swift.swiftpm
+          key: xcode-build-cache-${{ github.ref_name }}-
+
+     # --------------------------------------------------
+      # build and test
+      # --------------------------------------------------
+      - name: Clean
+        if: contains(github.event.head_commit.message, '[--clean-build]')
+        run: |
+          python3 scripts/ci/workflow.py clean
+          python3 scripts/ci/workflow.py clean-derived-data
+          python3 scripts/ci/workflow.py clean-spm-cache
+
+      - name: Boot simulator (async)
+        if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_RUN == '1' }}
+        run: |
+          mkdir -p build/logs
+          python3 scripts/ci/workflow.py boot-sim-async "iPhone 17 Pro"
 
       - name: Build
-        run: python3 scripts/ci/workflow.py build
-
-      - name: Encrypt logs
+        id: build
         env:
           BUILD_LOG_ZIP_PASSWORD: ${{ secrets.BUILD_LOG_ZIP_PASSWORD }}
-        run: python3 scripts/ci/workflow.py encrypt-build
+        run: |
+          python3 scripts/ci/workflow.py build; STATUS=$?
+          python3 scripts/ci/workflow.py encrypt-build
+          echo "encrypted=true" >> $GITHUB_OUTPUT
+          exit $STATUS
+
+      - name: Tests Build
+        id: test-build
+        if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_BUILD == '1' }}
+        env:
+          BUILD_LOG_ZIP_PASSWORD: ${{ secrets.BUILD_LOG_ZIP_PASSWORD }}
+        run: |
+          python3 scripts/ci/workflow.py tests-build; STATUS=$?
+          python3 scripts/ci/workflow.py encrypt-tests-build
+          exit $STATUS
+
+      - name: Save Cache
+        if: ${{ steps.xcode-cache-fallback.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            ~/Library/Alphaer/Xcode/DerivedData
+            ~/Library/Caches/org.swift.swiftpm
+          key: xcode-build-cache-${{ github.ref_name }}-${{ github.sha }}
+
+      - name: Tests Run
+        id: test-run
+        if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_RUN == '1' }}
+        env:
+          BUILD_LOG_ZIP_PASSWORD: ${{ secrets.BUILD_LOG_ZIP_PASSWORD }}
+        run: |
+          python3 scripts/ci/workflow.py tests-run "iPhone 17 Pro"; STATUS=$?
+          python3 scripts/ci/workflow.py encrypt-tests-run
+          exit $STATUS
+
+      # --------------------------------------------------
+      # artifacts 
+      # --------------------------------------------------
+      - uses: actions/upload-artifact@v4
+        with:
+          name: encrypted-build-logs-${{ env.VERSION }}.zip
+          path: encrypted-build-logs.zip
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_BUILD == '1' }}
+        with:
+          name: encrypted-tests-build-logs-${{ env.SHORT_COMMIT }}.zip
+          path: encrypted-tests-build-logs.zip
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ vars.ENABLE_TESTS == '1' && vars.ENABLE_TESTS_RUN == '1' }}
+        with:
+          name: encrypted-tests-run-logs-${{ env.SHORT_COMMIT }}.zip
+          path: encrypted-tests-run-logs.zip
 
       - uses: actions/upload-artifact@v4
         with:
-          name: SideStore-${{ steps.version.outputs.version }}.ipa
+          name: SideStore-${{ env.VERSION }}.ipa
           path: SideStore.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SideStore-${{ env.VERSION }}-dSYMs.zip
+          path: SideStore.dSYMs.zip
+
+      # --------------------------------------------------
+      # deploy 
+      # --------------------------------------------------
+      - name: Deploy
+        run: |
+          PRODUCT_NAME=$(python3 scripts/ci/workflow.py get-product-name)
+          BUNDLE_ID=$(python3 scripts/ci/workflow.py get-bundle-id)
+          SOURCE_JSON="_includes/source.json"
+          IPA_NAME="$PRODUCT_NAME.ipa"
+          LAST_SUCCESSFUL_COMMIT=$(python3 scripts/ci/workflow.py last-successful-commit \
+            "${{ github.workflow }}" "$CHANNEL")
+
+
+          python3 scripts/ci/workflow.py deploy \
+            Dependencies/apps-v2.json \
+            "$SOURCE_JSON" \
+            "$REF_NAME" \
+            "$SHORT_COMMIT" \
+            "$MARKETING_VERSION" \
+            "$VERSION" \
+            "$CHANNEL" \
+            "$BUNDLE_ID" \
+            "$IPA_NAME" \
+            "$LAST_SUCCESSFUL_COMMIT"
