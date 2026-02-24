@@ -161,13 +161,19 @@ jobs:
           name: SideStore-${{ env.VERSION }}-dSYMs.zip
           path: SideStore.dSYMs.zip
 
+      - uses: actions/checkout@v4
+        with:
+          repository: 'SideStore/apps-v2.json'
+          ref: 'main'
+          token: ${{ secrets.CROSS_REPO_PUSH_KEY }}
+          path: 'SideStore/apps-v2.json'
+
       # --------------------------------------------------
       # deploy 
       # --------------------------------------------------
       - name: Deploy
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CROSS_REPO_PUSH_KEY: ${{ secrets.CROSS_REPO_PUSH_KEY }}
         run: |
           PRODUCT_NAME=$(python3 scripts/ci/workflow.py get-product-name)
           BUNDLE_ID=$(python3 scripts/ci/workflow.py get-bundle-id)
@@ -178,7 +184,7 @@ jobs:
             "${{ github.workflow }}" "$CHANNEL")
 
           python3 scripts/ci/workflow.py deploy \
-            Dependencies/apps-v2.json \
+            SideStore/apps-v2.json \
             "$SOURCE_JSON" \
             "$REF_NAME" \
             "$SHORT_COMMIT" \
