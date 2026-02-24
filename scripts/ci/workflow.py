@@ -396,7 +396,18 @@ def last_successful_commit(workflow, branch):
 
     return None
 
-def upload_release(release_name, release_tag, commit_sha, repo, upstream_tag_recommended):
+def upload_release(release_name, release_tag, commit_sha, repo, upstream_tag_recommended, is_stable=False):
+    is_stable = str(is_stable).lower() in ("1", "true", "yes")
+
+    if is_stable:
+        draft = True        # always create a draft for stable and let user publish release
+        update_tag = False
+        prerelease = False
+    else:
+        draft = False
+        update_tag = True   # update existing
+        prerelease = True
+
     token = getenv("GH_TOKEN")
     if token:
         os.environ["GH_TOKEN"] = token
@@ -423,7 +434,7 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_tag_rec
         f"--retrieve {release_tag} "
         f"--output-dir {ROOT}"
     )
-    # normalize section header
+
     release_notes = re.sub(
         r'^\s*#{1,6}\s*what(?:\'?s|\s+is)?\s+(?:new|changed).*',
         "## What's Changed",
@@ -440,19 +451,27 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_tag_rec
             f"(https://github.com/{repo}/releases?q={tag}).\n\n"
         )
 
-    header = getFormattedUploadMsg(release_name, release_tag, commit_sha, repo, upstream_block, built_time, built_date, marketing_version)
-    body = header + "\n\n" + release_notes.lstrip() + "\n"
+    header = getFormattedUploadMsg(
+        release_name, commit_sha, repo, upstream_block,
+        built_time, built_date, marketing_version, is_stable,
+    )
+
+    body = header + release_notes.lstrip() + "\n"
 
     body_file = ROOT / "release_body.md"
     body_file.write_text(body, encoding="utf-8")
 
     prerelease_flag = "--prerelease" if is_beta else ""
 
+    draft_flag = "--draft" if draft else ""
+    prerelease_flag = "--prerelease" if prerelease else ""
+    latest_flag = "" if update_tag else "--latest=false"
+
     run(
         f'gh release edit "{release_tag}" '
         f'--title "{release_name}" '
         f'--notes-file "{body_file}" '
-        f'{prerelease_flag}'
+        f'{draft_flag} {prerelease_flag} {latest_flag}'
     )
 
     run(
@@ -461,19 +480,26 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_tag_rec
         f'--clobber'
     )
 
-def getFormattedUploadMsg(release_name, release_tag, commit_sha, repo, upstream_block, built_time, built_date, marketing_version):
-    return f"""
+
+def getFormattedUploadMsg(release_name, commit_sha, repo, upstream_block, built_time, built_date, marketing_version, is_stable):
+    experimental_header = ""
+    if not is_stable:
+        experimental_header = f"""
 This is an ⚠️ **EXPERIMENTAL** ⚠️ {release_name} build for commit [{commit_sha}](https://github.com/{repo}/commit/{commit_sha}).
 
 {release_name} builds are **extremely experimental builds only meant to be used by developers and beta testers. They often contain bugs and experimental features. Use at your own risk!**
 
-{upstream_block}## Build Info
+""".lstrip("\n")
+
+    header = f"""
+{experimental_header}{upstream_block}## Build Info
 
 Built at (UTC): `{built_time}`
 Built at (UTC date): `{built_date}`
 Commit SHA: `{commit_sha}`
 Version: `{marketing_version}`
 """.lstrip("\n")
+    return header
 
 # ----------------------------------------------------------
 # ENTRYPOINT
@@ -534,7 +560,7 @@ COMMANDS = {
     "retrieve-release-notes"  : (retrieve_release_notes,    1,  "<tag>"),
     "deploy"                  : (deploy,                    9,
                                 "<repo> <source_json> <release_tag> <short_commit> <marketing_version> <channel> <bundle_id> <ipa_name> [last_successful_commit]"),
-    "upload-release"          : (upload_release,            5,  "<release_name> <release_tag> <commit_sha> <repo> <upstream_tag_recommended>"),
+    "upload-release"          : (upload_release,            5,  "<release_name> <release_tag> <commit_sha> <repo> <upstream_tag_recommended> [is_stable]"),
 }
 
 def main():
