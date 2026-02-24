@@ -396,7 +396,7 @@ def last_successful_commit(workflow, branch):
 
     return None
 
-def upload_release(release_name, release_tag, commit_sha, repo, upstream_recommendation):
+def upload_release(release_name, release_tag, commit_sha, repo, upstream_tag_recommended):
     token = getenv("GH_TOKEN")
     if token:
         os.environ["GH_TOKEN"] = token
@@ -432,8 +432,13 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_recomme
     )
 
     upstream_block = ""
-    if upstream_recommendation and upstream_recommendation.strip():
-        upstream_block = f"{upstream_recommendation.strip()}\n\n"
+    if upstream_tag_recommended and upstream_tag_recommended.strip():
+        tag = upstream_tag_recommended.strip()
+        upstream_block = (
+            f"If you want to try out new features early but want a lower chance of bugs, "
+            f"you can look at [SideStore {tag}]"
+            f"(https://github.com/{repo}/releases?q={tag}).\n\n"
+        )
 
     header = getFormattedUploadMsg(release_name, release_tag, commit_sha, repo, upstream_block, built_time, built_date, marketing_version)
     body = header + "\n\n" + release_notes.lstrip() + "\n"
@@ -529,7 +534,7 @@ COMMANDS = {
     "retrieve-release-notes"  : (retrieve_release_notes,    1,  "<tag>"),
     "deploy"                  : (deploy,                    9,
                                 "<repo> <source_json> <release_tag> <short_commit> <marketing_version> <channel> <bundle_id> <ipa_name> [last_successful_commit]"),
-    "upload-release"          : (upload_release,            5,  "<release_name> <release_tag> <commit_sha> <repo> <upstream_recommendation>"),
+    "upload-release"          : (upload_release,            5,  "<release_name> <release_tag> <commit_sha> <repo> <upstream_tag_recommended>"),
 }
 
 def main():
