@@ -316,6 +316,12 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
     run("git config user.name 'GitHub Actions'", check=False)
     run("git config user.email 'github-actions@github.com'", check=False)
 
+    # ------------------------------------------------------
+    run("git fetch origin main", check=False, cwd=repo)
+    run("git switch main || git switch -c main origin/main", cwd=repo)
+    run("git reset --hard origin/main", cwd=repo)
+    # ------------------------------------------------------
+    
     max_attempts = 5
     for attempt in range(1, max_attempts + 1):
         if attempt > 1:
