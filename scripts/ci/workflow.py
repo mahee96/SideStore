@@ -406,7 +406,7 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_recomme
 
     upstream_block = ""
     if upstream_recommendation and upstream_recommendation.strip():
-        upstream_block = upstream_recommendation.strip() + "\n\n"
+        upstream_block = f"{upstream_recommendation.strip()}\n\n"
 
     raw_body = f"""
         This is an ⚠️ **EXPERIMENTAL** ⚠️ {release_name} build for commit [{commit_sha}](https://github.com/{repo}/commit/{commit_sha}).
