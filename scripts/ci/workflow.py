@@ -6,7 +6,7 @@ import datetime
 from pathlib import Path
 import time
 import json
-import textwrap
+import inspect
 
 
 # REPO ROOT relative to script dir
@@ -365,14 +365,11 @@ def last_successful_commit(workflow, branch):
 
     return None
 
-def upload_release(release_name, release_tag, commit_sha, repo, upstream_recommendation):
+def upload_release(release_name, release_tag, version, commit_sha, repo, upstream_recommendation):
     token = getenv("GH_TOKEN")
     if token:
         os.environ["GH_TOKEN"] = token
 
-    # --------------------------------------------------
-    # load source metadata
-    # --------------------------------------------------
     metadata_path = ROOT / "source-metadata.json"
 
     if not metadata_path.exists():
@@ -381,44 +378,40 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_recomme
     meta = json.loads(metadata_path.read_text())
 
     is_beta = bool(meta.get("is_beta"))
-    version = meta.get("version_ipa")
-    built_date_alt = meta.get("version_date")
+    build_datetime = meta.get("version_date")
 
     dt = datetime.datetime.fromisoformat(
-        built_date_alt.replace("Z", "+00:00")
+        build_datetime.replace("Z", "+00:00")
     )
-    built_date = dt.strftime("%c")
+    built_time = dt.strftime("%a %b %d %H:%M:%S %Y")
+    built_date = dt.strftime("%Y-%m-%d")
 
-    # --------------------------------------------------
-    # retrieve release notes inline
-    # --------------------------------------------------
     release_notes = runAndGet(
         f"python3 {SCRIPTS}/generate_release_notes.py "
         f"--retrieve {release_tag} "
         f"--output-dir {ROOT}"
     )
 
-    # --------------------------------------------------
-    # optional upstream block
-    # --------------------------------------------------
     upstream_block = ""
     if upstream_recommendation and upstream_recommendation.strip():
         upstream_block = upstream_recommendation.strip() + "\n\n"
 
-    body = textwrap.dedent(f"""\
+    raw_body = f"""
         This is an ⚠️ **EXPERIMENTAL** ⚠️ {release_name} build for commit [{commit_sha}](https://github.com/{repo}/commit/{commit_sha}).
 
         {release_name} builds are **extremely experimental builds only meant to be used by developers and beta testers. They often contain bugs and experimental features. Use at your own risk!**
 
         {upstream_block}## Build Info
 
-        Built at (UTC): `{built_date}`
-        Built at (UTC date): `{built_date_alt}`
+        Built at (UTC): `{built_time}`
+        Built at (UTC date): `{built_date}`
         Commit SHA: `{commit_sha}`
         Version: `{version}`
 
         {release_notes}
-    """)
+    """
+
+    body = inspect.cleandoc(raw_body) + "\n"
 
     body_file = ROOT / "release_body.md"
     body_file.write_text(body, encoding="utf-8")
@@ -493,7 +486,7 @@ COMMANDS = {
     "retrieve-release-notes"  : (retrieve_release_notes,    1,  "<tag>"),
     "deploy"                  : (deploy,                    10,
                                 "<repo> <source_json> <release_tag> <short_commit> <marketing_version> <version> <channel> <bundle_id> <ipa_name> [last_successful_commit]"),
-    "upload-release"          : (upload_release,            5,  "<release_name> <release_tag> <commit_sha> <repo> <upstream_recommendation>"),
+    "upload-release"          : (upload_release,            6,  "<release_name> <release_tag> <version> <commit_sha> <repo> <upstream_recommendation>"),
 }
 
 def main():
