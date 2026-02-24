@@ -266,6 +266,13 @@ def release_notes(tag):
         f"--output-dir {ROOT}"
     )
 
+def retrieve_release_notes(tag):
+    return runAndGet(
+        f"python3 {SCRIPTS}/generate_release_notes.py "
+        f"--retrieve {tag} "
+        f"--output-dir {ROOT}"
+    )
+
 # ----------------------------------------------------------
 # DEPLOY SOURCE.JSON
 # ----------------------------------------------------------
@@ -316,11 +323,11 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
             run("git reset --hard FETCH_HEAD", check=False, cwd=repo)
 
         # regenerate after reset so we don't lose changes
-        run(f"python3 {SCRIPTS}/update_source_metadata.py '{ROOT}/{metadata}' '{source_json_path}'")
-        run(f"git add --verbose {source_json}", check=False)
-        run(f"git commit -m '{release_tag} - deployed {version}' || true", check=False)
+        run(f"python3 {SCRIPTS}/update_source_metadata.py '{ROOT}/{metadata}' '{source_json_path}'", cwd=repo)
+        run(f"git add --verbose {source_json}", cwd=repo)
+        run(f"git commit -m '{release_tag} - deployed {version}' || true", cwd=repo)
 
-        rc = subprocess.call("git push", shell=True)
+        rc = subprocess.call("git push", shell=True, cwd=repo)
 
         if rc == 0:
             print("Deploy push succeeded", file=sys.stderr)
@@ -352,18 +359,52 @@ def last_successful_commit(workflow, branch):
 
     return None
 
-def upload_release(release_name, release_tag,is_beta,version,commit_sha,repo,built_date,built_date_alt,upstream_recommendation,release_notes):
+def upload_release(release_name, release_tag, commit_sha, repo, upstream_recommendation):
     token = getenv("GH_TOKEN")
     if token:
         os.environ["GH_TOKEN"] = token
+
+    # --------------------------------------------------
+    # load source metadata
+    # --------------------------------------------------
+    metadata_path = ROOT / "source-metadata.json"
+
+    if not metadata_path.exists():
+        raise SystemExit("source-metadata.json missing")
+
+    meta = json.loads(metadata_path.read_text())
+
+    is_beta = bool(meta.get("is_beta"))
+    version = meta.get("version_ipa")
+    built_date_alt = meta.get("version_date")
+
+    dt = datetime.datetime.fromisoformat(
+        built_date_alt.replace("Z", "+00:00")
+    )
+    built_date = dt.strftime("%c")
+
+    # --------------------------------------------------
+    # retrieve release notes inline
+    # --------------------------------------------------
+    release_notes = runAndGet(
+        f"python3 {SCRIPTS}/generate_release_notes.py "
+        f"--retrieve {release_tag} "
+        f"--output-dir {ROOT}"
+    )
+
+    # --------------------------------------------------
+    # optional upstream block
+    # --------------------------------------------------
+    upstream_block = ""
+    if upstream_recommendation and upstream_recommendation.strip():
+        upstream_block = upstream_recommendation.strip() + "\n\n"
 
     body = textwrap.dedent(f"""\
         This is an ⚠️ **EXPERIMENTAL** ⚠️ {release_name} build for commit [{commit_sha}](https://github.com/{repo}/commit/{commit_sha}).
 
         {release_name} builds are **extremely experimental builds only meant to be used by developers and beta testers. They often contain bugs and experimental features. Use at your own risk!**
 
-        {upstream_recommendation}
-        ## Build Info
+        {upstream_block}## Build Info
 
         Built at (UTC): `{built_date}`
         Built at (UTC date): `{built_date_alt}`
@@ -376,7 +417,7 @@ def upload_release(release_name, release_tag,is_beta,version,commit_sha,repo,bui
     body_file = ROOT / "release_body.md"
     body_file.write_text(body, encoding="utf-8")
 
-    prerelease_flag = "--prerelease" if str(is_beta).lower() in ["true", "1", "yes"] else ""
+    prerelease_flag = "--prerelease" if is_beta else ""
 
     run(
         f'gh release edit "{release_tag}" '
@@ -443,10 +484,10 @@ COMMANDS = {
     # ----------------------------------------------------------
     "last-successful-commit"  : (last_successful_commit,    2,  "<workflow_name> <branch>"),
     "release-notes"           : (release_notes,             1,  "<tag>"),
+    "retrieve-release-notes"  : (retrieve_release_notes,    1,  "<tag>"),
     "deploy"                  : (deploy,                    10,
                                 "<repo> <source_json> <release_tag> <short_commit> <marketing_version> <version> <channel> <bundle_id> <ipa_name> [last_successful_commit]"),
-    "upload-release"          : (upload_release,            9,
-                                "<release_name> <release_tag> <is_beta> <version> <commit_sha> <repo> <built_date> <built_date_alt> <release_notes>"),
+    "upload-release"          : (upload_release,            5,  "<release_name> <release_tag> <commit_sha> <repo> <upstream_recommendation>"),
 }
 
 def main():
