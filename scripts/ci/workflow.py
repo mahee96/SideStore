@@ -6,6 +6,7 @@ import datetime
 from pathlib import Path
 import time
 import json
+import textwrap
 
 
 # REPO ROOT relative to script dir
@@ -272,7 +273,7 @@ def release_notes(tag):
 def deploy(repo, source_json, release_tag, short_commit, marketing_version, version, channel, bundle_id, ipa_name, last_successful_commit=None):
     repo = (ROOT / repo).resolve()
     ipa_path = ROOT / ipa_name
-    source_path = repo / source_json
+    source_json_path = repo / source_json
     metadata = 'source-metadata.json'
 
     if not repo.exists():
@@ -281,7 +282,7 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
     if not ipa_path.exists():
         raise SystemExit(f"{ipa_path} missing")
 
-    if not source_path.exists():
+    if not source_json_path.exists():
         raise SystemExit(f"{source_json} missing inside repo")
 
     cmd = (
@@ -315,7 +316,7 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
             run("git reset --hard FETCH_HEAD", check=False, cwd=repo)
 
         # regenerate after reset so we don't lose changes
-        run(f"python3 {SCRIPTS}/update_source_metadata.py '{ROOT}/{metadata}' '{source_json}'")
+        run(f"python3 {SCRIPTS}/update_source_metadata.py '{ROOT}/{metadata}' '{source_json_path}'")
         run(f"git add --verbose {source_json}", check=False)
         run(f"git commit -m '{release_tag} - deployed {version}' || true", check=False)
 
@@ -350,6 +351,45 @@ def last_successful_commit(workflow, branch):
         pass
 
     return None
+
+def upload_release(release_name, release_tag,is_beta,version,commit_sha,repo,built_date,built_date_alt,upstream_recommendation,release_notes):
+    token = getenv("GH_TOKEN")
+    if token:
+        os.environ["GH_TOKEN"] = token
+
+    body = textwrap.dedent(f"""\
+        This is an ⚠️ **EXPERIMENTAL** ⚠️ {release_name} build for commit [{commit_sha}](https://github.com/{repo}/commit/{commit_sha}).
+
+        {release_name} builds are **extremely experimental builds only meant to be used by developers and beta testers. They often contain bugs and experimental features. Use at your own risk!**
+
+        {upstream_recommendation}
+        ## Build Info
+
+        Built at (UTC): `{built_date}`
+        Built at (UTC date): `{built_date_alt}`
+        Commit SHA: `{commit_sha}`
+        Version: `{version}`
+
+        {release_notes}
+    """)
+
+    body_file = ROOT / "release_body.md"
+    body_file.write_text(body, encoding="utf-8")
+
+    prerelease_flag = "--prerelease" if str(is_beta).lower() in ["true", "1", "yes"] else ""
+
+    run(
+        f'gh release edit "{release_tag}" '
+        f'--title "{release_name}" '
+        f'--notes-file "{body_file}" '
+        f'{prerelease_flag}'
+    )
+
+    run(
+        f'gh release upload "{release_tag}" '
+        f'SideStore.ipa SideStore.dSYMs.zip '
+        f'--clobber'
+    )
 
 # ----------------------------------------------------------
 # ENTRYPOINT
@@ -403,8 +443,10 @@ COMMANDS = {
     # ----------------------------------------------------------
     "last-successful-commit"  : (last_successful_commit,    2,  "<workflow_name> <branch>"),
     "release-notes"           : (release_notes,             1,  "<tag>"),
-    "deploy"                  : (deploy,                    10, 
-                "<repo> <source_json> <release_tag> <short_commit> <marketing_version> <version> <channel> <bundle_id> <ipa_name> [last_successful_commit]"),
+    "deploy"                  : (deploy,                    10,
+                                "<repo> <source_json> <release_tag> <short_commit> <marketing_version> <version> <channel> <bundle_id> <ipa_name> [last_successful_commit]"),
+    "upload-release"          : (upload_release,            9,
+                                "<release_name> <release_tag> <is_beta> <version> <commit_sha> <repo> <built_date> <built_date_alt> <release_notes>"),
 }
 
 def main():
