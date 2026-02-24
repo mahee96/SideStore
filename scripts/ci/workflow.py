@@ -6,12 +6,12 @@ import datetime
 from pathlib import Path
 import time
 import json
-import inspect
 import re
 
 # REPO ROOT relative to script dir
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = ROOT / 'scripts/ci'
+BUILD_SETTINGS_OUTFILE = "project-build-settings.txt"
 
 # ----------------------------------------------------------
 # helpers
@@ -57,106 +57,69 @@ def getenv(name, default=""):
 def short_commit():
     return runAndGet("git rev-parse --short HEAD")
 
-# ----------------------------------------------------------
-# BUILD NUMBER RESERVATION
-# ----------------------------------------------------------
-def reserve_build_number(repo, max_attempts=5):
-    repo = Path(repo).resolve()
-    version_json = repo / "version.json"
+def count_new_commits(last_commit):
+    if not last_commit or not last_commit.strip():
+        return 0
 
-    def utc_now():
-        return datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    try:
+        total = int(runAndGet("git rev-list --count HEAD"))
+        if total == 1:
+            head = runAndGet("git rev-parse HEAD")
+            return 1 if head != last_commit else 0
 
-    def current_branch():
-        return runAndGet("git rev-parse --abbrev-ref HEAD", cwd=repo)
+        out = runAndGet(f"git rev-list --count {last_commit}..HEAD")
+        return int(out)
+    except Exception:
+        return 0
 
-    def sync_with_remote(branch):
-        run(f"git fetch --depth=1 origin {branch}", check=False, cwd=repo)
-        run(f"git reset --hard origin/{branch}", check=False, cwd=repo)
-
-    def read(branch):
-        defaults = {
-            "build": 0,
-            "issued_at": utc_now(),
-            "tag": branch,
-        }
-
-        if version_json.exists():
-            data = json.loads(version_json.read_text())
-        else:
-            data = {}
-
-        for k, v in defaults.items():
-            data.setdefault(k, v)
-
-        data["tag"] = branch
-        version_json.write_text(json.dumps(data, indent=2) + "\n")
-        return data
-
-    def write(data):
-        version_json.write_text(json.dumps(data, indent=2) + "\n")
-
-    for attempt in range(max_attempts):
-        branch = current_branch()
-        sync_with_remote(branch)
-
-        data = read(branch)
-        data["build"] += 1
-        data["issued_at"] = utc_now()
-
-        write(data)
-
-        run("git add version.json", check=False, cwd=repo)
-        run(
-            f"git commit -m '{branch} - build no: {data['build']}' || true",
-            check=False,
-            cwd=repo,
-        )
-
-        rc = subprocess.call(f"git push origin {branch}", shell=True, cwd=repo)
-
-        if rc == 0:
-            print(f"Reserved build #{data['build']}", file=sys.stderr)
-            return data["build"]
-
-        print("Push rejected, retrying...", file=sys.stderr)
-        time.sleep(2)
-
-    raise SystemExit("Failed reserving build number")
-    
 # ----------------------------------------------------------
 # PROJECT INFO
 # ----------------------------------------------------------
+def dump_project_settings(outdir=None):
+    outfile = Path(outdir).resolve() / BUILD_SETTINGS_OUTFILE if outdir else BUILD_SETTINGS_OUTFILE
+    run(f"xcodebuild -showBuildSettings 2>&1 > '{outfile}'")
 
-def get_product_name():
-    return runAndGet(
-        "xcodebuild -showBuildSettings "
-        "| grep PRODUCT_NAME "
+def _extract_setting(cmd):
+    out = runAndGet(cmd + " || true").strip()   # prevent grep failure from aborting
+    return out if out else None
+
+def _read_dumped_build_setting(name):
+    return _extract_setting(
+        f"cat '{BUILD_SETTINGS_OUTFILE}' "
+        f"| grep '{name} = ' "
         "| tail -1 "
         "| sed -e 's/.*= //g'"
     )
 
-def get_bundle_id():
-    return runAndGet(
-        "xcodebuild -showBuildSettings 2>&1 "
-        "| grep 'PRODUCT_BUNDLE_IDENTIFIER = ' "
+def query_build_setting(name):
+    return _extract_setting(
+        f"xcodebuild -showBuildSettings 2>&1 "
+        f"| grep '{name} = ' "
         "| tail -1 "
         "| sed -e 's/.*= //g'"
     )
+
+def get_product_name():  return query_build_setting("PRODUCT_NAME")
+def get_bundle_id():     return query_build_setting("PRODUCT_BUNDLE_IDENTIFIER")
+def read_product_name(): return _read_dumped_build_setting("PRODUCT_NAME")
+def read_bundle_id():    return _read_dumped_build_setting("PRODUCT_BUNDLE_IDENTIFIER")
 
 def get_marketing_version():
     return runAndGet(f"grep MARKETING_VERSION {ROOT}/Build.xcconfig | sed -e 's/MARKETING_VERSION = //g'")
 
-def set_marketing_version(qualified):
+def set_marketing_version(version):
     run(
         f"sed -E -i '' "
-        f"'s/^MARKETING_VERSION = .*/MARKETING_VERSION = {qualified}/' "
+        f"'s/^MARKETING_VERSION = .*/MARKETING_VERSION = {version}/' "
         f"{ROOT}/Build.xcconfig"
     )
 
-def compute_qualified_version(marketing, build_num, channel, short):
-    date = datetime.datetime.now(datetime.UTC).strftime("%Y.%m.%d")
-    return f"{marketing}-{channel}.{date}.{build_num}+{short}"
+
+def compute_normalized_version(marketing, build_num, short):
+    now = datetime.datetime.now(datetime.UTC)
+    date = now.strftime("%Y%m%d")   # normalized date
+    base = marketing.strip()
+    return f"{base}-{date}.{build_num}+{short}"
 
 # ----------------------------------------------------------
 # CLEAN
@@ -369,7 +332,18 @@ def last_successful_commit(workflow, branch):
 
     return None
 
-def upload_release(release_name, release_tag, commit_sha, repo, upstream_recommendation):
+def upload_release(release_name, release_tag, commit_sha, repo, upstream_tag_recommended, is_stable=False):
+    is_stable = str(is_stable).lower() in ("1", "true", "yes")
+
+    if is_stable:
+        draft = True        # always create a draft for stable and let user publish release
+        update_tag = False
+        prerelease = False
+    else:
+        draft = False
+        update_tag = True   # update existing
+        prerelease = True
+
     token = getenv("GH_TOKEN")
     if token:
         os.environ["GH_TOKEN"] = token
@@ -382,7 +356,6 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_recomme
     meta = json.loads(metadata_path.read_text())
 
     marketing_version = meta.get("version_ipa")
-    is_beta = bool(meta.get("is_beta"))
     build_datetime = meta.get("version_date")
 
     dt = datetime.datetime.fromisoformat(
@@ -396,7 +369,7 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_recomme
         f"--retrieve {release_tag} "
         f"--output-dir {ROOT}"
     )
-    # normalize section header
+
     release_notes = re.sub(
         r'^\s*#{1,6}\s*what(?:\'?s|\s+is)?\s+(?:new|changed).*',
         "## What's Changed",
@@ -405,35 +378,33 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_recomme
     )
 
     upstream_block = ""
-    if upstream_recommendation and upstream_recommendation.strip():
-        upstream_block = upstream_recommendation.strip() + "\n\n"
+    if upstream_tag_recommended and upstream_tag_recommended.strip():
+        tag = upstream_tag_recommended.strip()
+        upstream_block = (
+            f"If you want to try out new features early but want a lower chance of bugs, "
+            f"you can look at [SideStore {tag}]"
+            f"(https://github.com/{repo}/releases?q={tag}).\n\n"
+        )
 
-    raw_body = f"""
-        This is an ⚠️ **EXPERIMENTAL** ⚠️ {release_name} build for commit [{commit_sha}](https://github.com/{repo}/commit/{commit_sha}).
+    header = getFormattedUploadMsg(
+        release_name, commit_sha, repo, upstream_block,
+        built_time, built_date, marketing_version, is_stable,
+    )
 
-        {release_name} builds are **extremely experimental builds only meant to be used by developers and beta testers. They often contain bugs and experimental features. Use at your own risk!**
-
-        {upstream_block}## Build Info
-
-        Built at (UTC): `{built_time}`
-        Built at (UTC date): `{built_date}`
-        Commit SHA: `{commit_sha}`
-        Version: `{marketing_version}`
-    """
-
-    header = inspect.cleandoc(raw_body)
-    body = header + "\n\n" + release_notes.lstrip() + "\n"
+    body = header + release_notes.lstrip() + "\n"
 
     body_file = ROOT / "release_body.md"
     body_file.write_text(body, encoding="utf-8")
 
-    prerelease_flag = "--prerelease" if is_beta else ""
+    draft_flag = "--draft" if draft else ""
+    prerelease_flag = "--prerelease" if prerelease else ""
+    latest_flag = "" if update_tag else "--latest=false"
 
     run(
         f'gh release edit "{release_tag}" '
         f'--title "{release_name}" '
         f'--notes-file "{body_file}" '
-        f'{prerelease_flag}'
+        f'{draft_flag} {prerelease_flag} {latest_flag}'
     )
 
     run(
@@ -441,6 +412,30 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_recomme
         f'SideStore.ipa SideStore.dSYMs.zip encrypted-build-logs.zip '
         f'--clobber'
     )
+
+    run(f'git tag -f "{release_tag}" "{commit_sha}"')
+    run(f'git push origin "refs/tags/{release_tag}" --force')
+
+
+def getFormattedUploadMsg(release_name, commit_sha, repo, upstream_block, built_time, built_date, marketing_version, is_stable):
+    experimental_header = ""
+    if not is_stable:
+        experimental_header = f"""
+This is an ⚠️ **EXPERIMENTAL** ⚠️ {release_name} build for commit [{commit_sha}](https://github.com/{repo}/commit/{commit_sha}).
+
+{release_name} builds are **extremely experimental builds only meant to be used by developers and beta testers. They often contain bugs and experimental features. Use at your own risk!**
+
+""".lstrip("\n")
+
+    header = f"""
+{experimental_header}{upstream_block}## Build Info
+
+Built at (UTC): `{built_time}`
+Built at (UTC date): `{built_date}`
+Commit SHA: `{commit_sha}`
+Version: `{marketing_version}`
+""".lstrip("\n")
+    return header
 
 # ----------------------------------------------------------
 # ENTRYPOINT
@@ -450,17 +445,20 @@ COMMANDS = {
     # ----------------------------------------------------------
     # SHARED
     # ----------------------------------------------------------
-    "commid-id"               : (short_commit,              0, ""),
+    "commit-id"               : (short_commit,              0, ""),
+    "count-new-commits"       : (count_new_commits,         1, "<last_successful_commit>"),
 
     # ----------------------------------------------------------
     # PROJECT INFO
     # ----------------------------------------------------------
     "get-marketing-version"   : (get_marketing_version,     0, ""),
-    "set-marketing-version"   : (set_marketing_version,     1, "<qualified_version>"),
-    "compute-qualified"       : (compute_qualified_version, 4, "<marketing> <build_num> <channel> <short_commit>"),
-    "reserve_build_number"    : (reserve_build_number,      1, "<repo>"),
+    "set-marketing-version"   : (set_marketing_version,     1, "<normalized_version>"),
+    "compute-normalized"      : (compute_normalized_version,3, "<marketing> <build_num> <short_commit>"),
     "get-product-name"        : (get_product_name,          0, ""),
     "get-bundle-id"           : (get_bundle_id,             0, ""),
+    "dump-project-settings"   : (dump_project_settings,     0, ""),
+    "read-product-name"       : (read_product_name,         0, ""),
+    "read-bundle-id"          : (read_bundle_id,            0, ""),
 
     # ----------------------------------------------------------
     # CLEAN
@@ -497,7 +495,7 @@ COMMANDS = {
     "retrieve-release-notes"  : (retrieve_release_notes,    1,  "<tag>"),
     "deploy"                  : (deploy,                    9,
                                 "<repo> <source_json> <release_tag> <short_commit> <marketing_version> <channel> <bundle_id> <ipa_name> [last_successful_commit]"),
-    "upload-release"          : (upload_release,            5,  "<release_name> <release_tag> <commit_sha> <repo> <upstream_recommendation>"),
+    "upload-release"          : (upload_release,            5,  "<release_name> <release_tag> <commit_sha> <repo> <upstream_tag_recommended> [is_stable]"),
 }
 
 def main():
