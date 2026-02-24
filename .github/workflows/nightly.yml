@@ -15,7 +15,7 @@ jobs:
   build:
     runs-on: macos-26
     env:
-      REF_NAME: nightly
+      RELEASE_NAME: Nightly
       CHANNEL: nightly
       UPSTREAM_CHANNEL: ''
 
@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: 'SideStore/beta-build-num'
-          ref: ${{ env.REF_NAME }}
+          ref: ${{ env.CHANNEL }}
           token: ${{ secrets.CROSS_REPO_PUSH_KEY }}
           path: 'Dependencies/beta-build-num'
           fetch-depth: 1
@@ -47,7 +47,7 @@ jobs:
           QUALIFIED_VERSION=$(python3 scripts/ci/workflow.py compute-qualified \
               "$MARKETING_VERSION" \
               "$BUILD_NUM" \
-              "${{ env.REF_NAME }}" \
+              "${{ env.CHANNEL }}" \
               "$SHORT_COMMIT")
 
           echo "BUILD_NUM=$BUILD_NUM" | tee -a $GITHUB_ENV
@@ -188,7 +188,7 @@ jobs:
           python3 scripts/ci/workflow.py deploy \
             SideStore/apps-v2.json \
             "$SOURCE_JSON" \
-            "$REF_NAME" \
+            "$CHANNEL" \
             "$SHORT_COMMIT" \
             "$MARKETING_VERSION" \
             "$VERSION" \
@@ -197,11 +197,12 @@ jobs:
             "$IPA_NAME" \
             "$LAST_SUCCESSFUL_COMMIT"
 
-          RELEASE_NOTES=$(python3 scripts/ci/workflow.py retrieve-release-notes "$REF_NAME")
+          RELEASE_NOTES=$(python3 scripts/ci/workflow.py retrieve-release-notes "$CHANNEL")
           
           python3 scripts/ci/workflow.py upload-release \
+            "$RELEASE_NAME" \
+            "$CHANNEL" \
             "$VERSION" \
-            "$REF_NAME" \
             "$GITHUB_SHA" \
             "$GITHUB_REPOSITORY" \
             "$UPSTREAM_CHANNEL"
