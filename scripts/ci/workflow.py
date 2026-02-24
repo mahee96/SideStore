@@ -276,6 +276,7 @@ def retrieve_release_notes(tag):
 # ----------------------------------------------------------
 # DEPLOY SOURCE.JSON
 # ----------------------------------------------------------
+
 def deploy(repo, source_json, release_tag, short_commit, marketing_version, version, channel, bundle_id, ipa_name, last_successful_commit=None):
     repo = (ROOT / repo).resolve()
     ipa_path = ROOT / ipa_name
@@ -306,54 +307,33 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
         f"--bundle-id {bundle_id}"
     )
 
+    # pass only if provided
     if last_successful_commit:
         cmd += f" --last-successful-commit {last_successful_commit}"
 
     run(cmd)
 
-    run("git config user.name 'GitHub Actions'", check=False, cwd=repo)
-    run("git config user.email 'github-actions@github.com'", check=False, cwd=repo)
+    run("git config user.name 'GitHub Actions'", check=False)
+    run("git config user.email 'github-actions@github.com'", check=False)
 
     # ------------------------------------------------------
-    # attach to real branch (avoid detached HEAD)
+    run("git fetch origin main", check=False, cwd=repo)
+    run("git switch main || git switch -c main origin/main", cwd=repo)
+    run("git reset --hard origin/main", cwd=repo)
     # ------------------------------------------------------
-    run("git fetch origin", check=False, cwd=repo)
-    run("git checkout -B main origin/main", cwd=repo)
-
-    # ------------------------------------------------------
-    # attach push credentials (equivalent to checkout@v4 token)
-    # ------------------------------------------------------
-    token = getenv("CROSS_REPO_PUSH_KEY") or getenv("GH_TOKEN")
-
-    if not token:
-        raise SystemExit("Missing push token for apps-v2.json push")
-
-    run(
-        f'git remote set-url origin '
-        f'https://x-access-token:{token}@github.com/SideStore/apps-v2.json.git',
-        cwd=repo
-    )
-
-    # ------------------------------------------------------
-    # push loop
-    # ------------------------------------------------------
+    
     max_attempts = 5
     for attempt in range(1, max_attempts + 1):
         if attempt > 1:
-            run("git fetch origin main", check=False, cwd=repo)
-            run("git reset --hard origin/main", check=False, cwd=repo)
+            run("git fetch --depth=1 origin HEAD", check=False, cwd=repo)
+            run("git reset --hard FETCH_HEAD", check=False, cwd=repo)
 
         # regenerate after reset so we don't lose changes
-        run(
-            f"python3 {SCRIPTS}/update_source_metadata.py "
-            f"'{ROOT}/{metadata}' '{source_json_path}'",
-            cwd=repo
-        )
-
+        run(f"python3 {SCRIPTS}/update_source_metadata.py '{ROOT}/{metadata}' '{source_json_path}'", cwd=repo)
         run(f"git add --verbose {source_json}", cwd=repo)
         run(f"git commit -m '{release_tag} - deployed {version}' || true", cwd=repo)
 
-        rc = subprocess.call("git push origin main", shell=True, cwd=repo)
+        rc = subprocess.call("git push", shell=True, cwd=repo)
 
         if rc == 0:
             print("Deploy push succeeded", file=sys.stderr)
@@ -363,9 +343,6 @@ def deploy(repo, source_json, release_tag, short_commit, marketing_version, vers
         time.sleep(0.5)
     else:
         raise SystemExit("Deploy push failed after retries")
-
-
-
 
 def last_successful_commit(workflow, branch):
     import json
