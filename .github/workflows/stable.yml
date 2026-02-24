@@ -90,8 +90,8 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: encrypted-build-logs-${{ env.MARKETING_VERSION }}.zip
-          path: encrypted-build-logs.zip
+          name: build-logs-${{ env.MARKETING_VERSION }}.zip
+          path: build-logs.zip
 
       - uses: actions/upload-artifact@v4
         with:

@@ -7,6 +7,7 @@ from pathlib import Path
 import time
 import json
 import re
+from posix import getcwd
 
 # REPO ROOT relative to script dir
 ROOT = Path(__file__).resolve().parents[2]
@@ -214,13 +215,14 @@ def tests_run(model):
 # ----------------------------------------------------------
 
 def encrypt_logs(name):
-    default_pwd = "12345"
-    pwd = getenv("BUILD_LOG_ZIP_PASSWORD", default_pwd)
+    pwd = getenv("BUILD_LOG_ZIP_PASSWORD")
 
-    if pwd == default_pwd:
-        print("Warning: BUILD_LOG_ZIP_PASSWORD not set, using fallback password", file=sys.stderr)
-
-    run(f'cd build/logs && zip -e -P "{pwd}" ../../{name}.zip *')
+    # skip encryption entirely if no password provided
+    if not pwd or not pwd.strip():
+        print("BUILD_LOG_ZIP_PASSWORD not set — skipping encryption", file=sys.stderr)
+        return
+    cwd = getcwd()
+    run(f'cd {cwd}/build/logs && zip -e -P "{pwd}" {cwd}/{name}.zip *')
 
 # ----------------------------------------------------------
 # RELEASE NOTES
@@ -409,7 +411,7 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_tag_rec
 
     run(
         f'gh release upload "{release_tag}" '
-        f'SideStore.ipa SideStore.dSYMs.zip encrypted-build-logs.zip '
+        f'SideStore.ipa SideStore.dSYMs.zip build-logs.zip '
         f'--clobber'
     )
 
@@ -483,9 +485,9 @@ COMMANDS = {
     # ----------------------------------------------------------
     # LOG ENCRYPTION
     # ----------------------------------------------------------
-    "encrypt-build"           : (lambda: encrypt_logs("encrypted-build-logs"),        0, ""),
-    "encrypt-tests-build"     : (lambda: encrypt_logs("encrypted-tests-build-logs"),  0, ""),
-    "encrypt-tests-run"       : (lambda: encrypt_logs("encrypted-tests-run-logs"),    0, ""),
+    "encrypt-build"           : (lambda: encrypt_logs("build-logs"),        0, ""),
+    "encrypt-tests-build"     : (lambda: encrypt_logs("tests-build-logs"),  0, ""),
+    "encrypt-tests-run"       : (lambda: encrypt_logs("tests-run-logs"),    0, ""),
 
     # ----------------------------------------------------------
     # RELEASE / DEPLOY
