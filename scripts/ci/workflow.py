@@ -318,21 +318,32 @@ def deploy(repo, source_json, release_tag, marketing_version):
         raise SystemExit("Deploy push failed after retries")
 
 
-def last_successful_commit(workflow, branch):
-    import json
+def last_successful_commit(is_stable, tag=None):
+    is_stable = str(is_stable).lower() in ("1", "true", "yes")
 
     try:
-        out = runAndGet(
-            f'gh run list '
-            f'--workflow "{workflow}" '
-            f'--json headSha,conclusion,headBranch'
-        )
+        if is_stable:
+            prev_tag = runAndGet(
+                r'git tag --sort=-v:refname '
+                r'| grep -E "^[0-9]+\.[0-9]+\.[0-9]+$" '
+                r'| sed -n "2p" || true'
+            ).strip()
 
-        runs = json.loads(out)
+            if prev_tag:
+                return runAndGet(f'git rev-parse "{prev_tag}^{{commit}}"')
 
-        for r in runs:
-            if r.get("conclusion") == "success" and r.get("headBranch") == branch:
-                return r["headSha"]
+            return None   # ← changed
+
+        if tag:
+            exists = subprocess.call(
+                f'git rev-parse -q --verify "refs/tags/{tag}"',
+                shell=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            ) == 0
+
+            if exists:
+                return runAndGet(f'git rev-parse "{tag}^{{commit}}"')
 
     except Exception:
         pass
@@ -341,15 +352,13 @@ def last_successful_commit(workflow, branch):
 
 def upload_release(release_name, release_tag, commit_sha, repo, upstream_tag_recommended, is_stable=False):
     is_stable = str(is_stable).lower() in ("1", "true", "yes")
+    draft = False
+    prerelease = True
+    latest = False
 
     if is_stable:
-        draft = True        # always create a draft for stable and let user publish release
-        update_tag = False
         prerelease = False
-    else:
-        draft = False
-        update_tag = True   # update existing
-        prerelease = True
+        latest = True
 
     token = getenv("GH_TOKEN")
     if token:
@@ -377,12 +386,13 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_tag_rec
         f"--output-dir {ROOT}"
     )
 
-    release_notes = re.sub(
-        r'^\s*#{1,6}\s*what(?:\'?s|\s+is)?\s+(?:new|changed).*',
-        "## What's Changed",
-        release_notes,
-        flags=re.IGNORECASE | re.MULTILINE,
-    )
+    if is_stable:
+        release_notes = re.sub(
+            r'(?im)^[ \t]*#{1,6}[ \t]*what[’\']?s[ \t]+changed[ \t]*$',
+            "## What's Changed",
+            release_notes,
+            flags=re.IGNORECASE | re.MULTILINE,
+        )
 
     upstream_block = ""
     if upstream_tag_recommended and upstream_tag_recommended.strip():
@@ -405,7 +415,7 @@ def upload_release(release_name, release_tag, commit_sha, repo, upstream_tag_rec
 
     draft_flag = "--draft" if draft else ""
     prerelease_flag = "--prerelease" if prerelease else ""
-    latest_flag = "" if update_tag else "--latest=false"
+    latest_flag = "--latest=true" if latest else ""
 
     # create release if it doesn't exist
     exists = subprocess.call(
@@ -514,7 +524,7 @@ COMMANDS = {
     # ----------------------------------------------------------
     # RELEASE / DEPLOY
     # ----------------------------------------------------------
-    "last-successful-commit"  : (last_successful_commit,     2, "<workflow_name> <branch>"),
+    "last-successful-commit"  : (last_successful_commit,     1, "<is_stable> [tag]"),
     "release-notes"           : (release_notes,              1, "<tag>"),
     "retrieve-release-notes"  : (retrieve_release_notes,     1, "<tag>"),
     "generate-metadata"       : (generate_metadata,          7,
@@ -548,9 +558,9 @@ def main():
         suffix = f" {arg_usage}" if arg_usage else ""
         raise SystemExit(f"Usage: workflow.py {cmd}{suffix}")
 
-    args = sys.argv[2:2 + argc]
+    args = sys.argv[2:]
 
-    result = func(*args) if argc else func()
+    result = func(*args) if args else func()
 
     # ONLY real outputs go to stdout
     if result is not None:

@@ -137,12 +137,20 @@ def generate_release_notes(last_successful, tag, branch):
         url = repo_url()
         section += (
             f"\n{HEADER_MARKER} Full Changelog: "
-            f"[{last_successful[:8]}...{current[:8]}]"
+            f"[{ref_display(last_successful)}...{ref_display(current)}]"
             f"({url}/compare/{last_successful}...{current})\n"
         )
 
     return section
 
+def ref_display(ref):
+    try:
+        tag = run(f'git describe --tags --exact-match "{ref}" 2>/dev/null || true')
+        if tag:
+            return tag
+    except Exception:
+        pass
+    return ref[:8]
 
 # ----------------------------------------------------------
 # markdown update
