@@ -17,7 +17,6 @@ jobs:
 
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      RELEASE_NAME: Stable
       CHANNEL: stable
       UPSTREAM_CHANNEL: ""
 
@@ -26,6 +25,12 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+
+      - name: Find Last Successful commit
+        run: |
+          LAST_SUCCESSFUL_COMMIT=$(python3 scripts/ci/workflow.py last-successful-commit \
+            "true" || echo "")
+          echo "LAST_SUCCESSFUL_COMMIT=$LAST_SUCCESSFUL_COMMIT" | tee -a $GITHUB_ENV
 
       - run: brew install ldid xcbeautify
 
@@ -68,9 +73,6 @@ jobs:
             ~/Library/Caches/org.swift.swiftpm
           key: xcode-build-cache-stable-
 
-      - name: Clean
-        run: python3 scripts/ci/workflow.py clean
-
       - name: Build
         id: build
         env:
@@ -112,7 +114,7 @@ jobs:
           IPA_NAME="$PRODUCT_NAME.ipa"
 
           python3 scripts/ci/workflow.py generate-metadata \
-            "$CHANNEL" \
+            "${{ github.ref_name }}" \
             "$SHORT_COMMIT" \
             "$MARKETING_VERSION" \
             "$CHANNEL" \
@@ -125,7 +127,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python3 scripts/ci/workflow.py upload-release \
-            "$RELEASE_NAME" \
+            "${{ github.ref_name }}" \
             "${{ github.ref_name }}" \
             "$GITHUB_SHA" \
             "$GITHUB_REPOSITORY" \

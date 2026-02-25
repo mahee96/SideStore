@@ -107,13 +107,13 @@ def main():
         gen_cmd = (
             f"python3 {script} "
             f"{args.last_successful_commit} {args.release_tag} "
-            f"--output-dir \"{notes_dir}\""
+            f'--output-dir "{notes_dir}"'
         )
     else:
         gen_cmd = (
             f"python3 {script} "
             f"{args.short_commit} {args.release_tag} "
-            f"--output-dir \"{notes_dir}\""
+            f'--output-dir "{notes_dir}"'
         )
 
     sh(gen_cmd, cwd=repo_root)

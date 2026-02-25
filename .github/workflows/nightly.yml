@@ -30,7 +30,7 @@ jobs:
       - name: Find Last Successful commit
         run: |
           LAST_SUCCESSFUL_COMMIT=$(python3 scripts/ci/workflow.py last-successful-commit \
-            "${{ github.workflow }}" "${{ env.CHANNEL }}" || echo "")
+            "false" "${{ env.CHANNEL }}" || echo "")
           echo "LAST_SUCCESSFUL_COMMIT=$LAST_SUCCESSFUL_COMMIT" | tee -a $GITHUB_ENV
 
       - name: Check for new changes (on schedule)
