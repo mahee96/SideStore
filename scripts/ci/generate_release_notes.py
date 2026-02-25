@@ -152,11 +152,14 @@ def generate_release_notes(last_successful, tag, branch):
 
 def ref_display(ref):
     try:
-        tag = run(f'git describe --tags --exact-match "{ref}" 2>/dev/null || true')
-        if tag:
+        tag = run(f'git describe --tags --exact-match "{ref}" 2>/dev/null || true').strip()
+
+        # allow only semantic version tags: X.Y.Z
+        if re.fullmatch(r'\d+\.\d+\.\d+', tag):
             return tag
     except Exception:
         pass
+
     return ref[:8]
 
 
