@@ -95,6 +95,7 @@ def resolve_start_commit(last_successful: str):
     except Exception:
         return first_commit()
 
+
 def generate_release_notes(last_successful, tag, branch):
     current = head_commit()
 
@@ -124,7 +125,12 @@ def generate_release_notes(last_successful, tag, branch):
         for m in messages:
             section += f"{fmt_msg(m)}\n"
 
-    prev_authors = authors(branch)
+    if commit_exists(branch):
+        previous_range = branch
+    else:
+        previous_range = last_successful
+
+    prev_authors = authors(previous_range)
     recent_authors = authors(f"{last_successful}..{current}")
     new_authors = recent_authors - prev_authors
 
@@ -143,6 +149,7 @@ def generate_release_notes(last_successful, tag, branch):
 
     return section
 
+
 def ref_display(ref):
     try:
         tag = run(f'git describe --tags --exact-match "{ref}" 2>/dev/null || true')
@@ -151,6 +158,7 @@ def ref_display(ref):
     except Exception:
         pass
     return ref[:8]
+
 
 # ----------------------------------------------------------
 # markdown update
@@ -224,7 +232,7 @@ def retrieve_tag(tag, file_path: Path):
         fr"^{TAG_MARKER} {re.escape(tag)}$",
         content,
         re.MULTILINE | re.IGNORECASE,
-    )
+        )
 
     if not match:
         return ""
