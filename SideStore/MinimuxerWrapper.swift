@@ -13,15 +13,16 @@ var isMinimuxerReady: Bool {
     print("isMinimuxerReady property is always true on simulator")
     return true
     #else
-    return minimuxer.ready()
+    return minimuxer.ready() && IfManager.shared.sideVPNPatched
     #endif
 }
 
-func minimuxerStartWithLogger(_ pairingFile: String,_ logPath: String,_ loggingEnabled: Bool) throws {
+func minimuxerStartWithLogger(_ pairingFile: String, _ logPath: String, _ loggingEnabled: Bool) throws {
     #if targetEnvironment(simulator)
-    print("minimuxerStartWithLogger(\(pairingFile), \(logPath), \(loggingEnabled) is no-op on simulator")
+    print("minimuxerStartWithLogger(\(pairingFile), \(logPath), \(loggingEnabled)) is no-op on simulator")
     #else
-    try minimuxer.startWithLogger(pairingFile, logPath, loggingEnabled)
+    let hostIP = IfManager.shared.nextProbableSideVPN?.hostIP
+    try minimuxer.startWithLogger(pairingFile, logPath, hostIP, loggingEnabled)
     #endif
 }
 
