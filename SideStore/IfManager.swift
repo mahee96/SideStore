@@ -30,72 +30,97 @@ fileprivate func socktouint(_ sock: inout sockaddr) -> UInt32 {
     return addr.s_addr.bigEndian
 }
 
-struct NetInfo: Hashable {
+struct NetInfo: Hashable, CustomStringConvertible {
     let name: String
-    let host: UInt32
-    let mask: UInt32
+    
+    let hostIP: String
+    let maskIP: String
+    
+    private let host: UInt32
+    private let mask: UInt32
     
     init(name: String, host: UInt32, mask: UInt32) {
         self.name = name
         self.host = host
         self.mask = mask
+        self.hostIP = uti(host) ?? "nil"
+        self.maskIP = uti(mask) ?? "nil"
     }
     
     init?(_ ifaddr: ifaddrs) {
-        guard let ianame = String(utf8String: ifaddr.ifa_name) else { return nil }
-        self = .init(name: ianame, host: socktouint(&ifaddr.ifa_addr.pointee), mask: socktouint(&ifaddr.ifa_netmask.pointee))
+        guard
+            let ianame = String(utf8String: ifaddr.ifa_name)
+        else { return nil }
+        
+        let host = socktouint(&ifaddr.ifa_addr.pointee)
+        let mask = socktouint(&ifaddr.ifa_netmask.pointee)
+        
+        self.init(name: ianame, host: host, mask: mask)
     }
     
-    var minIP: UInt32 { host &  mask }
-    var maxIP: UInt32 { host | ~mask }
-    var hostIP: String { uti(host) ?? "nil" }
-    var maskIP: String { uti(mask) ?? "nil" }
+    // computed networking values (still numeric internally)
+    var minIPInSubnet: UInt32 { host & mask }
+    var maxIPInSubnet: UInt32 { host | ~mask }
+    
+    var minIPString: String { uti(minIPInSubnet) ?? "nil" }
+    var maxIPString: String { uti(maxIPInSubnet) ?? "nil" }
+    
+    var description: String {
+        "\(name) | ip=\(hostIP) mask=\(maskIP) range=\(minIPString)-\(maxIPString)"
+    }
 }
 
-final class IfManager: Sendable {
+final class IfManager: @unchecked Sendable {
+
+    private init() {}
     static let shared = IfManager()
-    nonisolated(unsafe) private(set) var addrs: Set<NetInfo> = Set()
     
-    init() {
-        self.addrs = IfManager.update()
+    // always get freshly computed addresses
+    var addrs: Set<NetInfo> {
+        Self.query()
     }
     
-    public func update() {
-        addrs = IfManager.update()
-    }
-    
-    private static func update() -> Set<NetInfo> {
+    private static func query() -> Set<NetInfo> {
         var addrs = Set<NetInfo>()
         var head: UnsafeMutablePointer<ifaddrs>? = nil
         guard getifaddrs(&head) == 0, let first = head else { return addrs }
         defer { freeifaddrs(head) }
-        var ifaddr: UnsafeMutablePointer<ifaddrs>? = first
-        while let next = ifaddr {
+
+        var cursor: UnsafeMutablePointer<ifaddrs>? = first
+        while let current = cursor {
             // we only want v4 interfaces that aren't loopback and aren't masked 255.255.255.255
-            if (next.pointee.ifa_addr.pointee.sa_family == UInt8(AF_INET)),
-               (Int32(next.pointee.ifa_flags) & (IFF_UP|IFF_RUNNING|IFF_LOOPBACK)) == (IFF_UP|IFF_RUNNING),
-               let info = NetInfo(next.pointee),
-               info.mask != 0xffffffff {
+            let entry = current.pointee
+            let flags = Int32(entry.ifa_flags)
+
+            let isIPv4 = entry.ifa_addr.pointee.sa_family == UInt8(AF_INET)
+            let isActive = (flags & (IFF_UP | IFF_RUNNING | IFF_LOOPBACK)) == (IFF_UP | IFF_RUNNING)
+
+            if isIPv4, isActive, let info = NetInfo(entry), info.maskIP != "255.255.255.255" {
                 addrs.insert(info)
             }
-            ifaddr = next.pointee.ifa_next
+
+            cursor = entry.ifa_next
         }
         return addrs
     }
     
-    var nextLAN: NetInfo? {
+    private var nextLAN: NetInfo? {
         addrs.first { $0.name.starts(with: "en") }
     }
     
     var nextProbableSideVPN: NetInfo? {
-        // try old 10.7.0.0 first, then fallback to next v4
+        // try old 10.7.0.1 first, then fallback to next v4
         // user should only be connected to StosVPN/LocalDevVPN
-        addrs.first { $0.host == 168230912 || $0.name.starts(with: "utun") }
+        addrs.first {
+            $0.minIPString == "10.7.0.1"     ||
+            $0.minIPString == "192.168.56.1" ||
+            $0.name.starts(with: "utun")
+        }
     }
     
     var sideVPNPatched: Bool {
-        nextLAN?.mask == nextProbableSideVPN?.mask &&
-        nextLAN?.maxIP == nextProbableSideVPN?.maxIP
+        nextLAN?.maskIP == nextProbableSideVPN?.maskIP &&
+        nextLAN?.maxIPInSubnet == nextProbableSideVPN?.maxIPInSubnet
     }
 }
 
