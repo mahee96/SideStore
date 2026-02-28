@@ -13,7 +13,13 @@ var isMinimuxerReady: Bool {
     print("isMinimuxerReady property is always true on simulator")
     return true
     #else
-    return minimuxer.ready() && IfManager.shared.sideVPNPatched
+    IfManager.shared.query()
+    let dest = IfManager.shared.nextProbableSideVPN?.destIP
+    if #available(iOS 26.4, *) {
+        return minimuxer.ready(dest) && IfManager.shared.sideVPNPatched
+    } else {
+        return minimuxer.ready(dest)
+    }
     #endif
 }
 
@@ -21,8 +27,10 @@ func minimuxerStartWithLogger(_ pairingFile: String, _ logPath: String, _ loggin
     #if targetEnvironment(simulator)
     print("minimuxerStartWithLogger(\(pairingFile), \(logPath), \(loggingEnabled)) is no-op on simulator")
     #else
-    let hostIP = IfManager.shared.nextProbableSideVPN?.hostIP
-    try minimuxer.startWithLogger(pairingFile, logPath, hostIP, loggingEnabled)
+    IfManager.shared.query()
+    let dest = IfManager.shared.nextProbableSideVPN?.destIP
+    print("minimuxerStartWithLogger(\(pairingFile), \(logPath), \(dest), \(loggingEnabled)) is no-op on simulator")
+    try minimuxer.startWithLogger(pairingFile, logPath, dest, loggingEnabled)
     #endif
 }
 

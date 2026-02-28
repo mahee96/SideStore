@@ -30,21 +30,24 @@ fileprivate func socktouint(_ sock: inout sockaddr) -> UInt32 {
     return addr.s_addr.bigEndian
 }
 
-struct NetInfo: Hashable, CustomStringConvertible {
-    let name: String
-    
-    let hostIP: String
-    let maskIP: String
+public struct NetInfo: Hashable, CustomStringConvertible {
+    public let name: String
+    public let hostIP: String
+    public let destIP: String
+    public let maskIP: String
     
     private let host: UInt32
+    private let dest: UInt32
     private let mask: UInt32
     
-    init(name: String, host: UInt32, mask: UInt32) {
+    init(name: String, host: UInt32, dest: UInt32, mask: UInt32) {
         self.name = name
         self.host = host
+        self.dest = dest
         self.mask = mask
-        self.hostIP = uti(host) ?? "nil"
-        self.maskIP = uti(mask) ?? "nil"
+        self.hostIP = uti(host) ?? "10.7.0.0"
+        self.destIP = uti(dest) ?? "10.7.0.1"
+        self.maskIP = uti(mask) ?? "255.255.255.0"
     }
     
     init?(_ ifaddr: ifaddrs) {
@@ -53,33 +56,37 @@ struct NetInfo: Hashable, CustomStringConvertible {
         else { return nil }
         
         let host = socktouint(&ifaddr.ifa_addr.pointee)
+        let dest = socktouint(&ifaddr.ifa_dstaddr.pointee)
         let mask = socktouint(&ifaddr.ifa_netmask.pointee)
         
-        self.init(name: ianame, host: host, mask: mask)
+        self.init(name: ianame, host: host, dest: dest, mask: mask)
     }
     
     // computed networking values (still numeric internally)
-    var minIPInSubnet: UInt32 { host & mask }
-    var maxIPInSubnet: UInt32 { host | ~mask }
+    public var minIP: UInt32 { host & mask }
+    public var maxIP: UInt32 { host | ~mask }
     
-    var minIPString: String { uti(minIPInSubnet) ?? "nil" }
-    var maxIPString: String { uti(maxIPInSubnet) ?? "nil" }
+    public var minIPString: String { uti(minIP) ?? "nil" }
+    public var maxIPString: String { uti(maxIP) ?? "nil" }
     
-    var description: String {
-        "\(name) | ip=\(hostIP) mask=\(maskIP) range=\(minIPString)-\(maxIPString)"
+    public var description: String {
+        "\(name) | ip=\(hostIP) dest=\(destIP) mask=\(maskIP) range=\(minIPString)-\(maxIPString)"
     }
 }
 
-final class IfManager: @unchecked Sendable {
+final class IfManager: Sendable {
+    public static let shared = IfManager()
+    nonisolated(unsafe) private(set) var addrs: Set<NetInfo> = Set()
 
-    private init() {}
-    static let shared = IfManager()
-    
-    // always get freshly computed addresses
-    var addrs: Set<NetInfo> {
-        Self.query()
+    private init() {
+        self.addrs = IfManager.query()
     }
+
     
+    public func query() {
+        addrs = IfManager.query()
+    }
+
     private static func query() -> Set<NetInfo> {
         var addrs = Set<NetInfo>()
         var head: UnsafeMutablePointer<ifaddrs>? = nil
@@ -112,15 +119,14 @@ final class IfManager: @unchecked Sendable {
         // try old 10.7.0.1 first, then fallback to next v4
         // user should only be connected to StosVPN/LocalDevVPN
         addrs.first {
-            $0.minIPString == "10.7.0.1"     ||
-            $0.minIPString == "192.168.56.1" ||
+            $0.hostIP == "10.7.0.1" ||
             $0.name.starts(with: "utun")
         }
     }
     
     var sideVPNPatched: Bool {
         nextLAN?.maskIP == nextProbableSideVPN?.maskIP &&
-        nextLAN?.maxIPInSubnet == nextProbableSideVPN?.maxIPInSubnet
+        nextLAN?.maxIP == nextProbableSideVPN?.maxIP
     }
 }
 
