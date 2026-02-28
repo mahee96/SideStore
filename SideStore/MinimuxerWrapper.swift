@@ -10,122 +10,149 @@ import Minimuxer
 
 var isMinimuxerReady: Bool {
     #if targetEnvironment(simulator)
-    print("isMinimuxerReady property is always true on simulator")
+    print("isMinimuxerReady = true on simulator")
     return true
     #else
     IfManager.shared.query()
     let dest = IfManager.shared.nextProbableSideVPN?.destIP
+    var result = false
     if #available(iOS 26.4, *) {
-        return Minimuxer.ready(ifaddr: dest) && IfManager.shared.sideVPNPatched
+        result = Minimuxer.ready(ifaddr: dest) && IfManager.shared.sideVPNPatched
     } else {
-        return Minimuxer.ready(ifaddr: dest)
+        result = Minimuxer.ready(ifaddr: dest)
     }
+    print("isMinimuxerReady = \(result)")
+    return result
     #endif
 }
 
 func minimuxerStartWithLogger(_ pairingFile: String, _ logPath: String, _ loggingEnabled: Bool) throws {
+    defer { print("minimuxerStartWithLogger(pairingFile, logPath, dest, loggingEnabled) completed") }
     #if targetEnvironment(simulator)
-    print("minimuxerStartWithLogger(\(pairingFile), \(logPath), \(loggingEnabled)) is no-op on simulator")
+    print("minimuxerStartWithLogger(pairingFile, logPath, loggingEnabled) is no-op on simulator")
     #else
     IfManager.shared.query()
     let dest = IfManager.shared.nextProbableSideVPN?.destIP
-    print("minimuxerStartWithLogger(\(pairingFile), \(logPath), \(dest), \(loggingEnabled)) is no-op on simulator")
+    print("minimuxerStartWithLogger(pairingFile, logPath, dest, loggingEnabled) invoked")
     try Minimuxer.startWithLogger(pairingFile: pairingFile, logPath: logPath, ifaddr: dest, isConsoleLoggingEnabled: loggingEnabled)
     #endif
 }
 
 func targetMinimuxerAddress() {
+    defer { print("targetMinimuxerAddress() completed") }
     #if targetEnvironment(simulator)
     print("targetMinimuxerAddress() is no-op on simulator")
     #else
+    print("targetMinimuxerAddress() invoked")
     Minimuxer.targetMinimuxerAddress()
     #endif
 }
 
 func installProvisioningProfiles(_ profileData: Data) throws {
+    defer { print("installProvisioningProfiles(profileData) completed") }
     #if targetEnvironment(simulator)
-    print("installProvisioningProfiles(\(profileData)) is no-op on simulator")
+    print("installProvisioningProfiles(profileData) is no-op on simulator")
     #else
+    print("installProvisioningProfiles(profileData) invoked")
     try Minimuxer.installProvisioningProfile(profile: profileData)
     #endif
 }
 
 func removeProvisioningProfile(_ id: String) throws {
+    defer { print("removeProvisioningProfile(id) completed") }
     #if targetEnvironment(simulator)
-    print("removeProvisioningProfile(\(id)) is no-op on simulator")
+    print("removeProvisioningProfile(id) is no-op on simulator")
     #else
+    print("removeProvisioningProfile(id) invoked")
     try Minimuxer.removeProvisioningProfile(id: id)
     #endif
 }
 
 func removeApp(_ bundleId: String) throws {
+    defer { print("removeApp(bundleId) completed") }
     #if targetEnvironment(simulator)
-    print("removeApp(\(bundleId)) is no-op on simulator")
+    print("removeApp(bundleId) is no-op on simulator")
     #else
+    print("removeApp(bundleId) invoked")
     try Minimuxer.removeApp(bundleId: bundleId)
     #endif
 }
 
 func yeetAppAFC(_ bundleId: String, _ rawBytes: Data) throws {
+    defer { print("yeetAppAFC(bundleId, rawBytes) completed") }
     #if targetEnvironment(simulator)
-    print("yeetAppAFC(\(bundleId), \(rawBytes)) is no-op on simulator")
+    print("yeetAppAFC(bundleId, rawBytes) is no-op on simulator")
     #else
+    print("yeetAppAFC(bundleId, rawBytes) invoked")
     try Minimuxer.yeetAppAfc(bundleId: bundleId, ipaBytes: rawBytes)
     #endif
 }
 
 func installIPA(_ bundleId: String) throws {
+    defer { print("installIPA(bundleId) completed") }
     #if targetEnvironment(simulator)
-    print("installIPA(\(bundleId)) is no-op on simulator")
+    print("installIPA(bundleId) is no-op on simulator")
     #else
+    print("installIPA(bundleId) invoked")
     try Minimuxer.installIpa(bundleId: bundleId)
     #endif
 }
 
 func fetchUDID() -> String? {
+    defer { print("fetchUDID() completed") }
     #if targetEnvironment(simulator)
     print("fetchUDID() is no-op on simulator")
     return "XXXXX-XXXX-XXXXX-XXXX"
     #else
+    print("fetchUDID() invoked")
     return Minimuxer.fetchUDID()
     #endif
 }
 
 func debugApp(_ appId: String) throws {
+    defer { print("debugApp(appId) completed") }
     #if targetEnvironment(simulator)
-    print("debugApp(\(appId)) is no-op on simulator")
-
+    print("debugApp(appId) is no-op on simulator")
     #else
+    print("debugApp(appId) invoked")
     try Minimuxer.debugApp(appId: appId)
     #endif
 }
 
 func attachDebugger(_ pid: UInt32) throws {
+    defer { print("attachDebugger(pid) completed") }
     #if targetEnvironment(simulator)
-    print("attachDebugger(\(pid)) is no-op on simulator")
+    print("attachDebugger(pid) is no-op on simulator")
     #else
+    print("attachDebugger(pid) invoked")
     try Minimuxer.attachDebugger(pid: pid)
     #endif
 }
 
 func startAutoMounter(_ docsPath: String) {
+    defer { print("startAutoMounter(docsPath) completed") }
     #if targetEnvironment(simulator)
-    print("startAutoMounter(\(docsPath)) is no-op on simulator")
+    print("startAutoMounter(docsPath) is no-op on simulator")
     #else
+    print("startAutoMounter(docsPath) invoked")
     Minimuxer.startAutoMounter(docsPath: docsPath)
     #endif
 }
 
 func dumpProfiles(_ docsPath: String) throws -> String {
+    defer { print("dumpProfiles(docsPath) completed") }
     #if targetEnvironment(simulator)
-    print("dumpProfiles(\(docsPath)) is no-op on simulator")
+    print("dumpProfiles(docsPath) is no-op on simulator")
     return ""
     #else
+    print("dumpProfiles(docsPath) invoked")
     return try Minimuxer.dumpProfiles(docsPath: docsPath)
     #endif
 }
 
 func setMinimuxerDebug(_ debug: Bool) {
+    defer { print("setMinimuxerDebug(debug) completed") }
+    print("setMinimuxerDebug(debug) invoked")
     Minimuxer.setDebug(debug)
 }
 
