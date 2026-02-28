@@ -75,28 +75,11 @@ check_for_update() {
         if [ "$FORCE_DOWNLOAD" = true ] || [ "$NOT_UPTODATE" = true ] ;then
             echo "downloading binaries"
             echo
-            if [[ "$1" != "minimuxer" ]]; then
-                wget -O "$1/lib$1-sim.a"    "https://github.com/SideStore/$1/releases/latest/download/lib$1-sim.a"
-                wget -O "$1/lib$1-ios.a"    "https://github.com/SideStore/$1/releases/latest/download/lib$1-ios.a"
-                wget -O "$1/$1.h"           "https://github.com/SideStore/$1/releases/latest/download/$1.h"
-                wget -O "$1/$1.swift"       "https://github.com/SideStore/$1/releases/latest/download/$1.swift"
-                echo
-            else
-                wget -O "$1/lib$1-sim.a"    "https://github.com/SideStore/$1/releases/latest/download/lib$1-sim.a"
-                wget -O "$1/lib$1-ios.a"    "https://github.com/SideStore/$1/releases/latest/download/lib$1-ios.a"
-                wget -O "$1/generated.zip"  "https://github.com/SideStore/$1/releases/latest/download/generated.zip"
-                echo
-                echo "Unzipping generated.zip"
-                cd "$1"
-                unzip ./generated.zip
-                cp -v generated/* .
-                # Remove all files except ones that comes checked-in from minimuxer repository
-                find generated -type f ! -name 'minimuxer-Bridging-Header.h' ! -name 'minimuxer-helpers.swift' -exec rm -v {} \;
-                rm generated.zip
-                rmdir generated/
-                cd ..
-                echo "Done"
-            fi
+            wget -O "$1/lib$1-sim.a"    "https://github.com/SideStore/$1/releases/latest/download/lib$1-sim.a"
+            wget -O "$1/lib$1-ios.a"    "https://github.com/SideStore/$1/releases/latest/download/lib$1-ios.a"
+            wget -O "$1/$1.h"           "https://github.com/SideStore/$1/releases/latest/download/$1.h"
+            wget -O "$1/$1.swift"       "https://github.com/SideStore/$1/releases/latest/download/$1.swift"
+            echo
         else
             echo "Up-to-date"
         fi
@@ -106,13 +89,4 @@ check_for_update() {
     fi
 }
 
-# Allow for Xcode to check minimuxer and em_proxy separately by skipping the update check if the other one is specified as an argument
-if [[ "$1" != "em_proxy" ]]; then
-    check_for_update minimuxer "$1"
-    if [[ "$1" != "minimuxer" ]]; then
-        echo
-    fi
-fi
-if [[ "$1" != "minimuxer" ]]; then
-    check_for_update em_proxy "$1"
-fi
+check_for_update em_proxy "$1"
