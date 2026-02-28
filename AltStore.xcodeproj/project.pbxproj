@@ -2861,7 +2861,6 @@
 		A8A5A7F22F4C2CFC00572B4A /* module.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = module.modulemap; sourceTree = "<group>"; };
 		A8A5A7F32F4C2CFC00572B4A /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		A8A5AB682F4C2CFC00572B4A /* .last-prebuilt-fetch-em_proxy */ = {isa = PBXFileReference; lastKnownFileType = text; path = ".last-prebuilt-fetch-em_proxy"; sourceTree = "<group>"; };
-		A8A5AB692F4C2CFC00572B4A /* .last-prebuilt-fetch-minimuxer */ = {isa = PBXFileReference; lastKnownFileType = text; path = ".last-prebuilt-fetch-minimuxer"; sourceTree = "<group>"; };
 		A8A5AB6A2F4C2CFC00572B4A /* AltSign */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = AltSign; sourceTree = "<group>"; };
 		A8A5AB6B2F4C2CFC00572B4A /* em_proxy.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = em_proxy.xcodeproj; sourceTree = "<group>"; };
 		A8A5AB6C2F4C2CFC00572B4A /* fetch-prebuilt.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "fetch-prebuilt.sh"; sourceTree = "<group>"; };
@@ -4211,7 +4210,6 @@
 				A8A5AB6B2F4C2CFC00572B4A /* em_proxy.xcodeproj */,
 				A8A5A7F42F4C2CFC00572B4A /* em_proxy */,
 				A8A5AB682F4C2CFC00572B4A /* .last-prebuilt-fetch-em_proxy */,
-				A8A5AB692F4C2CFC00572B4A /* .last-prebuilt-fetch-minimuxer */,
 				A8A5AB6C2F4C2CFC00572B4A /* fetch-prebuilt.sh */,
 			);
 			path = Dependencies;
