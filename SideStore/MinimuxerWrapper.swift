@@ -6,7 +6,7 @@
 //
 
 import Foundation
-private import minimuxer
+import Minimuxer
 
 var isMinimuxerReady: Bool {
     #if targetEnvironment(simulator)
@@ -16,9 +16,9 @@ var isMinimuxerReady: Bool {
     IfManager.shared.query()
     let dest = IfManager.shared.nextProbableSideVPN?.destIP
     if #available(iOS 26.4, *) {
-        return minimuxer.ready(dest) && IfManager.shared.sideVPNPatched
+        return Minimuxer.ready(ifaddr: dest) && IfManager.shared.sideVPNPatched
     } else {
-        return minimuxer.ready(dest)
+        return Minimuxer.ready(ifaddr: dest)
     }
     #endif
 }
@@ -30,7 +30,7 @@ func minimuxerStartWithLogger(_ pairingFile: String, _ logPath: String, _ loggin
     IfManager.shared.query()
     let dest = IfManager.shared.nextProbableSideVPN?.destIP
     print("minimuxerStartWithLogger(\(pairingFile), \(logPath), \(dest), \(loggingEnabled)) is no-op on simulator")
-    try minimuxer.startWithLogger(pairingFile, logPath, dest, loggingEnabled)
+    try Minimuxer.startWithLogger(pairingFile: pairingFile, logPath: logPath, ifaddr: dest, isConsoleLoggingEnabled: loggingEnabled)
     #endif
 }
 
@@ -38,7 +38,7 @@ func targetMinimuxerAddress() {
     #if targetEnvironment(simulator)
     print("targetMinimuxerAddress() is no-op on simulator")
     #else
-    minimuxer.target_minimuxer_address()
+    Minimuxer.targetMinimuxerAddress()
     #endif
 }
 
@@ -46,50 +46,88 @@ func installProvisioningProfiles(_ profileData: Data) throws {
     #if targetEnvironment(simulator)
     print("installProvisioningProfiles(\(profileData)) is no-op on simulator")
     #else
-    let slice = profileData.toRustByteSlice()
-    try minimuxer.install_provisioning_profile(slice.forRust())
+    try Minimuxer.installProvisioningProfile(profile: profileData)
     #endif
 }
 
+func removeProvisioningProfile(_ id: String) throws {
+    #if targetEnvironment(simulator)
+    print("removeProvisioningProfile(\(id)) is no-op on simulator")
+    #else
+    try Minimuxer.removeProvisioningProfile(id: id)
+    #endif
+}
 
 func removeApp(_ bundleId: String) throws {
     #if targetEnvironment(simulator)
     print("removeApp(\(bundleId)) is no-op on simulator")
     #else
-    try minimuxer.remove_app(bundleId)
+    try Minimuxer.removeApp(bundleId: bundleId)
     #endif
 }
-
 
 func yeetAppAFC(_ bundleId: String, _ rawBytes: Data) throws {
     #if targetEnvironment(simulator)
     print("yeetAppAFC(\(bundleId), \(rawBytes)) is no-op on simulator")
     #else
-    let slice = rawBytes.toRustByteSlice()
-    try minimuxer.yeet_app_afc(bundleId, slice.forRust())
+    try Minimuxer.yeetAppAfc(bundleId: bundleId, ipaBytes: rawBytes)
     #endif
 }
-
 
 func installIPA(_ bundleId: String) throws {
     #if targetEnvironment(simulator)
     print("installIPA(\(bundleId)) is no-op on simulator")
     #else
-    try minimuxer.install_ipa(bundleId)
+    try Minimuxer.installIpa(bundleId: bundleId)
     #endif
 }
-
 
 func fetchUDID() -> String? {
     #if targetEnvironment(simulator)
     print("fetchUDID() is no-op on simulator")
     return "XXXXX-XXXX-XXXXX-XXXX"
     #else
-    return minimuxer.fetch_udid()?.toString()
+    return Minimuxer.fetchUDID()
     #endif
 }
 
+func debugApp(_ appId: String) throws {
+    #if targetEnvironment(simulator)
+    print("debugApp(\(appId)) is no-op on simulator")
 
+    #else
+    try Minimuxer.debugApp(appId: appId)
+    #endif
+}
+
+func attachDebugger(_ pid: UInt32) throws {
+    #if targetEnvironment(simulator)
+    print("attachDebugger(\(pid)) is no-op on simulator")
+    #else
+    try Minimuxer.attachDebugger(pid: pid)
+    #endif
+}
+
+func startAutoMounter(_ docsPath: String) {
+    #if targetEnvironment(simulator)
+    print("startAutoMounter(\(docsPath)) is no-op on simulator")
+    #else
+    Minimuxer.startAutoMounter(docsPath: docsPath)
+    #endif
+}
+
+func dumpProfiles(_ docsPath: String) throws -> String {
+    #if targetEnvironment(simulator)
+    print("dumpProfiles(\(docsPath)) is no-op on simulator")
+    return ""
+    #else
+    return try Minimuxer.dumpProfiles(docsPath: docsPath)
+    #endif
+}
+
+func setMinimuxerDebug(_ debug: Bool) {
+    Minimuxer.setDebug(debug)
+}
 
 extension MinimuxerError: @retroactive LocalizedError {
     public var failureReason: String? {
@@ -100,41 +138,38 @@ extension MinimuxerError: @retroactive LocalizedError {
             return NSLocalizedString("Unable to connect to the device, make sure LocalDevVPN is enabled and you're connected to Wi-Fi. This could mean an invalid pairing.", comment: "")
         case .PairingFile:
             return NSLocalizedString("Invalid pairing file. Your pairing file either didn't have a UDID, or it wasn't a valid plist. Please use iloader to replace it.", comment: "")
-            
         case .CreateDebug:
-            return self.createService(name: "debug")
+            return createService(name: "debug")
         case .LookupApps:
-            return self.getFromDevice(name: "installed apps")
+            return getFromDevice(name: "installed apps")
         case .FindApp:
-            return self.getFromDevice(name: "path to the app")
+            return getFromDevice(name: "path to the app")
         case .BundlePath:
-            return self.getFromDevice(name: "bundle path")
+            return getFromDevice(name: "bundle path")
         case .MaxPacket:
-            return self.setArgument(name: "max packet")
+            return setArgument(name: "max packet")
         case .WorkingDirectory:
-            return self.setArgument(name: "working directory")
+            return setArgument(name: "working directory")
         case .Argv:
-            return self.setArgument(name: "argv")
+            return setArgument(name: "argv")
         case .LaunchSuccess:
-            return self.getFromDevice(name: "launch success")
+            return getFromDevice(name: "launch success")
         case .Detach:
             return NSLocalizedString("Unable to detach from the app's process", comment: "")
         case .Attach:
             return NSLocalizedString("Unable to attach to the app's process", comment: "")
-            
         case .CreateInstproxy:
-            return self.createService(name: "instproxy")
+            return createService(name: "instproxy")
         case .CreateAfc:
-            return self.createService(name: "AFC")
+            return createService(name: "AFC")
         case .RwAfc:
-            return NSLocalizedString("AFC was unable to manage files on the device. Ensure Wi-Fi and LocalDevVPN are connected. If they both are, replace your pairing using iloader.", comment: "")
+            return NSLocalizedString("AFC was unable to manage files on the device.", comment: "")
         case .InstallApp(let message):
-            return NSLocalizedString("Unable to install the app: \(message.toString())", comment: "")
+            return NSLocalizedString("Unable to install the app: \(message)", comment: "")
         case .UninstallApp:
             return NSLocalizedString("Unable to uninstall the app", comment: "")
-
         case .CreateMisagent:
-            return self.createService(name: "misagent")
+            return createService(name: "misagent")
         case .ProfileInstall:
             return NSLocalizedString("Unable to manage profiles on the device", comment: "")
         case .ProfileRemove:
@@ -173,16 +208,16 @@ extension MinimuxerError: @retroactive LocalizedError {
             return NSLocalizedString("Mount failed", comment: "")
         }
     }
-    
+
     fileprivate func createService(name: String) -> String {
-        return String(format: NSLocalizedString("Cannot start a %@ server on the device.", comment: ""), name)
+        String(format: NSLocalizedString("Cannot start a %@ server on the device.", comment: ""), name)
     }
-    
+
     fileprivate func getFromDevice(name: String) -> String {
-        return String(format: NSLocalizedString("Cannot fetch %@ from the device.", comment: ""), name)
+        String(format: NSLocalizedString("Cannot fetch %@ from the device.", comment: ""), name)
     }
-    
+
     fileprivate func setArgument(name: String) -> String {
-        return String(format: NSLocalizedString("Cannot set %@ on the device.", comment: ""), name)
+        String(format: NSLocalizedString("Cannot set %@ on the device.", comment: ""), name)
     }
 }
