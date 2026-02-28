@@ -16,6 +16,7 @@ import WidgetKit
 import AltStoreCore
 import AltSign
 import Roxas
+import Minimuxer
 
 extension AppManager
 {
