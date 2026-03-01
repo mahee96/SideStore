@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "2610"
+   LastUpgradeVersion = "2630"
    version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -15,10 +15,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "CA60C44C93D7A30E3695DD59"
-               BuildableName = "libem_proxy_static.a"
-               BlueprintName = "em_proxy-staticlib"
-               ReferencedContainer = "container:Dependencies/em_proxy.xcodeproj">
+               BlueprintIdentifier = "A85A51412F4B4532002E2E11"
+               BuildableName = "em_proxy-swift"
+               BlueprintName = "em_proxy-swift"
+               ReferencedContainer = "container:AltStore.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -50,10 +50,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "CA60C44C93D7A30E3695DD59"
-            BuildableName = "libem_proxy_static.a"
-            BlueprintName = "em_proxy-staticlib"
-            ReferencedContainer = "container:Dependencies/em_proxy.xcodeproj">
+            BlueprintIdentifier = "A85A51412F4B4532002E2E11"
+            BuildableName = "em_proxy-swift"
+            BlueprintName = "em_proxy-swift"
+            ReferencedContainer = "container:AltStore.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </ProfileAction>
