@@ -330,9 +330,17 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A8BD1FD62F543F390045335F /* Dependencies */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Dependencies;
+			sourceTree = "<group>";
+		};
 		BFD247612284B9A500981D42 = {
 			isa = PBXGroup;
 			children = (
+				A8BD1FD62F543F390045335F /* Dependencies */,
 				A8EEC3D92F4B0FC800F2436D /* AltBackup */,
 				A8EEC8412F4B146A00F2436D /* AltStore */,
 				A8EEC0502F4AF7FB00F2436D /* AltStoreCore */,
