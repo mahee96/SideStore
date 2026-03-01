@@ -266,6 +266,7 @@
 /* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		A818CEC12F5424080058F5A0 /* Dependencies */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Dependencies; sourceTree = "<group>"; };
 		A8EEC0502F4AF7FB00F2436D /* AltStoreCore */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC0BF2F4AF7FB00F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = AltStoreCore; sourceTree = "<group>"; };
 		A8EEC3482F4B0D8600F2436D /* Shared */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC36A2F4B0D8700F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8EEC36C2F4B0D8700F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8EEC36B2F4B0D8700F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Shared; sourceTree = "<group>"; };
 		A8EEC3B92F4B0EFC00F2436D /* AltWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC3CA2F4B0EFC00F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = AltWidget; sourceTree = "<group>"; };
@@ -339,6 +340,7 @@
 				A8EEC3B92F4B0EFC00F2436D /* AltWidget */,
 				A8EEC3482F4B0D8600F2436D /* Shared */,
 				A8EECF2A2F4B195000F2436D /* SideStore */,
+				A818CEC12F5424080058F5A0 /* Dependencies */,
 				A8EEC71D2F4B10D900F2436D /* xcconfigs */,
 				BFD247852284BB3300981D42 /* Frameworks */,
 				BFD2476B2284B9A500981D42 /* Products */,
