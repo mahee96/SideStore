@@ -23,7 +23,11 @@
 		A8C6D50C2D1EE87600DF01F1 /* AltSign-Static in Frameworks */ = {isa = PBXBuildFile; productRef = A8C6D50B2D1EE87600DF01F1 /* AltSign-Static */; };
 		A8C6D5122D1EE8AF00DF01F1 /* AltSign-Static in Frameworks */ = {isa = PBXBuildFile; productRef = A8C6D5112D1EE8AF00DF01F1 /* AltSign-Static */; };
 		A8EB89C22F5448B20094BC01 /* em_proxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8BD2F652F543FD40045335F /* em_proxy.swift */; };
-		A8EB89C32F5448BC0094BC01 /* libem_proxy_static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8EB89B62F5446460094BC01 /* libem_proxy_static.a */; };
+		A8EB89CA2F54519C0094BC01 /* libfragmentzip.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8EB89C92F54519C0094BC01 /* libfragmentzip.a */; };
+		A8EB89CC2F5451AF0094BC01 /* Minimuxer in Frameworks */ = {isa = PBXBuildFile; productRef = A8EB89CB2F5451AF0094BC01 /* Minimuxer */; };
+		A8EB89CE2F5451B50094BC01 /* SemanticVersion in Frameworks */ = {isa = PBXBuildFile; productRef = A8EB89CD2F5451B50094BC01 /* SemanticVersion */; };
+		A8EB89D02F5451C20094BC01 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = A8EB89CF2F5451C20094BC01 /* KeychainAccess */; };
+		A8EB89D12F5451E90094BC01 /* libcurl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8BD2F6D2F543FFF0045335F /* libcurl.a */; };
 		BF1614F1250822F100767AEA /* Roxas.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BFD247862284BB3B00981D42 /* Roxas.framework */; };
 		BF1614F2250822F100767AEA /* Roxas.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BFD247862284BB3B00981D42 /* Roxas.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		BF580498246A3D19008AE704 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF580497246A3D19008AE704 /* UIKit.framework */; };
@@ -55,68 +59,68 @@
 			remoteGlobalIDString = BF45872A2298D31600BD7491;
 			remoteInfo = libimobiledevice;
 		};
-		A8EB89A22F5446460094BC01 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A8BD2FD72F5440300045335F /* libgeneral.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 87977F6F227C4B71004F31DA;
-			remoteInfo = libgeneral;
-		};
-		A8EB89AA2F5446460094BC01 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A8BD2FFB2F5440300045335F /* libfragmentzip.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 87B8C3401E0E9C37002F817D;
-			remoteInfo = "fragmentzip-cli-macOS";
-		};
-		A8EB89AC2F5446460094BC01 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A8BD2FFB2F5440300045335F /* libfragmentzip.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = B315FDB02866CCF8002E243C;
-			remoteInfo = "fragmentzip-cli-iOS";
-		};
-		A8EB89AE2F5446460094BC01 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A8BD2FFB2F5440300045335F /* libfragmentzip.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = B315FDB52866CD91002E243C;
-			remoteInfo = "fragmentzip-macOS";
-		};
-		A8EB89B02F5446460094BC01 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A8BD2FFB2F5440300045335F /* libfragmentzip.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = B315FDCE2866CDD3002E243C;
-			remoteInfo = "fragmentzip-iOS";
-		};
-		A8EB89B52F5446460094BC01 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A8BD2FBD2F5440300045335F /* em_proxy.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = CA60C44C93D7916DE57E6EBD;
-			remoteInfo = "em_proxy-staticlib";
-		};
-		A8EB89BC2F5447A10094BC01 /* PBXContainerItemProxy */ = {
+		A8EB8CB22F5453CD0094BC01 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A8BD32D02F5440300045335F /* Roxas.xcodeproj */;
 			proxyType = 2;
 			remoteGlobalIDString = BFADAFF819AE7BB70050CF31;
 			remoteInfo = Roxas;
 		};
-		A8EB89BE2F5447A10094BC01 /* PBXContainerItemProxy */ = {
+		A8EB8CB42F5453CD0094BC01 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A8BD32D02F5440300045335F /* Roxas.xcodeproj */;
 			proxyType = 2;
 			remoteGlobalIDString = BF8624801BB742E700C12EEE;
 			remoteInfo = RoxasTV;
 		};
-		A8EB89C02F5447A10094BC01 /* PBXContainerItemProxy */ = {
+		A8EB8CB62F5453CD0094BC01 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A8BD32D02F5440300045335F /* Roxas.xcodeproj */;
 			proxyType = 2;
 			remoteGlobalIDString = BFADB00319AE7BB80050CF31;
 			remoteInfo = RoxasTests;
+		};
+		A8EB8CBB2F5453CD0094BC01 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8BD2FBD2F5440300045335F /* em_proxy.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = CA60C44C93D7916DE57E6EBD;
+			remoteInfo = "em_proxy-staticlib";
+		};
+		A8EB8CC32F5453CD0094BC01 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8BD2FFB2F5440300045335F /* libfragmentzip.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 87B8C3401E0E9C37002F817D;
+			remoteInfo = "fragmentzip-cli-macOS";
+		};
+		A8EB8CC52F5453CD0094BC01 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8BD2FFB2F5440300045335F /* libfragmentzip.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = B315FDB02866CCF8002E243C;
+			remoteInfo = "fragmentzip-cli-iOS";
+		};
+		A8EB8CC72F5453CD0094BC01 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8BD2FFB2F5440300045335F /* libfragmentzip.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = B315FDB52866CD91002E243C;
+			remoteInfo = "fragmentzip-macOS";
+		};
+		A8EB8CC92F5453CD0094BC01 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8BD2FFB2F5440300045335F /* libfragmentzip.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = B315FDCE2866CDD3002E243C;
+			remoteInfo = "fragmentzip-iOS";
+		};
+		A8EB8CCE2F5453CD0094BC01 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8BD2FD72F5440300045335F /* libgeneral.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 87977F6F227C4B71004F31DA;
+			remoteInfo = libgeneral;
 		};
 		BF66EE832501AE50007EE018 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -461,6 +465,8 @@
 		A8BD325F2F5440300045335F /* minimuxer */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = minimuxer; sourceTree = "<group>"; };
 		A8BD32D02F5440300045335F /* Roxas.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Roxas.xcodeproj; sourceTree = "<group>"; };
 		A8BD32FA2F54444D0045335F /* AltSign */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = AltSign; sourceTree = "<group>"; };
+		A8EB89C72F5451970094BC01 /* libfragmentzip.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libfragmentzip.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		A8EB89C92F54519C0094BC01 /* libfragmentzip.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libfragmentzip.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		B3C39606284F4C8400DA9E2F /* CodeSigning.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = CodeSigning.xcconfig; sourceTree = "<group>"; };
 		B3C39607284F4C8400DA9E2F /* Build.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Build.xcconfig; sourceTree = "<group>"; };
 		B3C39608284F4C8400DA9E2F /* CodeSigning.xcconfig.sample */ = {isa = PBXFileReference; lastKnownFileType = text; path = CodeSigning.xcconfig.sample; sourceTree = "<group>"; };
@@ -614,7 +620,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A8EB89C32F5448BC0094BC01 /* libem_proxy_static.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -652,11 +657,16 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A8EB89D12F5451E90094BC01 /* libcurl.a in Frameworks */,
+				A8EB89CC2F5451AF0094BC01 /* Minimuxer in Frameworks */,
+				A8EB89CA2F54519C0094BC01 /* libfragmentzip.a in Frameworks */,
 				A8B646012D70C23E00125819 /* MarkdownKit in Frameworks */,
 				A8356EA92F52ED1800B4F79C /* Minimuxer in Frameworks */,
+				A8EB89D02F5451C20094BC01 /* KeychainAccess in Frameworks */,
 				A8C2260E2EC9039A00047C0D /* Nuke in Frameworks */,
 				A83FE3672EC90482005ACE9A /* Starscream in Frameworks */,
 				BF1614F1250822F100767AEA /* Roxas.framework in Frameworks */,
+				A8EB89CE2F5451B50094BC01 /* SemanticVersion in Frameworks */,
 				BF66EE852501AE50007EE018 /* AltStoreCore.framework in Frameworks */,
 				A8635D062F4CF16D00E66784 /* OpenSSL.xcframework in Frameworks */,
 			);
@@ -1221,39 +1231,39 @@
 			path = Roxas;
 			sourceTree = "<group>";
 		};
-		A8EB899F2F5446460094BC01 /* Products */ = {
+		A8EB8CAD2F5453CD0094BC01 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A8EB89A32F5446460094BC01 /* libgeneral */,
+				A8EB8CB32F5453CD0094BC01 /* Roxas.framework */,
+				A8EB8CB52F5453CD0094BC01 /* Roxas.framework */,
+				A8EB8CB72F5453CD0094BC01 /* RoxasTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		A8EB89A42F5446460094BC01 /* Products */ = {
+		A8EB8CB82F5453CD0094BC01 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A8EB89AB2F5446460094BC01 /* libfragmentzip */,
-				A8EB89AD2F5446460094BC01 /* libfragmentzip */,
-				A8EB89AF2F5446460094BC01 /* libfragmentzip.a */,
-				A8EB89B12F5446460094BC01 /* libfragmentzip.a */,
+				A8EB8CBC2F5453CD0094BC01 /* libem_proxy_static.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		A8EB89B22F5446460094BC01 /* Products */ = {
+		A8EB8CBD2F5453CD0094BC01 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A8EB89B62F5446460094BC01 /* libem_proxy_static.a */,
+				A8EB8CC42F5453CD0094BC01 /* libfragmentzip */,
+				A8EB8CC62F5453CD0094BC01 /* libfragmentzip */,
+				A8EB8CC82F5453CD0094BC01 /* libfragmentzip.a */,
+				A8EB8CCA2F5453CD0094BC01 /* libfragmentzip.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		A8EB89B72F5447A10094BC01 /* Products */ = {
+		A8EB8CCB2F5453CD0094BC01 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A8EB89BD2F5447A10094BC01 /* Roxas.framework */,
-				A8EB89BF2F5447A10094BC01 /* Roxas.framework */,
-				A8EB89C12F5447A10094BC01 /* RoxasTests.xctest */,
+				A8EB8CCF2F5453CD0094BC01 /* libgeneral */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1261,7 +1271,6 @@
 		BFD247612284B9A500981D42 = {
 			isa = PBXGroup;
 			children = (
-				A8BD1FD62F543F390045335F /* Dependencies */,
 				A8EEC3D92F4B0FC800F2436D /* AltBackup */,
 				A8EEC8412F4B146A00F2436D /* AltStore */,
 				A8EEC0502F4AF7FB00F2436D /* AltStoreCore */,
@@ -1269,6 +1278,7 @@
 				A8EEC3482F4B0D8600F2436D /* Shared */,
 				A8EECF2A2F4B195000F2436D /* SideStore */,
 				A8EEC71D2F4B10D900F2436D /* xcconfigs */,
+				A8BD1FD62F543F390045335F /* Dependencies */,
 				BFD247852284BB3300981D42 /* Frameworks */,
 				BFD2476B2284B9A500981D42 /* Products */,
 				B3C39607284F4C8400DA9E2F /* Build.xcconfig */,
@@ -1291,6 +1301,8 @@
 		BFD247852284BB3300981D42 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A8EB89C92F54519C0094BC01 /* libfragmentzip.a */,
+				A8EB89C72F5451970094BC01 /* libfragmentzip.a */,
 				A8635D052F4CF16D00E66784 /* OpenSSL.xcframework */,
 				BF580497246A3D19008AE704 /* UIKit.framework */,
 				BFD247862284BB3B00981D42 /* Roxas.framework */,
@@ -1505,19 +1517,19 @@
 			projectDirPath = "";
 			projectReferences = (
 				{
-					ProductGroup = A8EB89B22F5446460094BC01 /* Products */;
+					ProductGroup = A8EB8CB82F5453CD0094BC01 /* Products */;
 					ProjectRef = A8BD2FBD2F5440300045335F /* em_proxy.xcodeproj */;
 				},
 				{
-					ProductGroup = A8EB89A42F5446460094BC01 /* Products */;
+					ProductGroup = A8EB8CBD2F5453CD0094BC01 /* Products */;
 					ProjectRef = A8BD2FFB2F5440300045335F /* libfragmentzip.xcodeproj */;
 				},
 				{
-					ProductGroup = A8EB899F2F5446460094BC01 /* Products */;
+					ProductGroup = A8EB8CCB2F5453CD0094BC01 /* Products */;
 					ProjectRef = A8BD2FD72F5440300045335F /* libgeneral.xcodeproj */;
 				},
 				{
-					ProductGroup = A8EB89B72F5447A10094BC01 /* Products */;
+					ProductGroup = A8EB8CAD2F5453CD0094BC01 /* Products */;
 					ProjectRef = A8BD32D02F5440300045335F /* Roxas.xcodeproj */;
 				},
 			);
@@ -1534,67 +1546,67 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
-		A8EB89A32F5446460094BC01 /* libgeneral */ = {
-			isa = PBXReferenceProxy;
-			fileType = "compiled.mach-o.executable";
-			path = libgeneral;
-			remoteRef = A8EB89A22F5446460094BC01 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		A8EB89AB2F5446460094BC01 /* libfragmentzip */ = {
-			isa = PBXReferenceProxy;
-			fileType = "compiled.mach-o.executable";
-			path = libfragmentzip;
-			remoteRef = A8EB89AA2F5446460094BC01 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		A8EB89AD2F5446460094BC01 /* libfragmentzip */ = {
-			isa = PBXReferenceProxy;
-			fileType = "compiled.mach-o.executable";
-			path = libfragmentzip;
-			remoteRef = A8EB89AC2F5446460094BC01 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		A8EB89AF2F5446460094BC01 /* libfragmentzip.a */ = {
-			isa = PBXReferenceProxy;
-			fileType = archive.ar;
-			path = libfragmentzip.a;
-			remoteRef = A8EB89AE2F5446460094BC01 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		A8EB89B12F5446460094BC01 /* libfragmentzip.a */ = {
-			isa = PBXReferenceProxy;
-			fileType = archive.ar;
-			path = libfragmentzip.a;
-			remoteRef = A8EB89B02F5446460094BC01 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		A8EB89B62F5446460094BC01 /* libem_proxy_static.a */ = {
-			isa = PBXReferenceProxy;
-			fileType = archive.ar;
-			path = libem_proxy_static.a;
-			remoteRef = A8EB89B52F5446460094BC01 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		A8EB89BD2F5447A10094BC01 /* Roxas.framework */ = {
+		A8EB8CB32F5453CD0094BC01 /* Roxas.framework */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.framework;
 			path = Roxas.framework;
-			remoteRef = A8EB89BC2F5447A10094BC01 /* PBXContainerItemProxy */;
+			remoteRef = A8EB8CB22F5453CD0094BC01 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		A8EB89BF2F5447A10094BC01 /* Roxas.framework */ = {
+		A8EB8CB52F5453CD0094BC01 /* Roxas.framework */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.framework;
 			path = Roxas.framework;
-			remoteRef = A8EB89BE2F5447A10094BC01 /* PBXContainerItemProxy */;
+			remoteRef = A8EB8CB42F5453CD0094BC01 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		A8EB89C12F5447A10094BC01 /* RoxasTests.xctest */ = {
+		A8EB8CB72F5453CD0094BC01 /* RoxasTests.xctest */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.cfbundle;
 			path = RoxasTests.xctest;
-			remoteRef = A8EB89C02F5447A10094BC01 /* PBXContainerItemProxy */;
+			remoteRef = A8EB8CB62F5453CD0094BC01 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A8EB8CBC2F5453CD0094BC01 /* libem_proxy_static.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libem_proxy_static.a;
+			remoteRef = A8EB8CBB2F5453CD0094BC01 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A8EB8CC42F5453CD0094BC01 /* libfragmentzip */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = libfragmentzip;
+			remoteRef = A8EB8CC32F5453CD0094BC01 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A8EB8CC62F5453CD0094BC01 /* libfragmentzip */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = libfragmentzip;
+			remoteRef = A8EB8CC52F5453CD0094BC01 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A8EB8CC82F5453CD0094BC01 /* libfragmentzip.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libfragmentzip.a;
+			remoteRef = A8EB8CC72F5453CD0094BC01 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A8EB8CCA2F5453CD0094BC01 /* libfragmentzip.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libfragmentzip.a;
+			remoteRef = A8EB8CC92F5453CD0094BC01 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A8EB8CCF2F5453CD0094BC01 /* libgeneral */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = libgeneral;
+			remoteRef = A8EB8CCE2F5453CD0094BC01 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 /* End PBXReferenceProxy section */
@@ -2492,6 +2504,20 @@
 		A8C6D5112D1EE8AF00DF01F1 /* AltSign-Static */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = "AltSign-Static";
+		};
+		A8EB89CB2F5451AF0094BC01 /* Minimuxer */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Minimuxer;
+		};
+		A8EB89CD2F5451B50094BC01 /* SemanticVersion */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A82067C22D03E0DE00645C0D /* XCRemoteSwiftPackageReference "SemanticVersion" */;
+			productName = SemanticVersion;
+		};
+		A8EB89CF2F5451C20094BC01 /* KeychainAccess */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A83FE36D2EC90512005ACE9A /* XCRemoteSwiftPackageReference "KeychainAccess" */;
+			productName = KeychainAccess;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
