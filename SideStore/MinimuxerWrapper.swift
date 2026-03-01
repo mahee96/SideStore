@@ -31,10 +31,10 @@ func minimuxerStartWithLogger(_ pairingFile: String, _ logPath: String, _ loggin
     #if targetEnvironment(simulator)
     print("minimuxerStartWithLogger(pairingFile, logPath, loggingEnabled) is no-op on simulator")
     #else
-    IfManager.shared.query()
-    let dest = IfManager.shared.nextProbableSideVPN?.destIP
+//    IfManager.shared.query()
+//    let dest = IfManager.shared.nextProbableSideVPN?.destIP
     print("minimuxerStartWithLogger(pairingFile, logPath, dest, loggingEnabled) invoked")
-    try Minimuxer.startWithLogger(pairingFile: pairingFile, logPath: logPath, ifaddr: dest, isConsoleLoggingEnabled: loggingEnabled)
+    try Minimuxer.startWithLogger(pairingFile: pairingFile, logPath: logPath, ifaddr: nil, isConsoleLoggingEnabled: loggingEnabled)
     #endif
 }
 
