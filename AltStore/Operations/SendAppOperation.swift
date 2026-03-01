@@ -45,11 +45,13 @@ final class SendAppOperation: ResultOperation<()>
         print("AFC App `fileURL`: \(fileURL.absoluteString)")
 
         // Wait for Shortcut to Finish Before Proceeding
-        UIApplication.shared.open(shortcutURLoff, options: [:]) { _ in
-            print("Shortcut finished execution. Proceeding with file transfer.")
+        DispatchQueue.main.async {
+            UIApplication.shared.open(shortcutURLoff, options: [:]) { _ in
+                print("Shortcut finished execution. Proceeding with file transfer.")
 
-            DispatchQueue.global().async {
-                self.processFile(at: fileURL, for: app.bundleIdentifier)
+                DispatchQueue.global().async {
+                    self.processFile(at: fileURL, for: app.bundleIdentifier)
+                }
             }
         }
     }
