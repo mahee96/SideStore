@@ -28,6 +28,117 @@
 		A8EB89CE2F5451B50094BC01 /* SemanticVersion in Frameworks */ = {isa = PBXBuildFile; productRef = A8EB89CD2F5451B50094BC01 /* SemanticVersion */; };
 		A8EB89D02F5451C20094BC01 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = A8EB89CF2F5451C20094BC01 /* KeychainAccess */; };
 		A8EB89D12F5451E90094BC01 /* libcurl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8BD2F6D2F543FFF0045335F /* libcurl.a */; };
+		A8EB955C2F5455B30094BC01 /* debug.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30312F5440300045335F /* debug.c */; };
+		A8EB95C92F5455FE0094BC01 /* debug.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30302F5440300045335F /* debug.h */; };
+		A8EB95CA2F54560A0094BC01 /* userpref.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30332F5440300045335F /* userpref.h */; };
+		A8EB95CB2F5456130094BC01 /* bt_packet_logger.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD306D2F5440300045335F /* bt_packet_logger.h */; };
+		A8EB95CC2F5456130094BC01 /* mobilebackup2.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD307B2F5440300045335F /* mobilebackup2.h */; };
+		A8EB95CD2F5456130094BC01 /* asprintf.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30882F5440300045335F /* asprintf.h */; };
+		A8EB95CE2F5456130094BC01 /* libimobiledevice.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30752F5440300045335F /* libimobiledevice.h */; };
+		A8EB95CF2F5456130094BC01 /* endianness.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30892F5440300045335F /* endianness.h */; };
+		A8EB95D02F5456130094BC01 /* diagnostics_relay.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30702F5440300045335F /* diagnostics_relay.h */; };
+		A8EB95D12F5456130094BC01 /* installation_proxy.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30742F5440300045335F /* installation_proxy.h */; };
+		A8EB95D22F5456130094BC01 /* service.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30842F5440300045335F /* service.h */; };
+		A8EB95D32F5456130094BC01 /* heartbeat.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30722F5440300045335F /* heartbeat.h */; };
+		A8EB95D42F5456130094BC01 /* webinspector.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30862F5440300045335F /* webinspector.h */; };
+		A8EB95D52F5456130094BC01 /* syslog_relay.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30852F5440300045335F /* syslog_relay.h */; };
+		A8EB95D62F5456130094BC01 /* mobileactivation.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30792F5440300045335F /* mobileactivation.h */; };
+		A8EB95D72F5456130094BC01 /* mobile_image_mounter.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30782F5440300045335F /* mobile_image_mounter.h */; };
+		A8EB95D82F5456130094BC01 /* companion_proxy.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD306E2F5440300045335F /* companion_proxy.h */; };
+		A8EB95D92F5456130094BC01 /* preboard.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD307E2F5440300045335F /* preboard.h */; };
+		A8EB95DA2F5456130094BC01 /* misagent.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30772F5440300045335F /* misagent.h */; };
+		A8EB95DB2F5456130094BC01 /* afc.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD306C2F5440300045335F /* afc.h */; };
+		A8EB95DC2F5456130094BC01 /* mobilebackup.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD307A2F5440300045335F /* mobilebackup.h */; };
+		A8EB95DD2F5456130094BC01 /* house_arrest.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30732F5440300045335F /* house_arrest.h */; };
+		A8EB95DE2F5456130094BC01 /* debugserver.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD306F2F5440300045335F /* debugserver.h */; };
+		A8EB95DF2F5456130094BC01 /* restore.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30802F5440300045335F /* restore.h */; };
+		A8EB95E02F5456130094BC01 /* mobilesync.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD307C2F5440300045335F /* mobilesync.h */; };
+		A8EB95E12F5456130094BC01 /* screenshotr.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30832F5440300045335F /* screenshotr.h */; };
+		A8EB95E22F5456130094BC01 /* property_list_service.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD307F2F5440300045335F /* property_list_service.h */; };
+		A8EB95E32F5456130094BC01 /* reverse_proxy.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30812F5440300045335F /* reverse_proxy.h */; };
+		A8EB95E42F5456130094BC01 /* lockdown.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30762F5440300045335F /* lockdown.h */; };
+		A8EB95E52F5456130094BC01 /* file_relay.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30712F5440300045335F /* file_relay.h */; };
+		A8EB95E62F5456130094BC01 /* notification_proxy.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD307D2F5440300045335F /* notification_proxy.h */; };
+		A8EB95E72F5456130094BC01 /* sbservices.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30822F5440300045335F /* sbservices.h */; };
+		A8EB96042F54561E0094BC01 /* afc.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30932F5440300045335F /* afc.c */; };
+		A8EB96052F54561E0094BC01 /* sbservices.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30C42F5440300045335F /* sbservices.c */; };
+		A8EB96062F54561E0094BC01 /* misagent.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30AE2F5440300045335F /* misagent.c */; };
+		A8EB96072F54561E0094BC01 /* mobilebackup.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30B42F5440300045335F /* mobilebackup.c */; };
+		A8EB96082F54561E0094BC01 /* installation_proxy.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30A72F5440300045335F /* installation_proxy.c */; };
+		A8EB96092F54561E0094BC01 /* lockdown.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30AA2F5440300045335F /* lockdown.c */; };
+		A8EB960A2F54561E0094BC01 /* file_relay.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD309F2F5440300045335F /* file_relay.c */; };
+		A8EB960B2F54561E0094BC01 /* webinspector.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30CC2F5440300045335F /* webinspector.c */; };
+		A8EB960C2F54561E0094BC01 /* device_link_service.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD309B2F5440300045335F /* device_link_service.c */; };
+		A8EB960D2F54561E0094BC01 /* lockdown-cu.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30AB2F5440300045335F /* lockdown-cu.c */; };
+		A8EB960E2F54561E0094BC01 /* reverse_proxy.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30C22F5440300045335F /* reverse_proxy.c */; };
+		A8EB960F2F54561E0094BC01 /* mobileactivation.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30B22F5440300045335F /* mobileactivation.c */; };
+		A8EB96102F54561E0094BC01 /* syslog_relay.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30CA2F5440300045335F /* syslog_relay.c */; };
+		A8EB96112F54561E0094BC01 /* notification_proxy.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30BA2F5440300045335F /* notification_proxy.c */; };
+		A8EB96122F54561E0094BC01 /* preboard.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30BC2F5440300045335F /* preboard.c */; };
+		A8EB96132F54561E0094BC01 /* heartbeat.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30A12F5440300045335F /* heartbeat.c */; };
+		A8EB96142F54561E0094BC01 /* diagnostics_relay.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD309D2F5440300045335F /* diagnostics_relay.c */; };
+		A8EB96152F54561E0094BC01 /* idevice.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30A52F5440300045335F /* idevice.c */; };
+		A8EB96162F54561E0094BC01 /* restore.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30C02F5440300045335F /* restore.c */; };
+		A8EB96172F54561E0094BC01 /* house_arrest.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30A32F5440300045335F /* house_arrest.c */; };
+		A8EB96182F54561E0094BC01 /* service.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30C82F5440300045335F /* service.c */; };
+		A8EB96192F54561E0094BC01 /* property_list_service.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30BE2F5440300045335F /* property_list_service.c */; };
+		A8EB961A2F54561E0094BC01 /* mobilesync.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30B82F5440300045335F /* mobilesync.c */; };
+		A8EB961B2F54561E0094BC01 /* debugserver.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30992F5440300045335F /* debugserver.c */; };
+		A8EB961C2F54561E0094BC01 /* screenshotr.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30C62F5440300045335F /* screenshotr.c */; };
+		A8EB961D2F54561E0094BC01 /* mobile_image_mounter.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30B02F5440300045335F /* mobile_image_mounter.c */; };
+		A8EB961E2F54561E0094BC01 /* companion_proxy.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30972F5440300045335F /* companion_proxy.c */; };
+		A8EB961F2F54561E0094BC01 /* bt_packet_logger.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30952F5440300045335F /* bt_packet_logger.c */; };
+		A8EB96202F54561E0094BC01 /* mobilebackup2.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30B62F5440300045335F /* mobilebackup2.c */; };
+		A8EB96212F54561E0094BC01 /* reverse_proxy.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30C12F5440300045335F /* reverse_proxy.h */; };
+		A8EB96222F54561E0094BC01 /* mobilebackup2.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30B52F5440300045335F /* mobilebackup2.h */; };
+		A8EB96232F54561E0094BC01 /* mobilesync.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30B72F5440300045335F /* mobilesync.h */; };
+		A8EB96242F54561E0094BC01 /* webinspector.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30CB2F5440300045335F /* webinspector.h */; };
+		A8EB96252F54561E0094BC01 /* companion_proxy.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30962F5440300045335F /* companion_proxy.h */; };
+		A8EB96262F54561E0094BC01 /* bt_packet_logger.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30942F5440300045335F /* bt_packet_logger.h */; };
+		A8EB96272F54561E0094BC01 /* sbservices.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30C32F5440300045335F /* sbservices.h */; };
+		A8EB96282F54561E0094BC01 /* property_list_service.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30BD2F5440300045335F /* property_list_service.h */; };
+		A8EB96292F54561E0094BC01 /* screenshotr.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30C52F5440300045335F /* screenshotr.h */; };
+		A8EB962A2F54561E0094BC01 /* notification_proxy.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30B92F5440300045335F /* notification_proxy.h */; };
+		A8EB962B2F54561E0094BC01 /* installation_proxy.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30A62F5440300045335F /* installation_proxy.h */; };
+		A8EB962C2F54561E0094BC01 /* mobilebackup.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30B32F5440300045335F /* mobilebackup.h */; };
+		A8EB962D2F54561E0094BC01 /* service.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30C72F5440300045335F /* service.h */; };
+		A8EB962E2F54561E0094BC01 /* misagent.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30AD2F5440300045335F /* misagent.h */; };
+		A8EB962F2F54561E0094BC01 /* preboard.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30BB2F5440300045335F /* preboard.h */; };
+		A8EB96302F54561E0094BC01 /* file_relay.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD309E2F5440300045335F /* file_relay.h */; };
+		A8EB96312F54561E0094BC01 /* heartbeat.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30A02F5440300045335F /* heartbeat.h */; };
+		A8EB96322F54561E0094BC01 /* mobileactivation.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30B12F5440300045335F /* mobileactivation.h */; };
+		A8EB96332F54561E0094BC01 /* house_arrest.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30A22F5440300045335F /* house_arrest.h */; };
+		A8EB96352F54561E0094BC01 /* debugserver.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30982F5440300045335F /* debugserver.h */; };
+		A8EB96362F54561E0094BC01 /* syslog_relay.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30C92F5440300045335F /* syslog_relay.h */; };
+		A8EB96372F54561E0094BC01 /* afc.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30922F5440300045335F /* afc.h */; };
+		A8EB96382F54561E0094BC01 /* restore.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30BF2F5440300045335F /* restore.h */; };
+		A8EB96392F54561E0094BC01 /* device_link_service.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD309A2F5440300045335F /* device_link_service.h */; };
+		A8EB963A2F54561E0094BC01 /* diagnostics_relay.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD309C2F5440300045335F /* diagnostics_relay.h */; };
+		A8EB963B2F54561E0094BC01 /* mobile_image_mounter.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30AF2F5440300045335F /* mobile_image_mounter.h */; };
+		A8EB963C2F54561E0094BC01 /* lockdown.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30A92F5440300045335F /* lockdown.h */; };
+		A8EB963D2F5456450094BC01 /* utils.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30FB2F5440300045335F /* utils.h */; };
+		A8EB963E2F5456450094BC01 /* endianness.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30FD2F5440300045335F /* endianness.h */; };
+		A8EB963F2F5456450094BC01 /* tlv.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30FA2F5440300045335F /* tlv.h */; };
+		A8EB96402F5456450094BC01 /* opack.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30F62F5440300045335F /* opack.h */; };
+		A8EB96412F5456450094BC01 /* socket.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30F72F5440300045335F /* socket.h */; };
+		A8EB96422F5456450094BC01 /* thread.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30F92F5440300045335F /* thread.h */; };
+		A8EB96432F5456450094BC01 /* termcolors.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30F82F5440300045335F /* termcolors.h */; };
+		A8EB96442F5456450094BC01 /* collection.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30F52F5440300045335F /* collection.h */; };
+		A8EB96452F5456450094BC01 /* cbuf.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30F42F5440300045335F /* cbuf.h */; };
+		A8EB96462F54564C0094BC01 /* cbuf.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD31032F5440300045335F /* cbuf.c */; };
+		A8EB96472F54564C0094BC01 /* termcolors.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD310B2F5440300045335F /* termcolors.c */; };
+		A8EB96482F54564C0094BC01 /* socket.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD310A2F5440300045335F /* socket.c */; };
+		A8EB96492F54564C0094BC01 /* thread.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD310C2F5440300045335F /* thread.c */; };
+		A8EB964A2F54564C0094BC01 /* utils.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD310E2F5440300045335F /* utils.c */; };
+		A8EB964B2F54564C0094BC01 /* collection.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD31042F5440300045335F /* collection.c */; };
+		A8EB964C2F54564C0094BC01 /* opack.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD31092F5440300045335F /* opack.c */; };
+		A8EB964D2F54564C0094BC01 /* glue.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD31062F5440300045335F /* glue.c */; };
+		A8EB964E2F54564C0094BC01 /* tlv.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD310D2F5440300045335F /* tlv.c */; };
+		A8EB964F2F54564C0094BC01 /* common.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD31052F5440300045335F /* common.h */; };
+		A8EB96512F54565B0094BC01 /* libusbmuxd.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD324C2F5440300045335F /* libusbmuxd.c */; };
+		A8EB96532F54565B0094BC01 /* usbmuxd.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD32462F5440300045335F /* usbmuxd.h */; };
+		A8EB96542F54565B0094BC01 /* usbmuxd-proto.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD32472F5440300045335F /* usbmuxd-proto.h */; };
+		A8EB96562F5457010094BC01 /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A8635D052F4CF16D00E66784 /* OpenSSL.xcframework */; };
 		BF1614F1250822F100767AEA /* Roxas.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BFD247862284BB3B00981D42 /* Roxas.framework */; };
 		BF1614F2250822F100767AEA /* Roxas.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BFD247862284BB3B00981D42 /* Roxas.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		BF580498246A3D19008AE704 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF580497246A3D19008AE704 /* UIKit.framework */; };
@@ -620,6 +731,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A8EB96552F5456FD0094BC01 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A8EB96562F5457010094BC01 /* OpenSSL.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1318,6 +1437,76 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A8EB95CB2F5456130094BC01 /* bt_packet_logger.h in Headers */,
+				A8EB95CC2F5456130094BC01 /* mobilebackup2.h in Headers */,
+				A8EB95CD2F5456130094BC01 /* asprintf.h in Headers */,
+				A8EB95CE2F5456130094BC01 /* libimobiledevice.h in Headers */,
+				A8EB95CF2F5456130094BC01 /* endianness.h in Headers */,
+				A8EB95D02F5456130094BC01 /* diagnostics_relay.h in Headers */,
+				A8EB95D12F5456130094BC01 /* installation_proxy.h in Headers */,
+				A8EB95D22F5456130094BC01 /* service.h in Headers */,
+				A8EB95D32F5456130094BC01 /* heartbeat.h in Headers */,
+				A8EB95D42F5456130094BC01 /* webinspector.h in Headers */,
+				A8EB95D52F5456130094BC01 /* syslog_relay.h in Headers */,
+				A8EB963D2F5456450094BC01 /* utils.h in Headers */,
+				A8EB963E2F5456450094BC01 /* endianness.h in Headers */,
+				A8EB963F2F5456450094BC01 /* tlv.h in Headers */,
+				A8EB96402F5456450094BC01 /* opack.h in Headers */,
+				A8EB96412F5456450094BC01 /* socket.h in Headers */,
+				A8EB96422F5456450094BC01 /* thread.h in Headers */,
+				A8EB96432F5456450094BC01 /* termcolors.h in Headers */,
+				A8EB96442F5456450094BC01 /* collection.h in Headers */,
+				A8EB96452F5456450094BC01 /* cbuf.h in Headers */,
+				A8EB95D62F5456130094BC01 /* mobileactivation.h in Headers */,
+				A8EB95D72F5456130094BC01 /* mobile_image_mounter.h in Headers */,
+				A8EB95D82F5456130094BC01 /* companion_proxy.h in Headers */,
+				A8EB95D92F5456130094BC01 /* preboard.h in Headers */,
+				A8EB95DA2F5456130094BC01 /* misagent.h in Headers */,
+				A8EB95DB2F5456130094BC01 /* afc.h in Headers */,
+				A8EB95DC2F5456130094BC01 /* mobilebackup.h in Headers */,
+				A8EB95DD2F5456130094BC01 /* house_arrest.h in Headers */,
+				A8EB95DE2F5456130094BC01 /* debugserver.h in Headers */,
+				A8EB95DF2F5456130094BC01 /* restore.h in Headers */,
+				A8EB95E02F5456130094BC01 /* mobilesync.h in Headers */,
+				A8EB95E12F5456130094BC01 /* screenshotr.h in Headers */,
+				A8EB95E22F5456130094BC01 /* property_list_service.h in Headers */,
+				A8EB95E32F5456130094BC01 /* reverse_proxy.h in Headers */,
+				A8EB95E42F5456130094BC01 /* lockdown.h in Headers */,
+				A8EB96212F54561E0094BC01 /* reverse_proxy.h in Headers */,
+				A8EB96222F54561E0094BC01 /* mobilebackup2.h in Headers */,
+				A8EB96232F54561E0094BC01 /* mobilesync.h in Headers */,
+				A8EB96242F54561E0094BC01 /* webinspector.h in Headers */,
+				A8EB96252F54561E0094BC01 /* companion_proxy.h in Headers */,
+				A8EB964F2F54564C0094BC01 /* common.h in Headers */,
+				A8EB96262F54561E0094BC01 /* bt_packet_logger.h in Headers */,
+				A8EB96272F54561E0094BC01 /* sbservices.h in Headers */,
+				A8EB96282F54561E0094BC01 /* property_list_service.h in Headers */,
+				A8EB96292F54561E0094BC01 /* screenshotr.h in Headers */,
+				A8EB962A2F54561E0094BC01 /* notification_proxy.h in Headers */,
+				A8EB962B2F54561E0094BC01 /* installation_proxy.h in Headers */,
+				A8EB962C2F54561E0094BC01 /* mobilebackup.h in Headers */,
+				A8EB962D2F54561E0094BC01 /* service.h in Headers */,
+				A8EB962E2F54561E0094BC01 /* misagent.h in Headers */,
+				A8EB962F2F54561E0094BC01 /* preboard.h in Headers */,
+				A8EB96302F54561E0094BC01 /* file_relay.h in Headers */,
+				A8EB96312F54561E0094BC01 /* heartbeat.h in Headers */,
+				A8EB96532F54565B0094BC01 /* usbmuxd.h in Headers */,
+				A8EB96542F54565B0094BC01 /* usbmuxd-proto.h in Headers */,
+				A8EB96322F54561E0094BC01 /* mobileactivation.h in Headers */,
+				A8EB96332F54561E0094BC01 /* house_arrest.h in Headers */,
+				A8EB96352F54561E0094BC01 /* debugserver.h in Headers */,
+				A8EB96362F54561E0094BC01 /* syslog_relay.h in Headers */,
+				A8EB96372F54561E0094BC01 /* afc.h in Headers */,
+				A8EB96382F54561E0094BC01 /* restore.h in Headers */,
+				A8EB96392F54561E0094BC01 /* device_link_service.h in Headers */,
+				A8EB963A2F54561E0094BC01 /* diagnostics_relay.h in Headers */,
+				A8EB963B2F54561E0094BC01 /* mobile_image_mounter.h in Headers */,
+				A8EB963C2F54561E0094BC01 /* lockdown.h in Headers */,
+				A8EB95E52F5456130094BC01 /* file_relay.h in Headers */,
+				A8EB95E62F5456130094BC01 /* notification_proxy.h in Headers */,
+				A8EB95E72F5456130094BC01 /* sbservices.h in Headers */,
+				A8EB95CA2F54560A0094BC01 /* userpref.h in Headers */,
+				A8EB95C92F5455FE0094BC01 /* debug.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1352,6 +1541,7 @@
 			buildPhases = (
 				BF4587272298D31600BD7491 /* Headers */,
 				BF4587282298D31600BD7491 /* Sources */,
+				A8EB96552F5456FD0094BC01 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1694,6 +1884,46 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A8EB955C2F5455B30094BC01 /* debug.c in Sources */,
+				A8EB96042F54561E0094BC01 /* afc.c in Sources */,
+				A8EB96052F54561E0094BC01 /* sbservices.c in Sources */,
+				A8EB96062F54561E0094BC01 /* misagent.c in Sources */,
+				A8EB96072F54561E0094BC01 /* mobilebackup.c in Sources */,
+				A8EB96082F54561E0094BC01 /* installation_proxy.c in Sources */,
+				A8EB96092F54561E0094BC01 /* lockdown.c in Sources */,
+				A8EB960A2F54561E0094BC01 /* file_relay.c in Sources */,
+				A8EB960B2F54561E0094BC01 /* webinspector.c in Sources */,
+				A8EB960C2F54561E0094BC01 /* device_link_service.c in Sources */,
+				A8EB960D2F54561E0094BC01 /* lockdown-cu.c in Sources */,
+				A8EB960E2F54561E0094BC01 /* reverse_proxy.c in Sources */,
+				A8EB960F2F54561E0094BC01 /* mobileactivation.c in Sources */,
+				A8EB96102F54561E0094BC01 /* syslog_relay.c in Sources */,
+				A8EB96112F54561E0094BC01 /* notification_proxy.c in Sources */,
+				A8EB96122F54561E0094BC01 /* preboard.c in Sources */,
+				A8EB96132F54561E0094BC01 /* heartbeat.c in Sources */,
+				A8EB96142F54561E0094BC01 /* diagnostics_relay.c in Sources */,
+				A8EB96152F54561E0094BC01 /* idevice.c in Sources */,
+				A8EB96162F54561E0094BC01 /* restore.c in Sources */,
+				A8EB96172F54561E0094BC01 /* house_arrest.c in Sources */,
+				A8EB96182F54561E0094BC01 /* service.c in Sources */,
+				A8EB96192F54561E0094BC01 /* property_list_service.c in Sources */,
+				A8EB961A2F54561E0094BC01 /* mobilesync.c in Sources */,
+				A8EB961B2F54561E0094BC01 /* debugserver.c in Sources */,
+				A8EB961C2F54561E0094BC01 /* screenshotr.c in Sources */,
+				A8EB96462F54564C0094BC01 /* cbuf.c in Sources */,
+				A8EB96472F54564C0094BC01 /* termcolors.c in Sources */,
+				A8EB96482F54564C0094BC01 /* socket.c in Sources */,
+				A8EB96492F54564C0094BC01 /* thread.c in Sources */,
+				A8EB964A2F54564C0094BC01 /* utils.c in Sources */,
+				A8EB964B2F54564C0094BC01 /* collection.c in Sources */,
+				A8EB964C2F54564C0094BC01 /* opack.c in Sources */,
+				A8EB964D2F54564C0094BC01 /* glue.c in Sources */,
+				A8EB964E2F54564C0094BC01 /* tlv.c in Sources */,
+				A8EB961D2F54561E0094BC01 /* mobile_image_mounter.c in Sources */,
+				A8EB961E2F54561E0094BC01 /* companion_proxy.c in Sources */,
+				A8EB961F2F54561E0094BC01 /* bt_packet_logger.c in Sources */,
+				A8EB96202F54561E0094BC01 /* mobilebackup2.c in Sources */,
+				A8EB96512F54565B0094BC01 /* libusbmuxd.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
