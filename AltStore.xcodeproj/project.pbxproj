@@ -95,6 +95,27 @@
 			remoteGlobalIDString = CA60C44C93D7916DE57E6EBD;
 			remoteInfo = "em_proxy-staticlib";
 		};
+		A8EB89BC2F5447A10094BC01 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8BD32D02F5440300045335F /* Roxas.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = BFADAFF819AE7BB70050CF31;
+			remoteInfo = Roxas;
+		};
+		A8EB89BE2F5447A10094BC01 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8BD32D02F5440300045335F /* Roxas.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = BF8624801BB742E700C12EEE;
+			remoteInfo = RoxasTV;
+		};
+		A8EB89C02F5447A10094BC01 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8BD32D02F5440300045335F /* Roxas.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = BFADB00319AE7BB80050CF31;
+			remoteInfo = RoxasTests;
+		};
 		BF66EE832501AE50007EE018 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = BFD247622284B9A500981D42 /* Project object */;
@@ -1224,6 +1245,16 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		A8EB89B72F5447A10094BC01 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A8EB89BD2F5447A10094BC01 /* Roxas.framework */,
+				A8EB89BF2F5447A10094BC01 /* Roxas.framework */,
+				A8EB89C12F5447A10094BC01 /* RoxasTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		BFD247612284B9A500981D42 = {
 			isa = PBXGroup;
 			children = (
@@ -1482,6 +1513,10 @@
 					ProductGroup = A8EB899F2F5446460094BC01 /* Products */;
 					ProjectRef = A8BD2FD72F5440300045335F /* libgeneral.xcodeproj */;
 				},
+				{
+					ProductGroup = A8EB89B72F5447A10094BC01 /* Products */;
+					ProjectRef = A8BD32D02F5440300045335F /* Roxas.xcodeproj */;
+				},
 			);
 			projectRoot = "";
 			targets = (
@@ -1536,6 +1571,27 @@
 			fileType = archive.ar;
 			path = libem_proxy_static.a;
 			remoteRef = A8EB89B52F5446460094BC01 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A8EB89BD2F5447A10094BC01 /* Roxas.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Roxas.framework;
+			remoteRef = A8EB89BC2F5447A10094BC01 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A8EB89BF2F5447A10094BC01 /* Roxas.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Roxas.framework;
+			remoteRef = A8EB89BE2F5447A10094BC01 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		A8EB89C12F5447A10094BC01 /* RoxasTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = RoxasTests.xctest;
+			remoteRef = A8EB89C02F5447A10094BC01 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 /* End PBXReferenceProxy section */
