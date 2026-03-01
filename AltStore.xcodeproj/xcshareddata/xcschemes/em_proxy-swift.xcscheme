@@ -16,7 +16,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "A85A51412F4B4532002E2E11"
-               BuildableName = "em_proxy-swift"
+               BuildableName = "libem_proxy_swift.a"
                BlueprintName = "em_proxy-swift"
                ReferencedContainer = "container:AltStore.xcodeproj">
             </BuildableReference>
@@ -51,7 +51,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "A85A51412F4B4532002E2E11"
-            BuildableName = "em_proxy-swift"
+            BuildableName = "libem_proxy_swift.a"
             BlueprintName = "em_proxy-swift"
             ReferencedContainer = "container:AltStore.xcodeproj">
          </BuildableReference>
