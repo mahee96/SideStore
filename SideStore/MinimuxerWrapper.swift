@@ -20,13 +20,13 @@ var isMinimuxerReady: Bool {
 }
 
 
-func targetMinimuxerAddress() {
-    defer { print("[SideStore] targetMinimuxerAddress() completed") }
+func retargetUsbmuxdAddr() {
+    defer { print("[SideStore] retargetUsbmuxdAddr() completed") }
     #if targetEnvironment(simulator)
-    print("[SideStore] targetMinimuxerAddress() is no-op on simulator")
+    print("[SideStore] retargetUsbmuxdAddr() is no-op on simulator")
     #else
-    print("[SideStore] targetMinimuxerAddress() invoked")
-    Minimuxer.updateUsbMuxdAddr()
+    print("[SideStore] retargetUsbmuxdAddr() invoked")
+    Minimuxer.retargetUsbmuxdAddr()
     #endif
 }
 

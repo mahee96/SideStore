@@ -87,7 +87,7 @@ final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
     }
 
     func start_minimuxer_threads(_ pairing_file: String) {
-        targetMinimuxerAddress()
+        retargetUsbmuxdAddr()
         let documentsDirectory = FileManager.default.documentsDirectory.absoluteString
         do {
             let loggingEnabled = UserDefaults.standard.isMinimuxerConsoleLoggingEnabled

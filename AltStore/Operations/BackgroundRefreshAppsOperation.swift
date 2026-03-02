@@ -101,7 +101,7 @@ final class BackgroundRefreshAppsOperation: ResultOperation<[String: Result<Inst
         if UserDefaults.standard.enableEMPforWireguard {
             startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
         }
-        targetMinimuxerAddress()
+        retargetUsbmuxdAddr()
         let documentsDirectory = FileManager.default.documentsDirectory.absoluteString
         do {
             // enable minimuxer console logging only if enabled in settings
