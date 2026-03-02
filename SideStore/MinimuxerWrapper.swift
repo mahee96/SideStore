@@ -18,38 +18,13 @@ func bindTunnelConfig() {
 
     Task { @MainActor in
         let config = TunnelConfig.shared
-
         Minimuxer.bindTunnelConfig(
             TunnelConfigBinding(
-                setDeviceIP: { value in
-                    print("[SideStore] setDeviceIP <- \(value ?? "nil")")
-                    Task { @MainActor in
-                        config.deviceIP = value
-                    }
-                },
-                setFakeIP: { value in
-                    print("[SideStore] setFakeIP <- \(value ?? "nil")")
-                    Task { @MainActor in
-                        config.fakeIP = value
-                    }
-                },
-                setSubnetMask: { value in
-                    print("[SideStore] setSubnetMask <- \(value ?? "nil")")
-                    Task { @MainActor in
-                        config.subnetMask = value
-                    }
-                },
-                getOverrideFakeIP: {
-                    let v = config.overrideFakeIP
-                    print("[SideStore] overrideFakeIP -> \(v)")
-                    return v
-                },
-                setOverrideEffective: { value in
-                    print("[SideStore] setOverrideEffective <- \(value)")
-                    Task { @MainActor in
-                        config.overrideEffective = value
-                    }
-                }
+                setDeviceIP: { value in Task { @MainActor in config.deviceIP = value } },
+                setFakeIP: { value in Task { @MainActor in config.fakeIP = value } },
+                setSubnetMask: { value in Task { @MainActor in config.subnetMask = value } },
+                getOverrideFakeIP: { config.overrideFakeIP },
+                setOverrideEffective: { value in Task { @MainActor in config.overrideEffective = value } }
             )
         )
     }
