@@ -88,6 +88,7 @@
 		A8635D092F4CF17A00E66784 /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A8635D052F4CF16D00E66784 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A8635D0B2F4CF1A100E66784 /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A8635D052F4CF16D00E66784 /* OpenSSL.xcframework */; };
 		A8635D0C2F4CF1A100E66784 /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A8635D052F4CF16D00E66784 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		A867C0AA2F5534EB006426FE /* AltSign-Static in Frameworks */ = {isa = PBXBuildFile; productRef = A8C6D50B2D1EE87600DF01F1 /* AltSign-Static */; };
 		A8945AA62D059B6100D86CBE /* Roxas.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A8945AA52D059B6100D86CBE /* Roxas.framework */; };
 		A8B646012D70C23E00125819 /* MarkdownKit in Frameworks */ = {isa = PBXBuildFile; productRef = A8B646002D70C23E00125819 /* MarkdownKit */; };
 		A8C2260E2EC9039A00047C0D /* Nuke in Frameworks */ = {isa = PBXBuildFile; productRef = A8C2260D2EC9039A00047C0D /* Nuke */; };
@@ -747,6 +748,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A867C0AA2F5534EB006426FE /* AltSign-Static in Frameworks */,
 				A8635D082F4CF17A00E66784 /* OpenSSL.xcframework in Frameworks */,
 				A8945AA62D059B6100D86CBE /* Roxas.framework in Frameworks */,
 				A82067C42D03E0DE00645C0D /* SemanticVersion in Frameworks */,
@@ -2592,7 +2594,7 @@
 /* Begin XCRemoteSwiftPackageReference section */
 		A80392492F552F4C00097AF1 /* XCRemoteSwiftPackageReference "minimuxer" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/mahee96/minimuxer";
+			repositoryURL = "https://github.com/SideStore/minimuxer";
 			requirement = {
 				branch = develop;
 				kind = branch;
