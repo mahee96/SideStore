@@ -28,19 +28,20 @@ struct VPNConfigurationView: View {
             Section {
                 networkConfigRow(
                     label: "Device IP",
-                    text: Binding<String?>(
-                        get: { config.overrideFakeIP },
-                        set: { config.overrideFakeIP = $0 ?? "" }
-                    ),
+                    text: Binding<String?>(get: { config.overrideFakeIP }, set: { config.overrideFakeIP = $0 ?? "" }),
                     editable: true
                 )
-                networkConfigRow(label: "Active", text: .constant(config.overrideActive), editable: false)
+                networkConfigRow(
+                    label: "Active",
+                    text: Binding<String?>(get: { config.overrideActive }, set: { _ in }),
+                    editable: false
+                )
             } header: {
                 Text("Override Configuration")
             } footer: {
                 HStack(alignment: .top, spacing: 0) {
                     Text("Note: ")
-                    Text("if override configuration is invalid or unusable SideStore may use auto-discovered configuration as fallback")
+                    Text("if override configuration is invalid or unusable SideStore may use auto-discovered config as fallback.")
                 }
             }
         }
