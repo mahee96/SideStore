@@ -46,13 +46,13 @@ final class SendAppOperation: ResultOperation<()>
 
         // Wait for Shortcut to Finish Before Proceeding
         DispatchQueue.main.async {
-            UIApplication.shared.open(shortcutURLoff, options: [:]) { _ in
-                print("Shortcut finished execution. Proceeding with file transfer.")
+//            UIApplication.shared.open(shortcutURLoff, options: [:]) { _ in
+//                print("Shortcut finished execution. Proceeding with file transfer.")
 
                 DispatchQueue.global().async {
                     self.processFile(at: fileURL, for: app.bundleIdentifier)
                 }
-            }
+//            }
         }
     }
 
