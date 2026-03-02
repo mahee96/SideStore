@@ -15,8 +15,6 @@ struct VPNConfigurationView: View {
     @Environment(\.presentationMode) var presentationMode
     @StateObject private var config = TunnelConfig.shared
 
-    @State private var showNetworkWarning = false
-
     var body: some View {
         List {
             Section(header: Text("Discovered from network")) {
@@ -42,18 +40,9 @@ struct VPNConfigurationView: View {
             } footer: {
                 HStack(alignment: .top, spacing: 0) {
                     Text("Note: ")
-                    Text("if the override configuration is invalid or unusable SideStore may use auto-discovered configuration as fallback")
+                    Text("if override configuration is invalid or unusable SideStore may use auto-discovered configuration as fallback")
                 }
             }
-        }
-        .alert(isPresented: $showNetworkWarning) {
-            Alert(
-                title: Text("Warning"),
-                message: Text("Changing tunnel IP settings can disrupt your network connection. Proceed only if you are sure of what you are doing."),
-                dismissButton: .cancel(Text("I Understand")) {
-                    config.shownTunnelAlert = true
-                }
-            )
         }
         .navigationTitle("VPN Configuration")
         .toolbar {
@@ -96,11 +85,6 @@ struct VPNConfigurationView: View {
                 .keyboardType(.numbersAndPunctuation)
                 .onChange(of: proxy.wrappedValue) { newValue in
                     guard editable else { return }
-
-                    if !config.shownTunnelAlert {
-                        showNetworkWarning = true
-                    }
-
                     proxy.wrappedValue =
                         newValue.filter { "0123456789.".contains($0) }
                 }
@@ -113,21 +97,25 @@ final class TunnelConfig: ObservableObject {
 
     static let shared = TunnelConfig()
 
+    private static let defaultOverrideIP: String = {
+        if #available(iOS 26.4, *) { return "192.168.1.50" }
+        return "10.7.0.1"
+    }()
+
     @Published var deviceIP: String?
     @Published var subnetMask: String?
     @Published var fakeIP: String?
-    @Published var overrideFakeIP: String = UserDefaults.standard.string(forKey: "TunnelOverrideFakeIP") ?? "10.7.0.1" {
-        didSet { UserDefaults.standard.set(overrideFakeIP, forKey: "TunnelOverrideFakeIP") }
+    @Published var overrideFakeIP: String = overrideIPStorage {
+        didSet { Self.overrideIPStorage = overrideFakeIP }
     }
     @Published var overrideEffective: Bool = false
-
-    var overrideActive: String {
-        ((fakeIP?.isEmpty == false) && !overrideFakeIP.isEmpty && fakeIP == overrideFakeIP) ? "Yes" : "No"
+ 
+    private static var overrideIPStorage: String {
+        get { UserDefaults.standard.string(forKey: "TunnelOverrideFakeIP") ?? defaultOverrideIP }
+        set { UserDefaults.standard.set(newValue, forKey: "TunnelOverrideFakeIP") }
     }
 
-    @Published var shownTunnelAlert: Bool = UserDefaults.standard.bool(forKey: "shownTunnelAlert") {
-        didSet { UserDefaults.standard.set(shownTunnelAlert, forKey: "shownTunnelAlert") }
-    }
+    var overrideActive: String { overrideEffective ? "Yes" : "No" }
 
     func commitFakeIP() {
         fakeIP = overrideFakeIP
