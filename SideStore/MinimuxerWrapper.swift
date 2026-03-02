@@ -8,6 +8,55 @@
 import Foundation
 import Minimuxer
 
+func bindTunnelConfig() {
+    defer { print("[SideStore] bindTunnelConfig() completed") }
+
+    #if targetEnvironment(simulator)
+    print("[SideStore] bindTunnelConfig() is no-op on simulator")
+    #else
+    print("[SideStore] bindTunnelConfig() invoked")
+
+    Task { @MainActor in
+        let config = TunnelConfig.shared
+
+        Minimuxer.bindTunnelConfig(
+            TunnelConfigBinding(
+                setDeviceIP: { value in
+                    print("[SideStore] setDeviceIP <- \(value ?? "nil")")
+                    Task { @MainActor in
+                        config.deviceIP = value
+                    }
+                },
+                setFakeIP: { value in
+                    print("[SideStore] setFakeIP <- \(value ?? "nil")")
+                    Task { @MainActor in
+                        config.fakeIP = value
+                    }
+                },
+                setSubnetMask: { value in
+                    print("[SideStore] setSubnetMask <- \(value ?? "nil")")
+                    Task { @MainActor in
+                        config.subnetMask = value
+                    }
+                },
+                getOverrideFakeIP: {
+                    let v = config.overrideFakeIP
+                    print("[SideStore] overrideFakeIP -> \(v)")
+                    return v
+                },
+                setOverrideEffective: { value in
+                    print("[SideStore] setOverrideEffective <- \(value)")
+                    Task { @MainActor in
+                        config.overrideEffective = value
+                    }
+                }
+            )
+        )
+    }
+    #endif
+}
+
+
 var isMinimuxerReady: Bool {
     var result = true
     #if targetEnvironment(simulator)
@@ -35,6 +84,8 @@ func minimuxerStartWithLogger(_ pairingFile: String, _ logPath: String, _ loggin
     #if targetEnvironment(simulator)
     print("[SideStore] minimuxerStartWithLogger(pairingFile, logPath, loggingEnabled) is no-op on simulator")
     #else
+    // refresh config if any
+    bindTunnelConfig()
     // observe network route changes (and update device endpoint from vpn(utun))
     NetworkObserver.shared.start()
     
