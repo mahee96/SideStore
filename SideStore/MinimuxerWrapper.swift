@@ -9,150 +9,147 @@ import Foundation
 import Minimuxer
 
 var isMinimuxerReady: Bool {
+    var result = true
     #if targetEnvironment(simulator)
-    print("isMinimuxerReady = true on simulator")
-    return true
+    print("[SideStore] isMinimuxerReady = true on simulator")
     #else
-    IfManager.shared.query()
-    let dest = IfManager.shared.nextProbableSideVPN?.destIP
-    var result = false
-    if #available(iOS 26.4, *) {
-        result = Minimuxer.ready(ifaddr: dest) && IfManager.shared.sideVPNPatched
-    } else {
-        result = Minimuxer.ready(ifaddr: dest)
-    }
-    print("isMinimuxerReady = \(result)")
+    result = Minimuxer.ready()
+    print("[SideStore] isMinimuxerReady = \(result)")
+    #endif
     return result
+}
+
+
+func targetMinimuxerAddress() {
+    defer { print("[SideStore] targetMinimuxerAddress() completed") }
+    #if targetEnvironment(simulator)
+    print("[SideStore] targetMinimuxerAddress() is no-op on simulator")
+    #else
+    print("[SideStore] targetMinimuxerAddress() invoked")
+    Minimuxer.updateUsbMuxdAddr()
     #endif
 }
 
 func minimuxerStartWithLogger(_ pairingFile: String, _ logPath: String, _ loggingEnabled: Bool) throws {
-    defer { print("minimuxerStartWithLogger(pairingFile, logPath, dest, loggingEnabled) completed") }
+    defer { print("[SideStore] minimuxerStartWithLogger(pairingFile, logPath, dest, loggingEnabled) completed") }
     #if targetEnvironment(simulator)
-    print("minimuxerStartWithLogger(pairingFile, logPath, loggingEnabled) is no-op on simulator")
+    print("[SideStore] minimuxerStartWithLogger(pairingFile, logPath, loggingEnabled) is no-op on simulator")
     #else
-//    IfManager.shared.query()
-//    let dest = IfManager.shared.nextProbableSideVPN?.destIP
-    print("minimuxerStartWithLogger(pairingFile, logPath, dest, loggingEnabled) invoked")
-    try Minimuxer.startWithLogger(pairingFile: pairingFile, logPath: logPath, ifaddr: nil, isConsoleLoggingEnabled: loggingEnabled)
-    #endif
-}
-
-func targetMinimuxerAddress() {
-    defer { print("targetMinimuxerAddress() completed") }
-    #if targetEnvironment(simulator)
-    print("targetMinimuxerAddress() is no-op on simulator")
-    #else
-    print("targetMinimuxerAddress() invoked")
-    Minimuxer.targetMinimuxerAddress()
+    // observe network route changes (and update device endpoint from vpn(utun))
+    NetworkObserver.shared.start()
+    
+    print("[SideStore] minimuxerStartWithLogger(pairingFile, logPath, dest, loggingEnabled) invoked")
+    try Minimuxer.startWithLogger(pairingFile: pairingFile,
+                                  logPath: logPath,
+                                  isConsoleLoggingEnabled: loggingEnabled)
     #endif
 }
 
 func installProvisioningProfiles(_ profileData: Data) throws {
-    defer { print("installProvisioningProfiles(profileData) completed") }
+    defer { print("[SideStore] installProvisioningProfiles(profileData) completed") }
     #if targetEnvironment(simulator)
-    print("installProvisioningProfiles(profileData) is no-op on simulator")
+    print("[SideStore] installProvisioningProfiles(profileData) is no-op on simulator")
     #else
-    print("installProvisioningProfiles(profileData) invoked")
+    print("[SideStore] installProvisioningProfiles(profileData) invoked")
     try Minimuxer.installProvisioningProfile(profile: profileData)
     #endif
 }
 
 func removeProvisioningProfile(_ id: String) throws {
-    defer { print("removeProvisioningProfile(id) completed") }
+    defer { print("[SideStore] removeProvisioningProfile(id) completed") }
     #if targetEnvironment(simulator)
-    print("removeProvisioningProfile(id) is no-op on simulator")
+    print("[SideStore] removeProvisioningProfile(id) is no-op on simulator")
     #else
-    print("removeProvisioningProfile(id) invoked")
+    print("[SideStore] removeProvisioningProfile(id) invoked")
     try Minimuxer.removeProvisioningProfile(id: id)
     #endif
 }
 
 func removeApp(_ bundleId: String) throws {
-    defer { print("removeApp(bundleId) completed") }
+    defer { print("[SideStore] removeApp(bundleId) completed") }
     #if targetEnvironment(simulator)
-    print("removeApp(bundleId) is no-op on simulator")
+    print("[SideStore] removeApp(bundleId) is no-op on simulator")
     #else
-    print("removeApp(bundleId) invoked")
+    print("[SideStore] removeApp(bundleId) invoked")
     try Minimuxer.removeApp(bundleId: bundleId)
     #endif
 }
 
 func yeetAppAFC(_ bundleId: String, _ rawBytes: Data) throws {
-    defer { print("yeetAppAFC(bundleId, rawBytes) completed") }
+    defer { print("[SideStore] yeetAppAFC(bundleId, rawBytes) completed") }
     #if targetEnvironment(simulator)
-    print("yeetAppAFC(bundleId, rawBytes) is no-op on simulator")
+    print("[SideStore] yeetAppAFC(bundleId, rawBytes) is no-op on simulator")
     #else
-    print("yeetAppAFC(bundleId, rawBytes) invoked")
+    print("[SideStore] yeetAppAFC(bundleId, rawBytes) invoked")
     try Minimuxer.yeetAppAfc(bundleId: bundleId, ipaBytes: rawBytes)
     #endif
 }
 
 func installIPA(_ bundleId: String) throws {
-    defer { print("installIPA(bundleId) completed") }
+    defer { print("[SideStore] installIPA(bundleId) completed") }
     #if targetEnvironment(simulator)
-    print("installIPA(bundleId) is no-op on simulator")
+    print("[SideStore] installIPA(bundleId) is no-op on simulator")
     #else
-    print("installIPA(bundleId) invoked")
+    print("[SideStore] installIPA(bundleId) invoked")
     try Minimuxer.installIpa(bundleId: bundleId)
     #endif
 }
 
 func fetchUDID() -> String? {
-    defer { print("fetchUDID() completed") }
+    defer { print("[SideStore] fetchUDID() completed") }
     #if targetEnvironment(simulator)
-    print("fetchUDID() is no-op on simulator")
+    print("[SideStore] fetchUDID() is no-op on simulator")
     return "XXXXX-XXXX-XXXXX-XXXX"
     #else
-    print("fetchUDID() invoked")
+    print("[SideStore] fetchUDID() invoked")
     return Minimuxer.fetchUDID()
     #endif
 }
 
 func debugApp(_ appId: String) throws {
-    defer { print("debugApp(appId) completed") }
+    defer { print("[SideStore] debugApp(appId) completed") }
     #if targetEnvironment(simulator)
-    print("debugApp(appId) is no-op on simulator")
+    print("[SideStore] debugApp(appId) is no-op on simulator")
     #else
-    print("debugApp(appId) invoked")
+    print("[SideStore] debugApp(appId) invoked")
     try Minimuxer.debugApp(appId: appId)
     #endif
 }
 
 func attachDebugger(_ pid: UInt32) throws {
-    defer { print("attachDebugger(pid) completed") }
+    defer { print("[SideStore] attachDebugger(pid) completed") }
     #if targetEnvironment(simulator)
-    print("attachDebugger(pid) is no-op on simulator")
+    print("[SideStore] attachDebugger(pid) is no-op on simulator")
     #else
-    print("attachDebugger(pid) invoked")
+    print("[SideStore] attachDebugger(pid) invoked")
     try Minimuxer.attachDebugger(pid: pid)
     #endif
 }
 
 func startAutoMounter(_ docsPath: String) {
-    defer { print("startAutoMounter(docsPath) completed") }
+    defer { print("[SideStore] startAutoMounter(docsPath) completed") }
     #if targetEnvironment(simulator)
-    print("startAutoMounter(docsPath) is no-op on simulator")
+    print("[SideStore] startAutoMounter(docsPath) is no-op on simulator")
     #else
-    print("startAutoMounter(docsPath) invoked")
+    print("[SideStore] startAutoMounter(docsPath) invoked")
     Minimuxer.startAutoMounter(docsPath: docsPath)
     #endif
 }
 
 func dumpProfiles(_ docsPath: String) throws -> String {
-    defer { print("dumpProfiles(docsPath) completed") }
+    defer { print("[SideStore] dumpProfiles(docsPath) completed") }
     #if targetEnvironment(simulator)
-    print("dumpProfiles(docsPath) is no-op on simulator")
+    print("[SideStore] dumpProfiles(docsPath) is no-op on simulator")
     return ""
     #else
-    print("dumpProfiles(docsPath) invoked")
+    print("[SideStore] dumpProfiles(docsPath) invoked")
     return try Minimuxer.dumpProfiles(docsPath: docsPath)
     #endif
 }
 
 func setMinimuxerDebug(_ debug: Bool) {
-    defer { print("setMinimuxerDebug(debug) completed") }
-    print("setMinimuxerDebug(debug) invoked")
+    defer { print("[SideStore] setMinimuxerDebug(debug) completed") }
+    print("[SideStore] setMinimuxerDebug(debug) invoked")
     Minimuxer.setDebug(debug)
 }
 
