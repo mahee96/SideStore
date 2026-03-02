@@ -666,7 +666,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				EMProxyWrapper.swift,
-				IfManager.swift,
 				MinimuxerWrapper.swift,
 				Utils/common/AbstractClassError.swift,
 				Utils/common/BuildInfo.swift,
