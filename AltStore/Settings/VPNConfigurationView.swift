@@ -37,11 +37,11 @@ struct VPNConfigurationView: View {
                     editable: false
                 )
             } header: {
-                Text("Override Configuration")
+                Text("User Configuration")
             } footer: {
                 HStack(alignment: .top, spacing: 0) {
                     Text("Note: ")
-                    Text("if override configuration is invalid or unusable SideStore may use auto-discovered config as fallback.")
+                    Text("'Device IP' is a mandatory and should match exactly as in the VPN's configuration")
                 }
             }
         }
