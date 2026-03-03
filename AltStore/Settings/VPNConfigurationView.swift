@@ -56,7 +56,6 @@ struct VPNConfigurationView: View {
     }
 
     private func commitChanges() {
-        TunnelConfig.shared.commitFakeIP()
         bindTunnelConfig()
     }
     
@@ -117,8 +116,4 @@ final class TunnelConfig: ObservableObject {
     }
 
     var overrideActive: String { overrideEffective ? "Yes" : "No" }
-
-    func commitFakeIP() {
-        fakeIP = overrideFakeIP
-    }
 }
