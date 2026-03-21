@@ -214,9 +214,10 @@ final class InstallAppOperation: ResultOperation<InstalledApp>
                             alert.addAction(UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .default, handler: { _ in
                                 print("Going home")
                                 // Cell Shortcut
-                                UIApplication.shared.open(shortcutURLonDelay, options: [:]) { _ in
-                                    print("Cell OFF Shortcut finished execution.")}
-                                    
+                                if self.context.shouldTurnOffData {
+                                    UIApplication.shared.open(shortcutURLonDelay, options: [:]) { _ in
+                                        print("Cell OFF Shortcut finished execution.")}
+                                }
                                 UIApplication.shared.perform(#selector(NSXPCConnection.suspend))
                             }))
 
@@ -234,7 +235,9 @@ final class InstallAppOperation: ResultOperation<InstalledApp>
                         }
                     }
                     // Cell Shortcut
-                    UIApplication.shared.open(shortcutURLonDelay, options: [:]) { _ in print("Cell OFF Shortcut finished execution.")}
+                    if self.context.shouldTurnOffData {
+                        UIApplication.shared.open(shortcutURLonDelay, options: [:]) { _ in print("Cell OFF Shortcut finished execution.")}
+                    }
                     UIApplication.shared.perform(#selector(NSXPCConnection.suspend))
                 }
             }
