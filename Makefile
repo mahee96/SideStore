@@ -374,8 +374,7 @@ ipa-altbackup: checkPaths copy-altbackup
 	@echo " Copying from $(ALT_APP_SRC) into $(ALT_APP_PAYLOAD_DST)"
 	@cp -R -f	"$(ALT_APP_SRC)/." "$(ALT_APP_PAYLOAD_DST)/$(TARGET_NAME)"
 	@pushd 		"$(ALT_APP_DST_ARCHIVE)" && zip -r "../../$(ALT_APP_IPA_DST)" Payload || popd
-	@cp	   -f	"$(ALT_APP_IPA_DST)" AltStore/Resources
-	@echo "  IPA created: AltStore/Resources/AltBackup.ipa"
+	@echo "  IPA created: build/AltBackup.ipa"
 
 clean-altbackup:
 	@echo ""
