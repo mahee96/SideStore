@@ -8,6 +8,7 @@
 import Foundation
 import Network
 import AltStoreCore
+import Minimuxer
 
 @objc(SendAppOperation)
 final class SendAppOperation: ResultOperation<()>
