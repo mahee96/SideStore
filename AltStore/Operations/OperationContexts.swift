@@ -123,6 +123,8 @@ class InstallAppOperationContext: AppOperationContext
     
     var alternateIconURL: URL?
     
+    var shouldTurnOffData: Bool = false
+    
     // Non-nil when installing from a source.
     @AsyncManaged
     var appVersion: AppVersion?
