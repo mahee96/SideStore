@@ -93,11 +93,9 @@
 		A8B646012D70C23E00125819 /* MarkdownKit in Frameworks */ = {isa = PBXBuildFile; productRef = A8B646002D70C23E00125819 /* MarkdownKit */; };
 		A8C2260E2EC9039A00047C0D /* Nuke in Frameworks */ = {isa = PBXBuildFile; productRef = A8C2260D2EC9039A00047C0D /* Nuke */; };
 		A8EB89C22F5448B20094BC01 /* em_proxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8BD2F652F543FD40045335F /* em_proxy.swift */; };
-		A8EB89CA2F54519C0094BC01 /* libfragmentzip.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8EB89C92F54519C0094BC01 /* libfragmentzip.a */; };
 		A8EB89CC2F5451AF0094BC01 /* Minimuxer in Frameworks */ = {isa = PBXBuildFile; productRef = A8EB89CB2F5451AF0094BC01 /* Minimuxer */; };
 		A8EB89CE2F5451B50094BC01 /* SemanticVersion in Frameworks */ = {isa = PBXBuildFile; productRef = A8EB89CD2F5451B50094BC01 /* SemanticVersion */; };
 		A8EB89D02F5451C20094BC01 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = A8EB89CF2F5451C20094BC01 /* KeychainAccess */; };
-		A8EB89D12F5451E90094BC01 /* libcurl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8BD2F6D2F543FFF0045335F /* libcurl.a */; };
 		A8EB955C2F5455B30094BC01 /* debug.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30312F5440300045335F /* debug.c */; };
 		A8EB95C92F5455FE0094BC01 /* debug.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30302F5440300045335F /* debug.h */; };
 		A8EB96042F54561E0094BC01 /* afc.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30932F5440300045335F /* afc.c */; };
@@ -231,41 +229,6 @@
 			remoteGlobalIDString = CA60C44C93D7916DE57E6EBD;
 			remoteInfo = "em_proxy-staticlib";
 		};
-		A8EB8CC32F5453CD0094BC01 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A8BD2FFB2F5440300045335F /* libfragmentzip.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 87B8C3401E0E9C37002F817D;
-			remoteInfo = "fragmentzip-cli-macOS";
-		};
-		A8EB8CC52F5453CD0094BC01 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A8BD2FFB2F5440300045335F /* libfragmentzip.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = B315FDB02866CCF8002E243C;
-			remoteInfo = "fragmentzip-cli-iOS";
-		};
-		A8EB8CC72F5453CD0094BC01 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A8BD2FFB2F5440300045335F /* libfragmentzip.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = B315FDB52866CD91002E243C;
-			remoteInfo = "fragmentzip-macOS";
-		};
-		A8EB8CC92F5453CD0094BC01 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A8BD2FFB2F5440300045335F /* libfragmentzip.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = B315FDCE2866CDD3002E243C;
-			remoteInfo = "fragmentzip-iOS";
-		};
-		A8EB8CCE2F5453CD0094BC01 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A8BD2FD72F5440300045335F /* libgeneral.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 87977F6F227C4B71004F31DA;
-			remoteInfo = libgeneral;
-		};
 		BF66EE832501AE50007EE018 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = BFD247622284B9A500981D42 /* Project object */;
@@ -361,6 +324,10 @@
 		A8036E7F2F54606400097AF1 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		A8036EA72F54642D00097AF1 /* libimobiledevice.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libimobiledevice.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		A8037A0D2F54664300097AF1 /* libem_proxy_swift.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libem_proxy_swift.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		A84596F12F7DC4C90000B8CD /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		A84596F22F7DC4C90000B8CD /* .gitmodules */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitmodules; sourceTree = "<group>"; };
+		A84596F32F7DC4C90000B8CD /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		A84596F42F7DC4C90000B8CD /* trustedapps.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = trustedapps.json; sourceTree = "<group>"; };
 		A8635D052F4CF16D00E66784 /* OpenSSL.xcframework */ = {isa = PBXFileReference; expectedSignature = "AppleDeveloperProgram:67RAULRX93:Marcin Krzyzanowski"; lastKnownFileType = wrapper.xcframework; name = OpenSSL.xcframework; path = Dependencies/AltSign/Dependencies/OpenSSL.xcframework; sourceTree = "<group>"; };
 		A8945AA52D059B6100D86CBE /* Roxas.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Roxas.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A8BD20292F543FD40045335F /* client_privatekey */ = {isa = PBXFileReference; lastKnownFileType = text; path = client_privatekey; sourceTree = "<group>"; };
@@ -381,26 +348,12 @@
 		A8BD2F692F543FD40045335F /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		A8BD2F6A2F543FD40045335F /* module.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = module.modulemap; sourceTree = "<group>"; };
 		A8BD2F6B2F543FD40045335F /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		A8BD2F6D2F543FFF0045335F /* libcurl.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libcurl.a; sourceTree = "<group>"; };
 		A8BD2FA62F54401E0045335F /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		A8BD2FA72F54401E0045335F /* NSAttributedString+Markdown.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSAttributedString+Markdown.h"; sourceTree = "<group>"; };
 		A8BD2FA82F54401E0045335F /* NSAttributedString+Markdown.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSAttributedString+Markdown.m"; sourceTree = "<group>"; };
 		A8BD2FA92F54401E0045335F /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		A8BD2FBD2F5440300045335F /* em_proxy.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = em_proxy.xcodeproj; sourceTree = "<group>"; };
 		A8BD2FBE2F5440300045335F /* fetch-prebuilt.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "fetch-prebuilt.sh"; sourceTree = "<group>"; };
-		A8BD2FD72F5440300045335F /* libgeneral.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libgeneral.xcodeproj; sourceTree = "<group>"; };
-		A8BD2FDB2F5440300045335F /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		A8BD2FE02F5440300045335F /* curl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = curl.h; sourceTree = "<group>"; };
-		A8BD2FE12F5440300045335F /* curlbuild.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = curlbuild.h; sourceTree = "<group>"; };
-		A8BD2FE42F5440300045335F /* curlrules.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = curlrules.h; sourceTree = "<group>"; };
-		A8BD2FE52F5440300045335F /* curlver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = curlver.h; sourceTree = "<group>"; };
-		A8BD2FE62F5440300045335F /* easy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = easy.h; sourceTree = "<group>"; };
-		A8BD2FE82F5440300045335F /* mprintf.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = mprintf.h; sourceTree = "<group>"; };
-		A8BD2FE92F5440300045335F /* multi.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = multi.h; sourceTree = "<group>"; };
-		A8BD2FEA2F5440300045335F /* stdcheaders.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stdcheaders.h; sourceTree = "<group>"; };
-		A8BD2FEB2F5440300045335F /* typecheck-gcc.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "typecheck-gcc.h"; sourceTree = "<group>"; };
-		A8BD2FFB2F5440300045335F /* libfragmentzip.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = libfragmentzip.xcodeproj; sourceTree = "<group>"; };
-		A8BD30012F5440300045335F /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		A8BD30062F5440300045335F /* add_scalar.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = add_scalar.c; sourceTree = "<group>"; };
 		A8BD30072F5440300045335F /* ed25519.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ed25519.h; sourceTree = "<group>"; };
 		A8BD30082F5440300045335F /* fe.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fe.h; sourceTree = "<group>"; };
@@ -568,8 +521,6 @@
 		A8BD325F2F5440300045335F /* minimuxer */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = minimuxer; sourceTree = "<group>"; };
 		A8BD32D02F5440300045335F /* Roxas.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Roxas.xcodeproj; sourceTree = "<group>"; };
 		A8BD32FA2F54444D0045335F /* AltSign */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = AltSign; sourceTree = "<group>"; };
-		A8EB89C72F5451970094BC01 /* libfragmentzip.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libfragmentzip.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		A8EB89C92F54519C0094BC01 /* libfragmentzip.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libfragmentzip.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		B3C39606284F4C8400DA9E2F /* CodeSigning.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = CodeSigning.xcconfig; sourceTree = "<group>"; };
 		B3C39607284F4C8400DA9E2F /* Build.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Build.xcconfig; sourceTree = "<group>"; };
 		B3C39608284F4C8400DA9E2F /* CodeSigning.xcconfig.sample */ = {isa = PBXFileReference; lastKnownFileType = text; path = CodeSigning.xcconfig.sample; sourceTree = "<group>"; };
@@ -644,7 +595,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				"Operations/Patch App/ALTAppPatcher.m",
 				Resources/ReleaseEntitlements.plist,
 			);
 			target = BFD247692284B9A500981D42 /* SideStore */;
@@ -686,14 +636,6 @@
 			);
 			target = BF989166250AABF3002ACF50 /* AltWidgetExtension */;
 		};
-		A8FAC1FE2F4B52F40061A851 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"Operations/Patch App/ALTAppPatcher.h",
-				"Operations/Patch App/ALTAppPatcher.m",
-			);
-			target = BF66EE7D2501AE50007EE018 /* AltStoreCore */;
-		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
@@ -713,7 +655,7 @@
 		A8EEC3B92F4B0EFC00F2436D /* AltWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC3CA2F4B0EFC00F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = AltWidget; sourceTree = "<group>"; };
 		A8EEC3D92F4B0FC800F2436D /* AltBackup */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC3E22F4B0FC800F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = AltBackup; sourceTree = "<group>"; };
 		A8EEC71D2F4B10D900F2436D /* xcconfigs */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = xcconfigs; sourceTree = "<group>"; };
-		A8EEC8412F4B146A00F2436D /* AltStore */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC8CB2F4B146B00F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8EEC8CC2F4B146B00F2436D /* PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet */, A8FAC1FE2F4B52F40061A851 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8EEC8CD2F4B146B00F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = AltStore; sourceTree = "<group>"; };
+		A8EEC8412F4B146A00F2436D /* AltStore */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC8CB2F4B146B00F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8EEC8CC2F4B146B00F2436D /* PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet */, A8EEC8CD2F4B146B00F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = AltStore; sourceTree = "<group>"; };
 		A8EECF2A2F4B195000F2436D /* SideStore */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EECF492F4B195000F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8EECF4A2F4B195000F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = SideStore; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -769,9 +711,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A8EB89D12F5451E90094BC01 /* libcurl.a in Frameworks */,
 				A8EB89CC2F5451AF0094BC01 /* Minimuxer in Frameworks */,
-				A8EB89CA2F54519C0094BC01 /* libfragmentzip.a in Frameworks */,
 				A8037A012F54661200097AF1 /* libimobiledevice.a in Frameworks */,
 				A8B646012D70C23E00125819 /* MarkdownKit in Frameworks */,
 				A8037A0E2F54664300097AF1 /* libem_proxy_swift.a in Frameworks */,
@@ -848,8 +788,6 @@
 				A8BD32FA2F54444D0045335F /* AltSign */,
 				A8BD325F2F5440300045335F /* minimuxer */,
 				A8BD20242F543FAD0045335F /* apps-v2.json */,
-				A8BD2F6E2F543FFF0045335F /* libcurl */,
-				A8BD30022F5440300045335F /* libfragmentzip */,
 				A8BD325E2F5440300045335F /* libusbmuxd */,
 				A8BD30F02F5440300045335F /* libimobiledevice */,
 				A8036E802F54606400097AF1 /* libimobiledevice-glue */,
@@ -904,14 +842,6 @@
 			path = em_proxy;
 			sourceTree = "<group>";
 		};
-		A8BD2F6E2F543FFF0045335F /* libcurl */ = {
-			isa = PBXGroup;
-			children = (
-				A8BD2F6D2F543FFF0045335F /* libcurl.a */,
-			);
-			path = libcurl;
-			sourceTree = "<group>";
-		};
 		A8BD2FAA2F54401E0045335F /* MarkdownAttributedString */ = {
 			isa = PBXGroup;
 			children = (
@@ -921,58 +851,6 @@
 				A8BD2FA92F54401E0045335F /* README.md */,
 			);
 			path = MarkdownAttributedString;
-			sourceTree = "<group>";
-		};
-		A8BD2FDC2F5440300045335F /* libgeneral */ = {
-			isa = PBXGroup;
-			children = (
-				A8BD2FD72F5440300045335F /* libgeneral.xcodeproj */,
-				A8BD2FDB2F5440300045335F /* README.md */,
-			);
-			path = libgeneral;
-			sourceTree = "<group>";
-		};
-		A8BD2FDD2F5440300045335F /* dependencies */ = {
-			isa = PBXGroup;
-			children = (
-				A8BD2FDC2F5440300045335F /* libgeneral */,
-			);
-			path = dependencies;
-			sourceTree = "<group>";
-		};
-		A8BD2FEC2F5440300045335F /* curl */ = {
-			isa = PBXGroup;
-			children = (
-				A8BD2FE02F5440300045335F /* curl.h */,
-				A8BD2FE12F5440300045335F /* curlbuild.h */,
-				A8BD2FE42F5440300045335F /* curlrules.h */,
-				A8BD2FE52F5440300045335F /* curlver.h */,
-				A8BD2FE62F5440300045335F /* easy.h */,
-				A8BD2FE82F5440300045335F /* mprintf.h */,
-				A8BD2FE92F5440300045335F /* multi.h */,
-				A8BD2FEA2F5440300045335F /* stdcheaders.h */,
-				A8BD2FEB2F5440300045335F /* typecheck-gcc.h */,
-			);
-			path = curl;
-			sourceTree = "<group>";
-		};
-		A8BD2FF02F5440300045335F /* include */ = {
-			isa = PBXGroup;
-			children = (
-				A8BD2FEC2F5440300045335F /* curl */,
-			);
-			path = include;
-			sourceTree = "<group>";
-		};
-		A8BD30022F5440300045335F /* libfragmentzip */ = {
-			isa = PBXGroup;
-			children = (
-				A8BD2FDD2F5440300045335F /* dependencies */,
-				A8BD2FF02F5440300045335F /* include */,
-				A8BD2FFB2F5440300045335F /* libfragmentzip.xcodeproj */,
-				A8BD30012F5440300045335F /* README.md */,
-			);
-			path = libfragmentzip;
 			sourceTree = "<group>";
 		};
 		A8BD301A2F5440300045335F /* ed25519 */ = {
@@ -1290,25 +1168,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		A8EB8CBD2F5453CD0094BC01 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				A8EB8CC42F5453CD0094BC01 /* libfragmentzip */,
-				A8EB8CC62F5453CD0094BC01 /* libfragmentzip */,
-				A8EB8CC82F5453CD0094BC01 /* libfragmentzip.a */,
-				A8EB8CCA2F5453CD0094BC01 /* libfragmentzip.a */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		A8EB8CCB2F5453CD0094BC01 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				A8EB8CCF2F5453CD0094BC01 /* libgeneral */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		BFD247612284B9A500981D42 = {
 			isa = PBXGroup;
 			children = (
@@ -1325,6 +1184,10 @@
 				B3C39607284F4C8400DA9E2F /* Build.xcconfig */,
 				B3C39606284F4C8400DA9E2F /* CodeSigning.xcconfig */,
 				B3C39608284F4C8400DA9E2F /* CodeSigning.xcconfig.sample */,
+				A84596F12F7DC4C90000B8CD /* .gitignore */,
+				A84596F22F7DC4C90000B8CD /* .gitmodules */,
+				A84596F32F7DC4C90000B8CD /* README.md */,
+				A84596F42F7DC4C90000B8CD /* trustedapps.json */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1344,8 +1207,6 @@
 		BFD247852284BB3300981D42 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				A8EB89C92F54519C0094BC01 /* libfragmentzip.a */,
-				A8EB89C72F5451970094BC01 /* libfragmentzip.a */,
 				A8635D052F4CF16D00E66784 /* OpenSSL.xcframework */,
 				BF580497246A3D19008AE704 /* UIKit.framework */,
 				BFD247862284BB3B00981D42 /* Roxas.framework */,
@@ -1625,14 +1486,6 @@
 					ProjectRef = A8BD2FBD2F5440300045335F /* em_proxy.xcodeproj */;
 				},
 				{
-					ProductGroup = A8EB8CBD2F5453CD0094BC01 /* Products */;
-					ProjectRef = A8BD2FFB2F5440300045335F /* libfragmentzip.xcodeproj */;
-				},
-				{
-					ProductGroup = A8EB8CCB2F5453CD0094BC01 /* Products */;
-					ProjectRef = A8BD2FD72F5440300045335F /* libgeneral.xcodeproj */;
-				},
-				{
 					ProductGroup = A8EB8CAD2F5453CD0094BC01 /* Products */;
 					ProjectRef = A8BD32D02F5440300045335F /* Roxas.xcodeproj */;
 				},
@@ -1676,41 +1529,6 @@
 			fileType = archive.ar;
 			path = libem_proxy_static.a;
 			remoteRef = A8EB8CBB2F5453CD0094BC01 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		A8EB8CC42F5453CD0094BC01 /* libfragmentzip */ = {
-			isa = PBXReferenceProxy;
-			fileType = "compiled.mach-o.executable";
-			path = libfragmentzip;
-			remoteRef = A8EB8CC32F5453CD0094BC01 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		A8EB8CC62F5453CD0094BC01 /* libfragmentzip */ = {
-			isa = PBXReferenceProxy;
-			fileType = "compiled.mach-o.executable";
-			path = libfragmentzip;
-			remoteRef = A8EB8CC52F5453CD0094BC01 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		A8EB8CC82F5453CD0094BC01 /* libfragmentzip.a */ = {
-			isa = PBXReferenceProxy;
-			fileType = archive.ar;
-			path = libfragmentzip.a;
-			remoteRef = A8EB8CC72F5453CD0094BC01 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		A8EB8CCA2F5453CD0094BC01 /* libfragmentzip.a */ = {
-			isa = PBXReferenceProxy;
-			fileType = archive.ar;
-			path = libfragmentzip.a;
-			remoteRef = A8EB8CC92F5453CD0094BC01 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		A8EB8CCF2F5453CD0094BC01 /* libgeneral */ = {
-			isa = PBXReferenceProxy;
-			fileType = "compiled.mach-o.executable";
-			path = libgeneral;
-			remoteRef = A8EB8CCE2F5453CD0094BC01 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 /* End PBXReferenceProxy section */
@@ -2453,8 +2271,6 @@
 				LD_WARN_UNUSED_DYLIBS = YES;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/Dependencies/libfragmentzip",
-					"$(PROJECT_DIR)/Dependencies/libcurl",
 					"$(PROJECT_DIR)/Dependencies/minimuxer/Sources/RustBridge/lib",
 				);
 				LLVM_LTO = YES_THIN;
@@ -2502,8 +2318,6 @@
 				LD_WARN_UNUSED_DYLIBS = YES;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/Dependencies/libfragmentzip",
-					"$(PROJECT_DIR)/Dependencies/libcurl",
 					"$(PROJECT_DIR)/Dependencies/minimuxer/Sources/RustBridge/lib",
 				);
 				LLVM_LTO = YES_THIN;
