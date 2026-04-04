@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		178FB6C72F80B8BD00C92806 /* NSAttributedString+Markdown.m in Sources */ = {isa = PBXBuildFile; fileRef = A8BD2FA82F54401E0045335F /* NSAttributedString+Markdown.m */; };
 		A8036E332F545D5400097AF1 /* userpref.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30332F5440300045335F /* userpref.h */; };
 		A8036E342F545D6000097AF1 /* userpref.c in Sources */ = {isa = PBXBuildFile; fileRef = A8BD30342F5440300045335F /* userpref.c */; };
 		A8036E352F545E3800097AF1 /* idevice.h in Headers */ = {isa = PBXBuildFile; fileRef = A8BD30A42F5440300045335F /* idevice.h */; };
@@ -1714,6 +1715,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				178FB6C72F80B8BD00C92806 /* NSAttributedString+Markdown.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
