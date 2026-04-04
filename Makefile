@@ -169,7 +169,7 @@ MARKETING_VERSION ?=
 BUNDLE_ID_SUFFIX ?= 
 # Common build settings for xcodebuild
 COMMON_BUILD_SETTINGS = \
-	-workspace AltStore.xcworkspace \
+	-project AltStore.xcodeproj \
 	-scheme SideStore \
 	-sdk iphoneos \
 	-configuration $(BUILD_CONFIG) \
@@ -247,7 +247,7 @@ sim-boot-check:
 
 clean-build:
 	@echo "Cleaning build artifacts..."
-	@xcodebuild clean -workspace AltStore.xcworkspace -scheme SideStore
+	@xcodebuild clean -project AltStore.xcodeproj -scheme SideStore
 
 fakesign-apps:
 	rm -rf SideStore.xcarchive/Products/Applications/SideStore.app/Frameworks/AltStoreCore.framework/Frameworks/
