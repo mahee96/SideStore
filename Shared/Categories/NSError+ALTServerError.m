@@ -225,7 +225,7 @@ NSErrorUserInfoKey const ALTNSCodingPathKey = @"NSCodingPath";
             
             if (appName == nil || osVersion == nil)
             {
-                return NSLocalizedString(@"Your device must be running iOS 12.2 or later to install SideStore.", @"");
+                return NSLocalizedString(@"Your device must be running iOS 15.0 or later to install SideStore.", @"");
             }
             
             return [NSString stringWithFormat:NSLocalizedString(@"%@ requires %@ or later.", @""), appName, osVersion];
