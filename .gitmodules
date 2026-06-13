@@ -27,7 +27,7 @@
 
 [submodule "Dependencies/Roxas"]
     path = Dependencies/Roxas
-    url = https://github.com/rileytestut/Roxas.git
+    url = https://github.com/SideStore/Roxas.git
 [submodule "Dependencies/libimobiledevice"]
     path = Dependencies/libimobiledevice
     url = https://github.com/SideStore/libimobiledevice
