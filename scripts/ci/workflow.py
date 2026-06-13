@@ -286,8 +286,8 @@ def deploy(repo, source_json, release_tag, marketing_version):
     if not source_json_path.exists():
         raise SystemExit(f"{source_json} missing inside repo")
 
-    run("git config user.name 'GitHub Actions'", check=False)
-    run("git config user.email 'github-actions@github.com'", check=False)
+    run("git config user.name 'GitHub Actions'", check=False, cwd=repo)
+    run("git config user.email 'github-actions@github.com'", check=False, cwd=repo)
 
     # ------------------------------------------------------
     run("git fetch origin main", check=False, cwd=repo)
