@@ -76,7 +76,10 @@ class FetchProvisioningProfilesOperation: ResultOperation<[String: ALTProvisioni
                             switch result
                             {
                             case .failure(let e): error = e
-                            case .success(let profile): profiles[appExtension.bundleIdentifier] = profile
+                            case .success(let profile):
+                                // Use customized bundle ID if applicable
+                                let updatedExtensionBundleId = appExtension.bundleIdentifier.replacingOccurrences(of: app.bundleIdentifier, with: effectiveBundleId)
+                                profiles[updatedExtensionBundleId] = profile
                             }
                             
                             dispatchGroup.leave()

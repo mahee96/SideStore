@@ -117,7 +117,8 @@ private extension ResignAppOperation
         let progress = Progress.discreteProgress(totalUnitCount: 1)
 
         let bundleIdentifier = context.bundleIdentifier
-        let openURL = InstalledApp.openAppURL(for: app)
+        // Use customized bundle ID if applicable
+        let openURL = InstalledApp.openAppURL(for: AnyApp(from: app, bundleId: context.bundleIdentifier))
         let fileURL = app.fileURL
 
         func prepare(_ bundle: Bundle, bundleID identifier: String?, additionalInfoDictionaryValues: [String: Any] = [:]) throws
