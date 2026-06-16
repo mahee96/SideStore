@@ -36,7 +36,7 @@
     url = https://github.com/libimobiledevice/libusbmuxd.git
 [submodule "Dependencies/libplist"]
     path = Dependencies/libplist
-    url = https://github.com/SideStore/libplist.git
+    url = https://github.com/libimobiledevice/libplist.git
 [submodule "Dependencies/MarkdownAttributedString"]
     path = Dependencies/MarkdownAttributedString
     url = https://github.com/chockenberry/MarkdownAttributedString.git
@@ -49,11 +49,11 @@
 [submodule "Dependencies/minimuxer"]
     path = Dependencies/minimuxer
     url = https://github.com/SideStore/minimuxer
-    branch = master
+    branch = develop
 [submodule "Dependencies/em_proxy"]
 	path = Dependencies/em_proxy
 	url = https://github.com/SideStore/em_proxy
-    branch = master
+    branch = develop
 [submodule "Dependencies/apps-v2.json"]
     path = Dependencies/apps-v2.json
     url = https://github.com/SideStore/apps-v2.json
