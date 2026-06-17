@@ -2303,8 +2303,8 @@ private extension AppManager {
             if let presentingVC = presentingViewController {
                 _ = try await PairingFileManager.shared.importPairingFile(
                     presentingVC: presentingVC,
-                    title: NSLocalizedString("Pairing File", comment: ""),
-                    message: NSLocalizedString("Select the pairing file or select \"Help\" for help.", comment: "")
+                    title: NSLocalizedString("Current Pairing file is Invalid", comment: ""),
+                    message: NSLocalizedString("Select 'OK' to locate the latest pairing file or tap 'Help' for more info", comment: "")
                 )
             } else {
                 throw error!

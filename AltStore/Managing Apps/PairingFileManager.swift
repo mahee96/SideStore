@@ -42,7 +42,10 @@ final class PairingFileManager: NSObject, UIDocumentPickerDelegate {
     }
 
     func presentPairingFileAlert(on vc: UIViewController, title: String, message: String, completion: ((URL?) -> Void)? = nil) {
-        self.completion = completion
+        self.completion = { url in
+            completion?(url)
+            self.completion = nil
+        }
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: NSLocalizedString("Help", comment: ""), style: .default) { _ in
             if let url = URL(string: "https://docs.sidestore.io/docs/advanced/pairing-file") { UIApplication.shared.open(url) }
