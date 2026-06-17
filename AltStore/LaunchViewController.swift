@@ -17,7 +17,7 @@ import UniformTypeIdentifiers
 
 let pairingFileName = "ALTPairingFile.mobiledevicepairing"
 
-final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
+final class LaunchViewController: UIViewController {
     private var didFinishLaunching = false
     private var retries = 0
     private var maxRetries = 3
@@ -105,34 +105,6 @@ final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
         print(msg)
         let alert = UIAlertController(title: "Error launching SideStore", message: msg, preferredStyle: .alert)
         self.present(alert, animated: true)
-    }
-
-    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-        let url = urls[0]
-        let isSecuredURL = url.startAccessingSecurityScopedResource() == true
-        defer {
-            if (isSecuredURL) {
-                url.stopAccessingSecurityScopedResource()
-            }
-        }
-
-        do {
-            let data = try Data(contentsOf: url)
-            guard let pairingString = String(data: data, encoding: .utf8) else {
-                displayError("Unable to read pairing file")
-                return
-            }
-            try pairingString.write(to: FileManager.default.documentsDirectory.appendingPathComponent(pairingFileName), atomically: true, encoding: .utf8)
-            start_minimuxer_threads(pairingString)
-        } catch {
-            displayError("Unable to read pairing file")
-        }
-        
-        controller.dismiss(animated: true, completion: nil)
-    }
-
-    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
-        displayError("Choosing a pairing file was cancelled. Please re-open the app and try again.")
     }
     
     func importAccountAtFile(_ file: URL, remove: Bool = false) {
@@ -333,48 +305,7 @@ final class SplashView: UIView {
     }
 }
 
-// MARK: - PairingFileManager
-final class PairingFileManager {
-    static let shared = PairingFileManager()
-    func fetchPairingFile(presentingVC: UIViewController) -> String? {
-        let fm = FileManager.default
-        let filename = pairingFileName
-        let documentsPath = fm.documentsDirectory.appendingPathComponent("/\(filename)")
-        if fm.fileExists(atPath: documentsPath.path),
-           let contents = try? String(contentsOf: documentsPath), !contents.isEmpty {
-            return contents
-        }
-        if let url = Bundle.main.url(forResource: "ALTPairingFile", withExtension: "mobiledevicepairing"),
-           fm.fileExists(atPath: url.path),
-           let data = fm.contents(atPath: url.path),
-           let contents = String(data: data, encoding: .utf8),
-           !contents.isEmpty, !UserDefaults.standard.isPairingReset { return contents }
-        if let plistString = Bundle.main.object(forInfoDictionaryKey: "ALTPairingFile") as? String,
-           !plistString.isEmpty, !plistString.contains("insert pairing file here"), !UserDefaults.standard.isPairingReset { return plistString }
 
-        presentPairingFileAlert(on: presentingVC)
-        return nil
-    }
-
-    private func presentPairingFileAlert(on vc: UIViewController) {
-        let alert = UIAlertController(title: "Pairing File", message: "Select the pairing file or select \"Help\" for help.", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Help", style: .default) { _ in
-            if let url = URL(string: "https://docs.sidestore.io/docs/advanced/pairing-file") { UIApplication.shared.open(url) }
-            sleep(2); exit(0)
-        })
-        alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
-            var types = UTType.types(tag: "plist", tagClass: .filenameExtension, conformingTo: nil)
-            types.append(contentsOf: UTType.types(tag: "mobiledevicepairing", tagClass: .filenameExtension, conformingTo: .data))
-            types.append(.xml)
-            let picker = UIDocumentPickerViewController(forOpeningContentTypes: types)
-            picker.delegate = vc as? UIDocumentPickerDelegate
-            picker.shouldShowFileExtensions = true
-            vc.present(picker, animated: true)
-            UserDefaults.standard.isPairingReset = false
-        })
-        vc.present(alert, animated: true)
-    }
-}
 
 // MARK: - SideJITManager
 final class SideJITManager {

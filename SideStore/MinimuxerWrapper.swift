@@ -54,6 +54,10 @@ func retargetUsbmuxdAddr() {
     #endif
 }
 
+func markMuxerServicesNeedsRestart(error: Error) {
+    AppManager.markMuxerServicesNeedsRestart(error: error)
+}
+
 func minimuxerStartWithLogger(_ pairingFile: String, _ logPath: String, _ loggingEnabled: Bool) throws {
     defer { print("[SideStore] minimuxerStartWithLogger(pairingFile, logPath, dest, loggingEnabled) completed") }
     #if targetEnvironment(simulator)
@@ -61,6 +65,16 @@ func minimuxerStartWithLogger(_ pairingFile: String, _ logPath: String, _ loggin
     #else
     // refresh config if any
     bindTunnelConfig()
+    
+    // observe background errors
+    Minimuxer.onBackgroundError = { error in
+        guard let bgError = error as? MinimuxerBackgroundError else { return }
+        if bgError.component == .heartbeat {
+            print("[SideStore] Heartbeat failure detected in background, scheduling restart...")
+            markMuxerServicesNeedsRestart(error: bgError.error)
+        }
+    }
+    
     // observe network route changes (and update device endpoint from vpn(utun))
     NetworkObserver.shared.start()
     
@@ -256,6 +270,8 @@ extension MinimuxerError: @retroactive LocalizedError {
             return NSLocalizedString("Unable to read images to memory", comment: "")
         case .Mount:
             return NSLocalizedString("Mount failed", comment: "")
+        case .RestartAlreadyInProgressError:
+            return NSLocalizedString("Restart already in progress", comment: "")
         }
     }
 

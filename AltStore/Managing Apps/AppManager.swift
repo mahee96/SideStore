@@ -17,6 +17,7 @@ import AltStoreCore
 import AltSign
 import Roxas
 import Minimuxer
+import UniformTypeIdentifiers
 
 extension AppManager
 {
@@ -42,6 +43,55 @@ final class AppManagerPublisher: ObservableObject
 class AppManager: ObservableObject
 {
     static let shared = AppManager()
+
+    private static let restartLock = NSLock()
+    private static var _needsMuxerServicesRestart = false
+    private static var _muxerRestartError: Error?
+    public static var needsMuxerServicesRestart: Bool {
+        get {
+            restartLock.lock()
+            defer { restartLock.unlock() }
+            return _needsMuxerServicesRestart
+        }
+        set {
+            restartLock.lock()
+            defer { restartLock.unlock() }
+            _needsMuxerServicesRestart = newValue
+            if !newValue {
+                _muxerRestartError = nil
+            }
+        }
+    }
+
+    public static var muxerRestartError: Error? {
+        restartLock.lock()
+        defer { restartLock.unlock() }
+        return _muxerRestartError
+    }
+
+    public static func markMuxerServicesNeedsRestart(error: Error) {
+        restartLock.lock()
+        _muxerRestartError = error
+        _needsMuxerServicesRestart = true
+        restartLock.unlock()
+    }
+
+    private static func restartMuxerServices() async throws {
+        var attempts = 0
+        while attempts < 3 {
+            do {
+                try await Minimuxer.restart()
+                AppManager.needsMuxerServicesRestart = false
+                return
+            } catch MinimuxerError.RestartAlreadyInProgressError {
+                attempts += 1
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+            } catch {
+                throw error
+            }
+        }
+        throw MinimuxerError.RestartAlreadyInProgressError
+    }
     
     private(set) var updatePatronsResult: Result<Void, Error>?
     
@@ -702,7 +752,11 @@ extension AppManager
                 }
             }
             
-            await self.perform([.install(app)], presentingViewController: presentingViewController, group: group)
+            do {
+                try await self.perform([.install(app)], presentingViewController: presentingViewController, group: group)
+            } catch {
+                completionHandler(.failure(error))
+            }
             
         }
         return group
@@ -732,7 +786,11 @@ extension AppManager
         assert(appVersion as AnyObject !== installedApp) // Make sure we never accidentally "update" to already installed app.
         
         Task{
-            await self.perform([.update(appVersion)], presentingViewController: presentingViewController, group: group)
+            do {
+                try await self.perform([.update(appVersion)], presentingViewController: presentingViewController, group: group)
+            } catch {
+                completionHandler(.failure(error))
+            }
         }
         
         return group.progress
@@ -744,7 +802,12 @@ extension AppManager
         let group = group ?? RefreshGroup()
         
         Task{
-            await self.perform(installedApps.map { .refresh($0) }, presentingViewController: presentingViewController, group: group)
+            do {
+                try await self.perform(installedApps.map { .refresh($0) }, presentingViewController: presentingViewController, group: group)
+            } catch {
+                group.context.error = error
+                group.completionHandler?([:])
+            }
         }
         
         return group
@@ -755,7 +818,11 @@ extension AppManager
         let group = RefreshGroup()
         
         Task{
-            await self.perform([.activate(installedApp)], presentingViewController: presentingViewController, group: group)
+            do {
+                try await self.perform([.activate(installedApp)], presentingViewController: presentingViewController, group: group)
+            } catch {
+                completionHandler(.failure(error))
+            }
         }
         
         group.completionHandler = { (results) in
@@ -815,7 +882,11 @@ extension AppManager
             }
             
             Task{
-                await self.perform([.deactivate(installedApp)], presentingViewController: presentingViewController, group: group)
+                do {
+                    try await self.perform([.deactivate(installedApp)], presentingViewController: presentingViewController, group: group)
+                } catch {
+                    completionHandler(.failure(error))
+                }
             }
         }
     }
@@ -841,7 +912,11 @@ extension AppManager
         }
         
         Task{
-            await self.perform([.backup(installedApp)], presentingViewController: presentingViewController, group: group)
+            do {
+                try await self.perform([.backup(installedApp)], presentingViewController: presentingViewController, group: group)
+            } catch {
+                completionHandler(.failure(error))
+            }
         }
     }
     
@@ -868,7 +943,11 @@ extension AppManager
         }
         
         Task{
-            await self.perform([.restore(installedApp)], presentingViewController: presentingViewController, group: group)
+            do {
+                try await self.perform([.restore(installedApp)], presentingViewController: presentingViewController, group: group)
+            } catch {
+                completionHandler(.failure(error))
+            }
         }
     }
     
@@ -1033,8 +1112,10 @@ private extension AppManager
     }
     
     @discardableResult
-    private func perform(_ operations: [AppOperation], presentingViewController: UIViewController?, group: RefreshGroup) async -> RefreshGroup
+    private func perform(_ operations: [AppOperation], presentingViewController: UIViewController?, group: RefreshGroup) async throws -> RefreshGroup
     {
+        try await self.evaluateMuxerServicesRestart(presentingViewController: presentingViewController)
+
         let operations = operations.filter { self.progress(for: $0) == nil || self.progress(for: $0)?.isCancelled == true }
         
         for operation in operations
@@ -2210,3 +2291,27 @@ private extension AppManager {
         }
     }
 }
+
+private extension AppManager {
+    func evaluateMuxerServicesRestart(presentingViewController: UIViewController?) async throws {
+        guard AppManager.needsMuxerServicesRestart else { return }
+
+        let error = AppManager.muxerRestartError
+        let isInvalidPairing = (error as? MinimuxerError) == .PairingFile
+
+        if isInvalidPairing {
+            if let presentingVC = presentingViewController {
+                _ = try await PairingFileManager.shared.importPairingFile(
+                    presentingVC: presentingVC,
+                    title: NSLocalizedString("Pairing File", comment: ""),
+                    message: NSLocalizedString("Select the pairing file or select \"Help\" for help.", comment: "")
+                )
+            } else {
+                throw error!
+            }
+        }
+
+        try await AppManager.restartMuxerServices()
+    }
+}
+
