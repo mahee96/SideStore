@@ -75,5 +75,7 @@ source-metadata.json
 release-notes.md
 *.md
 *.log
+*.pdf
+*.txt
 
 Dependencies/minimuxer-*/
