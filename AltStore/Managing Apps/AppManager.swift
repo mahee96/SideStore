@@ -2295,23 +2295,37 @@ private extension AppManager {
 private extension AppManager {
     func evaluateMuxerServicesRestart(presentingViewController: UIViewController?) async throws {
         guard AppManager.needsMuxerServicesRestart else { return }
+        var currentError = AppManager.muxerRestartError
+        var isFirstPrompt = true
 
-        let error = AppManager.muxerRestartError
-        let isInvalidPairing = (error as? MinimuxerError) == .PairingFile
+        while true {
+            if (currentError as? MinimuxerError) == .PairingFile {
+                guard let presentingVC = presentingViewController else {
+                    throw currentError!
+                }
 
-        if isInvalidPairing {
-            if let presentingVC = presentingViewController {
+                let title = isFirstPrompt
+                    ? NSLocalizedString("Current Pairing file is Invalid", comment: "")
+                    : NSLocalizedString("Selected Pairing file is still Invalid!", comment: "")
+                isFirstPrompt = false
+
                 _ = try await PairingFileManager.shared.importPairingFile(
                     presentingVC: presentingVC,
-                    title: NSLocalizedString("Current Pairing file is Invalid", comment: ""),
+                    title: title,
                     message: NSLocalizedString("Select 'OK' to locate the latest pairing file or tap 'Help' for more info", comment: "")
                 )
-            } else {
-                throw error!
+            }
+
+            do {
+                try await AppManager.restartMuxerServices()
+                return
+            } catch {
+                currentError = error
+                guard (error as? MinimuxerError) == .PairingFile else {
+                    throw error
+                }
             }
         }
-
-        try await AppManager.restartMuxerServices()
     }
 }
 
