@@ -25,24 +25,27 @@
 #  3. Ensure there is no stale entries or duplicate entries in this .gitmodules file coz, `git submodule add ...` creates an entry here.
 #-------------------------------
 
-[submodule "Dependencies/Roxas"]
-    path = Dependencies/Roxas
-    url = https://github.com/SideStore/Roxas.git
 [submodule "Dependencies/libimobiledevice"]
     path = Dependencies/libimobiledevice
     url = https://github.com/SideStore/libimobiledevice
+    branch = master
+[submodule "Dependencies/libimobiledevice-glue"]
+    path = Dependencies/libimobiledevice-glue
+    url = https://github.com/SideStore/libimobiledevice-glue
+    branch = master
 [submodule "Dependencies/libusbmuxd"]
     path = Dependencies/libusbmuxd
-    url = https://github.com/libimobiledevice/libusbmuxd.git
+    url = https://github.com/SideStore/libusbmuxd.git
+    branch = master
 [submodule "Dependencies/libplist"]
     path = Dependencies/libplist
-    url = https://github.com/libimobiledevice/libplist.git
+    url = https://github.com/SideStore/libplist.git
+    branch = master
+
 [submodule "Dependencies/MarkdownAttributedString"]
     path = Dependencies/MarkdownAttributedString
     url = https://github.com/chockenberry/MarkdownAttributedString.git
-[submodule "Dependencies/libimobiledevice-glue"]
-    path = Dependencies/libimobiledevice-glue
-    url = https://github.com/libimobiledevice/libimobiledevice-glue
+    branch = master
 
 
 #sidestore dependencies
@@ -54,11 +57,18 @@
 	path = Dependencies/em_proxy
 	url = https://github.com/SideStore/em_proxy
     branch = develop
+
 [submodule "Dependencies/apps-v2.json"]
     path = Dependencies/apps-v2.json
     url = https://github.com/SideStore/apps-v2.json
     branch = main
+
 [submodule "Dependencies/AltSign"]
     path = Dependencies/AltSign
     url = https://github.com/SideStore/AltSign
+    branch = master
+
+[submodule "Dependencies/Roxas"]
+    path = Dependencies/Roxas
+    url = https://github.com/SideStore/Roxas.git
     branch = master
