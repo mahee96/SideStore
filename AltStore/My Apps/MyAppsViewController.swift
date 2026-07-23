@@ -1517,7 +1517,8 @@ private extension MyAppsViewController
                 if tempApp.isActive
                 {
                     DispatchQueue.main.async {
-                        self.refresh(installedApp)
+                        // self.refresh(installedApp)
+                        self.resign(installedApp)
                     }
                 }
             }
