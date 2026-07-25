@@ -250,7 +250,7 @@
         <attribute name="tintColor" optional="YES" attributeType="Transformable" valueTransformerName="ALTSecureValueTransformer"/>
         <attribute name="version" attributeType="Integer 64" defaultValueString="1" usesScalarValueType="YES"/>
         <attribute name="websiteURL" optional="YES" attributeType="URI"/>
-        <relationship name="apps" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="StoreApp" inverseName="apps" inverseEntity="StoreApp"/>
+        <relationship name="apps" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="StoreApp" inverseName="source" inverseEntity="StoreApp"/>
         <relationship name="featuredApps" optional="YES" toMany="YES" deletionRule="Nullify" ordered="YES" destinationEntity="StoreApp" inverseName="featuringSource" inverseEntity="StoreApp"/>
         <relationship name="newsItems" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="NewsItem" inverseName="source" inverseEntity="NewsItem"/>
         <uniquenessConstraints>
@@ -285,7 +285,7 @@
         <attribute name="versionDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="versionDescription" optional="YES" attributeType="String"/>
         <relationship name="featuringSource" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Source" inverseName="featuredApps" inverseEntity="Source"/>
-        <relationship name="installedApp" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="StoreApp" inverseName="storeApp" inverseEntity="StoreApp"/>
+        <relationship name="installedApp" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="InstalledApp" inverseName="storeApp" inverseEntity="InstalledApp"/>
         <relationship name="latestVersion" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="AppVersion" inverseName="latestVersionApp" inverseEntity="AppVersion"/>
         <relationship name="loggedErrors" toMany="YES" deletionRule="Nullify" destinationEntity="LoggedError" inverseName="storeApp" inverseEntity="LoggedError"/>
         <relationship name="newsItems" toMany="YES" deletionRule="Nullify" destinationEntity="NewsItem" inverseName="storeApp" inverseEntity="NewsItem"/>
