@@ -216,7 +216,7 @@
         <uniquenessConstraints>
             <uniquenessConstraint>
                 <constraint value="identifier"/>
-            </uniquenessConstraints>
+            </uniquenessConstraint>
         </uniquenessConstraints>
     </entity>
     <entity name="ReleaseTrack" representedClassName="ReleaseTrack" syncable="YES">
