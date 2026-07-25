@@ -18,6 +18,7 @@ public class InstalledExtension: BaseEntity, InstalledAppProtocol
     @NSManaged public var name: String
     @NSManaged public var bundleIdentifier: String
     @NSManaged public var resignedBundleIdentifier: String
+    @NSManaged public var customBundleIdentifier: String?
     @NSManaged public var version: String
     
     @NSManaged public var refreshedDate: Date

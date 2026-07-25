@@ -80,3 +80,7 @@ Dependencies/minimuxer-*/
 
 local/
 Dependencies/idevice/
+
+// crash reports
+*.ips
+**/*.ips

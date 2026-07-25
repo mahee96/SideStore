@@ -113,6 +113,7 @@
     </entity>
     <entity name="InstalledExtension" representedClassName="InstalledExtension" syncable="YES">
         <attribute name="bundleIdentifier" attributeType="String"/>
+        <attribute name="customBundleIdentifier" optional="YES" attributeType="String"/>
         <attribute name="expirationDate" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="installedDate" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="name" attributeType="String"/>
