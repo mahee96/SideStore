@@ -60,7 +60,7 @@ final class ResignAppOperation: ResultOperation<ALTApplication>, OperationLoggin
         let prepareAppProgress = Progress.discreteProgress(totalUnitCount: 2)
         self.progress.addChild(prepareAppProgress, withPendingUnitCount: 3)
         
-        let effectiveBundleId = self.context.bundleIdentifier
+        let effectiveBundleId = self.context.targetBundleIdentifier
         
         let appBundleURL = try await self.prepareAppBundle(for: app, profiles: profiles, appexBundleIds: context.appexBundleIds ?? [:], parentProgress: prepareAppProgress)
         
@@ -107,7 +107,7 @@ final class ResignAppOperation: ResultOperation<ALTApplication>, OperationLoggin
             progress.completedUnitCount = 1
         }
 
-        let bundleIdentifier = context.bundleIdentifier
+        let bundleIdentifier = context.targetBundleIdentifier
         let finalBundleIdentifier: String
         if let profile = context.useMainProfile ? profiles.values.first : profiles[bundleIdentifier] {
             finalBundleIdentifier = profile.bundleIdentifier

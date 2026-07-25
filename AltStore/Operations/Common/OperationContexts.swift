@@ -62,7 +62,12 @@ final class AuthenticatedOperationContext: OperationContext
 class AppOperationContext
 {
     let bundleIdentifier: String
+    var customBundleIdentifier: String?
     let authenticatedContext: AuthenticatedOperationContext
+    
+    var targetBundleIdentifier: String {
+        return self.customBundleIdentifier ?? self.bundleIdentifier
+    }
     
     var app: ALTApplication?
     var provisioningProfiles: [String: ALTProvisioningProfile]?

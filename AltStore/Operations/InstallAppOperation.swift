@@ -66,7 +66,8 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
         
         // Only remove refreshed IPA when finished.
         if let app = self.context.app {
-            let fileURL = InstalledApp.refreshedIPAURL(for: app)
+            let updatedApp = AnyApp(from: app, bundleId: self.context.targetBundleIdentifier)
+            let fileURL = InstalledApp.refreshedIPAURL(for: updatedApp)
             
             do {
                 if(FileManager.default.fileExists(atPath: fileURL.path)){
@@ -146,6 +147,7 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
         }
         
         installedApp.update(resignedApp: resignedApp, certificateSerialNumber: certificate.serialNumber, storeBuildVersion: storeBuildVersion)
+        installedApp.customBundleIdentifier = self.context.customBundleIdentifier
         installedApp.useMainProfile = self.context.useMainProfile
 
         installedApp.needsResign = false

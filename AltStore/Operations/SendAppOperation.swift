@@ -47,7 +47,7 @@ final class SendAppOperation: ResultOperation<()>, OperationLogging
             throw OperationError.invalidParameters("SendAppOperation.main: self.resignedApp is nil")
         }
 
-        let app = AnyApp(name: resignedApp.name, bundleIdentifier: self.context.bundleIdentifier, url: resignedApp.fileURL, storeApp: nil)
+        let app = AnyApp(name: resignedApp.name, bundleIdentifier: self.context.targetBundleIdentifier, url: resignedApp.fileURL, storeApp: nil)
         let fileURL = InstalledApp.refreshedIPAURL(for: app)
         verboseLog("AFC App `fileURL`: \(fileURL.absoluteString)")
 

@@ -35,6 +35,7 @@ public protocol InstalledAppProtocol: Fetchable
     var name: String { get }
     var bundleIdentifier: String { get }
     var resignedBundleIdentifier: String { get }
+    var customBundleIdentifier: String? { get }
     var version: String { get }
     
     var refreshedDate: Date { get }
@@ -49,6 +50,7 @@ public class InstalledApp: BaseEntity, InstalledAppProtocol
     @NSManaged public var name: String
     @NSManaged public var bundleIdentifier: String
     @NSManaged public var resignedBundleIdentifier: String
+    @NSManaged public var customBundleIdentifier: String?
     @NSManaged public var version: String
     @NSManaged public var buildVersion: String
     

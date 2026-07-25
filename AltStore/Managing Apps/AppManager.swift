@@ -689,6 +689,8 @@ extension AppManager
         
         Task{
             var app: AppProtocol = app
+            var customBundleIdentifier: String?
+            
             // ---- Preflight bundle ID resolution ----
             if UserDefaults.standard.customizeAppId,      // only show prompt when enabled by user
                 let presentingViewController {
@@ -703,19 +705,17 @@ extension AppManager
                     case .cancelled:
                         completionHandler(.failure(OperationError.cancelled))
                         group.progress.cancel()
+                        return
 
                     case .resolved(let newBundleID):
-                        app = AnyApp(
-                            name: app.name,
-                            bundleIdentifier: newBundleID,
-                            url: app.url,
-                            storeApp: app.storeApp
-                        )
+                        if newBundleID != originalBundleID {
+                            customBundleIdentifier = newBundleID
+                        }
                 }
             }
             
             do {
-                try await self.perform([.install(app)], presentingViewController: presentingViewController, group: group)
+                try await self.perform([.install(app, customBundleIdentifier: customBundleIdentifier)], presentingViewController: presentingViewController, group: group)
             } catch {
                 completionHandler(.failure(error))
             }
@@ -771,7 +771,7 @@ extension AppManager
         
         Task{
             do {
-                try await self.perform([.update(appVersion)], presentingViewController: presentingViewController, group: group)
+                try await self.perform([.update(appVersion, customBundleIdentifier: installedApp.customBundleIdentifier)], presentingViewController: presentingViewController, group: group)
             } catch {
                 completionHandler(.failure(error))
             }
@@ -968,6 +968,7 @@ extension AppManager
     {
         let authenticationContext = AuthenticatedOperationContext()
         let appContext = InstallAppOperationContext(bundleIdentifier: installedApp.bundleIdentifier, authenticatedContext: authenticationContext)
+        appContext.customBundleIdentifier = installedApp.customBundleIdentifier
         appContext.installedApp = installedApp
 
         let removeAppOperation = RSTAsyncBlockOperation { (operation) in
@@ -1077,8 +1078,8 @@ private extension AppManager
 {
     enum AppOperation
     {
-        case install(AppProtocol)
-        case update(AppProtocol)
+        case install(AppProtocol, customBundleIdentifier: String? = nil)
+        case update(AppProtocol, customBundleIdentifier: String? = nil)
         case refresh(InstalledApp)
         case activate(InstalledApp)
         case deactivate(InstalledApp)
@@ -1089,7 +1090,7 @@ private extension AppManager
         var app: AppProtocol {
             switch self
             {
-            case .install(let app), .update(let app), .refresh(let app as AppProtocol),
+            case .install(let app, _), .update(let app, _), .refresh(let app as AppProtocol),
                  .activate(let app as AppProtocol), .deactivate(let app as AppProtocol),
                  .backup(let app as AppProtocol), .restore(let app as AppProtocol),
                  .resign(let app as AppProtocol):
@@ -1178,14 +1179,14 @@ private extension AppManager
                 
                 switch operation
                 {
-                case .install(let app):
-                    let installProgress = self._install(app, operation: operation, group: group, reviewPermissions: .all) { (result) in
+                case .install(let app, let customBundleIdentifier):
+                    let installProgress = self._install(app, customBundleIdentifier: customBundleIdentifier, operation: operation, group: group, reviewPermissions: .all) { (result) in
                         self.finish(operation, result: result, group: group, progress: progress)
                     }
                     progress?.addChild(installProgress, withPendingUnitCount: 80)
                     
-                case .update(let app):
-                    let updateProgress = self._install(app, operation: operation, group: group, reviewPermissions: .added) { (result) in
+                case .update(let app, let customBundleIdentifier):
+                    let updateProgress = self._install(app, customBundleIdentifier: customBundleIdentifier, operation: operation, group: group, reviewPermissions: .added) { (result) in
                         self.finish(operation, result: result, group: group, progress: progress)
                     }
                     progress?.addChild(updateProgress, withPendingUnitCount: 80)
@@ -1261,6 +1262,7 @@ private extension AppManager
     }
     
     private func _install(_ app: AppProtocol,
+                          customBundleIdentifier: String? = nil,
                           operation appOperation: AppOperation,
                           group: RefreshGroup,
                           context: InstallAppOperationContext? = nil,
@@ -1272,6 +1274,7 @@ private extension AppManager
         let progress = Progress.discreteProgress(totalUnitCount: 100)
         
         let context = InstallAppOperationContext(bundleIdentifier: app.bundleIdentifier, authenticatedContext: group.context)
+        context.customBundleIdentifier = customBundleIdentifier ?? (app as? InstalledApp)?.customBundleIdentifier
         assert(context.authenticatedContext === group.context)
         
         context.beginInstallationHandler = { (installedApp) in
@@ -1310,7 +1313,7 @@ private extension AppManager
                 
                 if cacheApp
                 {
-                    let updatedApp = AnyApp(from: app, bundleId: context.bundleIdentifier)
+                    let updatedApp = AnyApp(from: app, bundleId: context.targetBundleIdentifier)
                     try FileManager.default.copyItem(at: app.fileURL, to: InstalledApp.fileURL(for: updatedApp), shouldReplace: true)
                 }
             }
@@ -1323,7 +1326,7 @@ private extension AppManager
         
         /* Verify App */
         let permissionsMode = UserDefaults.shared.permissionCheckingDisabled ? .none : permissionReviewMode
-        let verifyOperation = VerifyAppOperation(permissionsMode: permissionsMode, context: context, customBundleId: app.bundleIdentifier)
+        let verifyOperation = VerifyAppOperation(permissionsMode: permissionsMode, context: context)
         verifyOperation.resultHandler = { (result) in
             do
             {
@@ -1459,7 +1462,7 @@ private extension AppManager
             case .failure(let error):
                 context.error = error
             case .success:
-                debugLog("App icon patched successfully for \(context.bundleIdentifier)")
+                debugLog("App icon patched successfully for \(context.targetBundleIdentifier)")
             }
         }
         patchAppIconOperation.addDependency(deactivateAppsOperation)
@@ -1608,6 +1611,7 @@ private extension AppManager
         let progress = Progress.discreteProgress(totalUnitCount: 100)
         
         let context = AppOperationContext(bundleIdentifier: app.bundleIdentifier, authenticatedContext: group.context)
+        context.customBundleIdentifier = app.customBundleIdentifier
         context.app = ALTApplication(fileURL: app.fileURL)
         context.useMainProfile = app.useMainProfile
 
@@ -1724,7 +1728,9 @@ private extension AppManager
         let progress = Progress.discreteProgress(totalUnitCount: 100)
         
         let restoreContext = InstallAppOperationContext(bundleIdentifier: app.bundleIdentifier, authenticatedContext: group.context)
+        restoreContext.customBundleIdentifier = app.customBundleIdentifier
         let appContext = InstallAppOperationContext(bundleIdentifier: app.bundleIdentifier, authenticatedContext: group.context)
+        appContext.customBundleIdentifier = app.customBundleIdentifier
         
         let installBackupAppProgress = Progress.discreteProgress(totalUnitCount: 100)
         let installBackupAppOperation = RSTAsyncBlockOperation { [weak self] (operation) in
@@ -1852,6 +1858,7 @@ private extension AppManager
     {
         let progress = Progress.discreteProgress(totalUnitCount: 100)
         let context = InstallAppOperationContext(bundleIdentifier: app.bundleIdentifier, authenticatedContext: group.context)
+        context.customBundleIdentifier = app.customBundleIdentifier
         
         let installBackupAppProgress = Progress.discreteProgress(totalUnitCount: 100)
         let installBackupAppOperation = RSTAsyncBlockOperation { [weak self] (operation) in
@@ -1902,7 +1909,9 @@ private extension AppManager
         let progress = Progress.discreteProgress(totalUnitCount: 100)
         
         let restoreContext = InstallAppOperationContext(bundleIdentifier: app.bundleIdentifier, authenticatedContext: group.context)
+        restoreContext.customBundleIdentifier = app.customBundleIdentifier
         let appContext = InstallAppOperationContext(bundleIdentifier: app.bundleIdentifier, authenticatedContext: group.context)
+        appContext.customBundleIdentifier = app.customBundleIdentifier
         
         let installBackupAppProgress = Progress.discreteProgress(totalUnitCount: 100)
         let installBackupAppOperation = RSTAsyncBlockOperation { [weak self] (operation) in
@@ -1992,7 +2001,7 @@ private extension AppManager
                     {
                         // Replace name + bundle identifier so AltStore treats it as the same app.
                         infoDictionary["CFBundleDisplayName"] = app.name
-                        infoDictionary[kCFBundleIdentifierKey as String] = app.bundleIdentifier
+                        infoDictionary[kCFBundleIdentifierKey as String] = context.targetBundleIdentifier
                         
                         // Add app-specific exported UTI so we can check later if this temporary backup app is still installed or not.
                         let installedAppUTI = ["UTTypeConformsTo": [],
@@ -2059,7 +2068,7 @@ private extension AppManager
             appGroups.append(Bundle.baseAltStoreAppGroupID)
             
             let additionalEntitlements: [ALTEntitlement: Any] = [.appGroups: appGroups]
-            let progress = self._install(backupApp, operation: appOperation, group: group, context: context, additionalEntitlements: additionalEntitlements, cacheApp: false) { (result) in
+            let progress = self._install(backupApp, customBundleIdentifier: context.customBundleIdentifier, operation: appOperation, group: group, context: context, additionalEntitlements: additionalEntitlements, cacheApp: false) { (result) in
                 completionHandler(result)
                 operation.finish()
             }
