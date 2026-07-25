@@ -210,7 +210,9 @@ public extension InstalledApp
            let iconName = UIApplication.alt_shared?.value(forKey: "alternateIconName") as? String
         {
             // Use alternate app icon for AltStore, if one was chosen.
-            let image = UIImage(named: iconName)
+            let imageName = iconName.replacingOccurrences(of: "Icon", with: "")
+            let image = UIImage(named: imageName) ?? UIImage(named: iconName)
+            
             completion(.success(image))
             return
         }
