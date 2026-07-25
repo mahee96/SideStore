@@ -149,8 +149,25 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
         installedApp.update(resignedApp: resignedApp, certificateSerialNumber: certificate.serialNumber, storeBuildVersion: storeBuildVersion)
         installedApp.customBundleIdentifier = self.context.customBundleIdentifier
         installedApp.useMainProfile = self.context.useMainProfile
-
-        installedApp.needsResign = false
+        
+        switch self.context.alternateIconMode {
+        case .set(let alternateIconURL):
+            if FileManager.default.fileExists(atPath: alternateIconURL.path) {
+                if alternateIconURL != installedApp.alternateIconURL {
+                    do {
+                        try FileManager.default.copyItem(at: alternateIconURL, to: installedApp.alternateIconURL, shouldReplace: true)
+                    } catch {
+                        self.debugLog("Failed to copy alternate icon: \(error)")
+                    }
+                }
+                installedApp.hasAlternateIcon = true
+            }
+        case .remove:
+            try? FileManager.default.removeItem(at: installedApp.alternateIconURL)
+            installedApp.hasAlternateIcon = false
+        case .preserve:
+            break
+        }
         
         if let team = DatabaseManager.shared.activeTeam(in: backgroundContext) {
             installedApp.team = team

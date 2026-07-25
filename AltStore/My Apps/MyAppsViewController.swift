@@ -1184,7 +1184,7 @@ private extension MyAppsViewController
         }
     }
     
-    func resign(_ installedApp: InstalledApp)
+    func resign(_ installedApp: InstalledApp, alternateIconMode: AlternateIconMode = .preserve)
     {
         Task { @MainActor in
             guard await isMinimuxerReady else { return }
@@ -1195,7 +1195,7 @@ private extension MyAppsViewController
                 return
             }
             
-            AppManager.shared.resign(installedApp, presentingViewController: self) { (result) in
+            AppManager.shared.resign(installedApp, alternateIconMode: alternateIconMode, presentingViewController: self) { (result) in
                 DispatchQueue.main.async {
                     self.collectionView.reloadSections([Section.activeApps.rawValue, Section.inactiveApps.rawValue])
                 }
@@ -1489,47 +1489,28 @@ private extension MyAppsViewController
         self.activeAppsDataSource.prefetchItemCache.removeObject(forKey: installedApp)
         self.inactiveAppsDataSource.prefetchItemCache.removeObject(forKey: installedApp)
         
-        DatabaseManager.shared.persistentContainer.performBackgroundTask { (context) in
+        if let image = image
+        {
+            guard let icon = image.resizing(toFill: CGSize(width: 256, height: 256)),
+                  let iconData = icon.pngData()
+            else { return }
+            
+            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("Staged_\(installedApp.bundleIdentifier)_Icon.png")
             do
             {
-                let tempApp = context.object(with: installedApp.objectID) as! InstalledApp
-                tempApp.needsResign = true                      // why do we want to resign it during refresh ?!!!!
-                                                                // I see now, so here we just mark that icon needs to be changed but leave it for refresh/install to do it
-                                                                // this is bad, coz now the weight of installing goes to refresh step !!! which is not what we want
-                
-                tempApp.hasAlternateIcon = (image != nil)
-                
-                if let image = image
-                {
-                    guard let icon = image.resizing(toFill: CGSize(width: 256, height: 256)),
-                          let iconData = icon.pngData()
-                    else { return }
-                    
-                    try iconData.write(to: tempApp.alternateIconURL, options: .atomic)
-                }
-                else
-                {
-                    try FileManager.default.removeItem(at: tempApp.alternateIconURL)
-                }
-                
-                try context.save()
-                
-                if tempApp.isActive
-                {
-                    DispatchQueue.main.async {
-                        // self.refresh(installedApp)
-                        self.resign(installedApp)
-                    }
-                }
+                try iconData.write(to: tempURL, options: .atomic)
+                self.resign(installedApp, alternateIconMode: .set(tempURL))
             }
             catch
             {
-                debugLog("Failed to change app icon. \(error)")
-                
-                DispatchQueue.main.async {
-                    ToastView(error: error, opensLog: true).show(in: self)
-                }
+                debugLog("Failed to write temporary icon file: \(error)")
+                ToastView(error: error, opensLog: true).show(in: self)
+                return
             }
+        }
+        else
+        {
+            self.resign(installedApp, alternateIconMode: .remove)
         }
     }
     

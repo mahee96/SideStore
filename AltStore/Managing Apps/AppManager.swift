@@ -877,7 +877,7 @@ extension AppManager
     }
     
     @discardableResult
-    func resign(_ installedApp: InstalledApp, presentingViewController: UIViewController?, completionHandler: @escaping (Result<InstalledApp, Error>) -> Void) -> RefreshGroup
+    func resign(_ installedApp: InstalledApp, alternateIconMode: AlternateIconMode = .preserve, presentingViewController: UIViewController?, completionHandler: @escaping (Result<InstalledApp, Error>) -> Void) -> RefreshGroup
     {
         let group = RefreshGroup()
         group.completionHandler = { (results) in
@@ -895,7 +895,7 @@ extension AppManager
         
         Task {
             do {
-                try await self.perform([.resign(installedApp)], presentingViewController: presentingViewController, group: group)
+                try await self.perform([.resign(installedApp, alternateIconMode: alternateIconMode)], presentingViewController: presentingViewController, group: group)
             } catch {
                 completionHandler(.failure(error))
             }
@@ -1085,15 +1085,15 @@ private extension AppManager
         case deactivate(InstalledApp)
         case backup(InstalledApp)
         case restore(InstalledApp)
-        case resign(InstalledApp)
+        case resign(InstalledApp, alternateIconMode: AlternateIconMode = .preserve)
         
         var app: AppProtocol {
             switch self
             {
-            case .install(let app, _), .update(let app, _), .refresh(let app as AppProtocol),
-                 .activate(let app as AppProtocol), .deactivate(let app as AppProtocol),
-                 .backup(let app as AppProtocol), .restore(let app as AppProtocol),
-                 .resign(let app as AppProtocol):
+            case .install(let app, _), .update(let app, _):
+                return app
+            case .refresh(let app), .activate(let app), .deactivate(let app),
+                 .backup(let app), .restore(let app), .resign(let app, _):
                 return app
             }
         }
@@ -1191,7 +1191,7 @@ private extension AppManager
                     }
                     progress?.addChild(updateProgress, withPendingUnitCount: 80)
                     
-                case .resign(let app):
+                case .resign(let app, _):
                     let resignProgress = self._install(app, operation: operation, group: group, reviewPermissions: .none) { (result) in
                         self.finish(operation, result: result, group: group, progress: progress)
                     }
@@ -1296,9 +1296,8 @@ private extension AppManager
                 downloadingApp = storeApp
             }
             
-            if installedApp.hasAlternateIcon
-            {
-                context.alternateIconURL = installedApp.alternateIconURL
+            if case .resign(_, let mode) = appOperation {
+                context.alternateIconMode = mode
             }
         }
         

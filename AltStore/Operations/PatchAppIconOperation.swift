@@ -11,7 +11,7 @@ import Foundation
 import AltStoreCore
 
 @objc(PatchAppIconOperation)
-class PatchAppIconOperation: ResultOperation<Void>, OperationLogging {
+class PatchAppIconOperation: ResultOperation<Void>, OperationLogging, @unchecked Sendable {
     
     let context: InstallAppOperationContext
     
@@ -42,10 +42,8 @@ class PatchAppIconOperation: ResultOperation<Void>, OperationLogging {
             throw OperationError.invalidParameters("PatchAppIconOperation.execute: self.context.app is nil")
         }
         
-        let bundleIdentifier = self.context.bundleIdentifier
-        let alternateIconURL = InstalledApp.alternateIconURL(forBundleIdentifier: bundleIdentifier)
-        
-        guard FileManager.default.fileExists(atPath: alternateIconURL.path) else {
+        guard let alternateIconURL = self.context.alternateIconURL,
+              FileManager.default.fileExists(atPath: alternateIconURL.path) else {
             return
         }
         

@@ -59,7 +59,6 @@ public class InstalledApp: BaseEntity, InstalledAppProtocol
     @NSManaged public var installedDate: Date
     
     @NSManaged public var isActive: Bool
-    @NSManaged public var needsResign: Bool
     @NSManaged public var hasAlternateIcon: Bool
     
     @NSManaged public var useMainProfile: Bool
@@ -207,17 +206,14 @@ public extension InstalledApp
     
     func loadIcon(completion: @escaping (Result<UIImage?, Error>) -> Void)
     {
-        // TODO: @mahee96: Fix this later (reason: alternateIcon is not available for appEx)
-//        if self.bundleIdentifier == StoreApp.altstoreAppID,
-//           let iconName = UIApplication.alt_shared?.alternateIconName
-//        {
-//            // Use alternate app icon for AltStore, if one is chosen.
-//            
-//            let image = UIImage(named: iconName)
-//            completion(.success(image))
-//            
-//            return
-//        }
+        if self.bundleIdentifier == StoreApp.altstoreAppID,
+           let iconName = UIApplication.alt_shared?.value(forKey: "alternateIconName") as? String
+        {
+            // Use alternate app icon for AltStore, if one was chosen.
+            let image = UIImage(named: iconName)
+            completion(.success(image))
+            return
+        }
         
         let hasAlternateIcon = self.hasAlternateIcon
         let alternateIconURL = self.alternateIconURL
