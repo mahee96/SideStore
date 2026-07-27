@@ -436,14 +436,6 @@ struct AnisetteServersView: View {
                                     Label("Reset Catalog", systemImage: "arrow.circlepath")
                                 }
                             }
-
-                            SwiftUI.Button("Clear Imported File & Reset to Default URL") {
-                                Task {
-                                    await viewModel.clearImportedFile()
-                                }
-                            }
-                            .font(.subheadline)
-                            .foregroundColor(.red)
                         } else {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Server List URL")
@@ -597,7 +589,9 @@ struct AnisetteServersView: View {
                         }
                     } label: {
                         Image(systemName: "xmark.circle")
+                            .foregroundColor(.red)
                     }
+                    .tint(.red)
                 } else {
                     SwiftUI.Button {
                         showingFileImporter = true
