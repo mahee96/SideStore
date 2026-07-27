@@ -331,10 +331,13 @@ struct HealthCheckView: View {
                             Text("SideStore Ready")
                                 .font(.title2)
                                 .fontWeight(.bold)
-                            Text("All requirements met. Local device pairing & VPN tunnel active.")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
+                            Text(viewModel.connectionMode == .localVPN
+                                 ? "All requirements met. Local device pairing & VPN tunnel active."
+                                 : "All requirements met. Local device pairing & Remote server connection active."
+                            )
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
                         case .failure(let err):
                             Image(systemName: "exclamationmark.triangle.fill")
                                 .font(.system(size: 44))
