@@ -30,10 +30,11 @@ func getDeviceConnectionMode() async -> DeviceConnectionMode {
     return await Minimuxer.shared.getConnectionMode()
 }
 
-enum MinimuxerStatus {
+enum MinimuxerStatus: Equatable {
     case ready
     case noDevice
     case noConnection
+    case notReachable(String)
     case noVPN
     case invalidVPN
     case pairingFile
@@ -50,6 +51,8 @@ enum MinimuxerStatus {
             return .noDevice
         case .noConnection:
             return .noConnection
+        case .notReachable(let reason):
+            return .notReachable(reason: reason)
         case .noVPN:
             return .noVPN
         case .invalidVPN:
@@ -85,6 +88,8 @@ func getMinimuxerStatus() async -> MinimuxerStatus {
                     return .noDevice
                 case .noConnection:
                     return .noConnection
+                case .notReachable(let reason):
+                    return .notReachable(reason)
                 default:
                     return .unknown
             }
@@ -242,6 +247,8 @@ extension MinimuxerError {
             return NSLocalizedString("Cannot fetch the device from the muxer", comment: "")
         case .noConnection:
             return NSLocalizedString("You do not appear to be connected to Wi-Fi or a wired network connection! Please connect to a Wi-Fi or wired connection.", comment: "")
+        case .notReachable(let reason):
+            return NSLocalizedString(reason, comment: "")
         case .connectionModeNotConfigured(let reason):
             return NSLocalizedString(reason, comment: "")
         case .noVPN(let reason):
@@ -365,6 +372,11 @@ extension Error {
     public var isMinimuxerNoConnection: Bool {
         if let minimuxerErr = self as? MinimuxerError,
            case .noConnection = minimuxerErr { return true }
+        return false
+    }
+    public var isMinimuxerNotReachable: Bool {
+        if let minimuxerErr = self as? MinimuxerError,
+           case .notReachable = minimuxerErr { return true }
         return false
     }
     public var isMinimuxerNoVPN: Bool {
