@@ -38,14 +38,18 @@ final class HealthCheckViewModel: ObservableObject {
     @Published var isWiredSatisfied = false
     @Published var isUsbSatisfied = false
     @Published var isBridgeSatisfied = false
+    @Published var connectionMode: DeviceConnectionMode = .localVPN
     @Published var isUTunAvailable = false
     @Published var isIKEv2IPSecAvailable = false
     
     @Published var tunnelIfaceIp: String? = nil
-    @Published var subnetMask: String? = nil
+    @Published var tunnelIfaceSubnetMask: String? = nil
     @Published var tunnelPeerIp: String? = nil
-    @Published var overridePeerIp: String = ""
-    @Published var overrideEffective = false
+    @Published var overrideTunnelPeerIp: String = ""
+    @Published var overrideTunnelPeerEffective = false
+    @Published var remoteServerIp: String = ""
+    @Published var remotePeerIp: String? = nil
+    @Published var remoteReachable = false
     
     @Published var activeProtocol = ""
     @Published var isPingSuccessful = false
@@ -63,6 +67,7 @@ final class HealthCheckViewModel: ObservableObject {
     @Published var minimuxerReadyResult: Result<Bool, MinimuxerError>? = nil
     @Published var availableInterfaces: [LocalInterfaceInfo] = []
     struct HealthCheckMetrics {
+        let connectionMode: DeviceConnectionMode
         let wifi: Bool
         let wired: Bool
         let usb: Bool
@@ -70,10 +75,13 @@ final class HealthCheckViewModel: ObservableObject {
         let utun: Bool
         let ipsec: Bool
         let tunnelIfaceIp: String?
-        let subnetMask: String?
+        let tunnelIfaceSubnetMask: String?
         let tunnelPeerIp: String?
-        let overridePeerIp: String?
-        let overrideEffective: Bool
+        let overrideTunnelPeerIp: String?
+        let overrideTunnelPeerEffective: Bool
+        let remoteServerIp: String
+        let remotePeerIp: String?
+        let remoteReachable: Bool
         let protocolStr: String
         let pingSuccess: Bool
         let ddi: Bool
@@ -83,6 +91,7 @@ final class HealthCheckViewModel: ObservableObject {
     }
 
     nonisolated private func fetchMetrics() async -> HealthCheckMetrics {
+        let mode = await Minimuxer.shared.getConnectionMode()
         let wifi = Minimuxer.network.isWifiSatisfied
         let wired = Minimuxer.network.isWiredSatisfied
         let usb = Minimuxer.network.isUsbSatisfied
@@ -90,14 +99,16 @@ final class HealthCheckViewModel: ObservableObject {
         let utun = Minimuxer.network.isUTunAvailable
         let ipsec = Minimuxer.network.isIKEv2IPSecAvailable
         
-        let tunnelIfaceIp = TunnelConfig.shared.tunnelIfaceIp
-        let subnetMask = TunnelConfig.shared.subnetMask
-        let tunnelPeerIp = TunnelConfig.shared.tunnelPeerIp
-        let overridePeerIp = TunnelConfig.shared.overridePeerIp
-        let overrideEffective = TunnelConfig.shared.overrideEffective
+        let tunnelIfaceIp = ConnectionConfig.shared.tunnelIfaceIp
+        let tunnelIfaceSubnetMask = ConnectionConfig.shared.tunnelIfaceSubnetMask
+        let tunnelPeerIp = ConnectionConfig.shared.tunnelPeerIp
+        let overrideTunnelPeerIp = ConnectionConfig.shared.overrideTunnelPeerIp
+        let overrideTunnelPeerEffective = ConnectionConfig.shared.overrideTunnelPeerReachable
+        let remoteServerIp = ConnectionConfig.shared.remoteServerIp
+        let remotePeerIp = ConnectionConfig.shared.remotePeerIp
+        let remoteReachable = ConnectionConfig.shared.remoteReachable
         
         let pairingType = Minimuxer.shared.getPairingFileType()
-        let isRp = pairingType == .rppairing
         let protocolStr: String
         switch pairingType {
         case .rppairing:
@@ -108,17 +119,20 @@ final class HealthCheckViewModel: ObservableObject {
             protocolStr = "Unknown"
         }
         
-        let pingSuccess = Minimuxer.shared.testDeviceConnection(ifaddr: overridePeerIp)
+        let targetIp = mode == .localVPN ? (overrideTunnelPeerEffective ? overrideTunnelPeerIp : (tunnelPeerIp ?? "")) : remoteServerIp
+        let pingSuccess = !targetIp.isEmpty && Minimuxer.shared.testDeviceConnection(ifaddr: targetIp)
         
         let ddi = (try? await Minimuxer.shared.isDDIMounted()) ?? false
         let pairingVerified = (try? await Minimuxer.shared.fetchUDID() != nil) ?? false
-        let readyResult = await Minimuxer.shared.isReady
+        let readyResult = await Minimuxer.shared.isReady()
         let scanned = self.scanLocalInterfaces()
         
         return HealthCheckMetrics(
+            connectionMode: mode,
             wifi: wifi, wired: wired, usb: usb, bridge: bridge, utun: utun, ipsec: ipsec,
-            tunnelIfaceIp: tunnelIfaceIp, subnetMask: subnetMask, tunnelPeerIp: tunnelPeerIp,
-            overridePeerIp: overridePeerIp, overrideEffective: overrideEffective,
+            tunnelIfaceIp: tunnelIfaceIp, tunnelIfaceSubnetMask: tunnelIfaceSubnetMask, tunnelPeerIp: tunnelPeerIp,
+            overrideTunnelPeerIp: overrideTunnelPeerIp, overrideTunnelPeerEffective: overrideTunnelPeerEffective,
+            remoteServerIp: remoteServerIp, remotePeerIp: remotePeerIp, remoteReachable: remoteReachable,
             protocolStr: protocolStr, pingSuccess: pingSuccess,
             ddi: ddi, pairingVerified: pairingVerified, readyResult: readyResult, scanned: scanned
         )
@@ -145,17 +159,7 @@ final class HealthCheckViewModel: ObservableObject {
                 )
                 
                 // Update UI back on Main Actor
-                self.updateUI(
-                    wifi: metrics.wifi, wired: metrics.wired, usb: metrics.usb, bridge: metrics.bridge,
-                    utun: metrics.utun, ipsec: metrics.ipsec, tunnelIfaceIp: metrics.tunnelIfaceIp,
-                    subnetMask: metrics.subnetMask, tunnelPeerIp: metrics.tunnelPeerIp,
-                    overridePeerIp: metrics.overridePeerIp, overrideEffective: metrics.overrideEffective,
-                    protocolStr: metrics.protocolStr, pingSuccess: metrics.pingSuccess,
-                    ddi: metrics.ddi, pairingVerified: metrics.pairingVerified,
-                    netSat: status.netSat, vpnSat: status.vpnSat, ipsecSat: status.ipsecSat,
-                    pingSat: status.pingSat, pairingSat: status.pairingSat, ddiSat: status.ddiSat,
-                    readyResult: metrics.readyResult, scanned: metrics.scanned
-                )
+                self.updateUIInTask(metrics: metrics, status: status)
             }
             
             try? await Task.sleep(nanoseconds: 1_000_000_000)
@@ -182,104 +186,28 @@ final class HealthCheckViewModel: ObservableObject {
         pairingSat: Bool?,
         ddiSat: Bool?
     ) {
-        var netSat: Bool? = nil
-        var vpnSat: Bool? = nil
-        var ipsecSat: Bool? = nil
-        var pingSat: Bool? = nil
-        var pairingSat: Bool? = nil
-        var ddiSat: Bool? = nil
-        
-        switch readyResult {
-        case .success:
-            netSat = true
-            vpnSat = true
-            ipsecSat = isRp ? nil : true
-            pingSat = true
-            pairingSat = true
-            ddiSat = true
-            
-        case .failure(let error):
-            switch error {
-            case .noConnection:
-                netSat = false
-                vpnSat = nil
-                ipsecSat = nil
-                pingSat = nil
-                pairingSat = nil
-                ddiSat = nil
-                
-            case .noVPN:
-                netSat = true
-                vpnSat = false
-                ipsecSat = nil
-                pingSat = nil
-                pairingSat = nil
-                ddiSat = nil
-                
-            case .invalidVPN(let reason):
-                netSat = true
-                vpnSat = true
-                if reason.contains("ipsec") || reason.contains("IKEv2") {
-                    ipsecSat = false
-                    pingSat = nil
-                    pairingSat = nil
-                    ddiSat = nil
-                } else {
-                    ipsecSat = isRp ? nil : true
-                    pingSat = false
-                    pairingSat = nil
-                    ddiSat = nil
-                }
-                
-            case .pairingFile, .invalidPairing:
-                netSat = true
-                vpnSat = true
-                ipsecSat = isRp ? nil : true
-                pingSat = true
-                pairingSat = false
-                ddiSat = nil
-                
-            case .mount:
-                netSat = true
-                vpnSat = true
-                ipsecSat = isRp ? nil : true
-                pingSat = true
-                pairingSat = true
-                ddiSat = false
-                
-            case .muxerNotListening:
-                netSat = true
-                vpnSat = true
-                ipsecSat = isRp ? nil : true
-                pingSat = true
-                pairingSat = true
-                ddiSat = true
-                
-            default:
-                netSat = wifi // || wired || usb || bridge
-                vpnSat = utun
-                ipsecSat = isRp ? nil : ipsec
-                pingSat = pingSuccess
-                pairingSat = pairingVerified
-                ddiSat = ddi
-            }
-        }
-        
-        if pairingSat == nil {
-            pairingSat = Minimuxer.shared.isPairingFileLoaded ? nil : false
-        }
+        // let netSat = wifi || wired || usb || bridge
+        let netSat = wifi
+        let vpnSat = utun
+        let ipsecSat = isRp ? nil : ipsec
+        let pingSat = pingSuccess
+        let pairingSat: Bool? = pairingVerified ? true : (Minimuxer.shared.isPairingFileLoaded ? nil : false)
+        let ddiSat = ddi
         
         return (netSat, vpnSat, ipsecSat, pingSat, pairingSat, ddiSat)
     }
     
     @MainActor
     private func updateUI(
+        connectionMode: DeviceConnectionMode,
         wifi: Bool, wired: Bool, usb: Bool, bridge: Bool, utun: Bool, ipsec: Bool,
-        tunnelIfaceIp: String?, subnetMask: String?, tunnelPeerIp: String?, overridePeerIp: String?, overrideEffective: Bool,
+        tunnelIfaceIp: String?, tunnelIfaceSubnetMask: String?, tunnelPeerIp: String?, overrideTunnelPeerIp: String?, overrideTunnelPeerEffective: Bool,
+        remoteServerIp: String, remotePeerIp: String?, remoteReachable: Bool,
         protocolStr: String, pingSuccess: Bool, ddi: Bool, pairingVerified: Bool,
         netSat: Bool?, vpnSat: Bool?, ipsecSat: Bool?, pingSat: Bool?, pairingSat: Bool?, ddiSat: Bool?,
         readyResult: Result<Bool, MinimuxerError>, scanned: [LocalInterfaceInfo]
     ) {
+        self.connectionMode = connectionMode
         self.isWifiSatisfied = wifi
         self.isWiredSatisfied = wired
         self.isUsbSatisfied = usb
@@ -288,10 +216,13 @@ final class HealthCheckViewModel: ObservableObject {
         self.isIKEv2IPSecAvailable = ipsec
         
         self.tunnelIfaceIp = tunnelIfaceIp
-        self.subnetMask = subnetMask
+        self.tunnelIfaceSubnetMask = tunnelIfaceSubnetMask
         self.tunnelPeerIp = tunnelPeerIp
-        self.overridePeerIp = overridePeerIp ?? "N/A"
-        self.overrideEffective = overrideEffective
+        self.overrideTunnelPeerIp = overrideTunnelPeerIp ?? "N/A"
+        self.overrideTunnelPeerEffective = overrideTunnelPeerEffective
+        self.remoteServerIp = remoteServerIp
+        self.remotePeerIp = remotePeerIp
+        self.remoteReachable = remoteReachable
         
         self.activeProtocol = protocolStr
         self.isPingSuccessful = pingSuccess
@@ -312,10 +243,12 @@ final class HealthCheckViewModel: ObservableObject {
 
     func updateUIInTask(metrics: HealthCheckMetrics, status: (netSat: Bool?, vpnSat: Bool?, ipsecSat: Bool?, pingSat: Bool?, pairingSat: Bool?, ddiSat: Bool?)) {
         self.updateUI(
+            connectionMode: metrics.connectionMode,
             wifi: metrics.wifi, wired: metrics.wired, usb: metrics.usb, bridge: metrics.bridge,
             utun: metrics.utun, ipsec: metrics.ipsec, tunnelIfaceIp: metrics.tunnelIfaceIp,
-            subnetMask: metrics.subnetMask, tunnelPeerIp: metrics.tunnelPeerIp,
-            overridePeerIp: metrics.overridePeerIp, overrideEffective: metrics.overrideEffective,
+            tunnelIfaceSubnetMask: metrics.tunnelIfaceSubnetMask, tunnelPeerIp: metrics.tunnelPeerIp,
+            overrideTunnelPeerIp: metrics.overrideTunnelPeerIp, overrideTunnelPeerEffective: metrics.overrideTunnelPeerEffective,
+            remoteServerIp: metrics.remoteServerIp, remotePeerIp: metrics.remotePeerIp, remoteReachable: metrics.remoteReachable,
             protocolStr: metrics.protocolStr, pingSuccess: metrics.pingSuccess,
             ddi: metrics.ddi, pairingVerified: metrics.pairingVerified,
             netSat: status.netSat, vpnSat: status.vpnSat, ipsecSat: status.ipsecSat,
@@ -386,71 +319,65 @@ struct HealthCheckView: View {
     
     var body: some View {
         List {
-            // Section 1: Overall Health Status Card
+            // Section 1: Connection Status Header
             Section {
                 VStack(spacing: 12) {
-                    HStack {
-                        Spacer()
-                        VStack(spacing: 8) {
-                            if case .success = viewModel.minimuxerReadyResult {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 60))
-                                    .foregroundColor(.green)
-                                Text("System Healthy")
-                                    .font(.title2)
-                                    .fontWeight(.bold)
-                                Text("SideStore is fully configured and ready.")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-                            } else if case .failure(let error) = viewModel.minimuxerReadyResult {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .font(.system(size: 60))
-                                    .foregroundColor(.orange)
-                                Text("Action Required")
-                                    .font(.title2)
-                                    .fontWeight(.bold)
-                                Text(Minimuxer.shared.describeError(error))
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-                            } else {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle())
-                                    .scaleEffect(1.5)
-                                    .padding(.vertical, 10)
-                                Text("Checking status...")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                            }
+                    if let result = viewModel.minimuxerReadyResult {
+                        switch result {
+                        case .success:
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 44))
+                                .foregroundColor(.green)
+                            Text("SideStore Ready")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                            Text("All requirements met. Local device pairing & VPN tunnel active.")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        case .failure(let err):
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 44))
+                                .foregroundColor(.orange)
+                            Text("Action Required")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                            Text(err.localizedDescription)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
                         }
-                        Spacer()
+                    } else {
+                        ProgressView("Performing Diagnostic Check...")
                     }
-                    .padding(.vertical, 12)
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
             }
             
             // Section 2: Core Dependencies
             Section(header: Text("Core Requirements")) {
                 DependencyRow(
                     title: "Network Connectivity",
-                    subtitle: viewModel.isWifiSatisfied ? "Wi-Fi Active" : /* (viewModel.isUsbSatisfied ? "USB Connection Active" : (viewModel.isWiredSatisfied ? "Ethernet Active" : (viewModel.isBridgeSatisfied ? "Bridge Active" : "No Connection"))) */ "No Connection",
+                    subtitle: viewModel.isWifiSatisfied ? "Wi-Fi Active" : "No Connection",
                     isSatisfied: viewModel.networkSatisfied
                 )
                 
-                DependencyRow(
-                    title: "VPN Tunnel (utun)",
-                    subtitle: viewModel.isUTunAvailable ? "Connected" : "Disconnected",
-                    isSatisfied: viewModel.vpnSatisfied
-                )
-                
-                if !Minimuxer.shared.isrppairing {
-                    if #available(iOS 26.4, *) {
-                        DependencyRow(
-                            title: "IPSec/IKEv2 Tunnel",
-                            subtitle: viewModel.isIKEv2IPSecAvailable ? "Connected" : "Disconnected",
-                            isSatisfied: viewModel.ipsecSatisfied
-                        )
+                if viewModel.connectionMode == .localVPN {
+                    DependencyRow(
+                        title: "VPN Tunnel (utun)",
+                        subtitle: viewModel.isUTunAvailable ? "Connected" : "Disconnected",
+                        isSatisfied: viewModel.vpnSatisfied
+                    )
+                    
+                    if !Minimuxer.shared.isrppairing {
+                        if #available(iOS 26.4, *) {
+                            DependencyRow(
+                                title: "IPSec/IKEv2 Tunnel",
+                                subtitle: viewModel.isIKEv2IPSecAvailable ? "Connected" : "Disconnected",
+                                isSatisfied: viewModel.ipsecSatisfied
+                            )
+                        }
                     }
                 }
                 
@@ -473,23 +400,40 @@ struct HealthCheckView: View {
                 )
             }
             
-            // Section 3: Discovered Configs
-            Section(header: Text("VPN IP Configuration")) {
-                ConfigRow(label: "Tunnel Iface IP", value: viewModel.tunnelIfaceIp)
-                ConfigRow(label: "Subnet Mask", value: viewModel.subnetMask)
-                ConfigRow(label: "Tunnel Peer IP", value: viewModel.tunnelPeerIp)
-                ConfigRow(label: "Override Peer IP", value: viewModel.overridePeerIp.isEmpty ? nil : viewModel.overridePeerIp)
+            // Section 3: Connection Configuration
+            Section(header: Text("Connection Configuration")) {
                 HStack {
-                    Text("Override Status")
+                    Text("Connection Mode")
                     Spacer()
-                    Text(viewModel.overrideEffective ? "Active" : "Inactive")
-                        .foregroundColor(viewModel.overrideEffective ? .green : .secondary)
-                }
-                HStack {
-                    Text("Active Protocol")
-                    Spacer()
-                    Text(viewModel.activeProtocol)
+                    Text(viewModel.connectionMode == .localVPN ? "Local VPN" : "Remote Server")
                         .foregroundColor(.secondary)
+                }
+                
+                if viewModel.connectionMode == .localVPN {
+                    ConfigRow(label: "Tunnel Iface IP", value: viewModel.tunnelIfaceIp)
+                    ConfigRow(label: "Tunnel Subnet Mask", value: viewModel.tunnelIfaceSubnetMask)
+                    ConfigRow(label: "Tunnel Peer IP", value: viewModel.tunnelPeerIp)
+                    ConfigRow(label: "Override Peer IP", value: viewModel.overrideTunnelPeerIp.isEmpty ? nil : viewModel.overrideTunnelPeerIp)
+                    HStack {
+                        Text("Override Status")
+                        Spacer()
+                        Text(viewModel.overrideTunnelPeerEffective ? "Active" : "Inactive")
+                            .foregroundColor(viewModel.overrideTunnelPeerEffective ? .green : .secondary)
+                    }
+                    HStack {
+                        Text("Active Protocol")
+                        Spacer()
+                        Text(viewModel.activeProtocol)
+                            .foregroundColor(.secondary)
+                    }
+                } else {
+                    ConfigRow(label: "Remote Endpoint IP", value: viewModel.remoteServerIp.isEmpty ? nil : viewModel.remoteServerIp)
+                    HStack {
+                        Text("Active Protocol")
+                        Spacer()
+                        Text(viewModel.activeProtocol)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
             

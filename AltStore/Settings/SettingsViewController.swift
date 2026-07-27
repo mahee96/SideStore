@@ -1465,8 +1465,8 @@ extension SettingsViewController
                 self.prepare(for: UIStoryboardSegue(identifier: "anisetteServers", source: self, destination: vc), sender: nil)
 
             case .vpnConfiguration:
-                let vpnConfigurationView = VPNConfigurationView()
-                let vc = UIHostingController(rootView: vpnConfigurationView)
+                let connectionConfigView = ConnectionConfigView()
+                let vc = UIHostingController(rootView: connectionConfigView)
 
                 let appearance = UINavigationBarAppearance()
                 appearance.configureWithDefaultBackground()   // gives solid background

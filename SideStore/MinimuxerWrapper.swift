@@ -8,23 +8,26 @@
 import Foundation
 import Minimuxer
 
-func bindTunnelConfig() async {
+func bindConnectionConfig() async {
     defer { debugLog("[SideStore] bindTunnelConfig() completed") }
 
-    #if targetEnvironment(simulator)
-    debugLog("[SideStore] bindTunnelConfig() is no-op on simulator")
-    #else
     debugLog("[SideStore] bindTunnelConfig() invoked")
-    let config = TunnelConfig.shared
-    let configBinding = TunnelConfigBinding(
+    let config = ConnectionConfig.shared
+    let configBinding = ConnectionConfigBinding(
         setTunnelIfaceIp: { value in Task { @MainActor in config.tunnelIfaceIp = value } },
         setTunnelPeerIp: { value in Task { @MainActor in config.tunnelPeerIp = value } },
-        setSubnetMask: { value in Task { @MainActor in config.subnetMask = value } },
-        getOverridePeerIp: { config.overridePeerIp },
-        setOverrideEffective: { value in Task { @MainActor in config.overrideEffective = value } }
+        setTunnelIfaceSubnetMask: { value in Task { @MainActor in config.tunnelIfaceSubnetMask = value } },
+        getRemoteServerIp: { config.remoteServerIp },
+        setRemoteReachable: { value in Task { @MainActor in config.remoteReachable = value } },
+        getOverrideTunnelPeerIp: { config.overrideTunnelPeerIp },
+        setOverrideTunnelPeerReachable: { value in Task { @MainActor in config.overrideTunnelPeerReachable = value } },
+        getConnectionMode: { config.useLocalVPN ? .localVPN : .remoteServer }
     )
-    await Minimuxer.shared.bindTunnelConfig(configBinding)
-    #endif
+    await Minimuxer.shared.bindConnectionConfig(configBinding)
+}
+
+func getDeviceConnectionMode() async -> DeviceConnectionMode {
+    return await Minimuxer.shared.getConnectionMode()
 }
 
 enum MinimuxerStatus {
@@ -44,7 +47,7 @@ enum MinimuxerStatus {
         case .ready:
             return nil
         case .noDevice:
-            return .noConnection
+            return .noDevice
         case .noConnection:
             return .noConnection
         case .noVPN:
@@ -103,10 +106,10 @@ func minimuxerStart(_ pairingFile: String, mountPath: String) async throws {
     defer { debugLog("[SideStore] minimuxerStart(pairingFile) completed") }
     #if targetEnvironment(simulator)
     debugLog("[SideStore] minimuxerStart(pairingFile) is no-op on simulator")
-    await bindTunnelConfig()
+    await bindConnectionConfig()
     await Minimuxer.network.start()
     #else
-    await bindTunnelConfig()
+    await bindConnectionConfig()
     debugLog("[SideStore] minimuxerStart(pairingFile) invoked")
     try await Minimuxer.shared.start(pairingFile: pairingFile, mountPath: mountPath)
     #endif
@@ -239,6 +242,8 @@ extension MinimuxerError {
             return NSLocalizedString("Cannot fetch the device from the muxer", comment: "")
         case .noConnection:
             return NSLocalizedString("You do not appear to be connected to Wi-Fi or a wired network connection! Please connect to a Wi-Fi or wired connection.", comment: "")
+        case .connectionModeNotConfigured(let reason):
+            return NSLocalizedString(reason, comment: "")
         case .noVPN(let reason):
             return String(format: NSLocalizedString("Unable to connect to the device via %@ VPN. Please make sure LocalDevVPN is enabled and running! Reason: %@", comment: ""), "LocalDev", reason)
         case .pairingFile(let proto, let reason):
