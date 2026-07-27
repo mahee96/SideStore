@@ -36,7 +36,7 @@ final class AuthenticationViewController: UIViewController
             if await AnisetteServersManager.shared.getActiveServerURLs().isEmpty {
                 let sourceURL = UserDefaults.standard.menuAnisetteList
                 do {
-                    _ = try await AnisetteViewModel.getListOfServers(serverSource: sourceURL)
+                    _ = try await AnisetteServersManager.shared.syncWithRemote(sourceURLString: sourceURL, forceRemote: true)
                     debugLog("AuthenticationViewController: Server list refresh request completed for sourceURL: \(sourceURL)")
                 } catch {
                     debugLog("AuthenticationViewController: Server list refresh request Failed for sourceURL: \(sourceURL) Error: \(error)")

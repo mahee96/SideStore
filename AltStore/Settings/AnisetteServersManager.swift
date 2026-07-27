@@ -24,6 +24,7 @@ public struct AnisetteServerItem: Codable, Identifiable, Hashable {
 
 public actor AnisetteServersManager {
     public static let shared = AnisetteServersManager()
+    public static let defaultSource = "https://servers.sidestore.io/servers.json"
 
     private var inMemoryServersCache: [AnisetteServerItem]?
     private var isSyncing: Bool = false
@@ -248,8 +249,8 @@ public actor AnisetteServersManager {
             return rawItems
         } else {
             inMemoryServersCache = nil
-            let sourceURL = UserDefaults.standard.menuAnisetteList.isEmpty ? AnisetteViewModel.defaultSource : UserDefaults.standard.menuAnisetteList
-            let remoteServers = try await AnisetteViewModel.getListOfServers(serverSource: sourceURL)
+            let sourceURL = UserDefaults.standard.menuAnisetteList.isEmpty ? AnisetteServersManager.defaultSource : UserDefaults.standard.menuAnisetteList
+            let remoteServers = try await fetchRemoteServers(serverSource: sourceURL)
             let rawItems = remoteServers.map { AnisetteServerItem(name: $0.name, address: $0.address, isHidden: false) }
             saveLocalServers(rawItems)
             return rawItems
@@ -260,7 +261,69 @@ public actor AnisetteServersManager {
         self.isOfflineMode = false
         self.importedFileName = nil
         try? FileManager.default.removeItem(at: rawImportedBackupFileURL)
-        UserDefaults.standard.menuAnisetteList = AnisetteViewModel.defaultSource
+        UserDefaults.standard.menuAnisetteList = AnisetteServersManager.defaultSource
+    }
+
+    // MARK: - Remote Fetching & Public Internet Check
+
+    func fetchRemoteServers(serverSource: String) async throws -> [Server] {
+        var aniServers: [Server] = []
+
+        guard let url = URL(string: serverSource) else {
+            return aniServers
+        }
+
+        var request = URLRequest(url: url)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+            let statusName = HTTPURLResponse.localizedString(forStatusCode: statusCode).capitalized
+            debugLog("[AnisetteServersManager] Remote fetch failed for URL '\(serverSource)' | Status: HTTP \(statusCode) (\(statusName))")
+            throw NSError(domain: "AnisetteServersManager", code: statusCode, userInfo: [NSLocalizedDescriptionKey: "Request failed with HTTP status \(statusCode)."])
+        }
+
+        let decoder = Foundation.JSONDecoder()
+        if let serversObj = try? decoder.decode(AnisetteServerData.self, from: data) {
+            aniServers.append(contentsOf: serversObj.servers)
+        } else if let serversArray = try? decoder.decode([Server].self, from: data) {
+            aniServers.append(contentsOf: serversArray)
+        } else if let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+            for dict in json {
+                if let name = dict["name"] as? String, let address = dict["address"] as? String {
+                    aniServers.append(Server(name: name, address: address))
+                }
+            }
+        } else if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let list = json["servers"] as? [[String: Any]] {
+            for dict in list {
+                if let name = dict["name"] as? String, let address = dict["address"] as? String {
+                    aniServers.append(Server(name: name, address: address))
+                }
+            }
+        } else {
+            throw NSError(domain: "AnisetteServersManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid JSON format returned from '\(serverSource)'."])
+        }
+
+        return aniServers
+    }
+
+    public func isPublicInternetAvailable() async -> Bool {
+        guard let url = URL(string: "https://www.apple.com/library/test/success.html") else { return true }
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 3.0
+        request.httpMethod = "HEAD"
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            if let httpResp = response as? HTTPURLResponse, (200...399).contains(httpResp.statusCode) {
+                return true
+            }
+            return false
+        } catch {
+            return false
+        }
     }
 
     // MARK: - Smart Syncing
@@ -279,9 +342,9 @@ public actor AnisetteServersManager {
         isSyncing = true
         defer { isSyncing = false }
 
-        let sourceURL = sourceURLString ?? (UserDefaults.standard.menuAnisetteList.isEmpty ? AnisetteViewModel.defaultSource : UserDefaults.standard.menuAnisetteList)
+        let sourceURL = sourceURLString ?? (UserDefaults.standard.menuAnisetteList.isEmpty ? AnisetteServersManager.defaultSource : UserDefaults.standard.menuAnisetteList)
 
-        let remoteServers = try await AnisetteViewModel.getListOfServers(serverSource: sourceURL)
+        let remoteServers = try await fetchRemoteServers(serverSource: sourceURL)
         let localItems = loadLocalServers()
 
         var mergedItems: [AnisetteServerItem] = []
@@ -328,7 +391,7 @@ public actor AnisetteServersManager {
                 debugLog("[AnisetteServersManager] Daily boot sync completed successfully")
             } catch {
                 UserDefaults.standard.set(false, forKey: self.lastDailySyncSuccessKey)
-                debugLog("[AnisetteServersManager] Daily boot sync failed: \(error.localizedDescription)")
+                debugLog("[AnisetteServersManager] Daily boot sync failed for URL '\(UserDefaults.standard.menuAnisetteList)': \(error.localizedDescription)")
             }
         }
     }
@@ -359,7 +422,7 @@ public actor AnisetteServersManager {
             try await syncWithRemote()
             debugLog("[AnisetteServersManager] Failure-triggered background sync completed")
         } catch {
-            debugLog("[AnisetteServersManager] Failure-triggered background sync failed: \(error.localizedDescription)")
+            debugLog("[AnisetteServersManager] Failure-triggered background sync failed for URL '\(UserDefaults.standard.menuAnisetteList)': \(error.localizedDescription)")
         }
     }
 }
