@@ -323,13 +323,18 @@ struct AnisetteServersView: View {
                 List {
                     // Section 1: Server Selection
                     Section {
-                        ForEach(viewModel.visibleItems) { item in
+                        ForEach(Array(viewModel.visibleItems.enumerated()), id: \.element.id) { index, item in
                             SwiftUI.Button {
                                 selectedServerURL = item.address
                                 UserDefaults.standard.menuAnisetteURL = item.address
                                 UserDefaults.standard.synchronize()
                             } label: {
                                 HStack(spacing: 12) {
+                                    Text("#\(index + 1)")
+                                        .font(.subheadline.monospacedDigit().weight(.bold))
+                                        .foregroundColor(.secondary)
+                                        .frame(minWidth: 26, alignment: .leading)
+
                                     VStack(alignment: .leading, spacing: 2) {
                                         HStack(spacing: 6) {
                                             Text(item.name)
@@ -401,7 +406,7 @@ struct AnisetteServersView: View {
                             }
                             .padding(.vertical, 2)
                             .contextMenu {
-                                SwiftUI.Button {
+                                 SwiftUI.Button {
                                     Task {
                                         if let url = await viewModel.exportCatalog(unmodified: false) {
                                             exportFileURL = url
@@ -409,7 +414,7 @@ struct AnisetteServersView: View {
                                         }
                                     }
                                 } label: {
-                                    Label("Export Current (Customized)", systemImage: "square.and.arrow.up")
+                                    Label("Export Current", systemImage: "square.and.arrow.up")
                                 }
 
                                 SwiftUI.Button {
@@ -420,7 +425,7 @@ struct AnisetteServersView: View {
                                         }
                                     }
                                 } label: {
-                                    Label("Export Original (Unmodified)", systemImage: "doc.on.doc")
+                                    Label("Export Original", systemImage: "doc.on.doc")
                                 }
 
                                 SwiftUI.Button(role: .destructive) {
@@ -428,7 +433,7 @@ struct AnisetteServersView: View {
                                         await viewModel.resetToOriginalState()
                                     }
                                 } label: {
-                                    Label("Reset to Original Catalog", systemImage: "arrow.circlepath")
+                                    Label("Reset Catalog", systemImage: "arrow.circlepath")
                                 }
                             }
 
@@ -468,7 +473,7 @@ struct AnisetteServersView: View {
                                         }
                                     }
                                 } label: {
-                                    Label("Export Current (Customized)", systemImage: "square.and.arrow.up")
+                                    Label("Export Current", systemImage: "square.and.arrow.up")
                                 }
 
                                 SwiftUI.Button {
@@ -479,7 +484,7 @@ struct AnisetteServersView: View {
                                         }
                                     }
                                 } label: {
-                                    Label("Export Original (Unmodified)", systemImage: "doc.on.doc")
+                                    Label("Export Original", systemImage: "doc.on.doc")
                                 }
 
                                 SwiftUI.Button(role: .destructive) {
@@ -487,7 +492,7 @@ struct AnisetteServersView: View {
                                         await viewModel.resetToOriginalState()
                                     }
                                 } label: {
-                                    Label("Reset to Original Catalog", systemImage: "arrow.circlepath")
+                                    Label("Reset Catalog", systemImage: "arrow.circlepath")
                                 }
                             }
 
@@ -572,7 +577,7 @@ struct AnisetteServersView: View {
                     // Bottom spacing section
                     Section {
                         Color.clear
-                            .frame(height: 100)
+                            .frame(height: 20)
                             .listRowBackground(Color.clear)
                     }
                 }
@@ -606,7 +611,7 @@ struct AnisetteServersView: View {
                         SwiftUI.Button {
                             viewModel.showHiddenServers.toggle()
                         } label: {
-                            Label(viewModel.showHiddenServers ? "Hide Hidden Items" : "Show Hidden Items", systemImage: viewModel.showHiddenServers ? "eye.slash" : "eye")
+                            Label(viewModel.showHiddenServers ? "Hide Hidden" : "Show Hidden", systemImage: viewModel.showHiddenServers ? "eye.slash" : "eye")
                         }
                     }
 
@@ -618,7 +623,7 @@ struct AnisetteServersView: View {
                             }
                         }
                     } label: {
-                        Label("Export Current (Customized)", systemImage: "square.and.arrow.up")
+                        Label("Export Current", systemImage: "square.and.arrow.up")
                     }
 
                     if viewModel.isOfflineMode {
@@ -630,7 +635,7 @@ struct AnisetteServersView: View {
                                 }
                             }
                         } label: {
-                            Label("Export Original (Unmodified)", systemImage: "doc.on.doc")
+                            Label("Export Original", systemImage: "doc.on.doc")
                         }
                     }
 
@@ -639,7 +644,7 @@ struct AnisetteServersView: View {
                             await viewModel.resetToOriginalState()
                         }
                     } label: {
-                        Label("Reset to Original Catalog", systemImage: "arrow.circlepath")
+                        Label("Reset Catalog", systemImage: "arrow.circlepath")
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
