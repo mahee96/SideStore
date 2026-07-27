@@ -144,117 +144,105 @@ final class HealthCheckViewModel: ObservableObject {
                 // Hop to background thread to perform all synchronous FFI/network checks
                 let metrics = await self.fetchMetrics()
                 
-                let status = self.computeStatuses(
-                    readyResult: metrics.readyResult,
-                    isRp: metrics.protocolStr == "Remote Pairing",
-                    wifi: metrics.wifi,
-                    wired: metrics.wired,
-                    usb: metrics.usb,
-                    bridge: metrics.bridge,
-                    utun: metrics.utun,
-                    ipsec: metrics.ipsec,
-                    pingSuccess: metrics.pingSuccess,
-                    pairingVerified: metrics.pairingVerified,
-                    ddi: metrics.ddi
-                )
+                let status = self.computeStatuses(metrics)
                 
                 // Update UI back on Main Actor
-                self.updateUIInTask(metrics: metrics, status: status)
+                self.updateUI(metrics: metrics, status: status)
             }
             
             try? await Task.sleep(nanoseconds: 1_000_000_000)
         }
     }
     
-    nonisolated private func computeStatuses(
-        readyResult: Result<Bool, MinimuxerError>,
-        isRp: Bool,
-        wifi: Bool,
-        wired: Bool,
-        usb: Bool,
-        bridge: Bool,
-        utun: Bool,
-        ipsec: Bool,
-        pingSuccess: Bool,
-        pairingVerified: Bool,
-        ddi: Bool
-    ) -> (
+    typealias CoreRequirementStatuses = (
         netSat: Bool?,
         vpnSat: Bool?,
         ipsecSat: Bool?,
         pingSat: Bool?,
         pairingSat: Bool?,
         ddiSat: Bool?
-    ) {
-        // let netSat = wifi || wired || usb || bridge
-        let netSat = wifi
-        let vpnSat = utun
-        let ipsecSat = isRp ? nil : ipsec
-        let pingSat = pingSuccess
-        let pairingSat: Bool? = pairingVerified ? true : (Minimuxer.shared.isPairingFileLoaded ? nil : false)
-        let ddiSat = ddi
-        
-        return (netSat, vpnSat, ipsecSat, pingSat, pairingSat, ddiSat)
+    )
+
+    nonisolated private func computeStatuses(
+        _ m: HealthCheckMetrics
+    ) -> CoreRequirementStatuses {
+        let netSat = m.wifi
+        let vpnSat = m.utun
+        let isRp = m.protocolStr == "Remote Pairing"
+        let ipsecSat = isRp ? nil : m.ipsec
+
+        switch m.readyResult {
+        case .success:
+            let pingSat = m.pingSuccess
+            let isPairingLoaded = Minimuxer.shared.isPairingFileLoaded
+            let pairingSat: Bool? = m.pairingVerified ? true : (isPairingLoaded ? nil : false)
+            let ddiSat = m.ddi
+            return (netSat, vpnSat, ipsecSat, pingSat, pairingSat, ddiSat)
+
+        case .failure(let error):
+            var pingSat: Bool? = m.pingSuccess
+            let isPairingLoaded = Minimuxer.shared.isPairingFileLoaded
+            var pairingSat: Bool? = m.pairingVerified ? true : (isPairingLoaded ? nil : false)
+            var ddiSat: Bool? = m.ddi
+
+            switch error {
+            case .noConnection:
+                return (false, nil, nil, nil, nil, nil)
+            case .noVPN, .invalidVPN:
+                return (netSat, false, nil, nil, nil, nil)
+            case .noDevice, .notReachable:
+                pingSat = false
+                pairingSat = nil
+                ddiSat = nil
+            case .pairingFile, .invalidPairing:
+                pairingSat = false
+                ddiSat = nil
+            case .mount:
+                ddiSat = false
+            case .muxerNotListening:
+                break
+            default:
+                break
+            }
+
+            return (netSat, vpnSat, ipsecSat, pingSat, pairingSat, ddiSat)
+        }
     }
     
     @MainActor
-    private func updateUI(
-        connectionMode: DeviceConnectionMode,
-        wifi: Bool, wired: Bool, usb: Bool, bridge: Bool, utun: Bool, ipsec: Bool,
-        tunnelIfaceIp: String?, tunnelIfaceSubnetMask: String?, tunnelPeerIp: String?, overrideTunnelPeerIp: String?, overrideTunnelPeerEffective: Bool,
-        remoteServerIp: String, remotePeerIp: String?, remoteReachable: Bool,
-        protocolStr: String, pingSuccess: Bool, ddi: Bool, pairingVerified: Bool,
-        netSat: Bool?, vpnSat: Bool?, ipsecSat: Bool?, pingSat: Bool?, pairingSat: Bool?, ddiSat: Bool?,
-        readyResult: Result<Bool, MinimuxerError>, scanned: [LocalInterfaceInfo]
-    ) {
-        self.connectionMode = connectionMode
-        self.isWifiSatisfied = wifi
-        self.isWiredSatisfied = wired
-        self.isUsbSatisfied = usb
-        self.isBridgeSatisfied = bridge
-        self.isUTunAvailable = utun
-        self.isIKEv2IPSecAvailable = ipsec
+    func updateUI(metrics: HealthCheckMetrics, status: CoreRequirementStatuses) {
+        self.connectionMode = metrics.connectionMode
+        self.isWifiSatisfied = metrics.wifi
+        self.isWiredSatisfied = metrics.wired
+        self.isUsbSatisfied = metrics.usb
+        self.isBridgeSatisfied = metrics.bridge
+        self.isUTunAvailable = metrics.utun
+        self.isIKEv2IPSecAvailable = metrics.ipsec
         
-        self.tunnelIfaceIp = tunnelIfaceIp
-        self.tunnelIfaceSubnetMask = tunnelIfaceSubnetMask
-        self.tunnelPeerIp = tunnelPeerIp
-        self.overrideTunnelPeerIp = overrideTunnelPeerIp ?? "N/A"
-        self.overrideTunnelPeerEffective = overrideTunnelPeerEffective
-        self.remoteServerIp = remoteServerIp
-        self.remotePeerIp = remotePeerIp
-        self.remoteReachable = remoteReachable
+        self.tunnelIfaceIp = metrics.tunnelIfaceIp
+        self.tunnelIfaceSubnetMask = metrics.tunnelIfaceSubnetMask
+        self.tunnelPeerIp = metrics.tunnelPeerIp
+        self.overrideTunnelPeerIp = metrics.overrideTunnelPeerIp ?? "N/A"
+        self.overrideTunnelPeerEffective = metrics.overrideTunnelPeerEffective
+        self.remoteServerIp = metrics.remoteServerIp
+        self.remotePeerIp = metrics.remotePeerIp
+        self.remoteReachable = metrics.remoteReachable
         
-        self.activeProtocol = protocolStr
-        self.isPingSuccessful = pingSuccess
+        self.activeProtocol = metrics.protocolStr
+        self.isPingSuccessful = metrics.pingSuccess
         
-        self.isDDIMounted = ddi
-        self.isPairingFileVerified = pairingVerified
+        self.isDDIMounted = metrics.ddi
+        self.isPairingFileVerified = metrics.pairingVerified
         
-        self.networkSatisfied = netSat
-        self.vpnSatisfied = vpnSat
-        self.ipsecSatisfied = ipsecSat
-        self.pingSatisfied = pingSat
-        self.pairingSatisfied = pairingSat
-        self.ddiSatisfied = ddiSat
+        self.networkSatisfied = status.netSat
+        self.vpnSatisfied = status.vpnSat
+        self.ipsecSatisfied = status.ipsecSat
+        self.pingSatisfied = status.pingSat
+        self.pairingSatisfied = status.pairingSat
+        self.ddiSatisfied = status.ddiSat
         
-        self.minimuxerReadyResult = readyResult
-        self.availableInterfaces = scanned
-    }
-
-    func updateUIInTask(metrics: HealthCheckMetrics, status: (netSat: Bool?, vpnSat: Bool?, ipsecSat: Bool?, pingSat: Bool?, pairingSat: Bool?, ddiSat: Bool?)) {
-        self.updateUI(
-            connectionMode: metrics.connectionMode,
-            wifi: metrics.wifi, wired: metrics.wired, usb: metrics.usb, bridge: metrics.bridge,
-            utun: metrics.utun, ipsec: metrics.ipsec, tunnelIfaceIp: metrics.tunnelIfaceIp,
-            tunnelIfaceSubnetMask: metrics.tunnelIfaceSubnetMask, tunnelPeerIp: metrics.tunnelPeerIp,
-            overrideTunnelPeerIp: metrics.overrideTunnelPeerIp, overrideTunnelPeerEffective: metrics.overrideTunnelPeerEffective,
-            remoteServerIp: metrics.remoteServerIp, remotePeerIp: metrics.remotePeerIp, remoteReachable: metrics.remoteReachable,
-            protocolStr: metrics.protocolStr, pingSuccess: metrics.pingSuccess,
-            ddi: metrics.ddi, pairingVerified: metrics.pairingVerified,
-            netSat: status.netSat, vpnSat: status.vpnSat, ipsecSat: status.ipsecSat,
-            pingSat: status.pingSat, pairingSat: status.pairingSat, ddiSat: status.ddiSat,
-            readyResult: metrics.readyResult, scanned: metrics.scanned
-        )
+        self.minimuxerReadyResult = metrics.readyResult
+        self.availableInterfaces = metrics.scanned
     }
 
     
