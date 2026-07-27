@@ -86,6 +86,7 @@ extension SettingsViewController
         case enableEMPForWiregaurd  // row 11 - Enable EMP for wireguard
         case customizeAppId         // row 12 - Enable AppId Customization
         case customizeAppExtensions // row 13 - Enable AppExtns Customization
+        case cellularRefresh        // row 14 - Enable Cellular Refresh (< iOS 26.4)
     }
     
     private enum SigningSettingsRow: Int, CaseIterable {
@@ -138,6 +139,7 @@ final class SettingsViewController: UITableViewController
     @IBOutlet private var customizeAppIdSwitch: UISwitch!
     @IBOutlet private var customizeAppExtensionsSwitch: UISwitch!
     @IBOutlet private var exportResignedAppsSwitch: UISwitch!
+    @IBOutlet private var cellularRefreshSwitch: UISwitch!
     @IBOutlet private var verboseOperationsLoggingSwitch: UISwitch!
     @IBOutlet private var minimuxerConsoleLoggingSwitch: UISwitch!
     
@@ -511,7 +513,8 @@ private extension SettingsViewController
         // AdvancedSettingsRow
         self.customizeAppIdSwitch.isOn = UserDefaults.standard.customizeAppId
         self.customizeAppExtensionsSwitch.isOn = UserDefaults.standard.customizeAppExtensions
-        
+        self.cellularRefreshSwitch?.isOn = UserDefaults.standard.isCellularRefreshEnabled
+
         // BetaTestingRow
         self.betaUpdatesSwitch.isOn = UserDefaults.standard.isBetaUpdatesEnabled
         self.betaTrackPopupButton.isEnabled = UserDefaults.standard.isBetaUpdatesEnabled
@@ -816,6 +819,10 @@ private extension SettingsViewController
         UserDefaults.standard.customizeAppExtensions = sender.isOn
     }
     
+    @IBAction func toggleCellularRefresh(_ sender: UISwitch) {
+        UserDefaults.standard.isCellularRefreshEnabled = sender.isOn
+    }
+    
     @IBAction func toggleIsBackgroundRefreshEnabled(_ sender: UISwitch)
     {
         UserDefaults.standard.isBackgroundRefreshEnabled = sender.isOn
@@ -1066,6 +1073,12 @@ extension SettingsViewController
                 } else {
                     return 0
                 }
+            } else if row == .cellularRefresh {
+                if #available(iOS 26.4, *) {
+                    return 0
+                } else {
+                    return super.tableView(tableView, heightForRowAt: indexPath)
+                }
             }
         }
         return super.tableView(tableView, heightForRowAt: indexPath)
@@ -1097,6 +1110,12 @@ extension SettingsViewController
                     // Custom styles or details for Wireless Pairing if needed
                 } else {
                     cell.isHidden = true
+                }
+            } else if row == .cellularRefresh {
+                if #available(iOS 26.4, *) {
+                    cell.isHidden = true
+                } else {
+                    cell.isHidden = false
                 }
             }
         }
@@ -1531,7 +1550,7 @@ extension SettingsViewController
                 
                 navigationController?.pushViewController(vc, animated: true)
                 
-            case .refreshAttempts, .exportResignedApp, .enableEMPForWiregaurd, .customizeAppId, .customizeAppExtensions: break
+            case .refreshAttempts, .exportResignedApp, .enableEMPForWiregaurd, .customizeAppId, .customizeAppExtensions, .cellularRefresh: break
             }
         case .signing:
             let row = SigningSettingsRow.allCases[indexPath.row]

@@ -228,6 +228,11 @@ public extension UserDefaults
         }
     }
     
+    @objc var isCellularRefreshEnabled: Bool {
+        get { self.bool(forKey: #function) }
+        set { self.set(newValue, forKey: #function) }
+    }
+
     @objc var useLocalVPN: Bool {
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
@@ -264,6 +269,7 @@ public extension UserDefaults
         
         let defaults = [
             #keyPath(UserDefaults.useLocalVPN): true,
+            #keyPath(UserDefaults.isCellularRefreshEnabled): false,
             #keyPath(UserDefaults.isAppLimitDisabled): false,
             #keyPath(UserDefaults.isBetaUpdatesEnabled): false,
             #keyPath(UserDefaults.customizeAppId): false,
