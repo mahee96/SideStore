@@ -91,8 +91,8 @@ extension SettingsViewController
     private enum SigningSettingsRow: Int, CaseIterable {
         case importAccount
         case exportAccount
-        case importCert
-        case exportCert
+//        case importCert
+//        case exportCert
     }
 
     private enum BetaTestingRow: Int, CaseIterable {
@@ -1554,143 +1554,143 @@ extension SettingsViewController
                     }
                     importAccountAtFile(confUrl)
                 }
-            case .importCert:
-                let importVc = UIDocumentPickerViewController(forOpeningContentTypes: [UTType(filenameExtension: "p12")!], asCopy: false)
-                ImportExport.documentPickerHandler = DocumentPickerHandler { url in
-                    guard let url else {
-                        return
-                    }
-                    _ = url.startAccessingSecurityScopedResource()
-                    defer { url.stopAccessingSecurityScopedResource() }
-
-                    importVc.delegate = ImportExport.documentPickerHandler
-                    self.present(importVc, animated: true)
-                }
-                Task {
-                    let certUrl = await withUnsafeContinuation { c in
-                        let importVc = UIDocumentPickerViewController(forOpeningContentTypes: [UTType(filenameExtension: "p12")!], asCopy: false)
-                        ImportExport.documentPickerHandler = DocumentPickerHandler { url in
-                            _ = url?.startAccessingSecurityScopedResource()
-                            defer { url?.stopAccessingSecurityScopedResource() }
-                            c.resume(returning: url)
-                        }
-                        importVc.delegate = ImportExport.documentPickerHandler
-
-                        self.present(importVc, animated: true)
-                        
-                    }
-                    guard let certUrl else {
-                        return
-                    }
-                    
-                    let password = await withUnsafeContinuation { (c: UnsafeContinuation<String?,Never>) in
-                        let alertController = UIAlertController(title: NSLocalizedString("Please enter the password for the certificate.", comment: ""), message: nil, preferredStyle: .alert)
-                        
-                        alertController.addTextField { (textField) in
-                            textField.autocorrectionType = .no
-                            textField.autocapitalizationType = .none
-                        }
-                        
-                        let submitAction = UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .default) { (action) in
-                            let textField = alertController.textFields?.first
-                            
-                            let code = textField?.text ?? ""
-                            c.resume(returning: code)
-                        }
-                        alertController.addAction(submitAction)
-                        alertController.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { (action) in
-                            c.resume(returning: nil)
-                        })
-                        
-                        self.present(alertController, animated: true)
-                    }
-                    
-                    guard let password else {
-                        return
-                    }
-                    _ = certUrl.startAccessingSecurityScopedResource()
-                    defer {
-                        certUrl.stopAccessingSecurityScopedResource()
-                    }
-                    let certData : Data
-                    do {
-                        certData = try Data(contentsOf: certUrl)
-                    } catch {
-                        let toastView = ToastView(text: NSLocalizedString("Failed to import certificate!", comment: ""), detailText: error.localizedDescription)
-                        toastView.show(in: self)
-                        return
-                    }
-                    
-                    let altCert: ALTCertificate
-                    do {
-                        altCert = try ALTCertificate(p12Data: certData, password: password)
-                    } catch {
-                        let toastView = ToastView(text: NSLocalizedString("Failed to import certificate!", comment: ""), detailText: error.localizedDescription)
-                        toastView.show(in: self)
-                        return
-                    }
-                    
-                    Keychain.shared.signingCertificate = altCert.encryptedP12Data(withPassword: "")!
-                    let toastView = ToastView(text: NSLocalizedString("Certificate imported successfully!", comment: ""), detailText: nil)
-                    toastView.show(in: self)
-                }
-            case .exportCert:
-                Task {
-                    guard let certData = Keychain.shared.signingCertificate else {
-                        let toastView = ToastView(text: NSLocalizedString("Failed to export certificate!", comment: ""), detailText: "Certificate not found.")
-                        toastView.show(in: self)
-                        return
-                    }
-                    
-                    let password = await withUnsafeContinuation { (c: UnsafeContinuation<String?,Never>) in
-                        let alertController = UIAlertController(title: NSLocalizedString("Please enter the password for the certificate.", comment: ""), message: nil, preferredStyle: .alert)
-                        
-                        alertController.addTextField { (textField) in
-                            textField.autocorrectionType = .no
-                            textField.autocapitalizationType = .none
-                        }
-                        
-                        let submitAction = UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .default) { (action) in
-                            let textField = alertController.textFields?.first
-                            
-                            let code = textField?.text ?? ""
-                            c.resume(returning: code)
-                        }
-                        alertController.addAction(submitAction)
-                        alertController.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { (action) in
-                            c.resume(returning: nil)
-                        })
-                        
-                        self.present(alertController, animated: true)
-                    }
-                    
-                    guard let password else {
-                        return
-                    }
-                    
-                    guard let altCert = try? ALTCertificate(p12Data: certData, password: nil) else {
-                        let toastView = ToastView(text: NSLocalizedString("Failed to export certificate!", comment: ""), detailText: "Failed to create ALTCertificate. Check if the password is correct.")
-                        toastView.show(in: self)
-                        return
-                    }
-                    
-                    guard let newCertData = altCert.encryptedP12Data(withPassword: password) else {
-                        let toastView = ToastView(text: NSLocalizedString("Failed to export certificate!", comment: ""), detailText: "Failed to encrypt  ALTCertificate.")
-                        toastView.show(in: self)
-                        return
-                    }
-                    
-                    let newCertTmpPath = FileManager.default.temporaryDirectory.appendingPathComponent("SideStoreSigningCertificate.p12")
-                    do {
-                        try newCertData.write(to: newCertTmpPath)
-                    } catch {
-                        let toastView = ToastView(text: NSLocalizedString("Failed to export certificate!", comment: ""), detailText: error.localizedDescription)
-                        toastView.show(in: self)
-                        return
-                    }
-                    let exportVC = UIDocumentPickerViewController(forExporting: [newCertTmpPath], asCopy: false)
-                    self.present(exportVC, animated: true)
-                }
+//            case .importCert:
+//                let importVc = UIDocumentPickerViewController(forOpeningContentTypes: [UTType(filenameExtension: "p12")!], asCopy: false)
+//                ImportExport.documentPickerHandler = DocumentPickerHandler { url in
+//                    guard let url else {
+//                        return
+//                    }
+//                    _ = url.startAccessingSecurityScopedResource()
+//                    defer { url.stopAccessingSecurityScopedResource() }
+//
+//                    importVc.delegate = ImportExport.documentPickerHandler
+//                    self.present(importVc, animated: true)
+//                }
+//                Task {
+//                    let certUrl = await withUnsafeContinuation { c in
+//                        let importVc = UIDocumentPickerViewController(forOpeningContentTypes: [UTType(filenameExtension: "p12")!], asCopy: false)
+//                        ImportExport.documentPickerHandler = DocumentPickerHandler { url in
+//                            _ = url?.startAccessingSecurityScopedResource()
+//                            defer { url?.stopAccessingSecurityScopedResource() }
+//                            c.resume(returning: url)
+//                        }
+//                        importVc.delegate = ImportExport.documentPickerHandler
+//
+//                        self.present(importVc, animated: true)
+//                        
+//                    }
+//                    guard let certUrl else {
+//                        return
+//                    }
+//                    
+//                    let password = await withUnsafeContinuation { (c: UnsafeContinuation<String?,Never>) in
+//                        let alertController = UIAlertController(title: NSLocalizedString("Please enter the password for the certificate.", comment: ""), message: nil, preferredStyle: .alert)
+//                        
+//                        alertController.addTextField { (textField) in
+//                            textField.autocorrectionType = .no
+//                            textField.autocapitalizationType = .none
+//                        }
+//                        
+//                        let submitAction = UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .default) { (action) in
+//                            let textField = alertController.textFields?.first
+//                            
+//                            let code = textField?.text ?? ""
+//                            c.resume(returning: code)
+//                        }
+//                        alertController.addAction(submitAction)
+//                        alertController.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { (action) in
+//                            c.resume(returning: nil)
+//                        })
+//                        
+//                        self.present(alertController, animated: true)
+//                    }
+//                    
+//                    guard let password else {
+//                        return
+//                    }
+//                    _ = certUrl.startAccessingSecurityScopedResource()
+//                    defer {
+//                        certUrl.stopAccessingSecurityScopedResource()
+//                    }
+//                    let certData : Data
+//                    do {
+//                        certData = try Data(contentsOf: certUrl)
+//                    } catch {
+//                        let toastView = ToastView(text: NSLocalizedString("Failed to import certificate!", comment: ""), detailText: error.localizedDescription)
+//                        toastView.show(in: self)
+//                        return
+//                    }
+//                    
+//                    let altCert: ALTCertificate
+//                    do {
+//                        altCert = try ALTCertificate(p12Data: certData, password: password)
+//                    } catch {
+//                        let toastView = ToastView(text: NSLocalizedString("Failed to import certificate!", comment: ""), detailText: error.localizedDescription)
+//                        toastView.show(in: self)
+//                        return
+//                    }
+//                    
+//                    Keychain.shared.signingCertificate = altCert.encryptedP12Data(withPassword: "")!
+//                    let toastView = ToastView(text: NSLocalizedString("Certificate imported successfully!", comment: ""), detailText: nil)
+//                    toastView.show(in: self)
+//                }
+//            case .exportCert:
+//                Task {
+//                    guard let certData = Keychain.shared.signingCertificate else {
+//                        let toastView = ToastView(text: NSLocalizedString("Failed to export certificate!", comment: ""), detailText: "Certificate not found.")
+//                        toastView.show(in: self)
+//                        return
+//                    }
+//                    
+//                    let password = await withUnsafeContinuation { (c: UnsafeContinuation<String?,Never>) in
+//                        let alertController = UIAlertController(title: NSLocalizedString("Please enter the password for the certificate.", comment: ""), message: nil, preferredStyle: .alert)
+//                        
+//                        alertController.addTextField { (textField) in
+//                            textField.autocorrectionType = .no
+//                            textField.autocapitalizationType = .none
+//                        }
+//                        
+//                        let submitAction = UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .default) { (action) in
+//                            let textField = alertController.textFields?.first
+//                            
+//                            let code = textField?.text ?? ""
+//                            c.resume(returning: code)
+//                        }
+//                        alertController.addAction(submitAction)
+//                        alertController.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { (action) in
+//                            c.resume(returning: nil)
+//                        })
+//                        
+//                        self.present(alertController, animated: true)
+//                    }
+//                    
+//                    guard let password else {
+//                        return
+//                    }
+//                    
+//                    guard let altCert = try? ALTCertificate(p12Data: certData, password: nil) else {
+//                        let toastView = ToastView(text: NSLocalizedString("Failed to export certificate!", comment: ""), detailText: "Failed to create ALTCertificate. Check if the password is correct.")
+//                        toastView.show(in: self)
+//                        return
+//                    }
+//                    
+//                    guard let newCertData = altCert.encryptedP12Data(withPassword: password) else {
+//                        let toastView = ToastView(text: NSLocalizedString("Failed to export certificate!", comment: ""), detailText: "Failed to encrypt  ALTCertificate.")
+//                        toastView.show(in: self)
+//                        return
+//                    }
+//                    
+//                    let newCertTmpPath = FileManager.default.temporaryDirectory.appendingPathComponent("SideStoreSigningCertificate.p12")
+//                    do {
+//                        try newCertData.write(to: newCertTmpPath)
+//                    } catch {
+//                        let toastView = ToastView(text: NSLocalizedString("Failed to export certificate!", comment: ""), detailText: error.localizedDescription)
+//                        toastView.show(in: self)
+//                        return
+//                    }
+//                    let exportVC = UIDocumentPickerViewController(forExporting: [newCertTmpPath], asCopy: false)
+//                    self.present(exportVC, animated: true)
+//                }
             }
         
         case .diagnostics:
