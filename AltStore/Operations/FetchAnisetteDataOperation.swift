@@ -72,7 +72,7 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
     }
 
     private func getAnisetteServerUrl(_ viewContext: UIViewController?) async throws -> String {
-        let serverUrls = UserDefaults.standard.menuAnisetteServersList
+        let serverUrls = await AnisetteServersManager.shared.getActiveServerURLs()
         guard !serverUrls.isEmpty else {
             throw NSError(domain: "AnisetteError", code: 0, userInfo: [NSLocalizedDescriptionKey: "No anisette servers configured."])
         }
@@ -116,6 +116,11 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
         // Loop exhausted: Save the next index to cycle uniformly
         let nextIndex = (startIndex + 1) % serverUrls.count
         UserDefaults.standard.menuAnisetteURL = serverUrls[nextIndex]
+
+        // Trigger background silent sync (rate-limited to once per 15 minutes)
+        Task {
+            await AnisetteServersManager.shared.syncOnFailureIfNeeded()
+        }
 
         throw NSError(domain: "AnisetteError", code: 0, userInfo: [NSLocalizedDescriptionKey: "No valid server found."])
     }

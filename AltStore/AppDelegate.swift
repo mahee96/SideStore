@@ -88,6 +88,11 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         debugLog("===================================================")
         debugLog("\n")
 
+        // Trigger daily boot sync for Anisette servers if needed
+        Task {
+            await AnisetteServersManager.shared.performDailySyncIfNeeded()
+        }
+
         // Override point for customization after application launch.
 //        UserDefaults.standard.setValue(true, forKey: "com.apple.CoreData.MigrationDebug")
 //        UserDefaults.standard.setValue(true, forKey: "com.apple.CoreData.SQLDebug")

@@ -401,7 +401,11 @@ final class SettingsViewController: UITableViewController
         if segue.identifier == "anisetteServers" || segue.identifier == "certificateManagement" || segue.identifier == "wirelessPairing" || segue.identifier == "networkDiscovery" {
             let controller = segue.destination
             
-            if segue.identifier == "certificateManagement" || segue.identifier == "wirelessPairing" || segue.identifier == "networkDiscovery" {
+            if segue.identifier == "anisetteServers"        || 
+                segue.identifier == "certificateManagement" || 
+                segue.identifier == "wirelessPairing"       || 
+                segue.identifier == "networkDiscovery" 
+            {
                 let appearance = UINavigationBarAppearance()
                 appearance.configureWithDefaultBackground()
                 appearance.titleTextAttributes = [.foregroundColor: UIColor.label]
@@ -1451,34 +1455,14 @@ extension SettingsViewController
                 self.tableView.deselectRow(at: indexPath, animated: true)
                 
             case .anisetteServers:
-                
-                func handleRefreshResult(_ result: Result<Void, any Error>) {
-                    var message = "Servers list refreshed"
-                    var details: String? = nil
-                    var duration: TimeInterval = 2.0
-                                        
-                    switch result {
-                        case .success:
-                            // No additional action needed, default message is sufficient
-                            break
-                        case .failure(let error):
-                            message  = "Failed to refresh servers list"
-                            details  = String(describing: error)
-                            duration = 4.0
+                let anisetteServersView = AnisetteServersView(
+                    selected: UserDefaults.standard.menuAnisetteURL,
+                    onResetAdiPb: { [weak self] in
+                        guard let self = self else { return }
+                        ToastView(text: "Cleared adi.pb!", detailText: "You will need to log back into Apple ID in SideStore.")
+                            .show(in: self)
                     }
-                    
-                    let toast = ToastView(text: message, detailText: details)
-                    toast.preferredDuration = duration
-                    toast.show(in: self)
-                }
-                
-                // Instantiate SwiftUI View inside UIHostingController
-                let anisetteServersView = AnisetteServersView(selected: UserDefaults.standard.menuAnisetteURL, errorCallback: {
-                    ToastView(text: "Cleared adi.pb!", detailText: "You will need to log back into Apple ID in SideStore.")
-                        .show(in: self)
-                }, refreshCallback: {result in
-                    handleRefreshResult(result)
-                })
+                )
                 
                 let vc = UIHostingController(rootView: anisetteServersView)
                 self.prepare(for: UIStoryboardSegue(identifier: "anisetteServers", source: self, destination: vc), sender: nil)
