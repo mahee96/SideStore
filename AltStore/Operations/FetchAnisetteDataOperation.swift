@@ -87,21 +87,27 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
             guard let url = URL(string: currentServerUrlString) else {
                 let errmsg = "Skipping invalid URL: \(currentServerUrlString)"
                 self.verboseLog(errmsg)
-                showToast(viewContext: viewContext, message: errmsg)
+                self.showToast(viewContext: viewContext, message: errmsg)
                 continue
             }
 
-            let success = try await pingServer(url)
-            if success {
-                let okmsg = "Found working server: \(url.absoluteString)"
-                self.verboseLog(okmsg)
-                if triedCount > 0 {
-                    self.showToast(viewContext: viewContext, message: okmsg)
+            do {
+                let success = try await pingServer(url)
+                if success {
+                    let okmsg = "Found working server: \(url.absoluteString)"
+                    self.verboseLog(okmsg)
+                    if triedCount > 0 {
+                        self.showToast(viewContext: viewContext, message: okmsg)
+                    }
+                    UserDefaults.standard.menuAnisetteURL = url.absoluteString
+                    return url.absoluteString
+                } else {
+                    let errmsg = "Failed to reach server: \(url.absoluteString), trying next server."
+                    self.verboseLog(errmsg)
+                    self.showToast(viewContext: viewContext, message: errmsg)
                 }
-                UserDefaults.standard.menuAnisetteURL = url.absoluteString
-                return url.absoluteString
-            } else {
-                let errmsg = "Failed to reach server: \(url.absoluteString), trying next server."
+            } catch {
+                let errmsg = "Error reaching server: \(url.absoluteString) (\(error.localizedDescription)), trying next server."
                 self.verboseLog(errmsg)
                 self.showToast(viewContext: viewContext, message: errmsg)
             }
@@ -486,8 +492,9 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
         }
         self.verboseLog("Trying to get client_info")
         let clientInfoURL = self.url!.appendingPathComponent("v3").appendingPathComponent("client_info")
-        
-        let (data, _) = try await URLSession.shared.data(from: clientInfoURL)
+        var request = URLRequest(url: clientInfoURL)
+        request.timeoutInterval = 15
+        let (data, _) = try await URLSession.shared.data(for: request)
         
         if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: String] {
             if let clientInfo = json["client_info"] {
@@ -529,6 +536,7 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
         try await self.fetchClientInfo()
         self.verboseLog("Fetching anisette V3")
         var request = URLRequest(url: self.url!.appendingPathComponent("v3").appendingPathComponent("get_headers"))
+        request.timeoutInterval = 15
         request.httpMethod = "POST"
         request.httpBody = try! JSONSerialization.data(withJSONObject: [
             "identifier": identifier,
