@@ -1685,7 +1685,7 @@ private extension AppManager
                     completionHandler(.failure(OperationError.noVPN))
 
                 case .failure(let error) where error.isMinimuxerProfileInstall:
-                    let error = await minimuxerStatus.operationError ?? error
+                    let error = await getMinimuxerStatus().operationError ?? error
                     completionHandler(.failure(error))
                     
                 case .failure(ALTServerError.unknownRequest), .failure(OperationError.appNotFound(name: app.name)):
@@ -1693,7 +1693,7 @@ private extension AppManager
                     // OR if the cached app could not be found and we may need to redownload it.
                     app.managedObjectContext?.performAndWait { // Must performAndWait to ensure we add operations before we return.
                         Task {
-                            switch await minimuxerStatus {
+                            switch await getMinimuxerStatus() {
                             case .ready:
                                 let installProgress = self._install(app, operation: operation, group: group) { (result) in
                                     completionHandler(result)

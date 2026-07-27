@@ -59,36 +59,34 @@ enum MinimuxerStatus {
     }
 }
 
-var minimuxerStatus: MinimuxerStatus {
-    get async {
-        #if targetEnvironment(simulator)
-        debugLog("[SideStore] minimuxerStatus = true on simulator")
-        return .ready
-        #else
-        let result = await Minimuxer.shared.isReady
-        switch result {
+func getMinimuxerStatus() async -> MinimuxerStatus {
+    #if targetEnvironment(simulator)
+    debugLog("[SideStore] getMinimuxerStatus() = .ready on simulator")
+    return .ready
+    #else
+    let result = await Minimuxer.shared.isReady()
+    switch result {
         case .success:
             return .ready
         case .failure(let error):
             switch error {
-            case .noVPN:
-                return .noVPN
-            case .invalidVPN:
-                return .invalidVPN
-            case .pairingFile:
-                return .pairingFile
-            case .invalidPairing:
-                return .invalidPairing
-            case .noDevice:
-                return .noDevice
-            case .noConnection:
-                return .noConnection
-            default:
-                return .unknown
+                case .noVPN:
+                    return .noVPN
+                case .invalidVPN:
+                    return .invalidVPN
+                case .pairingFile:
+                    return .pairingFile
+                case .invalidPairing:
+                    return .invalidPairing
+                case .noDevice:
+                    return .noDevice
+                case .noConnection:
+                    return .noConnection
+                default:
+                    return .unknown
             }
-        }
-        #endif
     }
+    #endif
 }
 
 func reinitializePairingData(_ pairingFile: String) async throws {
