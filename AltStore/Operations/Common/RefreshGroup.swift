@@ -26,6 +26,7 @@ final class RefreshGroup: NSObject
     private(set) var _contexts = Set<NSManagedObjectContext>()
     
     private var isFinished = false
+    private let lock = NSLock()
     
     private let dispatchGroup = DispatchGroup()
     private var operations: [Foundation.Operation] = []
@@ -62,14 +63,16 @@ final class RefreshGroup: NSObject
     
     func set(_ result: Result<InstalledApp, Error>, forAppWithBundleIdentifier bundleIdentifier: String)
     {
-        self.results[bundleIdentifier] = result
-        
-        switch result
-        {
-        case .failure: break
-        case .success(let installedApp):
-            guard let context = installedApp.managedObjectContext else { break }
-            self._contexts.insert(context)
+        self.lock.withLock {
+            self.results[bundleIdentifier] = result
+            
+            switch result
+            {
+            case .failure: break
+            case .success(let installedApp):
+                guard let context = installedApp.managedObjectContext else { break }
+                self._contexts.insert(context)
+            }
         }
     }
     
@@ -83,9 +86,13 @@ private extension RefreshGroup
 {
     func finish()
     {
-        guard !self.isFinished else { return }
-        self.isFinished = true
+        let (shouldFinish, results) = self.lock.withLock { () -> (Bool, [String: Result<InstalledApp, Error>]?) in
+            guard !self.isFinished else { return (false, nil) }
+            self.isFinished = true
+            return (true, self.results)
+        }
         
-        self.completionHandler?(self.results)
+        guard shouldFinish, let results = results else { return }
+        self.completionHandler?(results)
     }
 }
