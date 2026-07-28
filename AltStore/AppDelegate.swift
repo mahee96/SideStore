@@ -79,6 +79,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         let rightPadding = String(repeating: " ", count: max(0, paddingCount - leftPadding.count))
 
         consoleLog.startCapturing()
+        setupCrashHandler()
         debugLog("===================================================")
         debugLog("|               App is Starting up                |")
         debugLog("===================================================")
@@ -519,6 +520,36 @@ private extension AppDelegate
                 debugLog("Error fetching apps: \(error)")
                 completionHandler(.failure(error))
             }
+        }
+    }
+}
+
+private extension AppDelegate {
+    func setupCrashHandler() {
+        NSSetUncaughtExceptionHandler { exception in
+            // Clear handler immediately so execution can never recurse under any circumstance
+            NSSetUncaughtExceptionHandler(nil)
+            
+            let stackTrace = exception.callStackSymbols.joined(separator: "\n")
+            let message = """
+            \n===================================================
+            |                UNCAUGHT CRASH                   |
+            ===================================================
+            Name: \(exception.name.rawValue)
+            Reason: \(exception.reason ?? "Unknown")
+            Call Stack:
+            \(stackTrace)
+            ===================================================\n
+            """
+            
+            debugLog(message)
+            
+            // Write directly to stderr to bypass Swift formatting/logger abstractions
+            fputs(message, stderr)
+            fflush(stderr)
+            
+            // Also write to NSLog (Apple System Log)
+            NSLog("%@", message)
         }
     }
 }
