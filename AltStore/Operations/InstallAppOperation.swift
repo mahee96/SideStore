@@ -146,31 +146,42 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
                                         context: backgroundContext)
         }
         
-        installedApp.update(resignedApp: resignedApp, certificateSerialNumber: certificate.serialNumber, storeBuildVersion: storeBuildVersion)
-        installedApp.customBundleIdentifier = self.context.customBundleIdentifier
-        installedApp.useMainProfile = self.context.useMainProfile
-        
-        switch self.context.alternateIconMode {
-        case .set(let alternateIconURL):
-            if FileManager.default.fileExists(atPath: alternateIconURL.path) {
-                if alternateIconURL != installedApp.alternateIconURL {
-                    do {
-                        try FileManager.default.copyItem(at: alternateIconURL, to: installedApp.alternateIconURL, shouldReplace: true)
-                    } catch {
-                        self.debugLog("Failed to copy alternate icon: \(error)")
+        let isDifferentSideStoreContainer = installedApp.isAltStoreApp && (resignedApp.bundleIdentifier != installedApp.resignedBundleIdentifier)
+        if isDifferentSideStoreContainer {
+            self.debugLog("""
+            [WARN] Skipped persisting database mutations in InstalledApp table for app: \(installedApp.bundleIdentifier):
+                - Resigned Bundle ID: '\(resignedApp.bundleIdentifier)'
+                - Active Container Bundle ID: '\(installedApp.resignedBundleIdentifier)'
+                Reason: A different bundle ID installs SideStore as a new app container which initializes its own database upon launch, hence we do not perist current change to prevent corruption of current sidestore's database entry.
+                
+            """)
+        } else {
+            installedApp.update(resignedApp: resignedApp, certificateSerialNumber: certificate.serialNumber, storeBuildVersion: storeBuildVersion)
+            installedApp.customBundleIdentifier = self.context.customBundleIdentifier
+            installedApp.useMainProfile = self.context.useMainProfile
+            
+            switch self.context.alternateIconMode {
+            case .set(let alternateIconURL):
+                if FileManager.default.fileExists(atPath: alternateIconURL.path) {
+                    if alternateIconURL != installedApp.alternateIconURL {
+                        do {
+                            try FileManager.default.copyItem(at: alternateIconURL, to: installedApp.alternateIconURL, shouldReplace: true)
+                        } catch {
+                            self.debugLog("Failed to copy alternate icon: \(error)")
+                        }
                     }
+                    installedApp.hasAlternateIcon = true
                 }
-                installedApp.hasAlternateIcon = true
+            case .remove:
+                try? FileManager.default.removeItem(at: installedApp.alternateIconURL)
+                installedApp.hasAlternateIcon = false
+            case .preserve:
+                break
             }
-        case .remove:
-            try? FileManager.default.removeItem(at: installedApp.alternateIconURL)
-            installedApp.hasAlternateIcon = false
-        case .preserve:
-            break
-        }
-        
-        if let team = DatabaseManager.shared.activeTeam(in: backgroundContext) {
-            installedApp.team = team
+            
+            if let team = DatabaseManager.shared.activeTeam(in: backgroundContext) {
+                installedApp.team = team
+            }
         }
 
         return installedApp

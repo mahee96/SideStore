@@ -63,6 +63,7 @@ extension OperationError
         case invalidPairingFile
 
         case invalidOperationContext
+        case sideStoreBundleIDMismatch
     }
     
     static var cancelled: CancellationError { CancellationError() }
@@ -139,6 +140,10 @@ extension OperationError
 
     static func invalidParameters(_ message: String? = nil) -> OperationError {
         OperationError(code: .invalidParameters, failureReason: message)
+    }
+    
+    static func sideStoreBundleIDMismatch(targetBundleID: String, activeBundleID: String) -> OperationError {
+        OperationError(code: .sideStoreBundleIDMismatch, failureReason: String(format: NSLocalizedString("Target bundle ID '%@' does not match active SideStore instance '%@'.\n\nThis operation is not allowed because SideStore cannot manage database containers other than its own.", comment: ""), targetBundleID, activeBundleID))
     }
     
     static func invalidOperationContext(_ message: String? = nil) -> OperationError {
@@ -267,6 +272,9 @@ struct OperationError: ALTLocalizedError {
         case .invalidOperationContext:
             let message = self._failureReason.map { ": \n\($0)" } ?? "."
             return String(format: NSLocalizedString("Invalid Operation Context%@", comment: ""), message)
+        case .sideStoreBundleIDMismatch:
+            let message = self._failureReason ?? ""
+            return String(format: NSLocalizedString("Bundle ID Mismatch: %@", comment: ""), message)
         case .serverNotFound: return NSLocalizedString("AltServer could not be found.", comment: "")
         case .connectionFailed: return NSLocalizedString("A connection to AltServer could not be established.", comment: "")
         case .connectionDropped: return NSLocalizedString("The connection to AltServer was dropped.", comment: "")

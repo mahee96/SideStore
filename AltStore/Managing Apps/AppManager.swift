@@ -1128,9 +1128,74 @@ private extension AppManager
         }
     }
     
+    private func validateSideStoreBundleIDMismatch(for operations: [AppOperation], presentingViewController: UIViewController?) async throws {
+        let activeSideStore = InstalledApp.fetchAltStore(in: DatabaseManager.shared.viewContext)
+        guard let activeResignedID = activeSideStore?.resignedBundleIdentifier else { return }
+        let activeCustomID = activeSideStore?.customBundleIdentifier
+        let activeEffectiveID = activeCustomID ?? activeResignedID
+        
+        for operation in operations {
+            let isSideStore = operation.app.isAltStoreApp || operation.bundleIdentifier == StoreApp.altstoreAppID
+            guard isSideStore else { continue }
+            
+            let incomingTargetID: String?
+            switch operation {
+            case .install(let app, let customBundleIdentifier), .update(let app, let customBundleIdentifier):
+                if let customBundleIdentifier = customBundleIdentifier, !customBundleIdentifier.isEmpty {
+                    incomingTargetID = customBundleIdentifier
+                } else if let installedApp = app as? InstalledApp {
+                    incomingTargetID = installedApp.customBundleIdentifier ?? installedApp.resignedBundleIdentifier
+                } else {
+                    incomingTargetID = nil
+                }
+            case .refresh(let installedApp), .activate(let installedApp), .deactivate(let installedApp),
+                 .backup(let installedApp), .restore(let installedApp), .resign(let installedApp, _):
+                incomingTargetID = installedApp.customBundleIdentifier ?? installedApp.resignedBundleIdentifier
+            }
+            
+            guard let targetID = incomingTargetID, targetID != activeEffectiveID && targetID != activeResignedID else { continue }
+            
+            self.debugLog("[AppManager] SideStore bundle ID mismatch detected: target='\(targetID)', active='\(activeEffectiveID)'")
+            
+            switch operation {
+            case .resign, .install:
+                guard let presentingViewController = presentingViewController else {
+                    throw OperationError.sideStoreBundleIDMismatch(targetBundleID: targetID, activeBundleID: activeEffectiveID)
+                }
+                
+                let confirmed = await withCheckedContinuation { continuation in
+                    Task { @MainActor in
+                        let alert = UIAlertController(
+                            title: NSLocalizedString("Bundle ID Mismatch Detected", comment: ""),
+                            message: String(format: NSLocalizedString("The target bundle ID '%@' does not match the active SideStore instance ('%@').\n\nProceeding will install a new instance of SideStore instead of updating the current instance.", comment: ""), targetID, activeEffectiveID),
+                            preferredStyle: .alert
+                        )
+                        alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { _ in
+                            continuation.resume(returning: false)
+                        })
+                        alert.addAction(UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .destructive) { _ in
+                            continuation.resume(returning: true)
+                        })
+                        presentingViewController.present(alert, animated: true)
+                    }
+                }
+                
+                if !confirmed {
+                    throw OperationError.cancelled
+                }
+                
+            default:
+                throw OperationError.sideStoreBundleIDMismatch(targetBundleID: targetID, activeBundleID: activeEffectiveID)
+            }
+        }
+    }
+    
     @discardableResult
     private func perform(_ operations: [AppOperation], presentingViewController: UIViewController?, group: RefreshGroup) async throws -> RefreshGroup
     {
+        // Preflight check: validate SideStore bundle ID matches active container before starting any operations
+        try await self.validateSideStoreBundleIDMismatch(for: operations, presentingViewController: presentingViewController)
+        
         let operations = operations.filter { self.progress(for: $0) == nil || self.progress(for: $0)?.isCancelled == true }
         
         for operation in operations
