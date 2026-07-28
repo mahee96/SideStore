@@ -610,7 +610,7 @@ extension AppViewController
                 {
                     _ = try result.get()
                 }
-                catch OperationError.cancelled
+                catch is CancellationError
                 {
                     // Ignore
                 }
@@ -657,7 +657,7 @@ extension AppViewController
                 switch result
                 {
                 case .success: debugLog("Updated app from AppViewController: \(installedApp.bundleIdentifier)")
-                case .failure(OperationError.cancelled): break
+                case .failure(let error) where error is CancellationError: break
                 case .failure(let error):
                     let toastView = ToastView(error: error)
                     toastView.opensErrorLog = true

@@ -140,7 +140,7 @@ private extension ResignAltStoreViewController
                         sender.progress = nil
                         sender.isIndicatingActivity = false
                         
-                        if case OperationError.cancelled = error {
+                        if error is CancellationError {
                             self.completionHandler?(.failure(OperationError.cancelled))
                             self.dismiss(animated: true, completion: nil)
                             return

@@ -657,7 +657,7 @@ private extension MyAppsViewController
                 let failures = results.compactMapValues { (result) -> Error? in
                     switch result
                     {
-                    case .failure(OperationError.cancelled): return nil
+                    case .failure(let error) where error is CancellationError: return nil
                     case .failure(let error): return error
                     case .success: return nil
                     }
@@ -848,7 +848,7 @@ private extension MyAppsViewController
             DispatchQueue.main.async {
                 switch result
                 {
-                case .failure(OperationError.cancelled):
+                case .failure(let error) where error is CancellationError:
                     self.collectionView.reloadItems(at: [indexPath])
                     
                 case .failure(let error):
@@ -1027,8 +1027,8 @@ private extension MyAppsViewController
                         debugLog("Successfully installed app: \(app.bundleIdentifier)")
                     }
                     
-                case .failure(OperationError.cancelled):
-                    completion(.failure((OperationError.cancelled)))
+                case .failure(let error) where error is CancellationError:
+                    completion(.failure(OperationError.cancelled))
                     
                 case .failure(let error):
                     ToastView(error: error, opensLog: true).show(in: self)
@@ -1229,7 +1229,7 @@ private extension MyAppsViewController
                         try? app.managedObjectContext?.save()
                     }
                 }
-                catch OperationError.cancelled
+                catch is CancellationError
                 {
                     // Ignore
                 }
@@ -1282,7 +1282,7 @@ private extension MyAppsViewController
                     
                     debugLog("Finished deactivating app: \(app.bundleIdentifier)")
                 }
-                catch OperationError.cancelled
+                catch is CancellationError
                 {
                     // Ignore
                 }

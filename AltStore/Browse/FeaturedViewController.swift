@@ -518,7 +518,7 @@ private extension FeaturedViewController
             DispatchQueue.main.async {
                 switch result
                 {
-                case .failure(OperationError.cancelled): break // Ignore
+                case .failure(let error) where error is CancellationError: break // Ignore
                 case .failure(let error):
                     let toastView = ToastView(error: error)
                     toastView.opensErrorLog = true

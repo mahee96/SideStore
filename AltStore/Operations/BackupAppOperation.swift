@@ -115,7 +115,7 @@ class BackupAppOperation: ResultOperation<Void>, OperationLogging {
             
             switch (error, self.action) {
             case (let error as NSError, _) where (self.context.error as NSError?) == error: fallthrough
-            case (OperationError.cancelled, _):
+            case (is CancellationError, _):
                 return error
                 
             case (let error as NSError, .backup):

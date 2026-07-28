@@ -692,7 +692,7 @@ private extension SettingsViewController
             DispatchQueue.main.async {
                 switch result
                 {
-                case .failure(OperationError.cancelled):
+                case .failure(let error) where error is CancellationError:
                     // Ignore
                     break
                     
