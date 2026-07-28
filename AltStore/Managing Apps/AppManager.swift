@@ -1216,22 +1216,41 @@ private extension AppManager
         }
         
         /* Authenticate (if necessary) */
-        var authenticationOperation: AuthenticationOperation?
         if group.context.session == nil
         {
-            authenticationOperation = self.authenticate(presentingViewController: presentingViewController, context: group.context, skipDeviceRegistration: false) { (result) in
-                switch result
-                {
-                case .failure(let error):
-                    group.context.error = error
-                case .success:
-                    break
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                _ = self.authenticate(presentingViewController: presentingViewController, context: group.context, skipDeviceRegistration: false) { (result) in
+                    switch result
+                    {
+                    case .failure(let error):
+                        group.context.error = error
+                        continuation.resume(throwing: error)
+                    case .success:
+                        continuation.resume()
+                    }
                 }
             }
         }
         
-
-        func performOperations(){
+        /* Preflight SideStore Bundle ID Mismatch Validation */
+        do {
+            try await self.validateSideStoreBundleIDMismatch(for: operations, group: group, presentingViewController: presentingViewController)
+        } catch {
+            group.context.error = error
+            for operation in operations {
+                self.finish(operation, result: .failure(error), group: group, progress: self.progress(for: operation))
+            }
+            throw error
+        }
+        
+        // Disable the idleTimeout
+        await MainActor.run {
+            if !UIApplication.shared.isIdleTimerDisabled {
+                UIApplication.shared.isIdleTimerDisabled = UserDefaults.standard.isIdleTimeoutDisableEnabled
+            }
+        }
+        
+        func performOperations() {
             for operation in operations
             {
                 let progress = self.progress(for: operation)
@@ -1302,52 +1321,14 @@ private extension AppManager
                 }
             }
         }
-        func performAppOperations(managedContext: NSManagedObjectContext? = nil) async
-        {
-            do {
-                try await self.validateSideStoreBundleIDMismatch(for: operations, group: group, presentingViewController: presentingViewController)
-            } catch {
-                group.context.error = error
-                for operation in operations {
-                    self.finish(operation, result: .failure(error), group: group, progress: self.progress(for: operation))
-                }
-                return
-            }
-
-            if let managedContext = managedContext {
-                await managedContext.perform { performOperations() }
-            } else {
+        
+        let managedContext = operations.lazy.compactMap({ ($0.app as? NSManagedObject)?.managedObjectContext }).first
+        if let managedContext = managedContext {
+            await managedContext.perform {
                 performOperations()
             }
-        }
-        
-        if let authenticationOperation = authenticationOperation
-        {
-            let awaitAuthenticationOperation = RSTAsyncBlockOperation { operation in
-                Task {
-                    if let managedObjectContext = operations.lazy.compactMap({ ($0.app as? NSManagedObject)?.managedObjectContext }).first
-                    {
-                        await performAppOperations(managedContext: managedObjectContext)
-                    }
-                    else
-                    {
-                        await performAppOperations()
-                    }
-                    operation.finish()
-                }
-            }
-            awaitAuthenticationOperation.addDependency(authenticationOperation)
-            self.run([awaitAuthenticationOperation], context: group.context, requiresSerialQueue: true)
-        }
-        else
-        {
-            // Disable the idleTimeout
-            DispatchQueue.main.schedule {
-                if !UIApplication.shared.isIdleTimerDisabled {       // accept only once if concurrent
-                    UIApplication.shared.isIdleTimerDisabled = UserDefaults.standard.isIdleTimeoutDisableEnabled
-                }
-            }
-            await performAppOperations()
+        } else {
+            performOperations()
         }
         
         return group
