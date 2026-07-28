@@ -140,6 +140,18 @@ private extension ResignAltStoreViewController
                         sender.progress = nil
                         sender.isIndicatingActivity = false
                         
+                        if case OperationError.cancelled = error {
+                            self.completionHandler?(.failure(OperationError.cancelled))
+                            self.dismiss(animated: true, completion: nil)
+                            return
+                        }
+                        
+                        if error.domain == NSCocoaErrorDomain && error.code == NSUserCancelledError {
+                            self.completionHandler?(.failure(OperationError.cancelled))
+                            self.dismiss(animated: true, completion: nil)
+                            return
+                        }
+                        
                         let alertController = UIAlertController(title: NSLocalizedString("Failed to Resign SideStore", comment: ""), message: error.localizedFailureReason ?? error.localizedDescription, preferredStyle: .alert)
                         alertController.addAction(UIAlertAction(title: NSLocalizedString("Try Again", comment: ""), style: .default, handler: { (action) in
                             refresh()

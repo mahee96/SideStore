@@ -182,6 +182,7 @@ final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
         if remove {
             try? FileManager.default.removeItem(at: file)
         }
+        Keychain.shared.reset()
         Keychain.shared.appleIDEmailAddress = account.email
         Keychain.shared.appleIDPassword = account.password
         Keychain.shared.adiPb = account.adiPB

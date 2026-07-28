@@ -1129,10 +1129,9 @@ private extension AppManager
     }
     
     private func validateSideStoreBundleIDMismatch(for operations: [AppOperation], group: RefreshGroup, presentingViewController: UIViewController?) async throws {
-        let activeSideStore = InstalledApp.fetchAltStore(in: DatabaseManager.shared.viewContext)
-        guard let activeResignedID = activeSideStore?.resignedBundleIdentifier else { return }
-        let activeCustomID = activeSideStore?.customBundleIdentifier
-        let activeEffectiveID = activeCustomID ?? activeResignedID
+        if let error = group.context.error {
+            throw error
+        }
         
         let currentTeam = group.context.team ?? Keychain.shared.team
         let currentTeamID = currentTeam?.identifier
@@ -1141,15 +1140,20 @@ private extension AppManager
             let isSideStore = (operation.app as? ALTApplication)?.isAltStoreApp == true || operation.bundleIdentifier.contains(ALTApplication.altstoreBundleID) || operation.bundleIdentifier == StoreApp.altstoreAppID
             guard isSideStore else { continue }
             
+            guard let installedApp = operation.app as? InstalledApp else { continue }
+            
+            let activeResignedID = installedApp.resignedBundleIdentifier
+            let activeEffectiveID = installedApp.customBundleIdentifier ?? activeResignedID
+            
             let incomingTargetID: String?
             switch operation {
             case .install(let app, let customBundleIdentifier), .update(let app, let customBundleIdentifier):
                 if let customBundleIdentifier = customBundleIdentifier, !customBundleIdentifier.isEmpty {
                     incomingTargetID = customBundleIdentifier
-                } else if let installedApp = app as? InstalledApp {
-                    incomingTargetID = installedApp.customBundleIdentifier ?? installedApp.resignedBundleIdentifier
                 } else if let currentTeamID = currentTeamID {
                     incomingTargetID = StoreApp.altstoreAppID + "." + currentTeamID
+                } else if let installedApp = app as? InstalledApp {
+                    incomingTargetID = installedApp.customBundleIdentifier ?? installedApp.resignedBundleIdentifier
                 } else {
                     incomingTargetID = nil
                 }
@@ -1168,12 +1172,22 @@ private extension AppManager
             
             switch operation {
             case .resign, .install:
-                guard let presentingViewController = presentingViewController else {
-                    throw OperationError.sideStoreBundleIDMismatch(targetBundleID: targetID, activeBundleID: activeEffectiveID)
-                }
-                
                 let confirmed = await withCheckedContinuation { continuation in
                     Task { @MainActor in
+                        var presenter: UIViewController? = presentingViewController ?? UIApplication.shared.connectedScenes
+                            .compactMap({ $0 as? UIWindowScene })
+                            .flatMap({ $0.windows })
+                            .first(where: { $0.isKeyWindow })?.rootViewController
+                            
+                        while let presented = presenter?.presentedViewController, !presented.isBeingDismissed {
+                            presenter = presented
+                        }
+                        
+                        guard let presenter = presenter else {
+                            continuation.resume(returning: false)
+                            return
+                        }
+                        
                         let alert = UIAlertController(
                             title: NSLocalizedString("Bundle ID Mismatch Detected", comment: ""),
                             message: String(format: NSLocalizedString("The target bundle ID '%@' does not match the active SideStore instance ('%@').\n\nProceeding will install a new instance of SideStore instead of updating the current instance.", comment: ""), targetID, activeEffectiveID),
@@ -1185,7 +1199,7 @@ private extension AppManager
                         alert.addAction(UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .destructive) { _ in
                             continuation.resume(returning: true)
                         })
-                        presentingViewController.present(alert, animated: true)
+                        presenter.present(alert, animated: true)
                     }
                 }
                 

@@ -93,6 +93,15 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, 
         AltSign.setLogging(OperationsLoggingControl.getFromDatabase(for: AuthenticationOperation.self))
 
         Task {
+            if let newEmail = self.appleIDEmailAddress,
+               let currentEmail = Keychain.shared.appleIDEmailAddress,
+               newEmail.lowercased() != currentEmail.lowercased() {
+                self.debugLog("[Authentication] Email address changed from '\(currentEmail)' to '\(newEmail)'. Clearing cached in-memory session, team, and certificate.")
+                Keychain.shared.team = nil
+                Keychain.shared.session = nil
+                Keychain.shared.certificate = nil
+            }
+            
             // try to use cached session
             if
                 let certificate = Keychain.shared.certificate,
