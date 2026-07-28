@@ -283,9 +283,9 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, 
                     
                     let signer = ALTSigner(team: altTeam, certificate: altCertificate)
                     AltSign.setLogging(OperationsLoggingControl.getFromDatabase(for: AuthenticationOperation.self))
-                    // Refresh screen must go last since a successful refresh will cause the app to quit.
-                    let didShowRefreshAlert = await self.showRefreshScreenIfNecessary(signer: signer, session: session)
-                    if !didShowRefreshAlert {
+                    // Resign screen must go last since a successful resign/reinstall will cause the app to quit.
+                    let didShowResignAlert = await self.showResignScreenIfNecessary(signer: signer, session: session)
+                    if !didShowResignAlert {
                         Keychain.shared.signingCertificate = altCertificate.p12Data()
                         Keychain.shared.signingCertificatePassword = altCertificate.machineIdentifier
                     }
@@ -762,7 +762,7 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, 
     }
     
     @MainActor
-    private func showRefreshScreenIfNecessary(signer: ALTSigner, session: ALTAppleAPISession) async -> Bool {
+    private func showResignScreenIfNecessary(signer: ALTSigner, session: ALTAppleAPISession) async -> Bool {
         guard let application = ALTApplication(fileURL: Bundle.main.bundleURL), let provisioningProfile = application.provisioningProfile else { return false }
         
         let result = SigningCertificateValidator.validate(
@@ -781,9 +781,9 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, 
             
             // For Paid Developer accounts, if the certificate used to sign the current installation
             // is still active on Apple's portal (which shows as .privateKeyLost or .externalSigner),
-            // we don't need to warn the user or force a refresh.
+            // we don't need to warn the user or force a resign.
             if signer.team.type != .free && (reason == .privateKeyLost || reason == .externalSigner) {
-                self.debugLog("[Authentication] Running certificate is still active on the Paid account portal. Skipping refresh screen.")
+                self.debugLog("[Authentication] Running certificate is still active on the Paid account portal. Skipping resign screen.")
                 return false
             }
             
@@ -791,14 +791,14 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, 
                 let context = AuthenticatedOperationContext(context: self.context)
                 context.operations.removeAllObjects() // Prevent deadlock due to endless waiting on previous operations to finish.
                 
-                let refreshViewController = self.storyboard.instantiateViewController(withIdentifier: "refreshAltStoreViewController") as! RefreshAltStoreViewController
-                refreshViewController.context = context
-                refreshViewController.mismatchReason = reason
-                refreshViewController.completionHandler = { _ in
+                let resignViewController = self.storyboard.instantiateViewController(withIdentifier: "resignAltStoreViewController") as! ResignAltStoreViewController
+                resignViewController.context = context
+                resignViewController.mismatchReason = reason
+                resignViewController.completionHandler = { _ in
                     continuation.resume(returning: true)
                 }
                 
-                if !self.present(refreshViewController) {
+                if !self.present(resignViewController) {
                     continuation.resume(returning: false)
                 }
             }

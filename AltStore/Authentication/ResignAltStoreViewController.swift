@@ -1,5 +1,5 @@
 //
-//  RefreshAltStoreViewController.swift
+//  ResignAltStoreViewController.swift
 //  AltStore
 //
 //  Created by Riley Testut on 10/26/19.
@@ -10,7 +10,7 @@ import UIKit
 import AltStoreCore
 import AltSign
 
-final class RefreshAltStoreViewController: UIViewController
+final class ResignAltStoreViewController: UIViewController
 {
     var context: AuthenticatedOperationContext!
     var mismatchReason: SigningCertificateMismatchReason?
@@ -53,8 +53,8 @@ final class RefreshAltStoreViewController: UIViewController
         
         let isRevocationExpected = (reason == .privateKeyLost || reason == .freeAccountLimitRevoked)
         let buttonTitle = isRevocationExpected ?
-            NSLocalizedString("Revoke and Refresh Now", comment: "") :
-            NSLocalizedString("Refresh Now", comment: "")
+            NSLocalizedString("Revoke and Resign Now", comment: "") :
+            NSLocalizedString("Resign Now", comment: "")
         self.reinstallButton.setTitle(buttonTitle, for: .normal)
         self.reinstallButton.fontSize = 15
         
@@ -114,9 +114,9 @@ final class RefreshAltStoreViewController: UIViewController
     }
 }
 
-private extension RefreshAltStoreViewController
+private extension ResignAltStoreViewController
 {
-    @IBAction func refreshAltStore(_ sender: PillButton)
+    @IBAction func resignAltStore(_ sender: PillButton)
     {
         guard let altStore = InstalledApp.fetchAltStore(in: DatabaseManager.shared.viewContext) else { return }
                 
@@ -140,11 +140,11 @@ private extension RefreshAltStoreViewController
                         sender.progress = nil
                         sender.isIndicatingActivity = false
                         
-                        let alertController = UIAlertController(title: NSLocalizedString("Failed to Refresh SideStore", comment: ""), message: error.localizedFailureReason ?? error.localizedDescription, preferredStyle: .alert)
+                        let alertController = UIAlertController(title: NSLocalizedString("Failed to Resign SideStore", comment: ""), message: error.localizedFailureReason ?? error.localizedDescription, preferredStyle: .alert)
                         alertController.addAction(UIAlertAction(title: NSLocalizedString("Try Again", comment: ""), style: .default, handler: { (action) in
                             refresh()
                         }))
-                        alertController.addAction(UIAlertAction(title: NSLocalizedString("Refresh Later", comment: ""), style: .cancel, handler: { (action) in
+                        alertController.addAction(UIAlertAction(title: NSLocalizedString("Resign Later", comment: ""), style: .cancel, handler: { (action) in
                             self.completionHandler?(.failure(error))
                         }))
                         
