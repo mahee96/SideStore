@@ -86,23 +86,26 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
         do {
             /* App */
             let installedApp = try self.findOrCreateInstalledApp(in: backgroundContext, certificate: certificate, resignedApp: resignedApp, storeBuildVersion: storeBuildVersion)
-            
-            /* App Extensions */
-            let installedExtensions = try self.findOrCreateInstalledExtensions(for: resignedApp, installedApp: installedApp, in: backgroundContext)
-            installedApp.appExtensions = installedExtensions
+            let isDifferentSideStoreContainer = (installedApp.bundleIdentifier == StoreApp.altstoreAppID || resignedApp.isAltStoreApp) && (resignedApp.bundleIdentifier != installedApp.resignedBundleIdentifier)
 
-            // Remove stale "PlugIns" (Extensions) from currently installed App
-            self.removeStaleAppExtensions(for: installedApp)
-        
-            self.context.beginInstallationHandler?(installedApp)
+            if !isDifferentSideStoreContainer {
+                /* App Extensions */
+                let installedExtensions = try self.findOrCreateInstalledExtensions(for: resignedApp, installedApp: installedApp, in: backgroundContext)
+                installedApp.appExtensions = installedExtensions
+
+                // Remove stale "PlugIns" (Extensions) from currently installed App
+                self.removeStaleAppExtensions(for: installedApp)
+            
+                self.context.beginInstallationHandler?(installedApp)
+                
+                self.updateActiveAppsStatus(for: installedApp, provisioningProfiles: provisioningProfiles, in: backgroundContext)
+            }
             
             // Temporary directory and resigned .ipa no longer needed, so delete them now to ensure AltStore doesn't quit before we get the chance to.
             self.cleanUp()
             
-            self.updateActiveAppsStatus(for: installedApp, provisioningProfiles: provisioningProfiles, in: backgroundContext)
-            
             var installing = true
-            if installedApp.storeApp?.bundleIdentifier.range(of: Bundle.Info.appbundleIdentifier) != nil {
+            if !isDifferentSideStoreContainer && installedApp.storeApp?.bundleIdentifier.range(of: Bundle.Info.appbundleIdentifier) != nil {
                 do {
                     // we need to flush changes to the disk now in case the changes are lost when iOS kills current process
                     try installedApp.managedObjectContext?.save()
@@ -117,9 +120,11 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
                 do {
                     try await installIPA(installedApp.bundleIdentifier)
                     installing = false
-                    try await backgroundContext.perform{
-                        installedApp.refreshedDate = Date()
-                        try installedApp.managedObjectContext?.save()
+                    if !isDifferentSideStoreContainer {
+                        try await backgroundContext.perform{
+                            installedApp.refreshedDate = Date()
+                            try installedApp.managedObjectContext?.save()
+                        }
                     }
                     self.finish(.success(installedApp))
                 } catch let error {
