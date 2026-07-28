@@ -1128,11 +1128,14 @@ private extension AppManager
         }
     }
     
-    private func validateSideStoreBundleIDMismatch(for operations: [AppOperation], presentingViewController: UIViewController?) async throws {
+    private func validateSideStoreBundleIDMismatch(for operations: [AppOperation], group: RefreshGroup, presentingViewController: UIViewController?) async throws {
         let activeSideStore = InstalledApp.fetchAltStore(in: DatabaseManager.shared.viewContext)
         guard let activeResignedID = activeSideStore?.resignedBundleIdentifier else { return }
         let activeCustomID = activeSideStore?.customBundleIdentifier
         let activeEffectiveID = activeCustomID ?? activeResignedID
+        
+        let currentTeam = group.context.team ?? Keychain.shared.team
+        let currentTeamID = currentTeam?.identifier
         
         for operation in operations {
             let isSideStore = (operation.app as? ALTApplication)?.isAltStoreApp == true || operation.bundleIdentifier.contains(ALTApplication.altstoreBundleID) || operation.bundleIdentifier == StoreApp.altstoreAppID
@@ -1145,12 +1148,18 @@ private extension AppManager
                     incomingTargetID = customBundleIdentifier
                 } else if let installedApp = app as? InstalledApp {
                     incomingTargetID = installedApp.customBundleIdentifier ?? installedApp.resignedBundleIdentifier
+                } else if let currentTeamID = currentTeamID {
+                    incomingTargetID = StoreApp.altstoreAppID + "." + currentTeamID
                 } else {
                     incomingTargetID = nil
                 }
             case .refresh(let installedApp), .activate(let installedApp), .deactivate(let installedApp),
                  .backup(let installedApp), .restore(let installedApp), .resign(let installedApp, _):
-                incomingTargetID = installedApp.customBundleIdentifier ?? installedApp.resignedBundleIdentifier
+                if let currentTeamID = currentTeamID, installedApp.bundleIdentifier == StoreApp.altstoreAppID {
+                    incomingTargetID = installedApp.customBundleIdentifier ?? (StoreApp.altstoreAppID + "." + currentTeamID)
+                } else {
+                    incomingTargetID = installedApp.customBundleIdentifier ?? installedApp.resignedBundleIdentifier
+                }
             }
             
             guard let targetID = incomingTargetID, targetID != activeEffectiveID && targetID != activeResignedID else { continue }
@@ -1193,9 +1202,6 @@ private extension AppManager
     @discardableResult
     private func perform(_ operations: [AppOperation], presentingViewController: UIViewController?, group: RefreshGroup) async throws -> RefreshGroup
     {
-        // Preflight check: validate SideStore bundle ID matches active container before starting any operations
-        try await self.validateSideStoreBundleIDMismatch(for: operations, presentingViewController: presentingViewController)
-        
         let operations = operations.filter { self.progress(for: $0) == nil || self.progress(for: $0)?.isCancelled == true }
         
         for operation in operations
@@ -1224,8 +1230,8 @@ private extension AppManager
             }
         }
         
-        func performAppOperations()
-        {
+
+        func performOperations(){
             for operation in operations
             {
                 let progress = self.progress(for: operation)
@@ -1296,17 +1302,38 @@ private extension AppManager
                 }
             }
         }
+        func performAppOperations(managedContext: NSManagedObjectContext? = nil) async
+        {
+            do {
+                try await self.validateSideStoreBundleIDMismatch(for: operations, group: group, presentingViewController: presentingViewController)
+            } catch {
+                group.context.error = error
+                for operation in operations {
+                    self.finish(operation, result: .failure(error), group: group, progress: self.progress(for: operation))
+                }
+                return
+            }
+
+            if let managedContext = managedContext {
+                await managedContext.perform { performOperations() }
+            } else {
+                performOperations()
+            }
+        }
         
         if let authenticationOperation = authenticationOperation
         {
-            let awaitAuthenticationOperation = BlockOperation {
-                if let managedObjectContext = operations.lazy.compactMap({ ($0.app as? NSManagedObject)?.managedObjectContext }).first
-                {
-                    managedObjectContext.perform { performAppOperations() }
-                }
-                else
-                {
-                    performAppOperations()
+            let awaitAuthenticationOperation = RSTAsyncBlockOperation { operation in
+                Task {
+                    if let managedObjectContext = operations.lazy.compactMap({ ($0.app as? NSManagedObject)?.managedObjectContext }).first
+                    {
+                        await performAppOperations(managedContext: managedObjectContext)
+                    }
+                    else
+                    {
+                        await performAppOperations()
+                    }
+                    operation.finish()
                 }
             }
             awaitAuthenticationOperation.addDependency(authenticationOperation)
@@ -1320,7 +1347,7 @@ private extension AppManager
                     UIApplication.shared.isIdleTimerDisabled = UserDefaults.standard.isIdleTimeoutDisableEnabled
                 }
             }
-            performAppOperations()
+            await performAppOperations()
         }
         
         return group
