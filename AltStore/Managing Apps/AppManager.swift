@@ -1135,7 +1135,7 @@ private extension AppManager
         let activeEffectiveID = activeCustomID ?? activeResignedID
         
         for operation in operations {
-            let isSideStore = operation.app.isAltStoreApp || operation.bundleIdentifier == StoreApp.altstoreAppID
+            let isSideStore = (operation.app as? ALTApplication)?.isAltStoreApp == true || operation.bundleIdentifier.contains(ALTApplication.altstoreBundleID) || operation.bundleIdentifier == StoreApp.altstoreAppID
             guard isSideStore else { continue }
             
             let incomingTargetID: String?
@@ -1155,7 +1155,7 @@ private extension AppManager
             
             guard let targetID = incomingTargetID, targetID != activeEffectiveID && targetID != activeResignedID else { continue }
             
-            self.debugLog("[AppManager] SideStore bundle ID mismatch detected: target='\(targetID)', active='\(activeEffectiveID)'")
+            debugLog("[AppManager] SideStore bundle ID mismatch detected: target='\(targetID)', active='\(activeEffectiveID)'")
             
             switch operation {
             case .resign, .install:

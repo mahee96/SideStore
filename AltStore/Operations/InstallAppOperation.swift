@@ -146,7 +146,7 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
                                         context: backgroundContext)
         }
         
-        let isDifferentSideStoreContainer = installedApp.isAltStoreApp && (resignedApp.bundleIdentifier != installedApp.resignedBundleIdentifier)
+        let isDifferentSideStoreContainer = (installedApp.bundleIdentifier == StoreApp.altstoreAppID || resignedApp.isAltStoreApp) && (resignedApp.bundleIdentifier != installedApp.resignedBundleIdentifier)
         if isDifferentSideStoreContainer {
             self.debugLog("""
             [WARN] Skipped persisting database mutations in InstalledApp table for app: \(installedApp.bundleIdentifier):
