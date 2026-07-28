@@ -141,14 +141,9 @@ private extension ResignAltStoreViewController
                         sender.progress = nil
                         sender.isIndicatingActivity = false
                         
-                        if error is CancellationError {
+                        if error is CancellationError || (error.domain == NSCocoaErrorDomain && error.code == NSUserCancelledError) {
                             debugLog("[ResignAltStoreViewController] Operation cancelled. Auto-dismissing Resign SideStore Now screen.")
-                            self.completionHandler?(.failure(OperationError.cancelled))
-                            self.dismiss(animated: true, completion: nil)
-                            return
-                        }
-                        
-                        if error.domain == NSCocoaErrorDomain && error.code == NSUserCancelledError {
+                            self.context?.error = OperationError.cancelled
                             self.completionHandler?(.failure(OperationError.cancelled))
                             self.dismiss(animated: true, completion: nil)
                             return

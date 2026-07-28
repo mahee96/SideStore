@@ -293,15 +293,22 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, 
                     let signer = ALTSigner(team: altTeam, certificate: altCertificate)
                     AltSign.setLogging(OperationsLoggingControl.getFromDatabase(for: AuthenticationOperation.self))
                     // Resign screen must go last since a successful resign/reinstall will cause the app to quit.
-                    let didShowResignAlert = await self.showResignScreenIfNecessary(signer: signer, session: session)
-                    if !didShowResignAlert {
-                        Keychain.shared.signingCertificate = altCertificate.p12Data()
-                        Keychain.shared.signingCertificatePassword = altCertificate.machineIdentifier
-                    }
-                    
-                    await MainActor.run {
-                        super.finish(result)
-                        self.navigationController.dismiss(animated: true, completion: nil)
+                    do {
+                        let didShowResignAlert = try await self.showResignScreenIfNecessary(signer: signer, session: session)
+                        if !didShowResignAlert {
+                            Keychain.shared.signingCertificate = altCertificate.p12Data()
+                            Keychain.shared.signingCertificatePassword = altCertificate.machineIdentifier
+                        }
+                        
+                        await MainActor.run {
+                            super.finish(result)
+                            self.navigationController.dismiss(animated: true, completion: nil)
+                        }
+                    } catch {
+                        await MainActor.run {
+                            super.finish(.failure(error))
+                            self.navigationController.dismiss(animated: true, completion: nil)
+                        }
                     }
                 }
             } else {
@@ -771,7 +778,7 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, 
     }
     
     @MainActor
-    private func showResignScreenIfNecessary(signer: ALTSigner, session: ALTAppleAPISession) async -> Bool {
+    private func showResignScreenIfNecessary(signer: ALTSigner, session: ALTAppleAPISession) async throws -> Bool {
         guard let application = ALTApplication(fileURL: Bundle.main.bundleURL), let provisioningProfile = application.provisioningProfile else { return false }
         
         let result = SigningCertificateValidator.validate(
@@ -796,15 +803,20 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, 
                 return false
             }
             
-            return await withCheckedContinuation { continuation in
+            return try await withCheckedThrowingContinuation { continuation in
                 let context = AuthenticatedOperationContext(context: self.context)
                 context.operations.removeAllObjects() // Prevent deadlock due to endless waiting on previous operations to finish.
                 
                 let resignViewController = self.storyboard.instantiateViewController(withIdentifier: "resignAltStoreViewController") as! ResignAltStoreViewController
                 resignViewController.context = context
                 resignViewController.mismatchReason = reason
-                resignViewController.completionHandler = { _ in
-                    continuation.resume(returning: true)
+                resignViewController.completionHandler = { result in
+                    switch result {
+                    case .success:
+                        continuation.resume(returning: true)
+                    case .failure(let error):
+                        continuation.resume(throwing: error)
+                    }
                 }
                 
                 if !self.present(resignViewController) {

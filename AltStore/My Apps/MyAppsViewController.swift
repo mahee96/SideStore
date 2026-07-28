@@ -1202,6 +1202,8 @@ private extension MyAppsViewController
                 
                 switch result
                 {
+                case .failure(let error) where error is CancellationError:
+                    debugLog("Resign app cancelled by user.")
                 case .failure(let error):
                     debugLog("Failed to resign app: \(error)")
                     DispatchQueue.main.async {

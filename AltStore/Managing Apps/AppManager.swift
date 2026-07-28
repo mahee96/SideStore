@@ -1129,8 +1129,8 @@ private extension AppManager
     }
     
     private func validateSideStoreBundleIDMismatch(for operations: [AppOperation], group: RefreshGroup, presentingViewController: UIViewController?) async throws {
-        if let error = group.context.error {
-            throw error
+        if group.progress.isCancelled || group.context.error != nil {
+            throw group.context.error ?? OperationError.cancelled
         }
         
         let currentTeam = group.context.team ?? Keychain.shared.team
@@ -1237,17 +1237,24 @@ private extension AppManager
         /* Authenticate (if necessary) */
         if group.context.session == nil
         {
-            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                _ = self.authenticate(presentingViewController: presentingViewController, context: group.context, skipDeviceRegistration: false) { (result) in
-                    switch result
-                    {
-                    case .failure(let error):
-                        group.context.error = error
-                        continuation.resume(throwing: error)
-                    case .success:
-                        continuation.resume()
+            do {
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                    _ = self.authenticate(presentingViewController: presentingViewController, context: group.context, skipDeviceRegistration: false) { (result) in
+                        switch result
+                        {
+                        case .failure(let error):
+                            continuation.resume(throwing: error)
+                        case .success:
+                            continuation.resume()
+                        }
                     }
                 }
+            } catch {
+                group.context.error = error
+                for operation in operations {
+                    self.finish(operation, result: .failure(error), group: group, progress: self.progress(for: operation))
+                }
+                throw error
             }
         }
         
