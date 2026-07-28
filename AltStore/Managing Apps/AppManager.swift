@@ -1188,15 +1188,19 @@ private extension AppManager
                             return
                         }
                         
+                        debugLog("[AppManager] Presenting SideStore bundle ID mismatch alert modal (target='\(targetID)', active='\(activeEffectiveID)')...")
+                        
                         let alert = UIAlertController(
                             title: NSLocalizedString("Bundle ID Mismatch Detected", comment: ""),
                             message: String(format: NSLocalizedString("The target bundle ID '%@' does not match the active SideStore instance ('%@').\n\nProceeding will install a new instance of SideStore instead of updating the current instance.", comment: ""), targetID, activeEffectiveID),
                             preferredStyle: .alert
                         )
                         alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { _ in
+                            debugLog("[AppManager] User tapped Cancel on SideStore bundle ID mismatch alert modal.")
                             continuation.resume(returning: false)
                         })
                         alert.addAction(UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .destructive) { _ in
+                            debugLog("[AppManager] User tapped Continue on SideStore bundle ID mismatch alert modal.")
                             continuation.resume(returning: true)
                         })
                         presenter.present(alert, animated: true)
@@ -1204,6 +1208,7 @@ private extension AppManager
                 }
                 
                 if !confirmed {
+                    debugLog("[AppManager] SideStore bundle ID mismatch prompt cancelled by user. Throwing OperationError.cancelled.")
                     throw OperationError.cancelled
                 }
                 

@@ -30,6 +30,7 @@ final class ResignAltStoreViewController: UIViewController
         self.placeholderView.detailTextLabel.textColor = UIColor.white.withAlphaComponent(0.6)
         
         let reason = self.mismatchReason ?? (self.context?.team?.type == .free ? .freeAccountLimitRevoked : .revoked)
+        debugLog("[ResignAltStoreViewController] Displaying Resign SideStore Now screen (mismatchReason: \(reason)).")
         let reasonText: String
         
         switch reason {
@@ -141,6 +142,7 @@ private extension ResignAltStoreViewController
                         sender.isIndicatingActivity = false
                         
                         if error is CancellationError {
+                            debugLog("[ResignAltStoreViewController] Operation cancelled. Auto-dismissing Resign SideStore Now screen.")
                             self.completionHandler?(.failure(OperationError.cancelled))
                             self.dismiss(animated: true, completion: nil)
                             return
