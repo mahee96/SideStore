@@ -12,7 +12,7 @@ import AltStoreCore
 
 class ResultOperation<ResultType>: Operation
 {
-    var resultHandler: ((Result<ResultType, Error>) -> Void)?
+    var resultHandler: ((Result<ResultType, Error>) async -> Void)?
 
     // Should only be set by subclasses
     var localizedFailure: String?
@@ -48,9 +48,17 @@ class ResultOperation<ResultType>: Operation
                   "    Result: \(result)\n")
         }
 
-        self.resultHandler?(result)
-
-        super.finish()
+        if let resultHandler = self.resultHandler
+        {
+            Task {
+                await resultHandler(result)
+                super.finish()
+            }
+        }
+        else
+        {
+            super.finish()
+        }
     }
 }
 

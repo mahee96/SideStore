@@ -1770,44 +1770,37 @@ private extension AppManager
         /* Refresh */
         let refreshAppOperation = RefreshAppOperation(context: context)
         refreshAppOperation.resultHandler = { (result) in
-            Task {
-                switch result
-                {
-                case .success(let installedApp):
-                    completionHandler(.success(installedApp))
+            switch result
+            {
+            case .success(let installedApp):
+                completionHandler(.success(installedApp))
 
+            case .failure(let error) where error.isMinimuxerNoConnection:
+                completionHandler(.failure(OperationError.noConnection))
+                
+            case .failure(let error) where error.isMinimuxerNoVPN:
+                completionHandler(.failure(OperationError.noVPN))
 
-                case .failure(let error) where error.isMinimuxerNoConnection:
-                    completionHandler(.failure(OperationError.noConnection))
-                    
-                case .failure(let error) where error.isMinimuxerNoVPN:
-                    completionHandler(.failure(OperationError.noVPN))
-
-                case .failure(let error) where error.isMinimuxerProfileInstall:
-                    let error = await getMinimuxerStatus().operationError ?? error
-                    completionHandler(.failure(error))
-                    
-                case .failure(ALTServerError.unknownRequest), .failure(OperationError.appNotFound(name: app.name)):
-                    // Fall back to installation if AltServer doesn't support newer provisioning profile requests,
-                    // OR if the cached app could not be found and we may need to redownload it.
-                    app.managedObjectContext?.performAndWait { // Must performAndWait to ensure we add operations before we return.
-                        Task {
-                            switch await getMinimuxerStatus() {
-                            case .ready:
-                                let installProgress = self._install(app, operation: operation, group: group) { (result) in
-                                    completionHandler(result)
-                                }
-                                progress.addChild(installProgress, withPendingUnitCount: 40)
-                            case let status:
-                                let error = status.operationError ?? OperationError.unknown()
-                                completionHandler(.failure(error))
-                            }
-                        }
+            case .failure(let error) where error.isMinimuxerProfileInstall:
+                let error = await getMinimuxerStatus().operationError ?? error
+                completionHandler(.failure(error))
+                
+            case .failure(ALTServerError.unknownRequest), .failure(OperationError.appNotFound(name: app.name)):
+                // Fall back to installation if AltServer doesn't support newer provisioning profile requests,
+                // OR if the cached app could not be found and we may need to redownload it.
+                switch await getMinimuxerStatus() {
+                case .ready:
+                    let installProgress = self._install(app, operation: operation, group: group) { (result) in
+                        completionHandler(result)
                     }
-                    
-                case .failure(let error):
+                    progress.addChild(installProgress, withPendingUnitCount: 40)
+                case let status:
+                    let error = status.operationError ?? OperationError.unknown()
                     completionHandler(.failure(error))
                 }
+                
+            case .failure(let error):
+                completionHandler(.failure(error))
             }
         }
         progress.addChild(refreshAppOperation.progress, withPendingUnitCount: 40)
