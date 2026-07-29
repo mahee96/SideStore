@@ -17,6 +17,7 @@ let shortcutURLonDelay = URL(string: "shortcuts://run-shortcut?name=TurnOnDataDe
 
 @objc(InstallAppOperation)
 final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging, @unchecked Sendable {
+    private static let selfInstallSuspendDelayNs: UInt64 = 3_000_000_000 // 3 seconds
 
     let context: InstallAppOperationContext
     let storeApp: StoreApp?
@@ -87,9 +88,9 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
             if FileManager.default.fileExists(atPath: fileURL.path) {
                 do {
                     try FileManager.default.removeItem(at: fileURL)
-                    debugLog("InstallAppOperation: Removed refreshed IPA")
+                    debugLog("[InstallAppOperation] Removed refreshed IPA")
                 } catch {
-                    debugLog("InstallAppOperation: Failed to remove refreshed .ipa: \(error)")
+                    debugLog("[InstallAppOperation] Failed to remove refreshed .ipa: \(error)")
                 }
             }
         }
@@ -159,10 +160,10 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
         // Temporary directory and resigned .ipa no longer needed — delete now before AltStore quits.
         cleanUp()
         
-        // Self-reinstall notification/prompt
+        // Self-reinstall background suspension
         var installing = true
         if isSelfReinstall {
-            self.handleSelfReinstallationAndPrompt(for: installedApp, installing: &installing)
+            self.handleSelfReinstallation(for: installedApp, installing: &installing)
         }
         
         // Phase 2: IPA installation
@@ -224,9 +225,9 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
                             to: installedApp.alternateIconURL,
                             shouldReplace: true
                         )
-                        self.debugLog("InstallAppOperation: Copied alternate icon at: \(alternateIconURL) to: \(installedApp.alternateIconURL)")
+                        self.debugLog("[InstallAppOperation] Copied alternate icon at: \(alternateIconURL) to: \(installedApp.alternateIconURL)")
                     } catch {
-                        self.debugLog("InstallAppOperation: Failed to copy alternate icon: \(error)")
+                        self.debugLog("[InstallAppOperation] Failed to copy alternate icon: \(error)")
                     }
                 case .remove:
                     try? FileManager.default.removeItem(at: installedApp.alternateIconURL)
@@ -290,9 +291,9 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
             for staleAppExn in staleAppExns {
                 do {
                     try FileManager.default.removeItem(at: staleAppExn.fileURL)
-                    self.debugLog("InstallAppOperation: removed stale app-extension: \(staleAppExn.fileURL)")
+                    self.debugLog("[InstallAppOperation] removed stale app-extension: \(staleAppExn.fileURL)")
                 } catch {
-                    self.debugLog("InstallAppOperation: remove appExtensions Error: \(error)")
+                    self.debugLog("[InstallAppOperation] remove appExtensions Error: \(error)")
                 }
             }
         }
@@ -331,67 +332,24 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
         }
     }
 
-    private func handleSelfReinstallationAndPrompt(for installedApp: InstalledApp, installing: UnsafeMutablePointer<Bool>) {
+    private func handleSelfReinstallation(for installedApp: InstalledApp, installing: UnsafeMutablePointer<Bool>) {
         // Reinstalling ourself will hang until we leave the app, so we need to exit it without force closing
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            try? await Task.sleep(nanoseconds: Self.selfInstallSuspendDelayNs)
             if UIApplication.shared.applicationState != .active {
-                self.debugLog("We are not in the foreground, let's not do anything")
+                self.debugLog("[InstallAppOperation] We are not in the foreground, let's not do anything")
                 return
             }
             if !installing.pointee {
-                self.debugLog("Installing finished")
+                self.debugLog("[InstallAppOperation] Installing finished")
                 return
             }
-            self.debugLog("We are still installing after 3 seconds")
-            UNUserNotificationCenter.current().getNotificationSettings { settings in
-                switch (settings.authorizationStatus) {
-                case .authorized, .ephemeral, .provisional:
-                    self.verboseLog("Notifications are enabled")
-
-                    let content = UNMutableNotificationContent()
-                    content.title = "Refreshing..."
-                    content.body = "SideStore will automatically move to the homescreen to finish refreshing!"
-                    let notification = UNNotificationRequest(identifier: Bundle.Info.appbundleIdentifier + ".FinishRefreshNotification", content: content, trigger: UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false))
-                    UNUserNotificationCenter.current().add(notification)
-                    break
-                default:
-                    self.verboseLog("Notifications are not enabled")
-
-                    let alert = UIAlertController(
-                        title: "Finish Refresh",
-                        message: """
-                        Please reopen SideStore after the process is finished. To finish refreshing, SideStore must be moved to the background. To do this, you can either go to the Home Screen manually or by hitting Continue. Please reopen SideStore after doing this.
-                        """,
-                        preferredStyle: .alert
-                    )
-                    alert.addAction(UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .default, handler: { _ in
-                        self.debugLog("Going home")
-                        // Cell Shortcut
-                        if self.context.shouldTurnOffData {
-                            UIApplication.shared.open(shortcutURLonDelay, options: [:]) { _ in
-                                self.debugLog("Cell OFF Shortcut finished execution.")}
-                        }
-                        UIApplication.shared.perform(#selector(NSXPCConnection.suspend))
-                    }))
-
-                    Task { @MainActor in
-                        let keyWindow = UIApplication.shared.windows.filter { $0.isKeyWindow }.first
-                        if var topController = keyWindow?.rootViewController {
-                            while let presentedViewController = topController.presentedViewController {
-                                topController = presentedViewController
-                            }
-                            topController.present(alert, animated: true)
-                        } else {
-                            self.debugLog("No key window? Let's just go home")
-                        }
-                    }
-                }
-            }
+            self.debugLog("[InstallAppOperation] We are still installing after 3 seconds, suspending to background")
+            
             // Cell Shortcut
             if self.context.shouldTurnOffData {
                 UIApplication.shared.open(shortcutURLonDelay, options: [:]) { _ in
-                    self.debugLog("Cell OFF Shortcut finished execution.")
+                    self.debugLog("[InstallAppOperation] Cell OFF Shortcut finished execution.")
                 }
             }
             UIApplication.shared.perform(#selector(NSXPCConnection.suspend))
@@ -405,7 +363,7 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
         do {
             try FileManager.default.removeItem(at: context.temporaryDirectory)
         } catch {
-            debugLog("InstallAppOperation: Failed to remove temporary directory. \(error)")
+            debugLog("[InstallAppOperation] Failed to remove temporary directory. \(error)")
         }
     }
 }
