@@ -581,6 +581,7 @@ private extension BrowseViewController
         @MainActor
         func finish(_ result: Result<InstalledApp, Error>)
         {
+            debugLog("BrowseViewController.finish invoked with result: \(result) for \(app.bundleIdentifier)")
             DispatchQueue.main.async {
                 switch result
                 {
@@ -595,10 +596,12 @@ private extension BrowseViewController
                 UIView.performWithoutAnimation {
                     if let indexPath = self.dataSource.fetchedResultsController.indexPath(forObject: app)
                     {
+                        debugLog("BrowseViewController.finish: reloading item at \(indexPath)")
                         self.collectionView.reloadItems(at: [indexPath])
                     }
                     else
                     {
+                        debugLog("BrowseViewController.finish: reloading section")
                         self.collectionView.reloadSections(IndexSet(integer: indexPath.section))
                     }
                 }

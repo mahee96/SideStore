@@ -606,6 +606,7 @@ extension AppViewController
         
         Task(priority: .userInitiated) {
             let group = await AppManager.shared.installAsync(self.app, presentingViewController: self) { (result) in
+                debugLog("AppViewController: installAsync completion handler invoked with result: \(result)")
                 do
                 {
                     _ = try result.get()
@@ -624,6 +625,7 @@ extension AppViewController
                 }
                 
                 DispatchQueue.main.async {
+                    debugLog("AppViewController: clearing progress and updating UI...")
                     self.bannerView.button.progress = nil
                     self.navigationBarDownloadButton.progress = nil
                     self.update()

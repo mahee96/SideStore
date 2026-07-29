@@ -1630,17 +1630,22 @@ private extension AppManager
         installOperation.resultHandler = { (result) async in
             switch result
             {
-            case .failure(let error): completionHandler(.failure(error))
+            case .failure(let error):
+                debugLog("AppManager.installOperation.resultHandler: failure: \(error)")
+                completionHandler(.failure(error))
             case .success(let installedApp):
-                debugLog("App reported as Installed")
+                let bundleID = installedApp.bundleIdentifier
+                debugLog("App reported as Installed for \(bundleID)")
                 
                 context.installedApp = installedApp
-                if let index = UserDefaults.standard.legacySideloadedApps?.firstIndex(of: installedApp.bundleIdentifier)
+                if let index = UserDefaults.standard.legacySideloadedApps?.firstIndex(of: bundleID)
                 {
                     // No longer a legacy sideloaded app, so remove it from cached list.
                     UserDefaults.standard.legacySideloadedApps?.remove(at: index)
                 }
+                debugLog("AppManager.installOperation.resultHandler: invoking completionHandler for \(bundleID)...")
                 completionHandler(.success(installedApp))
+                debugLog("AppManager.installOperation.resultHandler: completionHandler returned for \(bundleID)")
             }
         }
         progress.addChild(installOperation.progress, withPendingUnitCount: 30)
@@ -2199,6 +2204,9 @@ private extension AppManager
     
     func finish(_ operation: AppOperation, result: Result<InstalledApp, Error>, group: RefreshGroup, progress: Progress?)
     {
+        debugLog("AppManager.finish invoked for operation for \(operation.bundleIdentifier)")
+        defer { debugLog("AppManager.finish completed for operation for \(operation.bundleIdentifier)") }
+
         // Remove disableIdleTimeout
         // TODO: This should disable for the last finish() request not the first though for batches
         //       probably if we are in batch mode, we can count expected no of finishes() to arrive
@@ -2228,18 +2236,6 @@ private extension AppManager
             
             // Ask widgets to be refreshed
             WidgetCenter.shared.reloadAllTimelines()
-            
-            do 
-            {
-                try installedApp.managedObjectContext?.performAndWait {
-                    try installedApp.managedObjectContext?.save()
-                }
-            }
-            catch
-            {
-                debugLog("Failed to save InstalledApp to database. \(error.localizedDescription)")
-                throw error
-            }
         }
         catch let nsError as NSError
         {
