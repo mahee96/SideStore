@@ -100,10 +100,10 @@ class ClearAppCacheOperation: ResultOperation<Void>, OperationLogging {
         var errors = [Error]()
         for fileURL in fileURLs {
             do {
-                self.verboseLog("Removing item from temporary directory: \(fileURL.lastPathComponent)")
+                self.verboseLog("[ClearAppCacheOperation] Removing item from temporary directory: \(fileURL.lastPathComponent)")
                 try FileManager.default.removeItem(at: fileURL)
             } catch {
-                self.debugLog("Failed to remove \(fileURL.lastPathComponent) from temporary directory. \(error.localizedDescription)")
+                self.debugLog("[ClearAppCacheOperation] Failed to remove \(fileURL.lastPathComponent) from temporary directory. \(error.localizedDescription)")
                 errors.append(error)
             }
         }
@@ -148,11 +148,11 @@ class ClearAppCacheOperation: ResultOperation<Void>, OperationLogging {
                 guard let isDir = resourceValues.isDirectory, let bundleID = resourceValues.name else { continue }
                 
                 if isDir && !installedBundleIDs.contains(bundleID) && !AppManager.shared.isActivelyManagingApp(withBundleID: bundleID) {
-                    self.verboseLog("Removing backup directory for uninstalled app: \(bundleID)")
+                    self.verboseLog("[ClearAppCacheOperation] Removing backup directory for uninstalled app: \(bundleID)")
                     try FileManager.default.removeItem(at: backupDirectory)
                 }
             } catch {
-                self.debugLog("Failed to remove app backup directory. \(error.localizedDescription)")
+                self.debugLog("[ClearAppCacheOperation] Failed to remove app backup directory. \(error.localizedDescription)")
                 errors.append(error)
             }
         }

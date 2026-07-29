@@ -212,8 +212,8 @@ final class RemoveAppExtensionsOperation: ResultOperation<Void>, OperationLoggin
     
     private func backgroundModeExtensionsCleanup(excessExtensions: Set<ALTApplication>) {
         // perform silent extensions cleanup for those that aren't already present in existing app
-        debugLog("\n    Performing background mode Extensions removal    \n")
-        verboseLog("RemoveAppExtensionsOperation: Excess Extensions In TargetAppBundle: \(excessExtensions.map { $0.bundleIdentifier })")
+        debugLog("[RemoveAppExtensionsOperation] Performing background mode Extensions removal")
+        verboseLog("[RemoveAppExtensionsOperation] Excess Extensions In TargetAppBundle: \(excessExtensions.map { $0.bundleIdentifier })")
         
         do {
             try self.removeExtensions(from: excessExtensions)

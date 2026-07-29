@@ -100,7 +100,7 @@ final class VerifyAppOperation: ResultOperation<Void>, OperationLogging {
         let sha256Hash = SHA256.hash(data: data)
         let hashString = sha256Hash.compactMap { String(format: "%02x", $0) }.joined()
         
-        verboseLog("Comparing app hash (\(hashString)) against expected hash (\(expectedHash))...")
+        verboseLog("[VerifyAppOperation] Comparing app hash (\(hashString)) against expected hash (\(expectedHash))...")
         
         guard hashString == expectedHash else { throw VerificationError.mismatchedHash(hashString, expectedHash: expectedHash, app: app) }
     }

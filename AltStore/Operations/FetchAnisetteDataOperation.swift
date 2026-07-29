@@ -61,7 +61,7 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
         UserDefaults.standard.menuAnisetteURL = urlString
         let url = URL(string: urlString)
         self.url = url
-        self.verboseLog("Anisette URL: \(self.url!.absoluteString)")
+        self.verboseLog("[FetchAnisetteDataOperation] Anisette URL: \(self.url!.absoluteString)")
 
         if let identifier = Keychain.shared.identifier,
            let adiPb = Keychain.shared.adiPb {
@@ -163,10 +163,10 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
             if v3 {
                 if json["result"] == "GetHeadersError" {
                     let message = json["message"]
-                    self.verboseLog("Error getting V3 headers: \(message ?? "no message")")
+                    self.verboseLog("[FetchAnisetteDataOperation] Error getting V3 headers: \(message ?? "no message")")
                     if let message = message,
                        message.contains("-45061") {
-                        self.verboseLog("Error message contains -45061 (not provisioned), resetting adi.pb and retrying")
+                        self.verboseLog("[FetchAnisetteDataOperation] Error message contains -45061 (not provisioned), resetting adi.pb and retrying")
                         Keychain.shared.adiPb = nil
                         Task {
                             do {
@@ -214,16 +214,16 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
             
             if let response = response,
                let version = response.value(forHTTPHeaderField: "Implementation-Version") {
-                self.verboseLog("Implementation-Version: \(version)")
-            } else { self.verboseLog("No Implementation-Version header") }
+                self.verboseLog("[FetchAnisetteDataOperation] Implementation-Version: \(version)")
+            } else { self.verboseLog("[FetchAnisetteDataOperation] No Implementation-Version header") }
             
-            self.verboseLog("Anisette used: \(formattedJSON)")
-            self.verboseLog("Original JSON: \(json)")
+            self.verboseLog("[FetchAnisetteDataOperation] Anisette used: \(formattedJSON)")
+            self.verboseLog("[FetchAnisetteDataOperation] Original JSON: \(json)")
             if let anisette = ALTAnisetteData(json: formattedJSON) {
-                self.debugLog("Anisette is valid!")
+                self.debugLog("[FetchAnisetteDataOperation] Anisette is valid!")
                 self.finish(.success(anisette))
             } else {
-                self.debugLog("Anisette is invalid!!!!")
+                self.debugLog("[FetchAnisetteDataOperation] Anisette is invalid!!!!")
                 if v3 {
                     throw OperationError.anisetteV3Error(message: "Invalid anisette (the returned data may not have all the required fields)")
                 } else {
@@ -241,20 +241,20 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
     
     // MARK: - V1
     private func handleV1() async throws {
-        self.verboseLog("Server is V1")
+        self.verboseLog("[FetchAnisetteDataOperation] Server is V1")
         
         if UserDefaults.shared.trustedServerURL == AnisetteManager.currentURLString {
-            self.verboseLog("Server has already been trusted, fetching anisette")
+            self.verboseLog("[FetchAnisetteDataOperation] Server has already been trusted, fetching anisette")
             try await self.fetchAnisetteV1()
             return
         }
         
-        self.debugLog("Alerting user about outdated server")
+        self.debugLog("[FetchAnisetteDataOperation] Alerting user about outdated server")
         
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             let alert = UIAlertController(title: "WARNING: Outdated anisette server", message: "We've detected you are using an older anisette server. Using this server has a higher likelihood of locking your account and causing other issues. Are you sure you want to continue?", preferredStyle: UIAlertController.Style.alert)
             alert.addAction(UIAlertAction(title: "Continue", style: UIAlertAction.Style.destructive, handler: { action in
-                self.verboseLog("Fetching anisette via V1")
+                self.verboseLog("[FetchAnisetteDataOperation] Fetching anisette via V1")
                 UserDefaults.shared.trustedServerURL = AnisetteManager.currentURLString
                 Task {
                     do {
@@ -266,7 +266,7 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
                 }
             }))
             alert.addAction(UIAlertAction(title: "Cancel", style: UIAlertAction.Style.cancel, handler: { action in
-                self.debugLog("Cancelled anisette operation")
+                self.debugLog("[FetchAnisetteDataOperation] Cancelled anisette operation")
                 continuation.resume(throwing: OperationError.cancelled)
             }))
      
@@ -283,7 +283,7 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
     }
     
     private func fetchAnisetteV1() async throws {
-        self.verboseLog("Fetching anisette V1")
+        self.verboseLog("[FetchAnisetteDataOperation] Fetching anisette V1")
         let (data, response) = try await URLSession.shared.data(from: self.url!)
         try self.extractAnisetteData(data, response as? HTTPURLResponse, v3: false)
     }
@@ -292,7 +292,7 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
     
     private func provision() async throws {
         try await fetchClientInfo()
-        self.verboseLog("Getting provisioning URLs")
+        self.verboseLog("[FetchAnisetteDataOperation] Getting provisioning URLs")
         var request = self.buildAppleRequest(url: URL(string: "https://gsa.apple.com/grandslam/GsService2/lookup")!)
         request.httpMethod = "GET"
         
@@ -304,12 +304,12 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
            let endProvisioningURL = URL(string: endProvisioningString) {
             self.startProvisioningURL = startProvisioningURL
             self.endProvisioningURL = endProvisioningURL
-            self.verboseLog("startProvisioningURL: \(self.startProvisioningURL!.absoluteString)")
-            self.verboseLog("endProvisioningURL: \(self.endProvisioningURL!.absoluteString)")
-            self.verboseLog("Starting a provisioning session")
+            self.verboseLog("[FetchAnisetteDataOperation] startProvisioningURL: \(self.startProvisioningURL!.absoluteString)")
+            self.verboseLog("[FetchAnisetteDataOperation] endProvisioningURL: \(self.endProvisioningURL!.absoluteString)")
+            self.verboseLog("[FetchAnisetteDataOperation] Starting a provisioning session")
             self.startProvisioningSession()
         } else {
-            self.debugLog("Apple didn't give valid URLs! Got response: \(String(data: data, encoding: .utf8) ?? "not utf8")")
+            self.debugLog("[FetchAnisetteDataOperation] Apple didn't give valid URLs! Got response: \(String(data: data, encoding: .utf8) ?? "not utf8")")
             throw OperationError.provisioningError(result: "Apple didn't give valid URLs. Please try again later", message: nil)
         }
     }
@@ -338,7 +338,7 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
             self.debugLog("Got error: \(String(describing: error))")
             
         default:
-            self.debugLog("Unknown event: \(event)")
+            self.debugLog("[FetchAnisetteDataOperation] Unknown event: \(event)")
         }
     }
     
@@ -346,15 +346,15 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
         do {
             if let json = try JSONSerialization.jsonObject(with: string.data(using: .utf8)!, options: []) as? [String: Any] {
                 guard let result = json["result"] as? String else {
-                    self.debugLog("The server didn't give us a result")
+                    self.debugLog("[FetchAnisetteDataOperation] The server didn't give us a result")
                     client.disconnect(closeCode: 0)
                     self.finish(.failure(OperationError.provisioningError(result: "The server didn't give us a result", message: nil)))
                     return
                 }
-                self.verboseLog("Received result: \(result)")
+                self.verboseLog("[FetchAnisetteDataOperation] Received result: \(result)")
                 switch result {
                 case "GiveIdentifier":
-                    self.verboseLog("Giving identifier")
+                    self.verboseLog("[FetchAnisetteDataOperation] Giving identifier")
                     client.json(["identifier": Keychain.shared.identifier!])
                     
                 case "GiveStartProvisioningData":
@@ -368,19 +368,19 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
                     
                 default:
                     if result.contains("Error") || result.contains("Invalid") || result == "ClosingPerRequest" || result == "Timeout" || result == "TextOnly" {
-                        self.debugLog("Failing because of \(result)")
+                        self.debugLog("[FetchAnisetteDataOperation] Failing because of \(result)")
                         self.finish(.failure(OperationError.provisioningError(result: result, message: json["message"] as? String)))
                     }
                 }
             }
         } catch let error as NSError {
-            self.debugLog("Failed to handle text: \(error.localizedDescription)")
+            self.debugLog("[FetchAnisetteDataOperation] Failed to handle text: \(error.localizedDescription)")
             self.finish(.failure(OperationError.provisioningError(result: error.localizedDescription, message: nil)))
         }
     }
     
     private func handleGiveStartProvisioningData(client: WebSocketClient) {
-        self.verboseLog("Getting start provisioning data")
+        self.verboseLog("[FetchAnisetteDataOperation] Getting start provisioning data")
         let body = [
             "Header": [String: Any](),
             "Request": [String: Any](),
@@ -393,10 +393,10 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
                 let (data, _) = try await URLSession.shared.data(for: request)
                 if let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? Dictionary<String, Dictionary<String, Any>>,
                    let spim = plist["Response"]?["spim"] as? String {
-                    self.verboseLog("Giving start provisioning data")
+                    self.verboseLog("[FetchAnisetteDataOperation] Giving start provisioning data")
                     client.json(["spim": spim])
                 } else {
-                    self.debugLog("Apple didn't give valid start provisioning data! Got response: \(String(data: data, encoding: .utf8) ?? "not utf8")")
+                    self.debugLog("[FetchAnisetteDataOperation] Apple didn't give valid start provisioning data! Got response: \(String(data: data, encoding: .utf8) ?? "not utf8")")
                     client.disconnect(closeCode: 0)
                     self.finish(.failure(OperationError.provisioningError(result: "Apple didn't give valid start provisioning data. Please try again later", message: nil)))
                 }
@@ -408,9 +408,9 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
     }
     
     private func handleGiveEndProvisioningData(json: [String: Any], client: WebSocketClient) {
-        self.verboseLog("Getting end provisioning data")
+        self.verboseLog("[FetchAnisetteDataOperation] Getting end provisioning data")
         guard let cpim = json["cpim"] as? String else {
-            self.debugLog("The server didn't give us a cpim")
+            self.debugLog("[FetchAnisetteDataOperation] The server didn't give us a cpim")
             client.disconnect(closeCode: 0)
             self.finish(.failure(OperationError.provisioningError(result: "The server didn't give us a cpim", message: nil)))
             return
@@ -430,10 +430,10 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
                 if let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? Dictionary<String, Dictionary<String, Any>>,
                    let ptm = plist["Response"]?["ptm"] as? String,
                    let tk = plist["Response"]?["tk"] as? String {
-                    self.verboseLog("Giving end provisioning data")
+                    self.verboseLog("[FetchAnisetteDataOperation] Giving end provisioning data")
                     client.json(["ptm": ptm, "tk": tk])
                 } else {
-                    self.debugLog("Apple didn't give valid end provisioning data! Got response: \(String(data: data, encoding: .utf8) ?? "not utf8")")
+                    self.debugLog("[FetchAnisetteDataOperation] Apple didn't give valid end provisioning data! Got response: \(String(data: data, encoding: .utf8) ?? "not utf8")")
                     client.disconnect(closeCode: 0)
                     self.finish(.failure(OperationError.provisioningError(result: "Apple didn't give valid end provisioning data. Please try again later", message: nil)))
                 }
@@ -445,10 +445,10 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
     }
     
     private func handleProvisioningSuccess(json: [String: Any], client: WebSocketClient) {
-        self.debugLog("Provisioning succeeded!")
+        self.debugLog("[FetchAnisetteDataOperation] Provisioning succeeded!")
         client.disconnect(closeCode: 0)
         guard let adiPb = json["adi_pb"] as? String else {
-            self.debugLog("The server didn't give us an adi.pb file")
+            self.debugLog("[FetchAnisetteDataOperation] The server didn't give us an adi.pb file")
             self.finish(.failure(OperationError.provisioningError(result: "The server didn't give us an adi.pb file", message: nil)))
             return
         }
@@ -492,10 +492,10 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
            self.mdLu != nil &&
            self.deviceId != nil &&
            Keychain.shared.identifier != nil {
-            self.verboseLog("Skipping client_info fetch since all the properties we need aren't nil")
+            self.verboseLog("[FetchAnisetteDataOperation] Skipping client_info fetch since all the properties we need aren't nil")
             return
         }
-        self.verboseLog("Trying to get client_info")
+        self.verboseLog("[FetchAnisetteDataOperation] Trying to get client_info")
         let clientInfoURL = self.url!.appendingPathComponent("v3").appendingPathComponent("client_info")
         var request = URLRequest(url: clientInfoURL)
         request.timeoutInterval = 15
@@ -503,20 +503,20 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
         
         if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: String] {
             if let clientInfo = json["client_info"] {
-                self.verboseLog("Server is V3")
+                self.verboseLog("[FetchAnisetteDataOperation] Server is V3")
                 
                 self.clientInfo = clientInfo
                 self.userAgent = json["user_agent"]!
-                self.verboseLog("Client-Info: \(self.clientInfo!)")
-                self.verboseLog("User-Agent: \(self.userAgent!)")
+                self.verboseLog("[FetchAnisetteDataOperation] Client-Info: \(self.clientInfo!)")
+                self.verboseLog("[FetchAnisetteDataOperation] User-Agent: \(self.userAgent!)")
                 
                 if Keychain.shared.identifier == nil {
-                    self.verboseLog("Generating identifier")
+                    self.verboseLog("[FetchAnisetteDataOperation] Generating identifier")
                     var bytes = [Int8](repeating: 0, count: 16)
                     let status = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
                     
                     if status != errSecSuccess {
-                        self.debugLog("ERROR GENERATING IDENTIFIER!!! \(status)")
+                        self.debugLog("[FetchAnisetteDataOperation] ERROR GENERATING IDENTIFIER!!! \(status)")
                         throw OperationError.provisioningError(result: "Couldn't generate identifier", message: nil)
                     }
                     
@@ -525,10 +525,10 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
                 
                 let decoded = Data(base64Encoded: Keychain.shared.identifier!)!
                 self.mdLu = decoded.sha256().hexEncodedString()
-                self.verboseLog("X-Apple-I-MD-LU: \(self.mdLu!)")
+                self.verboseLog("[FetchAnisetteDataOperation] X-Apple-I-MD-LU: \(self.mdLu!)")
                 let uuid: UUID = decoded.object()
                 self.deviceId = uuid.uuidString.uppercased()
-                self.verboseLog("X-Mme-Device-Id: \(self.deviceId!)")
+                self.verboseLog("[FetchAnisetteDataOperation] X-Mme-Device-Id: \(self.deviceId!)")
             } else {
                 try await self.handleV1()
             }
@@ -539,7 +539,7 @@ final class FetchAnisetteDataOperation: ResultOperation<ALTAnisetteData>, WebSoc
     
     private func fetchAnisetteV3(_ identifier: String, _ adiPb: String) async throws {
         try await self.fetchClientInfo()
-        self.verboseLog("Fetching anisette V3")
+        self.verboseLog("[FetchAnisetteDataOperation] Fetching anisette V3")
         var request = URLRequest(url: self.url!.appendingPathComponent("v3").appendingPathComponent("get_headers"))
         request.timeoutInterval = 15
         request.httpMethod = "POST"

@@ -126,7 +126,7 @@ final class BackgroundRefreshAppsOperation: ResultOperation<[String: Result<Inst
         }
 
         if !self.runningApplications.isEmpty {
-            self.verboseLog("Skipping refreshing running apps: \(self.runningApplications)")
+            self.verboseLog("[BackgroundRefreshAppsOperation] Skipping refreshing running apps: \(self.runningApplications)")
         }
 
         return try await self.refresh(filteredApps)

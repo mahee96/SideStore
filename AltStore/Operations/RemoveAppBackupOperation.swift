@@ -82,11 +82,11 @@ final class RemoveAppBackupOperation: ResultOperation<Void>, OperationLogging
 //                    self.finish(.success(()))
 //                    
 //                    #else
-            debugLog("Failed to remove app backup directory \(backupDirectoryURL.lastPathComponent). \(error.localizedDescription)")
+            debugLog("[RemoveAppBackupOperation] Failed to remove app backup directory \(backupDirectoryURL.lastPathComponent). \(error.localizedDescription)")
             throw error
 //                    #endif
         } catch {
-            debugLog("Failed to remove app backup directory \(backupDirectoryURL.lastPathComponent). \(error.localizedDescription)")
+            debugLog("[RemoveAppBackupOperation] Failed to remove app backup directory \(backupDirectoryURL.lastPathComponent). \(error.localizedDescription)")
             throw error
         }
     }

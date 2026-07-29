@@ -54,7 +54,7 @@ final class ResignAppOperation: ResultOperation<ALTApplication>, OperationLoggin
                                                    "self.context.certificate is nil")
         }
         
-        debugLog("Resigning app \(self.context.bundleIdentifier)...")
+        debugLog("[ResignAppOperation] Resigning app \(self.context.bundleIdentifier)...")
         
         // Prepare app bundle
         let prepareAppProgress = Progress.discreteProgress(totalUnitCount: 2)
@@ -74,12 +74,12 @@ final class ResignAppOperation: ResultOperation<ALTApplication>, OperationLoggin
         )
         let destinationURL = InstalledApp.refreshedIPAURL(for: updatedApp)
         try FileManager.default.copyItem(at: resignedURL, to: destinationURL, shouldReplace: true)
-        self.debugLog("Successfully resigned app to \(destinationURL.absoluteString)")
+        self.debugLog("[ResignAppOperation] Successfully resigned app to \(destinationURL.absoluteString)")
         
         // Use appBundleURL since we need an app bundle, not .ipa.
         guard let resignedApplication = ALTApplication(fileURL: appBundleURL) else { throw OperationError.invalidApp }
         
-        self.debugLog("Resigned app \(self.context.bundleIdentifier) to \(resignedApplication.bundleIdentifier).")
+        self.debugLog("[ResignAppOperation] Resigned app \(self.context.bundleIdentifier) to \(resignedApplication.bundleIdentifier).")
         
         return resignedApplication
     }
@@ -246,7 +246,7 @@ final class ResignAppOperation: ResultOperation<ALTApplication>, OperationLoggin
         let codeSignaturePath = bundle.bundleURL.appendingPathComponent("_CodeSignature").absoluteString.replacingOccurrences(of: "file://", with: "")
         if FileManager.default.fileExists(atPath: codeSignaturePath) {
             try FileManager.default.removeItem(atPath: codeSignaturePath)
-            self.verboseLog("Removed _CodeSignature folder at \(codeSignaturePath)")
+            self.verboseLog("[ResignAppOperation] Removed _CodeSignature folder at \(codeSignaturePath)")
         }
     }
     

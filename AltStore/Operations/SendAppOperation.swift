@@ -49,7 +49,7 @@ final class SendAppOperation: ResultOperation<()>, OperationLogging
 
         let app = AnyApp(name: resignedApp.name, bundleIdentifier: self.context.targetBundleIdentifier, url: resignedApp.fileURL, storeApp: nil)
         let fileURL = InstalledApp.refreshedIPAURL(for: app)
-        verboseLog("AFC App `fileURL`: \(fileURL.absoluteString)")
+        verboseLog("[SendAppOperation] AFC App `fileURL`: \(fileURL.absoluteString)")
 
         // Cellular shortcut should only be executed below iOS 26.4 AND when explicitly enabled in settings
         if #available(iOS 26.4, *) {
@@ -63,7 +63,7 @@ final class SendAppOperation: ResultOperation<()>, OperationLogging
             await withCheckedContinuation { continuation in
                 let shortcutURLoff = URL(string: "shortcuts://run-shortcut?name=TurnOffData")!
                 UIApplication.shared.open(shortcutURLoff, options: [:]) { _ in
-                    self.debugLog("Shortcut finished execution. Proceeding with file transfer.")
+                    self.debugLog("[SendAppOperation] Shortcut finished execution. Proceeding with file transfer.")
                     continuation.resume()
                 }
             }
@@ -74,7 +74,7 @@ final class SendAppOperation: ResultOperation<()>, OperationLogging
 
     private func processFile(at fileURL: URL, for bundleIdentifier: String) async throws {
         guard let data = NSData(contentsOf: fileURL) else {
-            debugLog("IPA doesn't exist????")
+            debugLog("[SendAppOperation] IPA doesn't exist????")
             throw OperationError(.appNotFound(name: bundleIdentifier))
         }
         let bytes = Data(data)

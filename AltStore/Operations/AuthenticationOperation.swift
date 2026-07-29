@@ -222,8 +222,8 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, 
         guard !self.isFinished else { return }
         
         switch result {
-        case .failure(let error): self.verboseLog("Failed to authenticate account. \(error.localizedDescription)")
-        case .success((let team, _, _)): self.verboseLog("Authenticated account for team \(team.identifier).")
+        case .failure(let error): self.verboseLog("[AuthenticationOperation] Failed to authenticate account. \(error.localizedDescription)")
+        case .success((let team, _, _)): self.verboseLog("[AuthenticationOperation] Authenticated account for team \(team.identifier).")
         }
         
         let context = DatabaseManager.shared.persistentContainer.newBackgroundContext()
@@ -362,12 +362,12 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, 
     
     private func signIn() async throws -> (ALTAccount, ALTAppleAPISession) {
         if let adsid = Keychain.shared.appleIDAdsid, let xcodeToken = Keychain.shared.appleIDXcodeToken {
-            self.verboseLog("Authenticating Apple ID with tokens...")
+            self.verboseLog("[AuthenticationOperation] Authenticating Apple ID with tokens...")
             do {
                 let (account, session) = try await self.authenticateWithToken(adsid: adsid, xcodeToken: xcodeToken)
                 return (account, session)
             } catch {
-                self.debugLog("Authentication failed with token. Fall back to email and password login: \(error)")
+                self.debugLog("[AuthenticationOperation] Authentication failed with token. Fall back to email and password login: \(error)")
             }
         }
         

@@ -51,7 +51,7 @@ final class DownloadAppOperation: ResultOperation<ALTApplication>, OperationLogg
             return
         }
 
-        debugLog("Downloading App: \(self.bundleIdentifier)")
+        debugLog("[DownloadAppOperation] Downloading App: \(self.bundleIdentifier)")
 
         // Set _after_ checking self.context.error to prevent overwriting localized failure for previous errors.
         self.localizedFailure = String(format: NSLocalizedString("%@ could not be downloaded.", comment: ""), self.appName)
@@ -71,7 +71,7 @@ final class DownloadAppOperation: ResultOperation<ALTApplication>, OperationLogg
             do {
                 try FileManager.default.removeItem(at: self.temporaryDirectory)
             } catch {
-                debugLog("Failed to remove DownloadAppOperation temporary directory: \(self.temporaryDirectory). \(error)")
+                debugLog("[DownloadAppOperation] Failed to remove DownloadAppOperation temporary directory: \(self.temporaryDirectory). \(error)")
             }
         }
 
@@ -231,11 +231,11 @@ final class DownloadAppOperation: ResultOperation<ALTApplication>, OperationLogg
 
         // perform cleanup of the temp files
         if(FileManager.default.fileExists(atPath: fileURL.path)){
-            verboseLog("Removing downloaded temp file at: \(fileURL.path)")
+            verboseLog("[DownloadAppOperation] Removing downloaded temp file at: \(fileURL.path)")
             do {
                 try FileManager.default.removeItem(at: fileURL)
             } catch {
-                verboseLog("Removing downloaded temp error: \(error)")
+                verboseLog("[DownloadAppOperation] Removing downloaded temp error: \(error)")
             }
         }
 
@@ -243,21 +243,21 @@ final class DownloadAppOperation: ResultOperation<ALTApplication>, OperationLogg
     }
     
     func downloadFile(from downloadURL: URL) async throws -> URL {
-        debugLog("download started: \(downloadURL)")
+        debugLog("[DownloadAppOperation] download started: \(downloadURL)")
         do {
             let (fileURL, response) = try await self.session.download(from: downloadURL)
             let resp = response as? HTTPURLResponse
             if let resp {
-                debugLog("downloadFile: completed with status \(resp.statusCode) at \(fileURL.path)")
+                debugLog("[DownloadAppOperation] downloadFile: completed with status \(resp.statusCode) at \(fileURL.path)")
                 guard resp.statusCode != 403 else { throw URLError(.noPermissionsToReadFile) }
                 guard resp.statusCode != 404 else { throw CocoaError(.fileNoSuchFile, userInfo: [NSURLErrorKey: downloadURL]) }
             } else {
-                debugLog("downloadFile: completed at \(fileURL.path)")
+                debugLog("[DownloadAppOperation] downloadFile: completed at \(fileURL.path)")
             }
             self.progress.completedUnitCount += 3
             return fileURL
         }catch{
-            debugLog("download failed for url: \(downloadURL)")
+            debugLog("[DownloadAppOperation] download failed for url: \(downloadURL)")
             throw error
         }
     }

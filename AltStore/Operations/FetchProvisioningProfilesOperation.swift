@@ -114,15 +114,15 @@ class FetchProvisioningProfilesOperation: ResultOperation<[String: ALTProvisioni
     
     internal func fetchProvisioningProfile(for appID: ALTAppID, app: ALTApplication, team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTProvisioningProfile {
         debugLog(app.dumpMachOInfo())
-        debugLog("Fetching existing provisioning profile to get its identifier for App ID \(appID.bundleIdentifier).")
+        debugLog("[FetchProvisioningProfiles] Fetching existing provisioning profile to get its identifier for App ID \(appID.bundleIdentifier).")
         let profile = try await ALTAppleAPI.shared.fetchProvisioningProfile(for: appID, deviceType: .iphone, team: team, session: session)
         
         do {
             // Delete existing profile
-            debugLog("Deleting existing provisioning profile \(profile.identifier ?? "unknown") (\(profile.name)) from Apple's servers.")
+            debugLog("[FetchProvisioningProfiles] Deleting existing provisioning profile \(profile.identifier ?? "unknown") (\(profile.name)) from Apple's servers.")
             try await ALTAppleAPI.shared.deleteProvisioningProfile(profile, for: team, session: session)
             
-            debugLog("Generating new free provisioning profile for App ID \(appID.bundleIdentifier) by fetching again.")
+            debugLog("[FetchProvisioningProfiles] Generating new free provisioning profile for App ID \(appID.bundleIdentifier) by fetching again.")
             
             // Fetch new provisioning profile
             return try await ALTAppleAPI.shared.fetchProvisioningProfile(for: appID, deviceType: .iphone, team: team, session: session)
@@ -130,9 +130,9 @@ class FetchProvisioningProfilesOperation: ResultOperation<[String: ALTProvisioni
             // As of March 20, 2023, the free provisioning profile is re-generated each fetch, and you can no longer delete it.
             // So instead, we just return the fetched profile from above.
             if team.type == .free {
-                debugLog("Delete failed as expected for free provisioning account (deletion is blocked post-March 2023). Returning the freshly generated profile from the first fetch.")
+                debugLog("[FetchProvisioningProfiles] Delete failed as expected for free provisioning account (deletion is blocked post-March 2023). Returning the freshly generated profile from the first fetch.")
             } else {
-                debugLog("Delete failed for paid developer account: \(error.localizedDescription). Returning the profile fetched initially.")
+                debugLog("[FetchProvisioningProfiles] Delete failed for paid developer account: \(error.localizedDescription). Returning the profile fetched initially.")
             }
             return profile
         }
@@ -349,10 +349,10 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
             
             do {
                 let updated = try await ALTAppleAPI.shared.update(appIDCopy, team: team, session: session)
-                self.verboseLog("Updated features for App ID \(updated.bundleIdentifier).")
+                self.verboseLog("[FetchProvisioningProfiles] Updated features for App ID \(updated.bundleIdentifier).")
                 return updated
             } catch {
-                self.debugLog("Failed to update features for App ID \(appIDCopy.bundleIdentifier). \(error.localizedDescription)")
+                self.debugLog("[FetchProvisioningProfiles] Failed to update features for App ID \(appIDCopy.bundleIdentifier). \(error.localizedDescription)")
                 throw error
             }
         } else {
@@ -367,19 +367,19 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
         }
                 
         guard var applicationGroups = entitlements[.appGroups] as? [String], !applicationGroups.isEmpty else {
-            verboseLog("App ID \(appID.bundleIdentifier) has no app groups, skipping assignment.")
+            verboseLog("[FetchProvisioningProfiles] App ID \(appID.bundleIdentifier) has no app groups, skipping assignment.")
             // Assigning an App ID to an empty app group array fails,
             // so just do nothing if there are no app groups.
             return appID
         }
         
         if app.isAltStoreApp {
-            verboseLog("Application groups before modifying for SideStore: \(applicationGroups)")
+            verboseLog("[FetchProvisioningProfiles] Application groups before modifying for SideStore: \(applicationGroups)")
             
             // Remove app groups that contain AltStore since they can be problematic (cause SideStore to expire early)
             for (index, group) in applicationGroups.enumerated() {
                 if group.contains("AltStore") {
-                    verboseLog("Removing application group: \(group)")
+                    verboseLog("[FetchProvisioningProfiles] Removing application group: \(group)")
                     applicationGroups.remove(at: index)
                 }
             }
@@ -403,7 +403,7 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
                 applicationGroups.append(altStoreAppGroupID)
             }
         }
-        verboseLog("Application groups: \(applicationGroups)")
+        verboseLog("[FetchProvisioningProfiles] Application groups: \(applicationGroups)")
         
         return try await TaskChainSerializer.shared.serialize {
             // Ensure we're not concurrently fetching and updating app groups,
@@ -423,10 +423,10 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
                         let name = "AltStore " + groupIdentifier.replacingOccurrences(of: ".", with: " ")
                         do {
                             let group = try await ALTAppleAPI.shared.addAppGroup(withName: name, groupIdentifier: adjustedGroupIdentifier, team: team, session: session)
-                            self.verboseLog("Created new App Group \(group.groupIdentifier).")
+                            self.verboseLog("[FetchProvisioningProfiles] Created new App Group \(group.groupIdentifier).")
                             groups.append(group)
                         } catch {
-                            self.debugLog("Failed to create new App Group \(adjustedGroupIdentifier). \(error.localizedDescription)")
+                            self.debugLog("[FetchProvisioningProfiles] Failed to create new App Group \(adjustedGroupIdentifier). \(error.localizedDescription)")
                             throw error
                         }
                     }
@@ -434,12 +434,12 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
                 
                 try await ALTAppleAPI.shared.assign(appID, to: Array(groups), team: team, session: session)
                 let groupIDs = groups.map { $0.groupIdentifier }
-                self.verboseLog("Assigned App ID \(appID.bundleIdentifier) to App Groups \(groupIDs.description).")
+                self.verboseLog("[FetchProvisioningProfiles] Assigned App ID \(appID.bundleIdentifier) to App Groups \(groupIDs.description).")
                 
                 return appID
             } catch {
                 let groupIDs = applicationGroups.map { $0 + "." + team.identifier }
-                self.debugLog("Failed to assign/create App Groups for App ID \(appID.bundleIdentifier): \(error.localizedDescription)")
+                self.debugLog("[FetchProvisioningProfiles] Failed to assign/create App Groups for App ID \(appID.bundleIdentifier): \(error.localizedDescription)")
                 throw error
             }
         }
