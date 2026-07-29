@@ -1224,13 +1224,22 @@ private extension AppManager
     {
         let operations = operations.filter { self.progress(for: $0) == nil || self.progress(for: $0)?.isCancelled == true }
         guard !operations.isEmpty else { throw OperationError.cancelled }
+
+        /* Minimuxer Readiness Check (Fast Preflight) */
+        if let minimuxerError = await getMinimuxerStatus().operationError {
+            group.context.error = minimuxerError
+            for operation in operations {
+                self.finish(operation, result: .failure(minimuxerError), group: group, progress: self.progress(for: operation))
+            }
+            throw minimuxerError
+        }
         
         for operation in operations
         {
             let progress = Progress.discreteProgress(totalUnitCount: 100)
             self.set(progress, for: operation)
         }
-        
+
         if let viewController = presentingViewController
         {
             group.context.presentingViewController = viewController
