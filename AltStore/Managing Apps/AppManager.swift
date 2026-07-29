@@ -2213,7 +2213,11 @@ private extension AppManager
             // Centrally refresh the app's managed object context on viewContext so all UI callers see the updated installedApp immediately
             DatabaseManager.shared.viewContext.performAndWait {
                 if let managedObject = operation.app as? NSManagedObject {
-                    DatabaseManager.shared.viewContext.refresh(managedObject, mergeChanges: true)
+                    if managedObject.managedObjectContext === DatabaseManager.shared.viewContext {
+                        DatabaseManager.shared.viewContext.refresh(managedObject, mergeChanges: true)
+                    } else if let viewObject = try? DatabaseManager.shared.viewContext.existingObject(with: managedObject.objectID) {
+                        DatabaseManager.shared.viewContext.refresh(viewObject, mergeChanges: true)
+                    }
                 }
             }
             
