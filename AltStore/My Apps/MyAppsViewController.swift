@@ -70,6 +70,7 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
         
         NotificationCenter.default.addObserver(self, selector: #selector(MyAppsViewController.didFetchSource(_:)), name: AppManager.didFetchSourceNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(MyAppsViewController.importApp(_:)), name: AppDelegate.importAppDeepLinkNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(MyAppsViewController.appIDsViewControllerDidDismiss(_:)), name: AppIDsViewController.didDismissNotification, object: nil)
     }
     
     override func viewDidLoad()
@@ -641,11 +642,22 @@ private extension MyAppsViewController
                 try context.performAndWait {
                     try context.save()
                 }
+                DispatchQueue.main.async {
+                    self.collectionView.reloadSections([Section.activeApps.rawValue, Section.inactiveApps.rawValue])
+                }
             }
             catch
             {
                 debugLog("Failed to fetch App IDs. \(error)")
             }
+        }
+    }
+    
+    @objc private func appIDsViewControllerDidDismiss(_ notification: Notification)
+    {
+        DispatchQueue.main.async {
+            self.collectionView.reloadSections([Section.activeApps.rawValue, Section.inactiveApps.rawValue])
+            self.fetchAppIDs()
         }
     }
     

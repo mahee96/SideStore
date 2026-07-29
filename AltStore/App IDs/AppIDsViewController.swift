@@ -12,6 +12,10 @@ import CoreData
 import SwiftUI
 import AltSign
 
+extension AppIDsViewController {
+    static let didDismissNotification = Notification.Name("AppIDsViewControllerDidDismissNotification")
+}
+
 final class AppIDsViewController: UICollectionViewController
 {
     private lazy var dataSource = self.makeDataSource()
@@ -28,6 +32,12 @@ final class AppIDsViewController: UICollectionViewController
     private weak var footerView: TextCollectionReusableView?
     
     @IBOutlet var activityIndicatorBarButtonItem: UIBarButtonItem!
+
+    override func viewWillDisappear(_ animated: Bool)
+    {
+        super.viewWillDisappear(animated)
+        NotificationCenter.default.post(name: AppIDsViewController.didDismissNotification, object: self)
+    }
     
     override func viewDidLoad()
     {
@@ -220,7 +230,13 @@ private extension AppIDsViewController
             self.collectionView.refreshControl?.endRefreshing()
             self.activityIndicatorBarButtonItem.isIndicatingActivity = false
             
-            if let activeTeam = DatabaseManager.shared.activeTeam(), activeTeam.type != .free
+            #if DEBUG
+            let allowsEditMode = DatabaseManager.shared.activeTeam() != nil
+            #else
+            let allowsEditMode = DatabaseManager.shared.activeTeam()?.type != .free
+            #endif
+            
+            if allowsEditMode
             {
                 if self.isEditingMode
                 {
