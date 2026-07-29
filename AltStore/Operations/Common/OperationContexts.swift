@@ -47,6 +47,8 @@ final class AuthenticatedOperationContext: OperationContext
     
     weak var authenticationOperation: AuthenticationOperation?
     
+    var isSideStoreResignDismissed: Bool = false
+    
     convenience init(context: AuthenticatedOperationContext)
     {
         self.init(error: context.error, operations: context.operations.allObjects)
@@ -55,6 +57,7 @@ final class AuthenticatedOperationContext: OperationContext
         self.team = context.team
         self.certificate = context.certificate
         self.authenticationOperation = context.authenticationOperation
+        self.isSideStoreResignDismissed = context.isSideStoreResignDismissed
     }
 }
 

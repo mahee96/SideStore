@@ -1233,7 +1233,7 @@ private extension AppManager
     private func perform(_ operations: [AppOperation], presentingViewController: UIViewController?, group: RefreshGroup) async throws -> RefreshGroup
     {
         let operations = operations.filter { self.progress(for: $0) == nil || self.progress(for: $0)?.isCancelled == true }
-        guard !operations.isEmpty else { return group }
+        guard !operations.isEmpty else { throw OperationError.cancelled }
         
         for operation in operations
         {
@@ -1271,8 +1271,16 @@ private extension AppManager
         }
         
         /* Preflight SideStore Bundle ID Mismatch Validation */
+        let unhandledOperations = operations.filter { operation in
+            let isSideStore = (operation.app as? ALTApplication)?.isAltStoreApp == true || operation.bundleIdentifier.contains(ALTApplication.altstoreBundleID) || operation.bundleIdentifier == StoreApp.altstoreAppID
+            if isSideStore {
+                return presentingViewController is ResignAltStoreViewController
+            }
+            return true
+        }
+        
         do {
-            try await self.validateSideStoreBundleIDMismatch(for: operations, group: group, presentingViewController: presentingViewController)
+            try await self.validateSideStoreBundleIDMismatch(for: unhandledOperations, group: group, presentingViewController: presentingViewController)
         } catch {
             group.context.error = error
             for operation in operations {
@@ -1291,7 +1299,14 @@ private extension AppManager
         func performOperations() {
             for operation in operations
             {
+                let isSideStore = (operation.app as? ALTApplication)?.isAltStoreApp == true || operation.bundleIdentifier.contains(ALTApplication.altstoreBundleID) || operation.bundleIdentifier == StoreApp.altstoreAppID
                 let progress = self.progress(for: operation)
+                
+                if isSideStore && group.context.isSideStoreResignDismissed
+                {
+                    self.finish(operation, result: .failure(OperationError.cancelled), group: group, progress: progress)
+                    continue
+                }
                 
                 if let progress = progress
                 {
