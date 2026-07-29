@@ -171,23 +171,7 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
     {
     }
 
-    var isMinimuxerReady: Bool {
-        get async {
-            if let error = await getMinimuxerStatus().operationError {
-                ToastView(error: error).show(in: self)
-                return false
-            }
-            return true
-        }
-    }
 
-    func performWithMinimuxerReady(action: @escaping @MainActor () -> Void) {
-        Task { @MainActor in
-            if await isMinimuxerReady {
-                action()
-            }
-        }
-    }
 }
 
 private extension MyAppsViewController
@@ -799,8 +783,6 @@ private extension MyAppsViewController
     @IBAction func refreshAllApps(_ sender: UIBarButtonItem)
     {
         Task { @MainActor in
-            guard await isMinimuxerReady else { return }
-
             let installedApps = InstalledApp.fetchAppsForRefreshingAll(in: DatabaseManager.shared.viewContext)
             guard !installedApps.isEmpty else {
                 let error: Error
@@ -883,8 +865,6 @@ private extension MyAppsViewController
     @IBAction func sideloadApp(_ sender: UIBarButtonItem)
     {
         Task { @MainActor in
-            guard await isMinimuxerReady else { return }
-
             let supportedTypes = UTType.types(tag: "ipa", tagClass: .filenameExtension, conformingTo: nil)
             
             let documentPickerViewController = UIDocumentPickerViewController(forOpeningContentTypes: supportedTypes, asCopy: true)
@@ -1171,8 +1151,6 @@ private extension MyAppsViewController
         // we do need minimuxer, coz it needs to talk to misagent daemon which manages profiles 
         // so basically loopback vpn is still required
         Task { @MainActor in
-            guard await isMinimuxerReady else { return }
-
             let previousProgress = AppManager.shared.refreshProgress(for: installedApp)
             guard previousProgress == nil else { return }
             
@@ -1193,8 +1171,6 @@ private extension MyAppsViewController
     func resign(_ installedApp: InstalledApp, alternateIconMode: AlternateIconMode = .preserve)
     {
         Task { @MainActor in
-            guard await isMinimuxerReady else { return }
-
             let previousProgress = AppManager.shared.refreshProgress(for: installedApp)
             guard previousProgress == nil else { return }
             
@@ -1222,8 +1198,6 @@ private extension MyAppsViewController
     func activate(_ installedApp: InstalledApp)
     {
         Task { @MainActor in
-            guard await isMinimuxerReady else { return }
-
             func finish(_ result: Result<InstalledApp, Error>)
             {
                 do
@@ -1277,8 +1251,6 @@ private extension MyAppsViewController
         guard installedApp.isActive else { return }
         
         Task { @MainActor in
-            guard await isMinimuxerReady else { return }
-            
             AppManager.shared.deactivate(installedApp, presentingViewController: self) { (result) in
                 do
                 {
@@ -1340,8 +1312,6 @@ private extension MyAppsViewController
     func backup(_ installedApp: InstalledApp)
     {
         Task { @MainActor in
-            guard await isMinimuxerReady else { return }
-
             let title = NSLocalizedString("Start Backup?", comment: "")
             let message = NSLocalizedString("This will replace any previous backups. Please leave SideStore open until the backup is complete.", comment: "")
 
@@ -1426,8 +1396,6 @@ private extension MyAppsViewController
     func restore(_ installedApp: InstalledApp)
     {
         Task { @MainActor in
-            guard await isMinimuxerReady else { return }
-
             let message = String(format: NSLocalizedString("This will replace all data you currently have in %@.", comment: ""), installedApp.name)
             let alertController = UIAlertController(title: NSLocalizedString("Are you sure you want to restore this backup?", comment: ""), message: message, preferredStyle: .actionSheet)
             alertController.addAction(.cancel)
@@ -1521,29 +1489,16 @@ private extension MyAppsViewController
     
     func enableJIT(for installedApp: InstalledApp) {
         let sidejitenabled = UserDefaults.standard.sidejitenable
-        
-        let proceed = { [weak self] in
-            guard let self = self else { return }
-            AppManager.shared.enableJIT(for: installedApp) { result in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success:
-                        break
-                    case .failure(let error):
-                        ToastView(error: error, opensLog: true).show(in: self)
-                        AppManager.shared.log(error, operation: .enableJIT, app: installedApp)
-                    }
+        AppManager.shared.enableJIT(for: installedApp) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    break
+                case .failure(let error):
+                    ToastView(error: error, opensLog: true).show(in: self)
+                    AppManager.shared.log(error, operation: .enableJIT, app: installedApp)
                 }
             }
-        }
-        
-        if #unavailable(iOS 17), !sidejitenabled {
-            Task { @MainActor in
-                guard await isMinimuxerReady else { return }
-                proceed()
-            }
-        } else {
-            proceed()
         }
     }
 }

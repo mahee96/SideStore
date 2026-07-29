@@ -59,29 +59,7 @@ final class AppIDsViewController: UICollectionViewController
         
         if !self.didInitialFetch
         {
-            Task { @MainActor in
-                if await getMinimuxerStatus().operationError != nil
-                {
-                    // Silently skip initial network fetch
-                    self.didInitialFetch = true
-                    self.isLoading = false
-                    self.update()
-                }
-                else
-                {
-                    self.fetchAppIDs()
-                }
-            }
-        }
-    }
-
-    var isMinimuxerReady: Bool {
-        get async {
-            if let error = await getMinimuxerStatus().operationError {
-                ToastView(error: error).show(in: self)
-                return false
-            }
-            return true
+            self.fetchAppIDs()
         }
     }
 }
@@ -181,14 +159,7 @@ private extension AppIDsViewController
     
     @objc func fetchAppIDs()
     {
-        Task { @MainActor in
-            guard await isMinimuxerReady else
-            {
-                self.collectionView.refreshControl?.endRefreshing()
-                return
-            }
-            self.fetchAppIDsFromServer(completion: nil)
-        }
+        self.fetchAppIDsFromServer(completion: nil)
     }
     
     func fetchAppIDsFromServer(completion: (() -> Void)?)
@@ -437,8 +408,6 @@ private extension AppIDsViewController
                 let selectedCount = self.collectionView.indexPathsForSelectedItems?.count ?? 0
                 if selectedCount > 0
                 {
-                    guard await isMinimuxerReady else { return }
-                    
                     let alert = UIAlertController(
                         title: NSLocalizedString("Delete App IDs", comment: ""),
                         message: String(format: NSLocalizedString("Are you sure you want to proceed to delete %d appIds?", comment: ""), selectedCount),
@@ -457,7 +426,6 @@ private extension AppIDsViewController
             }
             else
             {
-                guard await isMinimuxerReady else { return }
                 self.enterEditMode()
             }
         }
