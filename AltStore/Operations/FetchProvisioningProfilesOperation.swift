@@ -242,16 +242,6 @@ class FetchProvisioningProfilesOperation: ResultOperation<[String: ALTProvisioni
             
             let sortedExpirationDates = appIDs.compactMap { $0.expirationDate }.sorted(by: { $0 < $1 })
             
-            if team.type == .free {
-                if requiredAppIDs > availableAppIDs {
-                    self.debugLog("[FetchProvisioningProfiles] Free account App ID limit reached! Required: \(requiredAppIDs), Available: \(availableAppIDs)")
-                    if let expirationDate = sortedExpirationDates.first {
-                        throw OperationError.maximumAppIDLimitReached(appName: application.name, requiredAppIDs: requiredAppIDs, availableAppIDs: availableAppIDs, expirationDate: expirationDate)
-                    } else {
-                        throw ALTAppleAPIError(.maximumAppIDLimitReached)
-                    }
-                }
-            }
             //App ID name must be ascii. If the name is not ascii, using bundleID instead
             let appIDName: String
             if !name.allSatisfy({ $0.isASCII }) {
