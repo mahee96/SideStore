@@ -17,7 +17,7 @@ let shortcutURLonDelay = URL(string: "shortcuts://run-shortcut?name=TurnOnDataDe
 
 @objc(InstallAppOperation)
 final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging, @unchecked Sendable {
-    private static let selfInstallSuspendDelayNs: UInt64 = 3_000_000_000 // 3 seconds
+    private static let selfInstallSuspendDelayNs: UInt64 = 2_000_000_000
 
     let context: InstallAppOperationContext
     let storeApp: StoreApp?
@@ -161,14 +161,12 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
         cleanUp()
         
         // Self-reinstall background suspension
-        var installing = true
         if isSelfReinstall {
-            self.handleSelfReinstallation(for: installedApp, installing: &installing)
+            self.handleSelfReinstallation(for: installedApp)
         }
         
         // Phase 2: IPA installation
         try await installIPA(bundleID)
-        installing = false
         
         // Phase 3: Post-install CoreData write — update refreshedDate + save.
         if !isDifferentSideStore {
@@ -331,28 +329,79 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
             installedApp.isActive = true
         }
     }
-
-    private func handleSelfReinstallation(for installedApp: InstalledApp, installing: UnsafeMutablePointer<Bool>) {
-        // Reinstalling ourself will hang until we leave the app, so we need to exit it without force closing
-        Task { @MainActor in
-            try? await Task.sleep(nanoseconds: Self.selfInstallSuspendDelayNs)
-            if UIApplication.shared.applicationState != .active {
-                self.debugLog("[InstallAppOperation] We are not in the foreground, let's not do anything")
-                return
-            }
-            if !installing.pointee {
-                self.debugLog("[InstallAppOperation] Installing finished")
-                return
-            }
-            self.debugLog("[InstallAppOperation] We are still installing after 3 seconds, suspending to background")
-            
-            // Cell Shortcut
+        
+    private func suspendToHomeScreen() {
+        // using GCD on main queue for determinism
+        DispatchQueue.main.async {
+            self.debugLog("[InstallAppOperation] Going home")
             if self.context.shouldTurnOffData {
                 UIApplication.shared.open(shortcutURLonDelay, options: [:]) { _ in
                     self.debugLog("[InstallAppOperation] Cell OFF Shortcut finished execution.")
                 }
             }
             UIApplication.shared.perform(#selector(NSXPCConnection.suspend))
+        }
+    }
+
+    private func handleSelfReinstallation(for installedApp: InstalledApp) {
+        // Reinstalling ourself will hang until we leave the app, so we need to exit it without force closing
+        Task.detached {
+            try? await Task.sleep(nanoseconds: Self.selfInstallSuspendDelayNs)
+
+            let state = await MainActor.run { UIApplication.shared.applicationState }
+            guard state == .active else {
+                self.debugLog("[InstallAppOperation] We are not in the foreground, let's not do anything")
+                return
+            }
+                
+            let delaySeconds = Self.selfInstallSuspendDelayNs / 1_000_000_000
+            self.debugLog("[InstallAppOperation] We are still installing after \(delaySeconds) seconds")
+            
+            UNUserNotificationCenter.current().getNotificationSettings { settings in
+                switch settings.authorizationStatus {
+                case .authorized, .ephemeral, .provisional:
+                    self.verboseLog("[InstallAppOperation] Notifications are enabled")
+
+                    let content = UNMutableNotificationContent()
+                    content.title = "Refreshing..."
+                    content.body = "SideStore will automatically move to the homescreen to finish refreshing!"
+                    let notification = UNNotificationRequest(identifier: Bundle.Info.appbundleIdentifier + ".FinishRefreshNotification", content: content, trigger: UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false))
+                    UNUserNotificationCenter.current().add(notification)
+                    
+                    self.suspendToHomeScreen()
+
+                default:
+                    self.verboseLog("[InstallAppOperation] Notifications are not enabled")
+
+                    DispatchQueue.main.async {
+                        let alert = UIAlertController(
+                            title: "Finish Refresh",
+                            message: """
+                            To finish refreshing, SideStore must be moved to the background. To do this, you can either go to the Home Screen manually or by hitting Continue. Please reopen SideStore after doing this.
+                            """,
+                            preferredStyle: .alert
+                        )
+                        alert.addAction(UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .default, handler: { _ in
+                            self.suspendToHomeScreen()
+                        }))
+
+                        let presenter = self.context.authenticatedContext.presentingViewController 
+                                        ?? UIApplication.shared.connectedScenes
+                                            .compactMap { ($0 as? UIWindowScene)?.keyWindow }
+                                            .first?.rootViewController
+
+                        if var topVC = presenter {
+                            while let presented = topVC.presentedViewController {
+                                topVC = presented
+                            }
+                            topVC.present(alert, animated: true)
+                        } else {
+                            self.debugLog("[InstallAppOperation] No view controller available, suspending directly")
+                            self.suspendToHomeScreen()
+                        }
+                    }
+                }
+            }
         }
     }
     
