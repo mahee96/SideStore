@@ -57,14 +57,7 @@ class AppManager: ObservableObject
     @Published private var refreshProgress = [String: Progress]()
     private var cancellables: Set<AnyCancellable> = []
     
-    private lazy var progressLock: UnsafeMutablePointer<os_unfair_lock> = {
-        // Can't safely pass &os_unfair_lock to os_unfair_lock functions in Swift,
-        // so pass UnsafeMutablePointer instead which is guaranteed to be safe.
-        // https://stackoverflow.com/a/68615042
-        let lock = UnsafeMutablePointer<os_unfair_lock>.allocate(capacity: 1)
-        lock.initialize(to: .init())
-        return lock
-    }()
+    private let progressLock = NSLock()
     
     private init()
     {
@@ -74,13 +67,6 @@ class AppManager: ObservableObject
         self.serialOperationQueue.maxConcurrentOperationCount = 1
         
         self.prepareSubscriptions()
-    }
-    
-    deinit
-    {
-        // Should never be called, but do bookkeeping anyway.
-        self.progressLock.deinitialize(count: 1)
-        self.progressLock.deallocate()
     }
     
     func prepareSubscriptions()
@@ -1037,37 +1023,41 @@ extension AppManager
     
     func installationProgress(for app: AppProtocol) -> Progress?
     {
-        os_unfair_lock_lock(self.progressLock)
-        defer { os_unfair_lock_unlock(self.progressLock) }
-        
-        let progress = self.installationProgress[app.bundleIdentifier]
-        return progress
+        return self.progressLock.withLock {
+            self.installationProgress[app.bundleIdentifier]
+        }
     }
     
     func refreshProgress(for app: AppProtocol) -> Progress?
     {
-        os_unfair_lock_lock(self.progressLock)
-        defer { os_unfair_lock_unlock(self.progressLock) }
-        
-        let bundleID = app.bundleIdentifier
-        
-        guard let progress = self.refreshProgress[bundleID] ?? self.installationProgress[bundleID] else {
-            return nil
+        return self.progressLock.withLock {
+            let bundleID = app.bundleIdentifier
+            
+            guard let progress = self.refreshProgress[bundleID] ?? self.installationProgress[bundleID] else {
+                return nil
+            }
+            
+            guard !progress.isCancelled else {
+                self.refreshProgress[bundleID] = nil
+                self.installationProgress[bundleID] = nil
+                return nil
+            }
+            
+            return progress
         }
-        
-        guard !progress.isCancelled else {
-            self.refreshProgress[bundleID] = nil
-            self.installationProgress[bundleID] = nil
-            return nil
-        }
-        
-        return progress
     }
     
     func isActivelyManagingApp(withBundleID bundleID: String) -> Bool
     {
         let isActivelyManaging = self.installationProgress.keys.contains(bundleID) || self.refreshProgress.keys.contains(bundleID)
         return isActivelyManaging
+    }
+    
+    var isActivelyManagingAnyApp: Bool
+    {
+        return self.progressLock.withLock {
+            !self.installationProgress.isEmpty || !self.refreshProgress.isEmpty
+        }
     }
 }
 
@@ -2207,21 +2197,18 @@ private extension AppManager
         debugLog("AppManager.finish invoked for operation for \(operation.bundleIdentifier)")
         defer { debugLog("AppManager.finish completed for operation for \(operation.bundleIdentifier)") }
 
-        // Remove disableIdleTimeout
-        // TODO: This should disable for the last finish() request not the first though for batches
-        //       probably if we are in batch mode, we can count expected no of finishes() to arrive
-        //       and schedule disabling only on last request by matching it with count.
-        DispatchQueue.main.schedule {
-            if UIApplication.shared.isIdleTimerDisabled {       // accept only once if concurrent
-                UIApplication.shared.isIdleTimerDisabled = false
-            }
-        }
-
         // Must remove before saving installedApp.
         if let currentProgress = self.progress(for: operation), currentProgress == progress
         {
             // Only remove progress if it hasn't been replaced by another one.
             self.set(nil, for: operation)
+        }
+
+        // Remove disableIdleTimeout only when ALL active installation/refresh operations have completed
+        DispatchQueue.main.schedule {
+            if UIApplication.shared.isIdleTimerDisabled && !self.isActivelyManagingAnyApp {
+                UIApplication.shared.isIdleTimerDisabled = false
+            }
         }
         
         do
@@ -2347,13 +2334,12 @@ private extension AppManager
         // Access outside critical section to avoid deadlock due to `bundleIdentifier` potentially calling performAndWait() on main thread.
         let bundleID = operation.bundleIdentifier
         
-        os_unfair_lock_lock(self.progressLock)
-        defer { os_unfair_lock_unlock(self.progressLock) }
-        
-        switch operation
-        {
-        case .install, .update: return self.installationProgress[bundleID]
-        case .refresh, .activate, .deactivate, .backup, .restore, .resign: return self.refreshProgress[bundleID]
+        return self.progressLock.withLock {
+            switch operation
+            {
+            case .install, .update: return self.installationProgress[bundleID]
+            case .refresh, .activate, .deactivate, .backup, .restore, .resign: return self.refreshProgress[bundleID]
+            }
         }
     }
     
@@ -2362,13 +2348,12 @@ private extension AppManager
         // Access outside critical section to avoid deadlock due to `bundleIdentifier` potentially calling performAndWait() on main thread.
         let bundleID = operation.bundleIdentifier
         
-        os_unfair_lock_lock(self.progressLock)
-        defer { os_unfair_lock_unlock(self.progressLock) }
-        
-        switch operation
-        {
-        case .install, .update: self.installationProgress[bundleID] = progress
-        case .refresh, .activate, .deactivate, .backup, .restore, .resign: self.refreshProgress[bundleID] = progress
+        self.progressLock.withLock {
+            switch operation
+            {
+            case .install, .update: self.installationProgress[bundleID] = progress
+            case .refresh, .activate, .deactivate, .backup, .restore, .resign: self.refreshProgress[bundleID] = progress
+            }
         }
     }
 }
