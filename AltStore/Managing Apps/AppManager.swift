@@ -2227,6 +2227,14 @@ private extension AppManager
         do
         {
             let installedApp = try result.get()
+            
+            // Centrally refresh the app's managed object context on viewContext so all UI callers see the updated installedApp immediately
+            DatabaseManager.shared.viewContext.performAndWait {
+                if let managedObject = operation.app as? NSManagedObject {
+                    DatabaseManager.shared.viewContext.refresh(managedObject, mergeChanges: true)
+                }
+            }
+            
             group.set(.success(installedApp), forAppWithBundleIdentifier: installedApp.bundleIdentifier)
             
             if installedApp.bundleIdentifier == StoreApp.altstoreAppID
