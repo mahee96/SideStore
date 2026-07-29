@@ -123,6 +123,8 @@ public struct ConsoleLogView: View {
     @State private var showTimestamp: Bool = false
     @State private var showShareSheet: Bool = false
     @State private var fontSize: CGFloat = 12
+    @State private var visibleIndices: Set<Int> = []
+    @State private var showCopiedBanner: Bool = false
     
     private let resultHighlightColor = Color.orange
     private let resultHighlightOpacity = 0.5
@@ -177,6 +179,14 @@ public struct ConsoleLogView: View {
                         .font(.system(size: 19))
                 }
                 
+                SwiftUI.Button(action: {
+                    copyVisibleLogs()
+                }) {
+                    Image(systemName: "doc.on.doc")
+                        .foregroundColor(.white)
+                        .font(.system(size: 19))
+                }
+
                 SwiftUI.Button(action: {
                     showShareSheet = true
                 }) {
@@ -265,6 +275,7 @@ public struct ConsoleLogView: View {
                             Text(displayLine)
                                 .font(.system(size: fontSize, design: .monospaced))
                                 .foregroundColor(.white)
+                                .textSelection(.enabled)
                                 .background(
                                     viewModel.searchResults.contains(index) ?
                                     otherResultsColor.opacity(otherResultsOpacity) : Color.clear
@@ -273,6 +284,12 @@ public struct ConsoleLogView: View {
                                     viewModel.searchResults[safe: viewModel.currentSearchIndex] == index ?
                                     resultHighlightColor.opacity(resultHighlightOpacity) : Color.clear
                                 )
+                                .onAppear {
+                                    visibleIndices.insert(index)
+                                }
+                                .onDisappear {
+                                    visibleIndices.remove(index)
+                                }
                         }
                     }
                     .onChange(of: scrollToIndex) { newIndex in
@@ -294,6 +311,42 @@ public struct ConsoleLogView: View {
         .edgesIgnoringSafeArea(.all)
         .sheet(isPresented: $showShareSheet) {
             ActivityViewController(activityItems: [viewModel.logURL])
+        }
+        .overlay(
+            Group {
+                if showCopiedBanner {
+                    Text("Copied Visible Logs to Clipboard")
+                        .font(.caption)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.gray.opacity(0.9))
+                        .foregroundColor(.white)
+                        .cornerRadius(20)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .padding(.top, 50)
+                }
+            },
+            alignment: .top
+        )
+    }
+
+    private func copyVisibleLogs() {
+        let sortedIndices = visibleIndices.sorted()
+        guard !sortedIndices.isEmpty else { return }
+        let linesToCopy = sortedIndices.compactMap { idx -> String? in
+            guard viewModel.logLines.indices.contains(idx) else { return nil }
+            let line = viewModel.logLines[idx]
+            return showTimestamp ? line : stripTimestamp(from: line)
+        }
+        let textToCopy = linesToCopy.joined(separator: "\n")
+        UIPasteboard.general.string = textToCopy
+        withAnimation {
+            showCopiedBanner = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation {
+                showCopiedBanner = false
+            }
         }
     }
 
