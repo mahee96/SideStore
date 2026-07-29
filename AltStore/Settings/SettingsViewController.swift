@@ -110,7 +110,6 @@ extension SettingsViewController
         case operationsLoggingControl   // row 4 - Operations Logging Control
         case recreateDatabase           // row 5 - Recreate Database on Next Start
         case minimuxerConsoleLogging    // row 6 - Minimuxer Console Logging
-        case minimuxerStatusCheck       // row 7 - Minimuxer Status Check
     }
 }
 
@@ -771,11 +770,6 @@ private extension SettingsViewController
         // update it in database
         UserDefaults.standard.isMinimuxerConsoleLoggingEnabled = sender.isOn
         minimuxerSetLogging(sender.isOn)
-    }
-
-    @IBAction func toggleMinimuxerStatusCheck(_ sender: UISwitch) {
-        // update it in database
-        UserDefaults.standard.isMinimuxerStatusCheckEnabled = sender.isOn
     }
 
     @IBAction func toggleRecreateDatabaseSwitch(_ sender: UISwitch) {
@@ -1743,7 +1737,7 @@ extension SettingsViewController
                 let segue = UIStoryboardSegue(identifier: "operationsLoggingControl", source: self, destination: operationsLoggingController)
                 self.present(segue.destination, animated: true, completion: nil)
                 
-            case .responseCaching, .verboseOperationsLogging, .minimuxerConsoleLogging, .minimuxerStatusCheck, .recreateDatabase : break
+            case .responseCaching, .verboseOperationsLogging, .minimuxerConsoleLogging, .recreateDatabase : break
             }
             
             

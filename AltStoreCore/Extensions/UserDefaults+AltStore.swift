@@ -118,10 +118,6 @@ public extension UserDefaults
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
     }
-    @objc var isMinimuxerStatusCheckEnabled: Bool {
-        get { self.bool(forKey: #function) }
-        set { self.set(newValue, forKey: #function) }
-    }
     @objc var keepSigningCertsAfterLogout: Bool {
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
@@ -277,7 +273,6 @@ public extension UserDefaults
             #keyPath(UserDefaults.isDebugModeEnabled): false,
             #keyPath(UserDefaults.isVerboseOperationsLoggingEnabled): false,
             #keyPath(UserDefaults.isMinimuxerConsoleLoggingEnabled): true, // minimuxer logging is disabled by default for console loggin
-            #keyPath(UserDefaults.isMinimuxerStatusCheckEnabled): true, // minimuxer status check is disabled by default to support LocalDevVPN based cellular refresh
             #keyPath(UserDefaults.recreateDatabaseOnNextStart): false,
             #keyPath(UserDefaults.isBackgroundRefreshEnabled): true,
             #keyPath(UserDefaults.enableEMPforWireguard): false,
