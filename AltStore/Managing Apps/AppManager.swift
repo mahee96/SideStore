@@ -1618,18 +1618,24 @@ private extension AppManager
             case .success(let installedApp):
                 context.installedApp = installedApp
                 
-                if let app = app as? StoreApp, let storeApp = installedApp.managedObjectContext?.object(with: app.objectID) as? StoreApp
-                {
-                    installedApp.storeApp = storeApp
-                }
-                
                 if let index = UserDefaults.standard.legacySideloadedApps?.firstIndex(of: installedApp.bundleIdentifier)
                 {
                     // No longer a legacy sideloaded app, so remove it from cached list.
                     UserDefaults.standard.legacySideloadedApps?.remove(at: index)
                 }
                 
-                completionHandler(.success(installedApp))
+                if let app = app as? StoreApp, let storeApp = installedApp.managedObjectContext?.object(with: app.objectID) as? StoreApp
+                {
+                    installedApp.managedObjectContext?.perform {
+                        installedApp.storeApp = storeApp
+                        try? installedApp.managedObjectContext?.save()
+                        completionHandler(.success(installedApp))
+                    }
+                }
+                else
+                {
+                    completionHandler(.success(installedApp))
+                }
             }
         }
         progress.addChild(installOperation.progress, withPendingUnitCount: 30)
