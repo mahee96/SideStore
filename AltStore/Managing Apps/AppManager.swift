@@ -1617,7 +1617,8 @@ private extension AppManager
             {
             case .failure(let error):
                 context.error = error
-            case .success(_): debugLog("App reported as installed")
+            case .success(_):
+                debugLog("App reported as Staged")
             }
         }
         sendAppOperation.addDependency(resignAppOperation)
@@ -1625,32 +1626,21 @@ private extension AppManager
         
         
         /* Install */
-        let installOperation = InstallAppOperation(context: context)
-        installOperation.resultHandler = { (result) in
+        let installOperation = InstallAppOperation(context: context, app: app)
+        installOperation.resultHandler = { (result) async in
             switch result
             {
             case .failure(let error): completionHandler(.failure(error))
             case .success(let installedApp):
-                context.installedApp = installedApp
+                debugLog("App reported as Installed")
                 
+                context.installedApp = installedApp
                 if let index = UserDefaults.standard.legacySideloadedApps?.firstIndex(of: installedApp.bundleIdentifier)
                 {
                     // No longer a legacy sideloaded app, so remove it from cached list.
                     UserDefaults.standard.legacySideloadedApps?.remove(at: index)
                 }
-                
-                if let app = app as? StoreApp, let storeApp = installedApp.managedObjectContext?.object(with: app.objectID) as? StoreApp
-                {
-                    installedApp.managedObjectContext?.perform {
-                        installedApp.storeApp = storeApp
-                        try? installedApp.managedObjectContext?.save()
-                        completionHandler(.success(installedApp))
-                    }
-                }
-                else
-                {
-                    completionHandler(.success(installedApp))
-                }
+                completionHandler(.success(installedApp))
             }
         }
         progress.addChild(installOperation.progress, withPendingUnitCount: 30)
@@ -2241,7 +2231,9 @@ private extension AppManager
             
             do 
             {
-                try installedApp.managedObjectContext?.save()
+                try installedApp.managedObjectContext?.performAndWait {
+                    try installedApp.managedObjectContext?.save()
+                }
             }
             catch
             {
@@ -2314,7 +2306,9 @@ private extension AppManager
     {
         // Find "Install AltStore" operation if it already exists in `context`
         // so we can ensure it runs after any additional serial operations in `operations`.
-        let installAltStoreOperation = context?.operations.allObjects.lazy.compactMap { $0 as? InstallAppOperation }.first { $0.context.bundleIdentifier == StoreApp.altstoreAppID }
+        let installAltStoreOperation = context?.operations.allObjects.lazy
+                                                .compactMap { $0 as? InstallAppOperation }
+                                                .first { $0.context.bundleIdentifier == StoreApp.altstoreAppID }
         
         for operation in operations
         {
@@ -2322,7 +2316,8 @@ private extension AppManager
             {
             case _ where requiresSerialQueue: fallthrough
             case is InstallAppOperation, is RefreshAppOperation, is BackupAppOperation:
-                if let installAltStoreOperation = operation as? InstallAppOperation, installAltStoreOperation.context.bundleIdentifier == StoreApp.altstoreAppID
+                if let installAltStoreOperation = operation as? InstallAppOperation,
+                   installAltStoreOperation.context.bundleIdentifier == StoreApp.altstoreAppID
                 {
                     // Add dependencies on previous serial operations in `context` to ensure re-installing AltStore goes last.
                     let previousSerialOperations = context?.operations.allObjects.filter { self.serialOperationQueue.operations.contains($0) }

@@ -11,7 +11,7 @@ import Foundation
 import Network
 @preconcurrency import AltStoreCore
 import CoreData
-import AltSign
+@preconcurrency import AltSign
 
 let shortcutURLonDelay = URL(string: "shortcuts://run-shortcut?name=TurnOnDataDelay")!
 
@@ -19,11 +19,13 @@ let shortcutURLonDelay = URL(string: "shortcuts://run-shortcut?name=TurnOnDataDe
 final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging, @unchecked Sendable {
 
     let context: InstallAppOperationContext
+    let storeApp: StoreApp?
     
     private var didCleanUp = false
     
-    init(context: InstallAppOperationContext) {
+    init(context: InstallAppOperationContext, app: any AppProtocol) {
         self.context = context
+        self.storeApp = app as? StoreApp
         
         super.init()
         
@@ -33,197 +35,246 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
     override func main() {
         super.main()
         
-        if let error = self.context.error {
+        if let error = context.error {
             self.finish(.failure(error))
             return
         }
         
         guard
-            let certificate = self.context.certificate,
-            let resignedApp = self.context.resignedApp,
-            let provisioningProfiles = self.context.provisioningProfiles
+            let certificate = context.certificate,
+            let resignedApp = context.resignedApp,
+            let provisioningProfiles = context.provisioningProfiles
         else {
-            return self.finish(.failure(OperationError.invalidParameters("InstallAppOperation.main: self.context.certificate or self.context.resignedApp or self.context.provisioningProfiles is nil")))
+            return self.finish(.failure(OperationError.invalidParameters(
+                "InstallAppOperation.main: self.context.certificate or self.context.resignedApp or self.context.provisioningProfiles is nil"
+            )))
         }
 
         #if !targetEnvironment(simulator)
         guard resignedApp.provisioningProfile != nil else {
-            return self.finish(.failure(OperationError.invalidApp))
+            return finish(.failure(OperationError.invalidApp))
         }
         #endif
 
-        @Managed var appVersion = self.context.appVersion
+        @Managed var appVersion = context.appVersion
         let storeBuildVersion = $appVersion.buildVersion
         
-        let backgroundContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
-        backgroundContext.perform {
-            self.installApp(in: backgroundContext, certificate: certificate, resignedApp: resignedApp, provisioningProfiles: provisioningProfiles, storeBuildVersion: storeBuildVersion)
+        Task {
+            do {
+                let backgroundContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
+                let installedApp = try await installApp(
+                    in: backgroundContext,
+                    certificate: certificate,
+                    resignedApp: resignedApp,
+                    provisioningProfiles: provisioningProfiles,
+                    storeBuildVersion: storeBuildVersion
+                )
+                self.finish(.success(installedApp))
+            } catch {
+                self.finish(.failure(error))
+            }
         }
     }
     
     override func finish(_ result: Result<InstalledApp, Error>) {
-        self.cleanUp()
+        cleanUp()
         
         // Only remove refreshed IPA when finished.
-        if let app = self.context.app {
+        if let app = context.app {
             let updatedApp = AnyApp(from: app, bundleId: self.context.targetBundleIdentifier)
             let fileURL = InstalledApp.refreshedIPAURL(for: updatedApp)
             
-            do {
-                if(FileManager.default.fileExists(atPath: fileURL.path)){
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                do {
                     try FileManager.default.removeItem(at: fileURL)
-                    debugLog("Removed refreshed IPA")
+                    debugLog("InstallAppOperation: Removed refreshed IPA")
+                } catch {
+                    debugLog("InstallAppOperation: Failed to remove refreshed .ipa: \(error)")
                 }
-            } catch {
-                debugLog("Failed to remove refreshed .ipa: \(error)")
             }
         }
         
         super.finish(result)
     }
     
-    private func installApp(in backgroundContext: NSManagedObjectContext, certificate: ALTCertificate, resignedApp: ALTApplication, provisioningProfiles: [String: ALTProvisioningProfile], storeBuildVersion: String?) {
-        do {
+    private func installApp(in backgroundContext: NSManagedObjectContext,
+                            certificate: ALTCertificate,
+                            resignedApp: ALTApplication,
+                            provisioningProfiles: [String: ALTProvisioningProfile],
+                            storeBuildVersion: String?) async throws -> InstalledApp
+    {
+        let (installedApp, isDifferentSideStore, bundleID, isSelfReinstall) = try await backgroundContext.perform {
             /* App */
-            let installedApp = try self.findOrCreateInstalledApp(in: backgroundContext, certificate: certificate, resignedApp: resignedApp, storeBuildVersion: storeBuildVersion)
-            let isDifferentSideStoreContainer = (installedApp.bundleIdentifier == StoreApp.altstoreAppID || resignedApp.isAltStoreApp) && (resignedApp.bundleIdentifier != installedApp.resignedBundleIdentifier)
-
-            if !isDifferentSideStoreContainer {
+            let installedApp = try self.fetchOrCreateApp(
+                in: backgroundContext,
+                certificate: certificate,
+                resignedApp: resignedApp,
+                storeBuildVersion: storeBuildVersion
+            )
+            
+            let isDifferentSideStore = Self.isDifferentSideStoreContainer(installedApp, resignedApp)
+            if isDifferentSideStore {
+                self.debugLog("""
+                [WARN] Skipped inserting/updating into InstalledApp table for SideStore:
+                    - Resigned Bundle ID: '\(resignedApp.bundleIdentifier)'
+                    - Active Container Bundle ID: '\(installedApp.resignedBundleIdentifier)'
+                    Reason: A different bundle ID installs SideStore as a new app container which initializes its own database upon launch.
+                            Hence we do not perist current change to prevent corruption of current sidestore's database entry.
+                    
+                """)
+            } else {
                 /* App Extensions */
-                let installedExtensions = try self.findOrCreateInstalledExtensions(for: resignedApp, installedApp: installedApp, in: backgroundContext)
+                let installedExtensions = try self.fetchOrCreateExtensions(
+                    for: resignedApp,
+                    installedApp: installedApp,
+                    in: backgroundContext
+                )
                 installedApp.appExtensions = installedExtensions
-
+                
                 // Remove stale "PlugIns" (Extensions) from currently installed App
                 self.removeStaleAppExtensions(for: installedApp)
-            
                 self.context.beginInstallationHandler?(installedApp)
-                
-                self.updateActiveAppsStatus(for: installedApp, provisioningProfiles: provisioningProfiles, in: backgroundContext)
+                self.updateActiveAppsStatus(
+                    for: installedApp,
+                    provisioningProfiles: provisioningProfiles,
+                    in: backgroundContext
+                )
             }
             
-            // Temporary directory and resigned .ipa no longer needed, so delete them now to ensure AltStore doesn't quit before we get the chance to.
-            self.cleanUp()
+            // TODO: @mahee96: this is commented out since we don't want to persist staging data yet before install is complete
+            let isSelfReinstall = !isDifferentSideStore &&
+                                   installedApp.storeApp?.bundleIdentifier.range(of: Bundle.Info.appbundleIdentifier) != nil
+//            if isSelfReinstall {
+//                // Flush changes to disk now in case the changes are lost when iOS kills current process
+//                do {
+//                    try installedApp.managedObjectContext?.save()
+//                } catch {
+//                    self.debugLog("Failed to flush installedApp to disk: \(error)")
+//                }
+//            }
             
-            var installing = true
-            if !isDifferentSideStoreContainer && installedApp.storeApp?.bundleIdentifier.range(of: Bundle.Info.appbundleIdentifier) != nil {
-                do {
-                    // we need to flush changes to the disk now in case the changes are lost when iOS kills current process
-                    try installedApp.managedObjectContext?.save()
-                } catch {
-                    self.debugLog("Failed to flush installedApp to disk: \(error)")
-                }
-                
-                self.handleSelfReinstallationAndPrompt(for: installedApp, installing: &installing)
-            }
-            
-            Task {
-                do {
-                    try await installIPA(installedApp.bundleIdentifier)
-                    installing = false
-                    if !isDifferentSideStoreContainer {
-                        try await backgroundContext.perform{
-                            installedApp.refreshedDate = Date()
-                            try installedApp.managedObjectContext?.save()
-                        }
-                    }
-                    self.finish(.success(installedApp))
-                } catch let error {
-                    installing = false
-                    self.finish(.failure(error))
-                }
-            }
-        } catch {
-            self.finish(.failure(error))
+            return (installedApp, isDifferentSideStore, installedApp.bundleIdentifier, isSelfReinstall)
         }
+        
+        // Temporary directory and resigned .ipa no longer needed — delete now before AltStore quits.
+        cleanUp()
+        
+        // Self-reinstall notification/prompt
+        var installing = true
+        if isSelfReinstall {
+            self.handleSelfReinstallationAndPrompt(for: installedApp, installing: &installing)
+        }
+        
+        // Phase 2: IPA installation
+        try await installIPA(bundleID)
+        installing = false
+        
+        // Phase 3: Post-install CoreData write — update refreshedDate + save.
+        if !isDifferentSideStore {
+            try await backgroundContext.perform {
+                installedApp.refreshedDate = Date()
+                try installedApp.managedObjectContext?.save()
+            }
+        }
+        return installedApp
+    }
+    
+    private static func isDifferentSideStoreContainer(_ installedApp: InstalledApp, _ resignedApp: ALTApplication) -> Bool {
+        return ((installedApp.bundleIdentifier == StoreApp.altstoreAppID) || resignedApp.isAltStoreApp) &&
+                (resignedApp.bundleIdentifier != installedApp.resignedBundleIdentifier)
     }
 
-    private func findOrCreateInstalledApp(in backgroundContext: NSManagedObjectContext, certificate: ALTCertificate, resignedApp: ALTApplication, storeBuildVersion: String?) throws -> InstalledApp {
-        let installedApp: InstalledApp
-        
-        // Fetch + update rather than insert + resolve merge conflicts to prevent potential context-level conflicts.
-        if let app = InstalledApp.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), self.context.bundleIdentifier), in: backgroundContext) {
-            installedApp = app
-        } else {
-            installedApp = try InstalledApp(resignedApp: resignedApp,
-                                        originalBundleIdentifier: self.context.bundleIdentifier,
-                                        certificateSerialNumber: certificate.serialNumber,
-                                        storeBuildVersion: storeBuildVersion,
-                                        context: backgroundContext)
-        }
-        
-        let isDifferentSideStoreContainer = (installedApp.bundleIdentifier == StoreApp.altstoreAppID || resignedApp.isAltStoreApp) && (resignedApp.bundleIdentifier != installedApp.resignedBundleIdentifier)
-        if isDifferentSideStoreContainer {
-            self.debugLog("""
-            [WARN] Skipped persisting database mutations in InstalledApp table for app: \(installedApp.bundleIdentifier):
-                - Resigned Bundle ID: '\(resignedApp.bundleIdentifier)'
-                - Active Container Bundle ID: '\(installedApp.resignedBundleIdentifier)'
-                Reason: A different bundle ID installs SideStore as a new app container which initializes its own database upon launch, hence we do not perist current change to prevent corruption of current sidestore's database entry.
-                
-            """)
-        } else {
-            installedApp.update(resignedApp: resignedApp, certificateSerialNumber: certificate.serialNumber, storeBuildVersion: storeBuildVersion)
-            installedApp.customBundleIdentifier = self.context.customBundleIdentifier
-            installedApp.useMainProfile = self.context.useMainProfile
-            
-            switch self.context.alternateIconMode {
-            case .set(let alternateIconURL):
-                if FileManager.default.fileExists(atPath: alternateIconURL.path) {
-                    if alternateIconURL != installedApp.alternateIconURL {
-                        do {
-                            try FileManager.default.copyItem(at: alternateIconURL, to: installedApp.alternateIconURL, shouldReplace: true)
-                        } catch {
-                            self.debugLog("Failed to copy alternate icon: \(error)")
-                        }
-                    }
-                    installedApp.hasAlternateIcon = true
-                }
-            case .remove:
-                try? FileManager.default.removeItem(at: installedApp.alternateIconURL)
-                installedApp.hasAlternateIcon = false
-            case .preserve:
-                break
-            }
-            
+    private func fetchOrCreateApp(in backgroundContext: NSManagedObjectContext,
+                                  certificate: ALTCertificate,
+                                  resignedApp: ALTApplication, storeBuildVersion: String?) throws -> InstalledApp
+    {
+        let installedApp = try InstalledApp.first(
+                                satisfying: NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), context.bundleIdentifier),
+                                in: backgroundContext
+                            ) ?? InstalledApp(
+                                resignedApp: resignedApp,
+                                originalBundleIdentifier: self.context.bundleIdentifier,
+                                certificateSerialNumber: certificate.serialNumber,
+                                storeBuildVersion: storeBuildVersion,
+                                context: backgroundContext
+                            )
+        if !Self.isDifferentSideStoreContainer(installedApp, resignedApp) {
+            installedApp.update(
+                resignedApp: resignedApp,
+                certificateSerialNumber: certificate.serialNumber,
+                storeBuildVersion: storeBuildVersion
+            )
+            installedApp.customBundleIdentifier = context.customBundleIdentifier
+            installedApp.useMainProfile = context.useMainProfile
             if let team = DatabaseManager.shared.activeTeam(in: backgroundContext) {
                 installedApp.team = team
+            }
+            if let storeApp {
+                installedApp.storeApp = backgroundContext.object(with: storeApp.objectID) as? StoreApp
+            }
+            // update alternate icon
+            switch context.alternateIconMode {
+                case .set(let alternateIconURL):
+                    guard FileManager.default.fileExists(atPath: alternateIconURL.path) else { break }
+                    installedApp.hasAlternateIcon = true
+                    guard alternateIconURL != installedApp.alternateIconURL else { break }
+                    do {
+                        try FileManager.default.copyItem(
+                            at: alternateIconURL,
+                            to: installedApp.alternateIconURL,
+                            shouldReplace: true
+                        )
+                        self.debugLog("InstallAppOperation: Copied alternate icon at: \(alternateIconURL) to: \(installedApp.alternateIconURL)")
+                    } catch {
+                        self.debugLog("InstallAppOperation: Failed to copy alternate icon: \(error)")
+                    }
+                case .remove:
+                    try? FileManager.default.removeItem(at: installedApp.alternateIconURL)
+                    installedApp.hasAlternateIcon = false
+                case .preserve:
+                    break
             }
         }
 
         return installedApp
     }
 
-    private func findOrCreateInstalledExtensions(for resignedApp: ALTApplication, installedApp: InstalledApp, in backgroundContext: NSManagedObjectContext) throws -> Set<InstalledExtension> {
+    private func fetchOrCreateExtensions(for resignedApp: ALTApplication,
+                                         installedApp: InstalledApp,
+                                         in backgroundContext: NSManagedObjectContext) throws -> Set<InstalledExtension>
+    {
         var installedExtensions = Set<InstalledExtension>()
         
-        if
-            let bundle = Bundle(url: resignedApp.fileURL),
+        if let bundle = Bundle(url: resignedApp.fileURL),
             let directory = bundle.builtInPlugInsURL,
-            let enumerator = FileManager.default.enumerator(at: directory, includingPropertiesForKeys: nil, options: [.skipsSubdirectoryDescendants]) {
+            let enumerator = FileManager.default.enumerator(
+                at: directory,
+                includingPropertiesForKeys: nil,
+                options: [.skipsSubdirectoryDescendants])
+        {
             for case let fileURL as URL in enumerator {
                 guard let appExtensionBundle = Bundle(url: fileURL) else { continue }
                 guard let appExtension = ALTApplication(fileURL: appExtensionBundle.bundleURL) else { continue }
                 
-                let parentBundleID = self.context.bundleIdentifier
+                let parentBundleID = context.bundleIdentifier
                 let resignedParentBundleID = resignedApp.bundleIdentifier
                 
                 let resignedBundleID = appExtension.bundleIdentifier
                 let appExBundleID = resignedBundleID.replacingOccurrences(of: resignedParentBundleID, with: parentBundleID)
                 
-                self.debugLog("`parentBundleID`: \(parentBundleID)")
-                self.debugLog("`resignedParentBundleID`: \(resignedParentBundleID)")
-                self.debugLog("`appExBundleID`: \(appExBundleID)")
-                self.debugLog("`resignedAppExBundleID`: \(resignedBundleID)")
+                self.debugLog("`InstalledAppOperation: parentBundleID`: \(parentBundleID)")
+                self.debugLog("`InstalledAppOperation: resignedParentBundleID`: \(resignedParentBundleID)")
+                self.debugLog("`InstalledAppOperation: appExBundleID`: \(appExBundleID)")
+                self.debugLog("`InstalledAppOperation: resignedAppExBundleID`: \(resignedBundleID)")
                 
-                let installedExtension: InstalledExtension
-                
-                if let appExtension = installedApp.appExtensions.first(where: { $0.bundleIdentifier == appExBundleID }) {
-                    installedExtension = appExtension
-                } else {
-                    installedExtension = try InstalledExtension(resignedAppExtension: appExtension, originalBundleIdentifier: appExBundleID, context: backgroundContext)
-                }
-                
+                let installedExtension = try installedApp.appExtensions
+                                                .first(where: { $0.bundleIdentifier == appExBundleID })
+                                            ?? InstalledExtension(
+                                                resignedAppExtension: appExtension,
+                                                originalBundleIdentifier: appExBundleID,
+                                                context: backgroundContext
+                                            )
                 installedExtension.update(resignedAppExtension: appExtension)
-                
                 installedExtensions.insert(installedExtension)
             }
         }
@@ -239,23 +290,29 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
             for staleAppExn in staleAppExns {
                 do {
                     try FileManager.default.removeItem(at: staleAppExn.fileURL)
-                    self.debugLog("InstallAppOperation.appExtensions: removed stale app-extension: \(staleAppExn.fileURL)")
+                    self.debugLog("InstallAppOperation: removed stale app-extension: \(staleAppExn.fileURL)")
                 } catch {
-                    self.debugLog("InstallAppOperation.appExtensions processing error Error: \(error)")
+                    self.debugLog("InstallAppOperation: remove appExtensions Error: \(error)")
                 }
             }
         }
     }
 
-    private func updateActiveAppsStatus(for installedApp: InstalledApp, provisioningProfiles: [String: ALTProvisioningProfile], in backgroundContext: NSManagedObjectContext) {
-        if let sideloadedAppsLimit = UserDefaults.standard.activeAppsLimit, provisioningProfiles.contains(where: { $1.isFreeProvisioningProfile == true }) {
+    private func updateActiveAppsStatus(for installedApp: InstalledApp,
+                                        provisioningProfiles: [String: ALTProvisioningProfile],
+                                        in backgroundContext: NSManagedObjectContext
+    ){
+        if let sideloadedAppsLimit = UserDefaults.standard.activeAppsLimit,
+               provisioningProfiles.contains(where: { $1.isFreeProvisioningProfile == true })
+        {
             // When installing these new profiles, AltServer will remove all non-active profiles to ensure we remain under limit.
-            
             let fetchRequest = InstalledApp.activeAppsFetchRequest()
             fetchRequest.includesPendingChanges = false
             
+            // Only free-cert-signed apps count against the free limit
             var activeApps = InstalledApp.fetch(fetchRequest, in: backgroundContext)
-                .filter { ($0.team?.type ?? .unknown) == .free } // Only free-cert-signed apps count against the free limit
+                                         .filter { ($0.team?.type ?? .unknown) == .free }
+            
             if !activeApps.contains(installedApp) {
                 let activeAppsCount = activeApps.map { $0.requiredActiveSlots }.reduce(0, +)
                 
@@ -301,7 +358,13 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
                 default:
                     self.verboseLog("Notifications are not enabled")
 
-                    let alert = UIAlertController(title: "Finish Refresh", message: "Please reopen SideStore after the process is finished.To finish refreshing, SideStore must be moved to the background. To do this, you can either go to the Home Screen manually or by hitting Continue. Please reopen SideStore after doing this.", preferredStyle: .alert)
+                    let alert = UIAlertController(
+                        title: "Finish Refresh",
+                        message: """
+                        Please reopen SideStore after the process is finished. To finish refreshing, SideStore must be moved to the background. To do this, you can either go to the Home Screen manually or by hitting Continue. Please reopen SideStore after doing this.
+                        """,
+                        preferredStyle: .alert
+                    )
                     alert.addAction(UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .default, handler: { _ in
                         self.debugLog("Going home")
                         // Cell Shortcut
@@ -327,20 +390,22 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
             }
             // Cell Shortcut
             if self.context.shouldTurnOffData {
-                UIApplication.shared.open(shortcutURLonDelay, options: [:]) { _ in self.debugLog("Cell OFF Shortcut finished execution.")}
+                UIApplication.shared.open(shortcutURLonDelay, options: [:]) { _ in
+                    self.debugLog("Cell OFF Shortcut finished execution.")
+                }
             }
             UIApplication.shared.perform(#selector(NSXPCConnection.suspend))
         }
     }
     
     private func cleanUp() {
-        guard !self.didCleanUp else { return }
-        self.didCleanUp = true
+        guard !didCleanUp else { return }
+        didCleanUp = true
         
         do {
-            try FileManager.default.removeItem(at: self.context.temporaryDirectory)
+            try FileManager.default.removeItem(at: context.temporaryDirectory)
         } catch {
-            debugLog("Failed to remove temporary directory. \(error)")
+            debugLog("InstallAppOperation: Failed to remove temporary directory. \(error)")
         }
     }
 }

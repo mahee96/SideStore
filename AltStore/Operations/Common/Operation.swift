@@ -10,7 +10,7 @@ import UIKit
 import Foundation
 import AltStoreCore
 
-class ResultOperation<ResultType>: Operation
+class ResultOperation<ResultType>: Operation, @unchecked Sendable
 {
     var resultHandler: ((Result<ResultType, Error>) async -> Void)?
 
