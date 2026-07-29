@@ -357,8 +357,8 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
             let delaySeconds = Self.selfInstallSuspendDelayNs / 1_000_000_000
             self.debugLog("[InstallAppOperation] We are still installing after \(delaySeconds) seconds")
             
-            UNUserNotificationCenter.current().getNotificationSettings { settings in
-                switch settings.authorizationStatus {
+            let settings = await UNUserNotificationCenter.current().notificationSettings()
+            switch settings.authorizationStatus {
                 case .authorized, .ephemeral, .provisional:
                     self.verboseLog("[InstallAppOperation] Notifications are enabled")
 
@@ -366,14 +366,14 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
                     content.title = "Refreshing..."
                     content.body = "SideStore will automatically move to the homescreen to finish refreshing!"
                     let notification = UNNotificationRequest(identifier: Bundle.Info.appbundleIdentifier + ".FinishRefreshNotification", content: content, trigger: UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false))
-                    UNUserNotificationCenter.current().add(notification)
+                    try await UNUserNotificationCenter.current().add(notification)
                     
                     self.suspendToHomeScreen()
 
                 default:
                     self.verboseLog("[InstallAppOperation] Notifications are not enabled")
 
-                    DispatchQueue.main.async {
+                    await MainActor.run {
                         let alert = UIAlertController(
                             title: "Finish Refresh",
                             message: """
@@ -385,7 +385,7 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
                             self.suspendToHomeScreen()
                         }))
 
-                        let presenter = self.context.authenticatedContext.presentingViewController 
+                        let presenter = self.context.authenticatedContext.presentingViewController
                                         ?? UIApplication.shared.connectedScenes
                                             .compactMap { ($0 as? UIWindowScene)?.keyWindow }
                                             .first?.rootViewController
@@ -401,7 +401,6 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
                         }
                     }
                 }
-            }
         }
     }
     
