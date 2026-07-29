@@ -37,8 +37,6 @@ public final class AppBootManager {
     }
     
     public nonisolated func startMinimuxer(pairingFile: String) async throws {
-        let loggingEnabled = UserDefaults.standard.isMinimuxerConsoleLoggingEnabled
-        minimuxerSetLogging(loggingEnabled)
         try await minimuxerStart(pairingFile, mountPath: FileManager.default.documentsDirectory.absoluteString)
         await MainActor.run {
             self.isMinimuxerStarted = true

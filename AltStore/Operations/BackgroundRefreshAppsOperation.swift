@@ -102,10 +102,6 @@ final class BackgroundRefreshAppsOperation: ResultOperation<[String: Result<Inst
 
     private nonisolated func execute() async throws -> [String: Result<InstalledApp, Error>] {
         let documentsDirectory = FileManager.default.documentsDirectory.absoluteString
-        
-        // enable minimuxer console logging only if enabled in settings
-        let isMinimuxerConsoleLoggingEnabled = UserDefaults.standard.isMinimuxerConsoleLoggingEnabled
-        minimuxerSetLogging(isMinimuxerConsoleLoggingEnabled)
 
         try await minimuxerStart(
             try String(contentsOf: FileManager.default.documentsDirectory.appendingPathComponent("\(pairingFileName)")),

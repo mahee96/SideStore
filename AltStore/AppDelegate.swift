@@ -79,6 +79,8 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         let rightPadding = String(repeating: " ", count: max(0, paddingCount - leftPadding.count))
 
         consoleLog.startCapturing()
+        AltSign.setLogging(UserDefaults.standard.isAltSignVerboseLoggingEnabled)
+        minimuxerSetLogging(UserDefaults.standard.isMinimuxerVerboseLoggingEnabled)
         setupCrashHandler()
         debugLog("===================================================")
         debugLog("|               App is Starting up                |")

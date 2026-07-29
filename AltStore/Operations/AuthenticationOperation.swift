@@ -89,8 +89,6 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, 
             self.finish(.failure(error))
             return
         }
-        
-        AltSign.setLogging(OperationsLoggingControl.getFromDatabase(for: AuthenticationOperation.self))
 
         Task {
             if let newEmail = self.appleIDEmailAddress,
@@ -291,7 +289,6 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, 
                     let didShowInstructions = await self.showInstructionsIfNecessary()
                     
                     let signer = ALTSigner(team: altTeam, certificate: altCertificate)
-                    AltSign.setLogging(OperationsLoggingControl.getFromDatabase(for: AuthenticationOperation.self))
                     // Resign screen must go last since a successful resign/reinstall will cause the app to quit.
                     let didShowResignAlert = await self.showResignScreenIfNecessary(signer: signer, session: session)
                     if !didShowResignAlert {

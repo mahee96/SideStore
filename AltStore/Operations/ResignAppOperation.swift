@@ -252,7 +252,6 @@ final class ResignAppOperation: ResultOperation<ALTApplication>, OperationLoggin
     
     private func resignAppBundle(at fileURL: URL, team: ALTTeam, certificate: ALTCertificate, profiles: [ALTProvisioningProfile], parentProgress: Progress) async throws -> URL {
         let signer = ALTSigner(team: team, certificate: certificate)
-        AltSign.setLogging(OperationsLoggingControl.getFromDatabase(for: ResignAppOperation.self))
         
         return try await withCheckedThrowingContinuation { continuation in
             let progress = signer.signApp(at: fileURL, provisioningProfiles: profiles) { (success, error) in

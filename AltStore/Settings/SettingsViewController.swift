@@ -109,7 +109,8 @@ extension SettingsViewController
         case deleteDatabase             // row 3 - Delete Database
         case operationsLoggingControl   // row 4 - Operations Logging Control
         case recreateDatabase           // row 5 - Recreate Database on Next Start
-        case minimuxerConsoleLogging    // row 6 - Minimuxer Console Logging
+        case altSignVerboseLogging      // row 6 - AltSign Verbose Logging
+        case minimuxerVerboseLogging    // row 7 - Minimuxer Verbose Logging
     }
 }
 
@@ -140,7 +141,8 @@ final class SettingsViewController: UITableViewController
     @IBOutlet private var exportResignedAppsSwitch: UISwitch!
     @IBOutlet private var cellularRefreshSwitch: UISwitch!
     @IBOutlet private var verboseOperationsLoggingSwitch: UISwitch!
-    @IBOutlet private var minimuxerConsoleLoggingSwitch: UISwitch!
+    @IBOutlet private var altSignVerboseLoggingSwitch: UISwitch!
+    @IBOutlet private var minimuxerVerboseLoggingSwitch: UISwitch!
     
 //    @IBOutlet private var refreshSideJITServer: UILabel!
     @IBOutlet private var disableResponseCachingSwitch: UISwitch!
@@ -527,7 +529,8 @@ private extension SettingsViewController
         self.disableResponseCachingSwitch.isOn = UserDefaults.standard.responseCachingDisabled
         self.exportResignedAppsSwitch.isOn = UserDefaults.standard.isExportResignedAppEnabled
         self.verboseOperationsLoggingSwitch.isOn = UserDefaults.standard.isVerboseOperationsLoggingEnabled
-        self.minimuxerConsoleLoggingSwitch.isOn = UserDefaults.standard.isMinimuxerConsoleLoggingEnabled
+        self.altSignVerboseLoggingSwitch.isOn = UserDefaults.standard.isAltSignVerboseLoggingEnabled
+        self.minimuxerVerboseLoggingSwitch.isOn = UserDefaults.standard.isMinimuxerVerboseLoggingEnabled
 
         self.recreateDatabaseSwitch.isOn = UserDefaults.standard.recreateDatabaseOnNextStart
 
@@ -766,9 +769,15 @@ private extension SettingsViewController
         UserDefaults.standard.isVerboseOperationsLoggingEnabled = sender.isOn
     }
 
-    @IBAction func toggleMinimuxerConsoleLogging(_ sender: UISwitch) {
+    @IBAction func toggleAltSignVerboseLogging(_ sender: UISwitch) {
         // update it in database
-        UserDefaults.standard.isMinimuxerConsoleLoggingEnabled = sender.isOn
+        UserDefaults.standard.isAltSignVerboseLoggingEnabled = sender.isOn
+        AltSign.setLogging(sender.isOn)
+    }
+
+    @IBAction func toggleMinimuxerVerboseLogging(_ sender: UISwitch) {
+        // update it in database
+        UserDefaults.standard.isMinimuxerVerboseLoggingEnabled = sender.isOn
         minimuxerSetLogging(sender.isOn)
     }
 
@@ -1737,7 +1746,7 @@ extension SettingsViewController
                 let segue = UIStoryboardSegue(identifier: "operationsLoggingControl", source: self, destination: operationsLoggingController)
                 self.present(segue.destination, animated: true, completion: nil)
                 
-            case .responseCaching, .verboseOperationsLogging, .minimuxerConsoleLogging, .recreateDatabase : break
+            case .responseCaching, .verboseOperationsLogging, .altSignVerboseLogging, .minimuxerVerboseLogging, .recreateDatabase : break
             }
             
             
