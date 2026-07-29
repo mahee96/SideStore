@@ -1049,7 +1049,18 @@ extension AppManager
         os_unfair_lock_lock(self.progressLock)
         defer { os_unfair_lock_unlock(self.progressLock) }
         
-        let progress = self.refreshProgress[app.bundleIdentifier]
+        let bundleID = app.bundleIdentifier
+        
+        guard let progress = self.refreshProgress[bundleID] ?? self.installationProgress[bundleID] else {
+            return nil
+        }
+        
+        guard !progress.isCancelled else {
+            self.refreshProgress[bundleID] = nil
+            self.installationProgress[bundleID] = nil
+            return nil
+        }
+        
         return progress
     }
     
@@ -1222,6 +1233,7 @@ private extension AppManager
     private func perform(_ operations: [AppOperation], presentingViewController: UIViewController?, group: RefreshGroup) async throws -> RefreshGroup
     {
         let operations = operations.filter { self.progress(for: $0) == nil || self.progress(for: $0)?.isCancelled == true }
+        guard !operations.isEmpty else { return group }
         
         for operation in operations
         {

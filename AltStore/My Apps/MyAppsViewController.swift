@@ -1165,10 +1165,7 @@ private extension MyAppsViewController
             guard await isMinimuxerReady else { return }
 
             let previousProgress = AppManager.shared.refreshProgress(for: installedApp)
-            guard previousProgress == nil else {
-                previousProgress?.cancel()
-                return
-            }
+            guard previousProgress == nil else { return }
             
             self.refresh([installedApp]) { (results) in
                 // If an error occured, reload the section so the progress bar is no longer visible.
@@ -1190,10 +1187,7 @@ private extension MyAppsViewController
             guard await isMinimuxerReady else { return }
 
             let previousProgress = AppManager.shared.refreshProgress(for: installedApp)
-            guard previousProgress == nil else {
-                previousProgress?.cancel()
-                return
-            }
+            guard previousProgress == nil else { return }
             
             AppManager.shared.resign(installedApp, alternateIconMode: alternateIconMode, presentingViewController: self) { (result) in
                 DispatchQueue.main.async {
