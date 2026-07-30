@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import AltStoreCore
+@preconcurrency import AltStoreCore
 
 struct CacheService {
     static let shared = CacheService()

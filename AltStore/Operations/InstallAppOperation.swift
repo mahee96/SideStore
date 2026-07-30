@@ -5,40 +5,35 @@
 //  Created by Riley Testut on 6/19/19.
 //  Copyright © 2019 Riley Testut. All rights reserved.
 //
-import UIKit
+@preconcurrency import UIKit
 import UserNotifications
 import Foundation
 import Network
-@preconcurrency import AltStoreCore
 import CoreData
+@preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
 let shortcutURLonDelay = URL(string: "shortcuts://run-shortcut?name=TurnOnDataDelay")!
 
-@objc(InstallAppOperation)
-final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging, @unchecked Sendable {
+final class InstallAppOperation: AsyncOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
     private static let selfInstallSuspendDelayNs: UInt64 = 2_000_000_000
 
-    let context: InstallAppOperationContext
     let storeApp: StoreApp?
+    var backgroundContext: NSManagedObjectContext?
     
     private var didCleanUp = false
     
     init(context: InstallAppOperationContext, app: any AppProtocol) {
-        self.context = context
         self.storeApp = app as? StoreApp
-        
-        super.init()
-        
+        super.init(context: context)
         self.progress.totalUnitCount = 100
     }
     
-    override func main() {
-        super.main()
-        
-        if let error = context.error {
-            self.finish(.failure(error))
-            return
+    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> InstalledApp {
+        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        defer {
+            self.cleanUp()
+            self.removeRefreshedIPA()
         }
         
         guard
@@ -46,41 +41,41 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
             let resignedApp = context.resignedApp,
             let provisioningProfiles = context.provisioningProfiles
         else {
-            return self.finish(.failure(OperationError.invalidParameters(
-                "InstallAppOperation.main: self.context.certificate or self.context.resignedApp or self.context.provisioningProfiles is nil"
-            )))
+            throw OperationError.invalidParameters(
+                "InstallAppOperation.execute: self.context.certificate or self.context.resignedApp or self.context.provisioningProfiles is nil"
+            )
         }
 
         #if !targetEnvironment(simulator)
         guard resignedApp.provisioningProfile != nil else {
-            return finish(.failure(OperationError.invalidApp))
+            throw OperationError.invalidApp
         }
         #endif
 
         @Managed var appVersion = context.appVersion
         let storeBuildVersion = $appVersion.buildVersion
         
-        Task {
-            do {
-                let backgroundContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
-                let installedApp = try await installApp(
-                    in: backgroundContext,
-                    certificate: certificate,
-                    resignedApp: resignedApp,
-                    provisioningProfiles: provisioningProfiles,
-                    storeBuildVersion: storeBuildVersion
-                )
-                self.finish(.success(installedApp))
-            } catch {
-                self.finish(.failure(error))
-            }
+        guard let backgroundContext = self.context.dbBackgroundContext else {
+            throw OperationError.invalidParameters("InstallAppOperation: context.dbBackgroundContext is nil")
         }
+        self.backgroundContext = backgroundContext
+        
+        let installedApp = try await installApp(
+            in: backgroundContext,
+            certificate: certificate,
+            resignedApp: resignedApp,
+            provisioningProfiles: provisioningProfiles,
+            storeBuildVersion: storeBuildVersion
+        )
+        
+        try await backgroundContext.perform {
+            try backgroundContext.save()
+        }
+        
+        return installedApp
     }
     
-    override func finish(_ result: Result<InstalledApp, Error>) {
-        cleanUp()
-        
-        // Only remove refreshed IPA when finished.
+    private func removeRefreshedIPA() {
         if let app = context.app {
             let updatedApp = AnyApp(from: app, bundleId: self.context.targetBundleIdentifier)
             let fileURL = InstalledApp.refreshedIPAURL(for: updatedApp)
@@ -94,8 +89,6 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
                 }
             }
         }
-        
-        super.finish(result)
     }
     
     private func installApp(in backgroundContext: NSManagedObjectContext,
@@ -142,17 +135,17 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
                 )
             }
             
-            // TODO: @mahee96: this is commented out since we don't want to persist staging data yet before install is complete
+            // TODO: @mahee96: we will revisit this later, coz for sidestore itself, it cannot continue once installIPA kills current instance and installs on top
             let isSelfReinstall = !isDifferentSideStore &&
                                    installedApp.storeApp?.bundleIdentifier.range(of: Bundle.Info.appbundleIdentifier) != nil
-//            if isSelfReinstall {
-//                // Flush changes to disk now in case the changes are lost when iOS kills current process
-//                do {
-//                    try installedApp.managedObjectContext?.save()
-//                } catch {
-//                    self.debugLog("Failed to flush installedApp to disk: \(error)")
-//                }
-//            }
+            if isSelfReinstall {
+               // Flush changes to disk now in case the changes are lost when iOS kills current process
+               do {
+                   try installedApp.managedObjectContext?.save()
+               } catch {
+                   self.debugLog("Failed to flush installedApp to disk: \(error)")
+               }
+           }
             
             return (installedApp, isDifferentSideStore, installedApp.bundleIdentifier, isSelfReinstall)
         }
@@ -168,11 +161,10 @@ final class InstallAppOperation: ResultOperation<InstalledApp>, OperationLogging
         // Phase 2: IPA installation
         try await installIPA(bundleID)
         
-        // Phase 3: Post-install CoreData write — update refreshedDate + save.
+        // Phase 3: Post-install CoreData write — update refreshedDate
         if !isDifferentSideStore {
             try await backgroundContext.perform {
                 installedApp.refreshedDate = Date()
-                try installedApp.managedObjectContext?.save()
             }
         }
         return installedApp

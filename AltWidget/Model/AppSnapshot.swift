@@ -6,10 +6,10 @@
 //  Copyright © 2023 Riley Testut. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 import WidgetKit
-import AltStoreCore
-import AltSign
+@preconcurrency import AltStoreCore
+@preconcurrency import AltSign
 
 struct AppSnapshot
 {

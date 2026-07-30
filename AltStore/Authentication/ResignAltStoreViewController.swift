@@ -6,9 +6,9 @@
 //  Copyright © 2019 Riley Testut. All rights reserved.
 //
 
-import UIKit
-import AltStoreCore
-import AltSign
+@preconcurrency import UIKit
+@preconcurrency import AltStoreCore
+@preconcurrency import AltSign
 
 final class ResignAltStoreViewController: UIViewController
 {

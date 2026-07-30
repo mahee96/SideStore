@@ -9,7 +9,7 @@
 import Foundation
 import KeychainAccess
 
-import AltSign
+@preconcurrency import AltSign
 
 @propertyWrapper
 public struct KeychainItem<Value>

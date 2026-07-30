@@ -6,7 +6,7 @@
 //  Copyright © 2026 SideStore. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 public func RSTDegreesFromRadians(_ radians: CGFloat) -> CGFloat {
     return radians * (180.0 / .pi)
 }

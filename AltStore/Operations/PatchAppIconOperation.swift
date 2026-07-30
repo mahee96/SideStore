@@ -6,37 +6,13 @@
 //  Copyright © 2026 AltStore. All rights reserved.
 //
 
-import UIKit
-import Foundation
-import AltStoreCore
+@preconcurrency import UIKit
+@preconcurrency import AltStoreCore
 
-@objc(PatchAppIconOperation)
-class PatchAppIconOperation: ResultOperation<Void>, OperationLogging, @unchecked Sendable {
+final class PatchAppIconOperation: AsyncOperation<InstallAppOperationContext, URL>, @unchecked Sendable {
     
-    let context: InstallAppOperationContext
-    
-    init(context: InstallAppOperationContext) {
-        self.context = context
-        super.init()
-    }
-    
-    override func main() {
-        super.main()
-        
-        Task {
-            do {
-                try await self.execute()
-                self.finish(.success(()))
-            } catch {
-                self.finish(.failure(error))
-            }
-        }
-    }
-    
-    private func execute() async throws {
-        if let error = self.context.error {
-            throw error
-        }
+    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> URL {
+        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         guard let app = self.context.app else {
             throw OperationError.invalidParameters("PatchAppIconOperation.execute: self.context.app is nil")
@@ -44,7 +20,7 @@ class PatchAppIconOperation: ResultOperation<Void>, OperationLogging, @unchecked
         
         guard let alternateIconURL = self.context.alternateIconURL,
               FileManager.default.fileExists(atPath: alternateIconURL.path) else {
-            return
+            return app.fileURL
         }
         
         let appBundleURL = app.fileURL
@@ -75,5 +51,6 @@ class PatchAppIconOperation: ResultOperation<Void>, OperationLogging, @unchecked
         
         let plistData = try PropertyListSerialization.data(fromPropertyList: infoPlist, format: .xml, options: 0)
         try plistData.write(to: plistURL, options: .atomic)
+        return app.fileURL
     }
 }

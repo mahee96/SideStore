@@ -8,13 +8,11 @@
 
 import Foundation
 import CoreData
-import AltStoreCore
+@preconcurrency import AltStoreCore
 import SemanticVersion
 
-@objc(FetchSourceOperation)
-final class FetchSourceOperation: ResultOperation<Source> {
+final class FetchSourceOperation: AsyncOperation<OperationContext, Source>, @unchecked Sendable {
     let sourceURL: URL
-    let managedObjectContext: NSManagedObjectContext
     
     // Non-nil when updating an existing source.
     @Managed
@@ -22,32 +20,26 @@ final class FetchSourceOperation: ResultOperation<Source> {
     
     private let session: URLSession
     private weak var dataTask: URLSessionDataTask?
+
     
     private lazy var dateFormatter: ISO8601DateFormatter = {
         let dateFormatter = ISO8601DateFormatter()
         return dateFormatter
     }()
     
-    // New source
-    convenience init(sourceURL: URL, managedObjectContext: NSManagedObjectContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()) {
-        self.init(sourceURL: sourceURL, source: nil, managedObjectContext: managedObjectContext)
-    }
-    
-    // Existing source
-    convenience init(source: Source, managedObjectContext: NSManagedObjectContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()) {
-        self.init(sourceURL: source.sourceURL, source: source, managedObjectContext: managedObjectContext)
-    }
-    
-    private init(sourceURL: URL, source: Source?, managedObjectContext: NSManagedObjectContext) {
+    init(sourceURL: URL, context: OperationContext) {
         self.sourceURL = sourceURL
-        self.managedObjectContext = managedObjectContext
-        self.source = source
-        
-        let configuration = URLSessionConfiguration.default
-        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-        configuration.urlCache = nil
-        
-        self.session = URLSession(configuration: configuration)
+        self.session = URLSession.shared
+        super.init(context: context)
+    }
+    
+    init(source: Source, context: OperationContext) {
+        self.sourceURL = source.sourceURL
+        self.session = URLSession.shared
+        super.init(context: context)
+        if let dbContext = context.dbBackgroundContext {
+            self.source = dbContext.object(with: source.objectID) as? Source
+        }
     }
     
     override func cancel() {
@@ -56,138 +48,135 @@ final class FetchSourceOperation: ResultOperation<Source> {
         self.dataTask?.cancel()
     }
     
-    override func main() {
-        super.main()
+    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Source {
+        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        
+        guard let dbContext = self.context.dbBackgroundContext else {
+            throw OperationError.invalidParameters("FetchSourceOperation: context.dbBackgroundContext is nil")
+        }
         
         if let source = self.source {
             // Check if source is blocked before fetching it.
-            
-            do {
-                try self.managedObjectContext.performAndWait {
-                    try self.verifyExistingSource(source)
-                }
-            } catch {
-                self.managedObjectContext.perform {
-                    self.finish(.failure(error))
-                }
-                
-                return
+            try dbContext.performAndWait {
+                try self.verifyExistingSource(source)
             }
         }
         
-
         var request = URLRequest(url: self.sourceURL)
         request.cachePolicy = .reloadIgnoringLocalCacheData     // don't use local caching
 
-        let dataTask = self.session.dataTask(with: request) { (data, response, error) in
-            
-            let childContext = DatabaseManager.shared.persistentContainer.newBackgroundContext(parent: self.managedObjectContext)
-            childContext.mergePolicy = NSOverwriteMergePolicy
-            childContext.perform {
-                self.performDecodeAndSave(data: data, response: response, error: error, childContext: childContext)
-            }
+        let (data, response) = try await self.fetchSourceData(with: request)
+        
+        let childContext = DatabaseManager.shared.persistentContainer.newBackgroundContext(parent: dbContext)
+        childContext.mergePolicy = NSOverwriteMergePolicy
+        
+        let identifier = try await childContext.perform {
+            let identifier = try self.performDecodeAndSave(data: data, response: response, childContext: childContext)
+            try childContext.save()
+            return identifier
         }
         
-        self.progress.addChild(dataTask.progress, withPendingUnitCount: 1)
-        
-        dataTask.resume()
-        
-        self.dataTask = dataTask
+        return try dbContext.performAndWait {
+            if let source = Source.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(Source.identifier), identifier), in: dbContext) {
+                return source
+            } else {
+                throw OperationError.noSources
+            }
+        }
+    }
+    
+    private func fetchSourceData(with request: URLRequest) async throws -> (Data, URLResponse) {
+        try await withCheckedThrowingContinuation { continuation in
+            let dataTask = self.session.dataTask(with: request) { (data, response, error) in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else if let data = data, let response = response {
+                    continuation.resume(returning: (data, response))
+                } else {
+                    continuation.resume(throwing: OperationError.unknown())
+                }
+            }
+            self.progress.addChild(dataTask.progress, withPendingUnitCount: 1)
+            dataTask.resume()
+            self.dataTask = dataTask
+        }
     }
     
     private func verifyExistingSource(_ source: Source) throws {
-        // Source must be from self.managedObjectContext
-        let source = self.managedObjectContext.object(with: source.objectID) as! Source
+        guard let dbContext = self.context.dbBackgroundContext else {
+            throw OperationError.invalidParameters("FetchSourceOperation: context.dbBackgroundContext is nil")
+        }
+        let source = dbContext.object(with: source.objectID) as! Source
         try self.verifySourceNotBlocked(source, response: nil)
     }
     
-    private func performDecodeAndSave(data: Data?, response: URLResponse?, error: Error?, childContext: NSManagedObjectContext) {
+    private func performDecodeAndSave(data: Data, response: URLResponse, childContext: NSManagedObjectContext) throws -> String {
+        let decoder = AltStoreCore.JSONDecoder()
+        decoder.dateDecodingStrategy = .custom({ (decoder) -> Date in
+            let container = try decoder.singleValueContainer()
+            let text = try container.decode(String.self)
+            
+            // Full ISO8601 Format.
+            self.dateFormatter.formatOptions = [.withFullDate, .withFullTime, .withTimeZone]
+            if let date = self.dateFormatter.date(from: text) {
+                return date
+            }
+            
+            // Just date portion of ISO8601.
+            self.dateFormatter.formatOptions = [.withFullDate]
+            if let date = self.dateFormatter.date(from: text) {
+                return date
+            }
+            
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Date is in invalid format.")
+        })
+        
+        decoder.managedObjectContext = childContext
+        decoder.sourceURL = self.sourceURL
+        
+        if #available(iOS 15, *) {
+            decoder.allowsJSON5 = true
+        }
+        
+        let source: Source
+        
         do {
-            let (data, response) = try Result((data, response), error).get()
-            
-            let decoder = AltStoreCore.JSONDecoder()
-            decoder.dateDecodingStrategy = .custom({ (decoder) -> Date in
-                let container = try decoder.singleValueContainer()
-                let text = try container.decode(String.self)
-                
-                // Full ISO8601 Format.
-                self.dateFormatter.formatOptions = [.withFullDate, .withFullTime, .withTimeZone]
-                if let date = self.dateFormatter.date(from: text) {
-                    return date
-                }
-                
-                // Just date portion of ISO8601.
-                self.dateFormatter.formatOptions = [.withFullDate]
-                if let date = self.dateFormatter.date(from: text) {
-                    return date
-                }
-                
-                throw DecodingError.dataCorruptedError(in: container, debugDescription: "Date is in invalid format.")
-            })
-            
-            decoder.managedObjectContext = childContext
-            decoder.sourceURL = self.sourceURL
-            
-            if #available(iOS 15, *) {
-                decoder.allowsJSON5 = true
+            source = try decoder.decode(Source.self, from: data)
+        } catch let error as DecodingError {
+            let debugDescription: String
+            let codingPath: [CodingKey]
+            switch error {
+            case .typeMismatch(let type, let context):
+                debugDescription = "Type mismatch for type \(type). \(context.debugDescription)"
+                codingPath = context.codingPath
+            case .valueNotFound(let type, let context):
+                debugDescription = "Value of type \(type) not found. \(context.debugDescription)"
+                codingPath = context.codingPath
+            case .keyNotFound(let key, let context):
+                debugDescription = "Key '\(key.stringValue)' not found. \(context.debugDescription)"
+                codingPath = context.codingPath + [key]
+            case .dataCorrupted(let context):
+                debugDescription = "Data corrupted. \(context.debugDescription)"
+                codingPath = context.codingPath
+            @unknown default:
+                debugDescription = error.localizedDescription
+                codingPath = []
             }
             
-            let source: Source
+            let pathDescription = codingPath.map { $0.intValue?.description ?? $0.stringValue }.joined(separator: " > ")
+            let detailedMessage = "Decoding failed: \(debugDescription) at path: \(pathDescription)"
             
-            do {
-                source = try decoder.decode(Source.self, from: data)
-            } catch let error as DecodingError {
-                let debugDescription: String
-                let codingPath: [CodingKey]
-                switch error {
-                case .typeMismatch(let type, let context):
-                    debugDescription = "Type mismatch for type \(type). \(context.debugDescription)"
-                    codingPath = context.codingPath
-                case .valueNotFound(let type, let context):
-                    debugDescription = "Value of type \(type) not found. \(context.debugDescription)"
-                    codingPath = context.codingPath
-                case .keyNotFound(let key, let context):
-                    debugDescription = "Key '\(key.stringValue)' not found. \(context.debugDescription)"
-                    codingPath = context.codingPath + [key]
-                case .dataCorrupted(let context):
-                    debugDescription = "Data corrupted. \(context.debugDescription)"
-                    codingPath = context.codingPath
-                @unknown default:
-                    debugDescription = error.localizedDescription
-                    codingPath = []
-                }
-                
-                let pathDescription = codingPath.map { $0.intValue?.description ?? $0.stringValue }.joined(separator: " > ")
-                let detailedMessage = "Decoding failed: \(debugDescription) at path: \(pathDescription)"
-                
-                throw NSError(domain: "io.sidestore.SideStore.DecodingError", code: 0, userInfo: [
-                    NSLocalizedDescriptionKey: detailedMessage,
-                    NSDebugDescriptionErrorKey: detailedMessage
-                ])
-            }
-            
-            let identifier = source.identifier
-            
-            try self.verify(source, response: response)
-            
-            try childContext.save()
-            
-            self.managedObjectContext.perform {
-                self.finishWithFetchedSource(identifier: identifier)
-            }
-        } catch {
-            self.managedObjectContext.perform {
-                self.finish(.failure(error))
-            }
+            throw NSError(domain: "io.sidestore.SideStore.DecodingError", code: 0, userInfo: [
+                NSLocalizedDescriptionKey: detailedMessage,
+                NSDebugDescriptionErrorKey: detailedMessage
+            ])
         }
-    }
-    
-    private func finishWithFetchedSource(identifier: String) {
-        if let source = Source.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(Source.identifier), identifier), in: self.managedObjectContext) {
-            self.finish(.success(source))
-        } else {
-            self.finish(.failure(OperationError.noSources))
-        }
+        
+        let identifier = source.identifier
+        
+        try self.verify(source, response: response)
+        
+        return identifier
     }
     
     private func verify(_ source: Source, response: URLResponse) throws {

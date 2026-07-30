@@ -8,7 +8,7 @@
 
 import SwiftUI
 import QuickLook
-import AltSign
+@preconcurrency import AltSign
 
 // MARK: - Bundle Item Model
 

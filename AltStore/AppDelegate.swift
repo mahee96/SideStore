@@ -6,12 +6,12 @@
 //  Copyright © 2019 Riley Testut. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 import UserNotifications
 import AVFoundation
 import Intents
-import AltStoreCore
-import AltSign
+@preconcurrency import AltStoreCore
+@preconcurrency import AltSign
 import CoreData
 
 
@@ -180,9 +180,11 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func applicationWillEnterForeground(_ application: UIApplication)
     {
-        AppManager.shared.update()
         if UserDefaults.standard.enableEMPforWireguard {
             startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
+        }
+        Task {
+            await AppManager.shared.update()
         }
     }
 

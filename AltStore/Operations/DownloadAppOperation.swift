@@ -9,16 +9,11 @@
 import Foundation
 import WebKit
 import UniformTypeIdentifiers
-import AltStoreCore
-import AltSign
+@preconcurrency import AltStoreCore
+@preconcurrency import AltSign
 
-@objc(DownloadAppOperation)
-final class DownloadAppOperation: ResultOperation<ALTApplication>, OperationLogging {
-    
-    @Managed
+final class DownloadAppOperation: AsyncOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
     private(set) var app: AppProtocol
-
-    let context: InstallAppOperationContext
 
     private let appName: String
     private let bundleIdentifier: String
@@ -30,57 +25,34 @@ final class DownloadAppOperation: ResultOperation<ALTApplication>, OperationLogg
 
     init(app: AppProtocol, destinationURL: URL, context: InstallAppOperationContext) {
         self.app = app
-        self.context = context
 
         self.appName = app.name
         self.bundleIdentifier = context.bundleIdentifier
         self.sourceURL = app.url
         self.destinationURL = destinationURL
 
-        super.init()
+        super.init(context: context)
 
         // App = 3, Dependencies = 1
-        self.progress.totalUnitCount = 4
     }
 
-    override func main() {
-        super.main()
-
-        if let error = self.context.error {
-            self.finish(.failure(error))
-            return
+    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ALTApplication {
+        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        defer {
+            if FileManager.default.fileExists(atPath: self.temporaryDirectory.path) {
+                do {
+                    try FileManager.default.removeItem(at: self.temporaryDirectory)
+                } catch {
+                    debugLog("[DownloadAppOperation] Failed to remove DownloadAppOperation temporary directory: \(self.temporaryDirectory). \(error)")
+                }
+            }
         }
-
+        
+        if self.isCancelled { throw OperationError.cancelled }
+        if let error = self.context.error { throw error }
+        
         debugLog("[DownloadAppOperation] Downloading App: \(self.bundleIdentifier)")
 
-        // Set _after_ checking self.context.error to prevent overwriting localized failure for previous errors.
-        self.localizedFailure = String(format: NSLocalizedString("%@ could not be downloaded.", comment: ""), self.appName)
-
-        Task {
-            do {
-                let application = try await self.execute()
-                self.finish(.success(application))
-            } catch {
-                self.finish(.failure(error))
-            }
-        }
-    }
-
-    override func finish(_ result: Result<ALTApplication, Error>) {
-        if FileManager.default.fileExists(atPath: self.temporaryDirectory.path) {
-            do {
-                try FileManager.default.removeItem(at: self.temporaryDirectory)
-            } catch {
-                debugLog("[DownloadAppOperation] Failed to remove DownloadAppOperation temporary directory: \(self.temporaryDirectory). \(error)")
-            }
-        }
-
-        super.finish(result)
-    }
-    
-    
-    private nonisolated func execute() async throws -> ALTApplication {
-        let app = self.$app.perform { _ in  self.app }
         do {
             var appVersion: AppVersion?
 
@@ -180,7 +152,7 @@ final class DownloadAppOperation: ResultOperation<ALTApplication>, OperationLogg
         try FileManager.default.copyItem(at: application.fileURL, to: self.destinationURL, shouldReplace: true)
         
         guard let copiedApplication = ALTApplication(fileURL: self.destinationURL) else { throw OperationError.invalidApp }
-        self.progress.completedUnitCount += 1
+        self.progress.completedUnitCount = 100
         return copiedApplication
     }
     
@@ -189,7 +161,7 @@ final class DownloadAppOperation: ResultOperation<ALTApplication>, OperationLogg
         
         if sourceURL.isFileURL {
             fileURL = sourceURL
-            self.progress.completedUnitCount += 3
+            self.progress.completedUnitCount = 75
         } else {
             // Regular app
             fileURL = try await downloadFile(from: sourceURL)
@@ -244,8 +216,9 @@ final class DownloadAppOperation: ResultOperation<ALTApplication>, OperationLogg
     
     func downloadFile(from downloadURL: URL) async throws -> URL {
         debugLog("[DownloadAppOperation] download started: \(downloadURL)")
+        let delegate = DownloadProgressDelegate(progress: self.progress)
         do {
-            let (fileURL, response) = try await self.session.download(from: downloadURL)
+            let (fileURL, response) = try await self.session.download(from: downloadURL, delegate: delegate)
             let resp = response as? HTTPURLResponse
             if let resp {
                 debugLog("[DownloadAppOperation] downloadFile: completed with status \(resp.statusCode) at \(fileURL.path)")
@@ -254,7 +227,7 @@ final class DownloadAppOperation: ResultOperation<ALTApplication>, OperationLogg
             } else {
                 debugLog("[DownloadAppOperation] downloadFile: completed at \(fileURL.path)")
             }
-            self.progress.completedUnitCount += 3
+            self.progress.completedUnitCount = 75
             return fileURL
         }catch{
             debugLog("[DownloadAppOperation] download failed for url: \(downloadURL)")
@@ -340,5 +313,24 @@ extension DownloadAppOperation {
             self.downloadURL = downloadURL
             self.path = path
         }
+    }
+}
+
+private class DownloadProgressDelegate: NSObject, URLSessionDownloadDelegate {
+    let progress: Progress
+    
+    init(progress: Progress) {
+        self.progress = progress
+    }
+    
+    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
+        if totalBytesExpectedToWrite > 0 {
+            let fraction = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
+            self.progress.completedUnitCount = Int64(fraction * 75.0)
+        }
+    }
+    
+    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+        // Unused as download(from:delegate:) returns the file URL directly
     }
 }

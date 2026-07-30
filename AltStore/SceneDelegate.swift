@@ -6,8 +6,8 @@
 //  Copyright © 2020 Riley Testut. All rights reserved.
 //
 
-import UIKit
-import AltStoreCore
+@preconcurrency import UIKit
+@preconcurrency import AltStoreCore
 
 
 @available(iOS 13, *)
@@ -35,6 +35,10 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
 
     func sceneWillEnterForeground(_ scene: UIScene)
     {
+        if UserDefaults.standard.enableEMPforWireguard {
+            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
+        }
+        
         // Called as the scene transitions from the background to the foreground.
         // Use this method to undo the changes made on entering the background.
         
@@ -44,9 +48,8 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
         // (since all these methods are called separately during app startup).
         guard DatabaseManager.shared.isStarted else { return }
         
-        AppManager.shared.update()
-        if UserDefaults.standard.enableEMPforWireguard {
-            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
+        Task {
+            await AppManager.shared.update()
         }
     }
 

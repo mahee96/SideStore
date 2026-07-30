@@ -8,41 +8,13 @@
 
 import Foundation
 import CoreData
-import AltStoreCore
-import AltSign
+@preconcurrency import AltStoreCore
+@preconcurrency import AltSign
 
-@objc(FetchAppIDsOperation)
-final class FetchAppIDsOperation: ResultOperation<([AppID], NSManagedObjectContext)>
-{
-    let context: AuthenticatedOperationContext
-    let managedObjectContext: NSManagedObjectContext
+final class FetchAppIDsOperation: AsyncOperation<AuthenticatedOperationContext, ([AppID], NSManagedObjectContext)>, @unchecked Sendable {
     
-    init(context: AuthenticatedOperationContext, managedObjectContext: NSManagedObjectContext = DatabaseManager.shared.persistentContainer.newBackgroundContext())
-    {
-        self.context = context
-        self.managedObjectContext = managedObjectContext
-        
-        super.init()
-    }
-    
-    override func main()
-    {
-        super.main()
-        
-        Task {
-            do {
-                let result = try await self.execute()
-                self.finish(.success(result))
-            } catch {
-                self.finish(.failure(error))
-            }
-        }
-    }
-    
-    private nonisolated func execute() async throws -> ([AppID], NSManagedObjectContext) {
-        if let error = self.context.error {
-            throw error
-        }
+    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ([AppID], NSManagedObjectContext) {
+        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         guard
             let team = self.context.team,
             let session = self.context.session
@@ -50,19 +22,19 @@ final class FetchAppIDsOperation: ResultOperation<([AppID], NSManagedObjectConte
             throw OperationError.invalidParameters("FetchAppIDsOperation.main: self.context.team or self.context.session is nil")
         }
         
-        let fetchedAppIDs: [ALTAppID] = try await withCheckedThrowingContinuation { continuation in
-            ALTAppleAPI.shared.fetchAppIDs(for: team, session: session) { appIDs, error in
-                continuation.resume(with: Result(appIDs, error))
-            }
+        guard let dbContext = self.context.dbBackgroundContext else {
+            throw OperationError.invalidParameters("FetchAppIDsOperation: context.dbBackgroundContext is nil")
         }
         
-        return try await self.managedObjectContext.perform {
-            try self.syncAppIDs(fetchedAppIDs, team: team)
+        let fetchedAppIDs = try await ALTAppleAPI.shared.fetchAppIDs(for: team, session: session)
+        
+        return try await dbContext.perform {
+            try self.syncAppIDs(fetchedAppIDs, team: team, in: dbContext)
         }
     }
     
-    private func syncAppIDs(_ fetchedAppIDs: [ALTAppID], team: ALTTeam) throws -> ([AppID], NSManagedObjectContext) {
-        guard let team = Team.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(Team.identifier), team.identifier), in: self.managedObjectContext) else {
+    private func syncAppIDs(_ fetchedAppIDs: [ALTAppID], team: ALTTeam, in dbContext: NSManagedObjectContext) throws -> ([AppID], NSManagedObjectContext) {
+        guard let team = Team.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(Team.identifier), team.identifier), in: dbContext) else {
             throw OperationError.notAuthenticated
         }
         
@@ -73,10 +45,24 @@ final class FetchAppIDsOperation: ResultOperation<([AppID], NSManagedObjectConte
                                                      #keyPath(AppID.team), team,
                                                      #keyPath(AppID.identifier), fetchedIdentifiers)
         
-        let deletedAppIDs = try self.managedObjectContext.fetch(deletedAppIDsRequest)
-        deletedAppIDs.forEach { self.managedObjectContext.delete($0) }
+        let deletedAppIDs = try dbContext.fetch(deletedAppIDsRequest)
+        deletedAppIDs.forEach { dbContext.delete($0) }
         
-        let appIDs = fetchedAppIDs.map { AppID($0, team: team, context: self.managedObjectContext) }
-        return (appIDs, self.managedObjectContext)
+        let appIDs = fetchedAppIDs.map { AppID($0, team: team, context: dbContext) }
+        return (appIDs, dbContext)
+    }
+}
+
+extension ALTAppleAPI {
+    func fetchAppIDs(for team: ALTTeam, session: ALTAppleAPISession) async throws -> [ALTAppID] {
+        try await withCheckedThrowingContinuation { continuation in
+            self.fetchAppIDs(for: team, session: session) { appIDs, error in
+                if let appIDs = appIDs {
+                    continuation.resume(returning: appIDs)
+                } else {
+                    continuation.resume(throwing: error ?? OperationError.unknown())
+                }
+            }
+        }
     }
 }

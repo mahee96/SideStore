@@ -6,41 +6,15 @@
 //  Copyright © 2019 Riley Testut. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 import Foundation
-import AltStoreCore
-import AltSign
+@preconcurrency import AltStoreCore
+@preconcurrency import AltSign
 
-@objc(ResignAppOperation)
-final class ResignAppOperation: ResultOperation<ALTApplication>, OperationLogging, @unchecked Sendable {
-
-    let context: InstallAppOperationContext
+final class ResignAppOperation: AsyncOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
     
-    init(context: InstallAppOperationContext) {
-        self.context = context
-        
-        super.init()
-        
-        self.progress.totalUnitCount = 3
-    }
-    
-    override func main() {
-        super.main()
-        
-        Task {
-            do {
-                let resignedApplication = try await self.execute()
-                self.finish(.success(resignedApplication))
-            } catch {
-                self.finish(.failure(error))
-            }
-        }
-    }
-    
-    private nonisolated func execute() async throws -> ALTApplication {
-        if let error = self.context.error {
-            throw error
-        }
+    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ALTApplication {
+        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         guard
             let app = self.context.app,
@@ -83,22 +57,7 @@ final class ResignAppOperation: ResultOperation<ALTApplication>, OperationLoggin
         
         return resignedApplication
     }
-    
-    func process<T>(_ result: Result<T, Error>) -> T? {
-        switch result {
-        case .failure(let error):
-            self.finish(.failure(error))
-            return nil
-            
-        case .success(let value):
-            guard !self.isCancelled else {
-                self.finish(.failure(OperationError.cancelled))
-                return nil
-            }
-            
-            return value
-        }
-    }
+
     
     private func prepareAppBundle(for app: ALTApplication, profiles: [String: ALTProvisioningProfile], appexBundleIds: [String: String], parentProgress: Progress) async throws -> URL {
         let progress = Progress.discreteProgress(totalUnitCount: 1)
@@ -252,20 +211,8 @@ final class ResignAppOperation: ResultOperation<ALTApplication>, OperationLoggin
     
     private func resignAppBundle(at fileURL: URL, team: ALTTeam, certificate: ALTCertificate, profiles: [ALTProvisioningProfile], parentProgress: Progress) async throws -> URL {
         let signer = ALTSigner(team: team, certificate: certificate)
-        
-        return try await withCheckedThrowingContinuation { continuation in
-            let progress = signer.signApp(at: fileURL, provisioningProfiles: profiles) { (success, error) in
-                do {
-                    try Result(success, error).get()
-                    
-                    let ipaURL = try FileManager.default.zipAppBundle(at: fileURL)
-                    continuation.resume(returning: ipaURL)
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
-            parentProgress.addChild(progress, withPendingUnitCount: 1)
-        }
+        try await signer.signApp(at: fileURL, provisioningProfiles: profiles, parentProgress: parentProgress)
+        return try FileManager.default.zipAppBundle(at: fileURL)
     }
     
     private func removeMissingAppExtensionReferences(from bundle: Bundle) throws {
@@ -289,5 +236,20 @@ final class ResignAppOperation: ResultOperation<ALTApplication>, OperationLoggin
         
         // Save updated Manifest.plist to disk.
         try manifestPlist.write(to: manifestPlistURL)
+    }
+}
+
+extension ALTSigner {
+    func signApp(at fileURL: URL, provisioningProfiles: [ALTProvisioningProfile], parentProgress: Progress) async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            let progress = self.signApp(at: fileURL, provisioningProfiles: provisioningProfiles) { (success, error) in
+                if success {
+                    continuation.resume(returning: ())
+                } else {
+                    continuation.resume(throwing: error ?? OperationError.unknown())
+                }
+            }
+            parentProgress.addChild(progress, withPendingUnitCount: 1)
+        }
     }
 }

@@ -6,9 +6,9 @@
 //  Copyright © 2020 Riley Testut. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 import Foundation
-import AltStoreCore
+@preconcurrency import AltStoreCore
 
 @available(iOS 14, *)
 final class IntentHandler: NSObject, RefreshAllIntentHandling

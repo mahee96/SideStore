@@ -8,7 +8,7 @@
 import Foundation
 
 #if canImport(UIKit)
-import UIKit
+@preconcurrency import UIKit
 public typealias PlatformFont = UIFont
 public typealias PlatformFontDescriptor = UIFontDescriptor
 public typealias PlatformFontDescriptorSymbolicTraits = UIFontDescriptor.SymbolicTraits

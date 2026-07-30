@@ -6,11 +6,11 @@
 //  Copyright © 2020 Riley Testut. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 import CoreData
 @preconcurrency import AltStoreCore
 import SwiftUI
-import AltSign
+@preconcurrency import AltSign
 
 extension AppIDsViewController {
     static let didDismissNotification = Notification.Name("AppIDsViewControllerDidDismissNotification")

@@ -6,7 +6,7 @@
 //  Copyright © 2019 Riley Testut. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 import SwiftUI
 import SafariServices
 import MessageUI
@@ -14,8 +14,8 @@ import Intents
 import IntentsUI
 
 import SemanticVersion
-import AltStoreCore
-import AltSign
+@preconcurrency import AltStoreCore
+@preconcurrency import AltSign
 import UniformTypeIdentifiers
 
 extension SettingsViewController

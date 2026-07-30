@@ -7,8 +7,8 @@
 //
 
 import Foundation
-import AltSign
-import AltStoreCore
+@preconcurrency import AltSign
+@preconcurrency import AltStoreCore
 
 extension OperationError
 {

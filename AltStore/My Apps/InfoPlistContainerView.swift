@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AltSign
+@preconcurrency import AltSign
 
 // MARK: - Tree Node Model
 struct PlistNode: Identifiable {

@@ -7,41 +7,17 @@
 //
 
 import Foundation
-import AltStoreCore
-import AltSign
+@preconcurrency import AltStoreCore
+@preconcurrency import AltSign
 import CoreData
 
-
-@objc(FetchProvisioningProfilesOperation)
-class FetchProvisioningProfilesOperation: ResultOperation<[String: ALTProvisioningProfile]>, OperationLogging {
-
-    let context: AppOperationContext
-    
+class FetchProvisioningProfilesOperation: AsyncOperation<AppOperationContext, [String: ALTProvisioningProfile]>, @unchecked Sendable {
     var additionalEntitlements: [ALTEntitlement: Any]?
     
     // this class is abstract or shouldn't be instantiated outside, use the subclasses
-    fileprivate init(context: AppOperationContext) {
-        self.context = context
-        
-        super.init()
-        
-        self.progress.totalUnitCount = 1
-    }
     
-    override func main() {
-        super.main()
-        
-        Task {
-            do {
-                let profiles = try await self.execute()
-                self.finish(.success(profiles))
-            } catch {
-                self.finish(.failure(error))
-            }
-        }
-    }
-    
-    private nonisolated func execute() async throws -> [String: ALTProvisioningProfile] {
+    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> [String: ALTProvisioningProfile] {
+        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         if let error = self.context.error {
             self.debugLog("[FetchProvisioningProfiles] Context has pre-existing error: \(error.localizedDescription)")
             throw error
@@ -95,22 +71,7 @@ class FetchProvisioningProfilesOperation: ResultOperation<[String: ALTProvisioni
         self.debugLog("[FetchProvisioningProfiles] Total profiles prepared: \(profiles.count) -> keys: \(Array(profiles.keys))")
         return profiles
     }
-    
-    func process<T>(_ result: Result<T, Error>) -> T? {
-        switch result {
-        case .failure(let error):
-            self.finish(.failure(error))
-            return nil
-            
-        case .success(let value):
-            guard !self.isCancelled else {
-                self.finish(.failure(OperationError.cancelled))
-                return nil
-            }
-            
-            return value
-        }
-    }
+
     
     internal func fetchProvisioningProfile(for appID: ALTAppID, app: ALTApplication, team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTProvisioningProfile {
         debugLog(app.dumpMachOInfo())
@@ -283,9 +244,6 @@ class FetchProvisioningProfilesOperation: ResultOperation<[String: ALTProvisioni
 }
 
 class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperation, @unchecked Sendable {
-    override init(context: AppOperationContext) {
-        super.init(context: context)
-    }
     
     // modify Operations are allowed for the app groups and other stuffs
     override func fetchProvisioningProfile(for appID: ALTAppID,
@@ -451,9 +409,6 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
 //          for now we are reverting by keeping same operation that happens during fetch in install path to see if it fixes issue #893
 // class FetchProvisioningProfilesRefreshOperation: FetchProvisioningProfilesOperation, @unchecked Sendable {
 class FetchProvisioningProfilesRefreshOperation: FetchProvisioningProfilesInstallOperation, @unchecked Sendable {
-    override init(context: AppOperationContext) {
-        super.init(context: context)
-    }
 }
 
 

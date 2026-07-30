@@ -5,43 +5,17 @@
 //  Created by Riley Testut on 6/7/19.
 //  Copyright © 2019 Riley Testut. All rights reserved.
 //
-import UIKit
+
+@preconcurrency import UIKit
 import Foundation
 import Network
-import AltStoreCore
+@preconcurrency import AltStoreCore
+@preconcurrency import AltSign
 
-@objc(SendAppOperation)
-final class SendAppOperation: ResultOperation<()>, OperationLogging
-
-{
-    let context: InstallAppOperationContext
+final class SendAppOperation: AsyncOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
     
-    init(context: InstallAppOperationContext)
-    {
-        self.context = context
-        
-        super.init()
-        
-        self.progress.totalUnitCount = 1
-    }
-    
-    override func main() {
-        super.main()
-
-        Task {
-            do {
-                try await self.execute()
-                self.finish(.success(()))
-            } catch {
-                self.finish(.failure(error))
-            }
-        }
-    }
-
-    private nonisolated func execute() async throws {
-        if let error = self.context.error {
-            throw error
-        }
+    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ALTApplication {
+        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
 
         guard let resignedApp = self.context.resignedApp else {
             throw OperationError.invalidParameters("SendAppOperation.main: self.resignedApp is nil")
@@ -51,8 +25,8 @@ final class SendAppOperation: ResultOperation<()>, OperationLogging
         let fileURL = InstalledApp.refreshedIPAURL(for: app)
         verboseLog("[SendAppOperation] AFC App `fileURL`: \(fileURL.absoluteString)")
 
-        // Cellular shortcut should only be executed below iOS 26.4 AND when explicitly enabled in settings
-        if #available(iOS 26.4, *) {
+        // Cellular shortcut should only be executed below iOS 16.4 AND when explicitly enabled in settings
+        if #available(iOS 16.4, *) {
             context.shouldTurnOffData = false
         } else {
             context.shouldTurnOffData = UserDefaults.standard.isCellularRefreshEnabled
@@ -70,6 +44,7 @@ final class SendAppOperation: ResultOperation<()>, OperationLogging
         }
         
         try await self.processFile(at: fileURL, for: app.bundleIdentifier)
+        return resignedApp
     }
 
     private func processFile(at fileURL: URL, for bundleIdentifier: String) async throws {

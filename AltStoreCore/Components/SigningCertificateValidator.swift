@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import AltSign
+@preconcurrency import AltSign
 
 public enum SigningCertificateMismatchReason: Error {
     /// The certificate used to sign the current installation has expired.

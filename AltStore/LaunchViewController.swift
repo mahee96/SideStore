@@ -6,12 +6,12 @@
 //  Copyright © 2019 Riley Testut. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 
 import WidgetKit
 
-import AltSign
-import AltStoreCore
+@preconcurrency import AltSign
+@preconcurrency import AltStoreCore
 import UniformTypeIdentifiers
 
 let pairingFileName = "ALTPairingFile.mobiledevicepairing"
@@ -233,7 +233,7 @@ extension LaunchViewController {
         guard !didFinishLaunching else { return }
         didFinishLaunching = true
         
-        AppManager.shared.update()
+        await AppManager.shared.update()
         AppManager.shared.updateAllSources { result in
             guard case .failure(let error) = result else { return }
             debugLog("Failed to update sources on launch. \(error.localizedDescription)")

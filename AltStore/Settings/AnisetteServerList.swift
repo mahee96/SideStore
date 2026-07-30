@@ -6,9 +6,9 @@
 //  Copyright © 2024 SideStore. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 import SwiftUI
-import AltStoreCore
+@preconcurrency import AltStoreCore
 
 typealias SUIButton = SwiftUI.Button
 

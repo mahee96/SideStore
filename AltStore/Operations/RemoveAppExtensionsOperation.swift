@@ -6,42 +6,117 @@
 //  Copyright © 2020 Riley Testut. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 import Foundation
-import AltStoreCore
-import AltSign
+@preconcurrency import AltStoreCore
+@preconcurrency import AltSign
 
-@objc(RemoveAppExtensionsOperation)
-final class RemoveAppExtensionsOperation: ResultOperation<Void>, OperationLogging {
-
-    let context: AppOperationContext
+final class RemoveAppExtensionsOperation: AsyncOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
     let localAppExtensions: Set<ALTApplication>?
     
-    init(context: AppOperationContext, localAppExtensions: Set<ALTApplication>?) {
-        self.context = context
+    init(context: InstallAppOperationContext, localAppExtensions: Set<ALTApplication>?) {
         self.localAppExtensions = localAppExtensions
-        super.init()
+        super.init(context: context)
     }
     
-    override func main() {
-        super.main()
-        
-        if let error = self.context.error {
-            self.finish(.failure(error))
-            return
-        }
+    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ALTApplication {
+        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         guard let targetAppBundle = context.app else {
-            return self.finish(.failure(
-                OperationError.invalidParameters("RemoveAppExtensionsOperation: context.app is nil")
-            ))
+            throw OperationError.invalidParameters("RemoveAppExtensionsOperation: context.app is nil")
         }
         
-        self.removeAppExtensions(from: targetAppBundle,
-                                  localAppExtensions: localAppExtensions,
-                                  extensions: targetAppBundle.appExtensions,
-                                  context.authenticatedContext.presentingViewController)
+        // target App Bundle doesn't contain extensions so don't bother
+        guard !targetAppBundle.appExtensions.isEmpty else {
+            return targetAppBundle
+        }
         
+        let excessExtensions = processExtensionsInfo(from: targetAppBundle, localAppExtensions: localAppExtensions)
+        
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            Task { @MainActor in
+                guard UserDefaults.standard.customizeAppExtensions,
+                      let presentingViewController = context.authenticatedContext.presentingViewController,
+                      presentingViewController.viewIfLoaded?.window != nil else {
+                    // perform silent extensions cleanup for those that aren't already present in existing app
+                    // background mode: remove only the excess extensions automatically for re-installs
+                    //                  keep all extensions for fresh install (localAppBundle = nil)
+                    do {
+                        try self.removeExtensions(from: excessExtensions)
+                        continuation.resume(returning: ())
+                    } catch {
+                        continuation.resume(throwing: error)
+                    }
+                    return
+                }
+                
+                /// Foreground prompt:
+                let firstSentence: String
+                if UserDefaults.standard.activeAppLimitIncludesExtensions {
+                    firstSentence = NSLocalizedString("Non-developer Apple IDs are limited to 3 active apps and app extensions.", comment: "")
+                } else {
+                    firstSentence = NSLocalizedString("Non-developer Apple IDs are limited to creating 10 App IDs per week.", comment: "")
+                }
+                
+                let message = firstSentence + " " + NSLocalizedString("Would you like to remove this app's extensions so they don't count towards your limit? There are \(targetAppBundle.appExtensions.count) Extensions", comment: "")
+                
+                let alertController = UIAlertController(title: NSLocalizedString("App Contains Extensions", comment: ""), message: message, preferredStyle: .alert)
+                alertController.addAction(UIAlertAction(title: UIAlertAction.cancel.title, style: UIAlertAction.cancel.style, handler: { _ in
+                    continuation.resume(throwing: OperationError.cancelled)
+                }))
+                alertController.addAction(UIAlertAction(title: NSLocalizedString("Keep App Extensions (Use Main Profile)", comment: ""), style: .default) { _ in
+                    self.context.useMainProfile = true
+                    continuation.resume(returning: ())
+                })
+                alertController.addAction(UIAlertAction(title: NSLocalizedString("Keep App Extensions (Register App ID for Each Extension)", comment: ""), style: .default) { _ in
+                    continuation.resume(returning: ())
+                })
+                alertController.addAction(UIAlertAction(title: NSLocalizedString("Remove App Extensions", comment: ""), style: .destructive) { _ in
+                    do {
+                        try self.removeExtensions(from: targetAppBundle.appExtensions)
+                        try self.updateManifest()
+                        continuation.resume(returning: ())
+                    } catch {
+                        continuation.resume(throwing: error)
+                    }
+                })
+                
+                alertController.addAction(UIAlertAction(title: NSLocalizedString("Choose App Extensions", comment: ""), style: .default) { _ in
+                    let popoverContentController = AppExtensionViewHostingController(extensions: targetAppBundle.appExtensions) { selection in
+                        do {
+                            try self.removeExtensions(from: Set(selection))
+                            continuation.resume(returning: ())
+                        } catch {
+                            continuation.resume(throwing: error)
+                        }
+                    }
+                    
+                    let suiview = popoverContentController.view!
+                    suiview.translatesAutoresizingMaskIntoConstraints = false
+                    
+                    popoverContentController.modalPresentationStyle = .popover
+                    
+                    if let popoverPresentationController = popoverContentController.popoverPresentationController {
+                        popoverPresentationController.sourceView = presentingViewController.view
+                        popoverPresentationController.sourceRect = CGRect(x: 50, y: 50, width: 4, height: 4)
+                        popoverPresentationController.delegate = popoverContentController
+                        
+                        presentingViewController.present(popoverContentController, animated: true)
+                    } else {
+                        continuation.resume(throwing: OperationError.invalidParameters("RemoveAppExtensionsOperation: popoverContentController.popoverPresentationController is nil"))
+                    }
+                })
+                
+                presentingViewController.present(alertController, animated: true) {
+                    if presentingViewController.presentedViewController == nil && !alertController.isViewLoaded {
+                        let errMsg = "RemoveAppExtensionsOperation: unable to present dialog, view context not available." +
+                                     "\nDid you move to different screen or background after starting the operation?"
+                        continuation.resume(throwing: OperationError.invalidOperationContext(errMsg))
+                    }
+                }
+            }
+        }
+        return targetAppBundle
     }
     
     private func removeExtensions(from extensions: Set<ALTApplication>) throws {
@@ -68,113 +143,6 @@ final class RemoveAppExtensionsOperation: ResultOperation<Void>, OperationLoggin
             manifestPlist["SinfReplicationPaths"] = replacementPaths
             try manifestPlist.write(to: manifestPlistURL)
         }
-    }
-    
-    private func removeAppExtensions(from targetAppBundle: ALTApplication,
-                                     localAppExtensions: Set<ALTApplication>?,
-                                     extensions: Set<ALTApplication>,
-                                     _ presentingViewController: UIViewController?) {
-            
-        // target App Bundle doesn't contain extensions so don't bother
-        guard !targetAppBundle.appExtensions.isEmpty else {
-            return self.finish(.success(()))
-        }
-        
-        // process extensionsInfo
-        let excessExtensions = processExtensionsInfo(from: targetAppBundle, localAppExtensions: localAppExtensions)
-
-        Task { @MainActor in
-            guard UserDefaults.standard.customizeAppExtensions,
-                  let presentingViewController: UIViewController = presentingViewController,
-                  presentingViewController.viewIfLoaded?.window != nil else {
-                // background mode: remove only the excess extensions automatically for re-installs
-                //                  keep all extensions for fresh install (localAppBundle = nil)
-                return self.backgroundModeExtensionsCleanup(excessExtensions: excessExtensions)
-            }
-
-            // present prompt to the user if we have a view context
-            let alertController = self.createAlertDialog(from: targetAppBundle, extensions: extensions, presentingViewController)
-            presentingViewController.present(alertController, animated: true) {
-
-                // if for any reason the view wasn't presented, then just signal that as error
-                if presentingViewController.presentedViewController == nil && !alertController.isViewLoaded {
-                    let errMsg = "RemoveAppExtensionsOperation: unable to present dialog, view context not available." +
-                                 "\nDid you move to different screen or background after starting the operation?"
-                    self.finish(.failure(
-                        OperationError.invalidOperationContext(errMsg)
-                    ))
-                }
-            }
-        }
-    }
-    
-    @MainActor
-    private func createAlertDialog(from targetAppBundle: ALTApplication,
-                              extensions: Set<ALTApplication>,
-                              _ presentingViewController: UIViewController) -> UIAlertController {
-        
-        /// Foreground prompt:
-        let firstSentence: String
-        
-        if UserDefaults.standard.activeAppLimitIncludesExtensions {
-            firstSentence = NSLocalizedString("Non-developer Apple IDs are limited to 3 active apps and app extensions.", comment: "")
-        } else {
-            firstSentence = NSLocalizedString("Non-developer Apple IDs are limited to creating 10 App IDs per week.", comment: "")
-        }
-        
-        let message = firstSentence + " " + NSLocalizedString("Would you like to remove this app's extensions so they don't count towards your limit? There are \(extensions.count) Extensions", comment: "")
-        
-        let alertController = UIAlertController(title: NSLocalizedString("App Contains Extensions", comment: ""), message: message, preferredStyle: .alert)
-        alertController.addAction(UIAlertAction(title: UIAlertAction.cancel.title, style: UIAlertAction.cancel.style, handler: { (action) in
-            self.finish(.failure(OperationError.cancelled))
-        }))
-        alertController.addAction(UIAlertAction(title: NSLocalizedString("Keep App Extensions (Use Main Profile)", comment: ""), style: .default) { (action) in
-            self.context.useMainProfile = true
-            self.finish(.success(()))
-        })
-        alertController.addAction(UIAlertAction(title: NSLocalizedString("Keep App Extensions (Register App ID for Each Extension)", comment: ""), style: .default) { (action) in
-            self.finish(.success(()))
-        })
-        alertController.addAction(UIAlertAction(title: NSLocalizedString("Remove App Extensions", comment: ""), style: .destructive) { (action) in
-            do {
-                try self.removeExtensions(from: targetAppBundle.appExtensions)
-                try self.updateManifest()
-                return self.finish(.success(()))
-            } catch {
-                return self.finish(.failure(error))
-            }
-        })
-        
-        alertController.addAction(UIAlertAction(title: NSLocalizedString("Choose App Extensions", comment: ""), style: .default) { (action) in
-
-            let popoverContentController = AppExtensionViewHostingController(extensions: extensions) { (selection) in
-                do {
-                    try self.removeExtensions(from: Set(selection))
-                    return self.finish(.success(()))
-                } catch {
-                    return self.finish(.failure(error))
-                }
-            }
-            
-            let suiview = popoverContentController.view!
-            suiview.translatesAutoresizingMaskIntoConstraints = false
-            
-            popoverContentController.modalPresentationStyle = .popover
-            
-            if let popoverPresentationController = popoverContentController.popoverPresentationController {
-                popoverPresentationController.sourceView = presentingViewController.view
-                popoverPresentationController.sourceRect = CGRect(x: 50, y: 50, width: 4, height: 4)
-                popoverPresentationController.delegate = popoverContentController
-                
-                presentingViewController.present(popoverContentController, animated: true)
-            } else {
-                self.finish(.failure(
-                    OperationError.invalidParameters("RemoveAppExtensionsOperation: popoverContentController.popoverPresentationController is nil"))
-                )
-            }
-        })
-        
-        return alertController
     }
     
     struct ExtensionsInfo {
@@ -208,18 +176,5 @@ final class RemoveAppExtensionsOperation: ResultOperation<Void>, OperationLoggin
         verboseLog(diagnosticsMsg)
 
         return excessExtensionsInTargetApp
-    }
-    
-    private func backgroundModeExtensionsCleanup(excessExtensions: Set<ALTApplication>) {
-        // perform silent extensions cleanup for those that aren't already present in existing app
-        debugLog("[RemoveAppExtensionsOperation] Performing background mode Extensions removal")
-        verboseLog("[RemoveAppExtensionsOperation] Excess Extensions In TargetAppBundle: \(excessExtensions.map { $0.bundleIdentifier })")
-        
-        do {
-            try self.removeExtensions(from: excessExtensions)
-            return self.finish(.success(()))
-        } catch {
-            return self.finish(.failure(error))
-        }
     }
 }

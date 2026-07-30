@@ -5,8 +5,8 @@
 //  Created by Riley Testut on 5/11/23.
 //  Copyright © 2023 Riley Testut. All rights reserved.
 //
-import AltStoreCore
-import AltSign
+@preconcurrency import AltStoreCore
+@preconcurrency import AltSign
 
 extension VerificationError
 {

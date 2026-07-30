@@ -6,7 +6,7 @@
 //  Copyright © 2026 SideStore. All rights reserved.
 //
 
-import AltSign
+@preconcurrency import AltSign
 
 enum SortOption: String, CaseIterable, Identifiable {
     case creationDate = "Creation Date"

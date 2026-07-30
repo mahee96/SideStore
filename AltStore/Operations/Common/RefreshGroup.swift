@@ -8,8 +8,8 @@
 
 import Foundation
 import CoreData
-import AltStoreCore
-import AltSign
+@preconcurrency import AltStoreCore
+@preconcurrency import AltSign
 
 final class RefreshGroup: NSObject
 {

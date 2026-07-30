@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AltSign
+@preconcurrency import AltSign
 import UniformTypeIdentifiers
 
 struct CertificatesView: View {

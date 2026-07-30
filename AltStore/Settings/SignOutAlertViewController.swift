@@ -5,7 +5,7 @@
 //  Created by Magesh K on 6/29/26.
 //  Copyright © 2026 SideStore. All rights reserved.
 //
-import UIKit
+@preconcurrency import UIKit
 import Foundation
 
 class SignOutAlertViewController: UIViewController {

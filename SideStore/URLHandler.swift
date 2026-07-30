@@ -5,7 +5,7 @@
 //  Created by Magesh K on 2/7/26.
 //  Copyright © 2026 SideStore. All rights reserved.
 
-import UIKit
+@preconcurrency import UIKit
 
 @MainActor
 class URLHandler {

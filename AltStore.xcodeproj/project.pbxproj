@@ -215,6 +215,7 @@
 				Utils/dignostics/errors/ErrorProcessing.swift,
 				Utils/dignostics/operations/OperationsLoggingControl.swift,
 				Utils/importexport/ImportExport.swift,
+				Utils/iostreams/AbstractClassError.swift,
 				Utils/iostreams/ConsoleLog.swift,
 				Utils/iostreams/ConsoleLogger.swift,
 				Views/UIKit/CollapsingMarkdownView.swift,

@@ -8,15 +8,7 @@
 
 
 import SwiftUI
-import AltStoreCore
-
-
-private final class DummyConformance: EnableJITContext
-{
-    private init(){} // non instantiatable
-    var installedApp: AltStoreCore.InstalledApp?
-    var error: (any Error)?
-}
+@preconcurrency import AltStoreCore
 
 
 struct OperationsLoggingControlView: View {
@@ -189,9 +181,9 @@ struct OperationsLoggingControlView: View {
                         CustomSection(header: Text("Enable JIT Operations"))
                         {
                             CustomToggle("1. EnableJIT", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: EnableJITOperation<DummyConformance>.self) },
+                                get: { self.viewModel.getFromDatabase(for: EnableJITOperation.self) },
                                 set: { value in
-                                    self.viewModel.updateDatabase(for: EnableJITOperation<DummyConformance>.self, value: value)
+                                    self.viewModel.updateDatabase(for: EnableJITOperation.self, value: value)
                                 }
                             ))
                         }
@@ -211,10 +203,10 @@ struct OperationsLoggingControlView: View {
                             CustomToggle("1. Anisette Internal Logging", isOn: Binding(
                                 // enable anisette internal logging by default since it was already printing before
                                 get: { OperationsLoggingControl.getUpdatedFromDatabase(
-                                    for: ANISETTE_VERBOSITY.self, defaultVal: false
+                                    for: FetchAnisetteDataOperation.self, defaultVal: false
                                 )},
                                 set: { value in
-                                    self.viewModel.updateDatabase(for: ANISETTE_VERBOSITY.self, value: value)
+                                    self.viewModel.updateDatabase(for: FetchAnisetteDataOperation.self, value: value)
                                 }
                             ))
                         }

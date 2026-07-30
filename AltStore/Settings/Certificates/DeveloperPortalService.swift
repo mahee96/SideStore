@@ -6,9 +6,9 @@
 //  Copyright © 2026 SideStore. All rights reserved.
 //
 
-import UIKit
-import AltSign
-import AltStoreCore
+@preconcurrency import UIKit
+@preconcurrency import AltSign
+@preconcurrency import AltStoreCore
 
 struct DeveloperPortalService {
     static let shared = DeveloperPortalService()

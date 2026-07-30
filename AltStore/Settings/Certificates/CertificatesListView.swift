@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AltSign
+@preconcurrency import AltSign
 
 struct CertificatesListView: View {
     @ObservedObject var viewModel: CertificatesViewModel

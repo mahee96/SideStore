@@ -7,40 +7,13 @@
 //
 
 import Foundation
-import AltStoreCore
 import CoreData
+@preconcurrency import AltStoreCore
 
-@objc(RemoveAppOperation)
-final class RemoveAppOperation: ResultOperation<InstalledApp>, OperationLogging
-
-{
-    let context: InstallAppOperationContext
+final class RemoveAppOperation: AsyncOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
     
-    init(context: InstallAppOperationContext)
-    {
-        self.context = context
-        
-        super.init()
-    }
-    
-    override func main()
-    {
-        super.main()
-        
-        Task {
-            do {
-                let result = try await self.execute()
-                self.finish(.success(result))
-            } catch {
-                self.finish(.failure(error))
-            }
-        }
-    }
-    
-    private nonisolated func execute() async throws -> InstalledApp {
-        if let error = self.context.error {
-            throw error
-        }
+    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> InstalledApp {
+        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         guard let installedApp = self.context.installedApp else {
             throw OperationError.invalidParameters("RemoveAppOperation.main: self.context.installedApp is nil")
         }
@@ -53,14 +26,16 @@ final class RemoveAppOperation: ResultOperation<InstalledApp>, OperationLogging
         
         try await removeApp(resignedBundleIdentifier)
         
-        let backgroundContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
+        guard let backgroundContext = self.context.dbBackgroundContext else {
+            throw OperationError.invalidParameters("RemoveAppOperation: context.dbBackgroundContext is nil")
+        }
         try await backgroundContext.perform {
             _ = self.markInactive(installedApp, in: backgroundContext)
             try backgroundContext.save()
         }
         
-        return try await DatabaseManager.shared.persistentContainer.viewContext.perform {
-            return DatabaseManager.shared.persistentContainer.viewContext.object(with: installedApp.objectID) as! InstalledApp
+        return try await backgroundContext.perform {
+            return backgroundContext.object(with: installedApp.objectID) as! InstalledApp
         }
     }
     

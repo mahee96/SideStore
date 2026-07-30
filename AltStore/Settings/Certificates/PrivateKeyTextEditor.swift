@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import UIKit
+@preconcurrency import UIKit
 
 struct PrivateKeyTextEditor: UIViewRepresentable {
     @Binding var text: String

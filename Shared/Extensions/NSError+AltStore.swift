@@ -9,14 +9,14 @@
 import Foundation
 
 #if canImport(UIKit)
-import UIKit
+@preconcurrency import UIKit
 public typealias ALTFont = UIFont
 #elseif canImport(AppKit)
 import AppKit
 public typealias ALTFont = NSFont
 #endif
 
-import AltSign
+@preconcurrency import AltSign
 
 public extension NSError
 {

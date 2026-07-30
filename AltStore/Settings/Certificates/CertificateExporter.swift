@@ -6,8 +6,8 @@
 //  Copyright © 2026 SideStore. All rights reserved.
 //
 
-import UIKit
-import AltSign
+@preconcurrency import UIKit
+@preconcurrency import AltSign
 
 enum CertificateExporter {
     

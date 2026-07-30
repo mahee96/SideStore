@@ -8,7 +8,7 @@
 
 import WidgetKit
 import CoreData
-import AltStoreCore
+@preconcurrency import AltStoreCore
 
 struct AppsEntry<T>: TimelineEntry
 {

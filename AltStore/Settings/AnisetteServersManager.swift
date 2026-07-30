@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import AltStoreCore
+@preconcurrency import AltStoreCore
 
 public struct AnisetteServerItem: Codable, Identifiable, Hashable {
     public var id: String { address }

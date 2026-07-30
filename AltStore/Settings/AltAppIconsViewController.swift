@@ -6,11 +6,11 @@
 //  Copyright © 2024 Riley Testut. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 import SwiftUI
 
-import AltSign
-import AltStoreCore
+@preconcurrency import AltSign
+@preconcurrency import AltStoreCore
 
 extension UIApplication
 {

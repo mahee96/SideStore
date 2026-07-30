@@ -6,7 +6,7 @@
 //  Copyright © 2026 SideStore. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 import CoreData
 internal final class RSTProxyPredicate: NSCompoundPredicate {
     convenience init(predicate: NSPredicate?, externalPredicate: NSPredicate?) {

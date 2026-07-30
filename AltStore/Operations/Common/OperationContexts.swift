@@ -6,57 +6,52 @@
 //  Copyright © 2019 Riley Testut. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 import Foundation
 import CoreData
 import Network
-import AltStoreCore
-import AltSign
+@preconcurrency import AltStoreCore
+@preconcurrency import AltSign
 
 class OperationContext
 {
     var error: Error?
-    
     var presentingViewController: UIViewController?
+    var dbBackgroundContext: NSManagedObjectContext?
     
-    let operations: NSHashTable<Foundation.Operation>
-    
-    init(error: Error? = nil, operations: [Foundation.Operation] = [])
+    init(error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
     {
         self.error = error
-        
-        self.operations = NSHashTable<Foundation.Operation>.weakObjects()
-        for operation in operations
-        {
-            self.operations.add(operation)
-        }
+        self.presentingViewController = presentingViewController
+        self.dbBackgroundContext = dbBackgroundContext
     }
     
-    convenience init(context: OperationContext)
+    init(context: OperationContext)
     {
-        self.init(error: context.error, operations: context.operations.allObjects)
+        self.error = context.error
+        self.presentingViewController = context.presentingViewController
+        self.dbBackgroundContext = context.dbBackgroundContext
     }
 }
 
 final class AuthenticatedOperationContext: OperationContext
 {
     var session: ALTAppleAPISession?
-    
     var team: ALTTeam?
     var certificate: ALTCertificate?
-    
-    weak var authenticationOperation: AuthenticationOperation?
-    
     var isSideStoreResignDismissed: Bool = false
     
-    convenience init(context: AuthenticatedOperationContext)
+    override init(error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
     {
-        self.init(error: context.error, operations: context.operations.allObjects)
-        
+        super.init(error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
+    }
+    
+    init(context: AuthenticatedOperationContext)
+    {
+        super.init(context: context)
         self.session = context.session
         self.team = context.team
         self.certificate = context.certificate
-        self.authenticationOperation = context.authenticationOperation
         self.isSideStoreResignDismissed = context.isSideStoreResignDismissed
     }
 }
@@ -68,7 +63,7 @@ enum AlternateIconMode {
 }
 
 @dynamicMemberLookup
-class AppOperationContext
+class AppOperationContext: OperationContext
 {
     let bundleIdentifier: String
     var customBundleIdentifier: String?
@@ -85,7 +80,7 @@ class AppOperationContext
     
     var isFinished = false
     
-    var error: Error? {
+    override var error: Error? {
         get {
             return _error ?? self.authenticatedContext.error
         }
@@ -106,6 +101,7 @@ class AppOperationContext
     {
         self.bundleIdentifier = bundleIdentifier
         self.authenticatedContext = authenticatedContext
+        super.init()
     }
     
     subscript<T>(dynamicMember keyPath: WritableKeyPath<AuthenticatedOperationContext, T>) -> T

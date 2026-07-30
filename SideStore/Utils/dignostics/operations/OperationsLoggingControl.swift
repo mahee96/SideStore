@@ -10,11 +10,11 @@ import Foundation
 
 class OperationsLoggingControl {
 
-    func updateDatabase(for operation: Operation.Type, value: Bool) {
+    func updateDatabase(for operation: any OperationLogging.Type, value: Bool) {
         Self.updateDatabase(for: operation, value: value)
     }
    
-    private static func updateDatabase(for operation: Operation.Type, value: Bool) {
+    private static func updateDatabase(for operation: any OperationLogging.Type, value: Bool) {
         // This method should handle the database update logic based on the operation and value
         let key = Self.getKey(operation)
         debugLog("Updating database for key: \(key), value: \(value)")
@@ -31,16 +31,16 @@ class OperationsLoggingControl {
         return string
     }
     
-    private static func getKey(_ operation: Operation.Type) -> String {
+    private static func getKey(_ operation: any OperationLogging.Type) -> String {
         let processedOperation = Self.stripGenericTypeName(from: "\(operation)")
         return "\(processedOperation)LoggingEnabled"
     }
     
-    func getFromDatabase(for operation: Operation.Type)  -> Bool{
+    func getFromDatabase(for operation: any OperationLogging.Type)  -> Bool{
         return Self.getFromDatabase(for: operation)
     }
 
-    static func getUpdatedFromDatabase(for operation: Operation.Type, defaultVal: Bool)  -> Bool{
+    static func getUpdatedFromDatabase(for operation: any OperationLogging.Type, defaultVal: Bool)  -> Bool{
         let key = Self.getKey(operation)
         let valueInDb = UserDefaults.standard.value(forKey: key) as? Bool
         if valueInDb == nil {
@@ -50,7 +50,7 @@ class OperationsLoggingControl {
         return valueInDb ?? defaultVal
     }
 
-    public static func getFromDatabase(for operation: Operation.Type) -> Bool {
+    public static func getFromDatabase(for operation: any OperationLogging.Type) -> Bool {
         let key = Self.getKey(operation)
         return UserDefaults.standard.bool(forKey: key)
     }

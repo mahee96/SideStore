@@ -7,8 +7,8 @@
 //
 
 
-import UIKit
-import AltStoreCore
+@preconcurrency import UIKit
+@preconcurrency import AltStoreCore
 
 class ImportExport {
     

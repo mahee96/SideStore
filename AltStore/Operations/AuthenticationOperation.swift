@@ -6,12 +6,12 @@
 //  Copyright © 2019 Riley Testut. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 import Foundation
 import Network
 import CoreData
-import AltStoreCore
-import AltSign
+@preconcurrency import AltStoreCore
+@preconcurrency import AltSign
 
 private extension UIColor {
     static let altInvertedPrimary = UIColor(named: "SettingsHighlighted")!
@@ -42,11 +42,9 @@ enum AuthenticationErrorCode: Int, ALTErrorEnum, CaseIterable {
     }
 }
 
-@objc(AuthenticationOperation)
-final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, ALTAppleAPISession)>, OperationLogging {
+typealias AuthenticationResult = (ALTTeam, ALTCertificate?, ALTAppleAPISession)
 
-    let context: AuthenticatedOperationContext
-    
+final class AuthenticationOperation: AsyncOperation<AuthenticatedOperationContext, AuthenticationResult>, @unchecked Sendable {
     private weak var presentingViewController: UIViewController?
     
     private lazy var navigationController: UINavigationController = {
@@ -70,121 +68,112 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, 
     let skipCertificateProvisioning: Bool
 
     init(context: AuthenticatedOperationContext, presentingViewController: UIViewController?, skipDeviceRegistration: Bool = false, skipCertificateProvisioning: Bool = false) {
-        self.context = context
         self.presentingViewController = presentingViewController
         self.skipDeviceRegistration = skipDeviceRegistration
         self.skipCertificateProvisioning = skipCertificateProvisioning
         
-        super.init()
+        super.init(context: context)
         
-        self.context.authenticationOperation = self
         self.operationQueue.name = "com.altstore.AuthenticationOperation"
-        self.progress.totalUnitCount = skipDeviceRegistration ? 3 : 4
     }
     
-    override func main() {
-        super.main()
-        
-        if let error = self.context.error {
-            self.finish(.failure(error))
-            return
+    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> AuthenticationResult {
+        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+
+        if let newEmail = self.appleIDEmailAddress,
+           let currentEmail = Keychain.shared.appleIDEmailAddress,
+           newEmail.lowercased() != currentEmail.lowercased() {
+            self.debugLog("[Authentication] Email address changed from '\(currentEmail)' to '\(newEmail)'. Clearing cached in-memory session, team, and certificate.")
+            Keychain.shared.team = nil
+            Keychain.shared.session = nil
+            Keychain.shared.certificate = nil
         }
-
-        Task {
-            if let newEmail = self.appleIDEmailAddress,
-               let currentEmail = Keychain.shared.appleIDEmailAddress,
-               newEmail.lowercased() != currentEmail.lowercased() {
-                self.debugLog("[Authentication] Email address changed from '\(currentEmail)' to '\(newEmail)'. Clearing cached in-memory session, team, and certificate.")
-                Keychain.shared.team = nil
-                Keychain.shared.session = nil
-                Keychain.shared.certificate = nil
-            }
-            
-            // try to use cached session
-            if
-                let certificate = Keychain.shared.certificate,
-                let session = Keychain.shared.session,
-                let team = Keychain.shared.team {
-                if session.anisetteData.date.timeIntervalSinceNow < -40.0 {
-                    do {
-                        let anisetteData = try await withCheckedThrowingContinuation { (c: CheckedContinuation<ALTAnisetteData, any Error>) in
-                            let fetchAnisetteDataOperation = FetchAnisetteDataOperation(context: self.context)
-                            fetchAnisetteDataOperation.resultHandler = { (result) in
-                                c.resume(with: result)
-                            }
-                            self.operationQueue.addOperation(fetchAnisetteDataOperation)
-                        }
-                        session.anisetteData = anisetteData
-                    } catch {
-                        self.verboseLog("[Authentication] Failed to update anisette data for cached session: \(error)")
-                    }
-                }
-                
-                // Validate if the cached session and certificate are still active on Apple's servers
+        
+        // try to use cached session
+        if
+            let certificate = Keychain.shared.certificate,
+            let session = Keychain.shared.session,
+            let team = Keychain.shared.team {
+            if session.anisetteData.date.timeIntervalSinceNow < -40.0 {
                 do {
-                    let certificates = try await ALTAppleAPI.shared.fetchCertificates(for: team, session: session)
-                    self.activeCertificates = certificates
-                    
-                    if self.skipCertificateProvisioning || certificates.contains(where: { $0.serialNumber == certificate.serialNumber }) {
-                        self.debugLog("[Authentication] Cached session and certificate (or skipProvisioning) are still valid.")
-                        self.context.team = team
-                        self.context.session = session
-                        self.context.certificate = certificate
-                        self.finish(.success((team, certificate, session)))
-                        return
-                    } else {
-                        self.debugLog("[Authentication] Cached certificate is no longer active on developer portal.")
-                    }
+                    let anisetteData = try await FetchAnisetteDataOperation(context: self.context).execute(parentProgress: self.progress, pendingUnitCount: 0, weights: weights ?? OperationProgressWeights.authenticate)
+                    session.anisetteData = anisetteData
                 } catch {
-                    self.debugLog("[Authentication] Failed to validate cached session: \(error)")
+                    self.verboseLog("[Authentication] Failed to update anisette data for cached session: \(error)")
                 }
             }
             
-            // new login
+            // Validate if the cached session and certificate are still active on Apple's servers
             do {
-                let (account, session) = try await self.signIn()
-                self.context.session = session
-                self.progress.completedUnitCount += 1
-                guard !self.isCancelled else { return self.finish(.failure(OperationError.cancelled)) }
+                let certificates = try await ALTAppleAPI.shared.fetchCertificates(for: team, session: session)
+                self.activeCertificates = certificates
                 
-                let team = try await self.fetchTeam(for: account, session: session)
-                self.context.team = team
-                self.progress.completedUnitCount += 1
-                guard !self.isCancelled else { return self.finish(.failure(OperationError.cancelled)) }
-                
-                let certificate: ALTCertificate?
-                if self.skipCertificateProvisioning {
-                    certificate = Keychain.shared.signingCertificate.flatMap { try? ALTCertificate(p12Data: $0, password: nil) }
-                } else {
-                    certificate = try await self.fetchCertificate(for: team, session: session)
+                if self.skipCertificateProvisioning || certificates.contains(where: { $0.serialNumber == certificate.serialNumber }) {
+                    self.debugLog("[Authentication] Cached session and certificate (or skipProvisioning) are still valid.")
+                    self.context.team = team
+                    self.context.session = session
                     self.context.certificate = certificate
+                    try await self.postAuthenticationCleanup(result: .success((team, certificate, session)))
+                    return (team, certificate, session)
+                } else {
+                    self.debugLog("[Authentication] Cached certificate is no longer active on developer portal.")
                 }
-                self.progress.completedUnitCount += 1
-                guard !self.isCancelled else { return self.finish(.failure(OperationError.cancelled)) }
-                
-                if !self.skipDeviceRegistration {
-                    _ = try await self.registerCurrentDevice(for: team, session: session)
-                    self.progress.completedUnitCount += 1
-                    guard !self.isCancelled else { return self.finish(.failure(OperationError.cancelled)) }
-                }
-                
-                try await self.save(team)
-                guard !self.isCancelled else { return self.finish(.failure(OperationError.cancelled)) }
-                
-                try await self.cacheAppIDs(team: team, session: session)
-                Keychain.shared.team = team
-                Keychain.shared.certificate = certificate
-                Keychain.shared.session = session
-                self.finish(.success((team, certificate, session)))
-
             } catch {
-                self.finish(.failure(error))
+                self.debugLog("[Authentication] Failed to validate cached session: \(error)")
             }
+        }
+        
+        // new login
+        do {
+            let stepWeight: Int64 = self.skipDeviceRegistration ? 33 : 25
+            
+            let (account, session) = try await self.signIn(weights: weights)
+            self.context.session = session
+            self.progress.completedUnitCount = stepWeight
+            if self.isCancelled { throw OperationError.cancelled }
+            
+            let team = try await self.fetchTeam(for: account, session: session)
+            self.context.team = team
+            self.progress.completedUnitCount = stepWeight * 2
+            if self.isCancelled { throw OperationError.cancelled }
+            
+            let certificate: ALTCertificate?
+            if self.skipCertificateProvisioning {
+                certificate = Keychain.shared.signingCertificate.flatMap { try? ALTCertificate(p12Data: $0, password: nil) }
+            } else {
+                certificate = try await self.fetchCertificate(for: team, session: session)
+                self.context.certificate = certificate
+            }
+            self.progress.completedUnitCount = stepWeight * 3
+            if self.isCancelled { throw OperationError.cancelled }
+            
+            if !self.skipDeviceRegistration {
+                _ = try await self.registerCurrentDevice(for: team, session: session)
+                self.progress.completedUnitCount = stepWeight * 4
+                if self.isCancelled { throw OperationError.cancelled }
+            }
+            
+            self.progress.completedUnitCount = 100
+            try await self.save(team)
+            if self.isCancelled { throw OperationError.cancelled }
+            
+            try await self.cacheAppIDs(team: team, session: session, weights: weights)
+            Keychain.shared.team = team
+            Keychain.shared.certificate = certificate
+            Keychain.shared.session = session
+            try await self.postAuthenticationCleanup(result: .success((team, certificate, session)))
+            return (team, certificate, session)
+
+        } catch {
+            try? await self.postAuthenticationCleanup(result: .failure(error))
+            throw error
         }
     }
     
     private func save(_ altTeam: ALTTeam) async throws {
-        let context = DatabaseManager.shared.persistentContainer.newBackgroundContext()
+        guard let context = self.context.dbBackgroundContext else {
+            throw OperationError.invalidParameters("AuthenticationOperation: context.dbBackgroundContext is nil")
+        }
         try await context.perform {
             try self.saveTeamAndAccount(altTeam, in: context)
         }
@@ -218,100 +207,88 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, 
         try context.save()
     }
     
-    override func finish(_ result: Result<(ALTTeam, ALTCertificate?, ALTAppleAPISession), Error>) {
-        guard !self.isFinished else { return }
-        
+    private func postAuthenticationCleanup(result: Result<(ALTTeam, ALTCertificate?, ALTAppleAPISession), Error>) async throws {
         switch result {
         case .failure(let error): self.verboseLog("[AuthenticationOperation] Failed to authenticate account. \(error.localizedDescription)")
         case .success((let team, _, _)): self.verboseLog("[AuthenticationOperation] Authenticated account for team \(team.identifier).")
         }
         
-        let context = DatabaseManager.shared.persistentContainer.newBackgroundContext()
-        context.perform {
-            self.postAuthenticationCleanup(result: result, in: context)
+        guard let context = self.context.dbBackgroundContext else {
+            throw OperationError.invalidParameters("AuthenticationOperation: context.dbBackgroundContext is nil")
+        }
+        try await context.perform {
+            try self.postAuthenticationCleanup(result: result, in: context)
+        }
+        
+        do {
+            let (altTeam, altCertificate, session) = try result.get()
+            if let altCertificate = altCertificate, !self.skipCertificateProvisioning {
+                let didShowInstructions = await self.showInstructionsIfNecessary()
+                
+                let signer = ALTSigner(team: altTeam, certificate: altCertificate)
+                // Resign screen must go last since a successful resign/reinstall will cause the app to quit.
+                let didShowResignAlert = await self.showResignScreenIfNecessary(signer: signer, session: session)
+                if !didShowResignAlert {
+                    Keychain.shared.signingCertificate = altCertificate.p12Data()
+                    Keychain.shared.signingCertificatePassword = altCertificate.machineIdentifier
+                }
+            }
+        } catch {}
+        
+        await MainActor.run {
+            self.navigationController.dismiss(animated: true, completion: nil)
         }
     }
     
-    private func postAuthenticationCleanup(result: Result<(ALTTeam, ALTCertificate?, ALTAppleAPISession), Error>, in context: NSManagedObjectContext) {
-        do {
-            let (altTeam, altCertificate, session) = try result.get()
-            
-            guard
-                let account = Account.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(Account.identifier), altTeam.account.identifier), in: context),
-                let team = Team.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(Team.identifier), altTeam.identifier), in: context)
-            else { throw AuthenticationError(.noTeam) }
-            // Account
-            account.isActiveAccount = true
-            
-            let otherAccountsFetchRequest = Account.fetchRequest() as NSFetchRequest<Account>
-            otherAccountsFetchRequest.predicate = NSPredicate(format: "%K != %@", #keyPath(Account.identifier), account.identifier)
-            
-            let otherAccounts = try context.fetch(otherAccountsFetchRequest)
-            for account in otherAccounts {
-                account.isActiveAccount = false
-            }
-            
-            // Team
-            team.isActiveTeam = true
-            
-            let otherTeamsFetchRequest = Team.fetchRequest() as NSFetchRequest<Team>
-            otherTeamsFetchRequest.predicate = NSPredicate(format: "%K != %@", #keyPath(Team.identifier), team.identifier)
-            
-            let otherTeams = try context.fetch(otherTeamsFetchRequest)
-            for team in otherTeams {
-                team.isActiveTeam = false
-            }
+    private func postAuthenticationCleanup(result: Result<(ALTTeam, ALTCertificate?, ALTAppleAPISession), Error>, in context: NSManagedObjectContext) throws {
+        let (altTeam, altCertificate, _) = try result.get()
+        
+        guard
+            let account = Account.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(Account.identifier), altTeam.account.identifier), in: context),
+            let team = Team.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(Team.identifier), altTeam.identifier), in: context)
+        else { throw AuthenticationError(.noTeam) }
+        // Account
+        account.isActiveAccount = true
+        
+        let otherAccountsFetchRequest = Account.fetchRequest() as NSFetchRequest<Account>
+        otherAccountsFetchRequest.predicate = NSPredicate(format: "%K != %@", #keyPath(Account.identifier), account.identifier)
+        
+        let otherAccounts = try context.fetch(otherAccountsFetchRequest)
+        for account in otherAccounts {
+            account.isActiveAccount = false
+        }
+        
+        // Team
+        team.isActiveTeam = true
+        
+        let otherTeamsFetchRequest = Team.fetchRequest() as NSFetchRequest<Team>
+        otherTeamsFetchRequest.predicate = NSPredicate(format: "%K != %@", #keyPath(Team.identifier), team.identifier)
+        
+        let otherTeams = try context.fetch(otherTeamsFetchRequest)
+        for team in otherTeams {
+            team.isActiveTeam = false
+        }
 
-            let isSparseRestorePatched   = ProcessInfo().sparseRestorePatched
-            let isAppLimitDisabled       = UserDefaults.standard.isAppLimitDisabled
+        let isSparseRestorePatched   = ProcessInfo().sparseRestorePatched
+        let isAppLimitDisabled       = UserDefaults.standard.isAppLimitDisabled
 
-            UserDefaults.standard.activeAppsLimit = nil
-            // TODO: @mahee96: is the minimum ver match for ios 13.3.1 check required?
-            //                 if so what is the app limit? As nil app limit specifies unlimited apps?!
-            if team.type == .free {
-                if (!isAppLimitDisabled && isSparseRestorePatched) ||
-                    (isAppLimitDisabled && !isSparseRestorePatched) {
-                     UserDefaults.standard.activeAppsLimit = InstalledApp.freeAccountActiveAppsLimit
-                }
+        UserDefaults.standard.activeAppsLimit = nil
+        // TODO: @mahee96: is the minimum ver match for ios 13.3.1 check required?
+        //                 if so what is the app limit? As nil app limit specifies unlimited apps?!
+        if team.type == .free {
+            if (!isAppLimitDisabled && isSparseRestorePatched) ||
+                (isAppLimitDisabled && !isSparseRestorePatched) {
+                    UserDefaults.standard.activeAppsLimit = InstalledApp.freeAccountActiveAppsLimit
             }
-            
-            // Save
-            try context.save()
-            
-            // Update keychain
-            Keychain.shared.appleIDEmailAddress = self.appleIDEmailAddress ?? altTeam.account.appleID // Prefer the user's provided email address over the one associated with their account (which may be outdated).
-            if let appleIDPassword = self.appleIDPassword {
-                Keychain.shared.appleIDPassword = appleIDPassword
-            }
-            
-            if let altCertificate = altCertificate, !self.skipCertificateProvisioning {
-                Task {
-                    let didShowInstructions = await self.showInstructionsIfNecessary()
-                    
-                    let signer = ALTSigner(team: altTeam, certificate: altCertificate)
-                    // Resign screen must go last since a successful resign/reinstall will cause the app to quit.
-                    let didShowResignAlert = await self.showResignScreenIfNecessary(signer: signer, session: session)
-                    if !didShowResignAlert {
-                        Keychain.shared.signingCertificate = altCertificate.p12Data()
-                        Keychain.shared.signingCertificatePassword = altCertificate.machineIdentifier
-                    }
-                    
-                    await MainActor.run {
-                        super.finish(result)
-                        self.navigationController.dismiss(animated: true, completion: nil)
-                    }
-                }
-            } else {
-                Task { @MainActor in
-                    super.finish(result)
-                    self.navigationController.dismiss(animated: true, completion: nil)
-                }
-            }
-        } catch {
-            Task { @MainActor in
-                super.finish(result)
-                self.navigationController.dismiss(animated: true, completion: nil)
-            }
+        }
+        
+        // Save
+        try context.save()
+        
+        // Update keychain
+        Keychain.shared.appleIDEmailAddress = self.appleIDEmailAddress ?? altTeam.account.appleID // Prefer the user's provided email address over the one associated with their account (which may be outdated).
+        if let appleIDPassword = self.appleIDPassword {
+            Keychain.shared.appleIDPassword = appleIDPassword
         }
     }
     
@@ -360,11 +337,11 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, 
         }
     }
     
-    private func signIn() async throws -> (ALTAccount, ALTAppleAPISession) {
+    private func signIn(weights: [OperationStep: Int64]?) async throws -> (ALTAccount, ALTAppleAPISession) {
         if let adsid = Keychain.shared.appleIDAdsid, let xcodeToken = Keychain.shared.appleIDXcodeToken {
             self.verboseLog("[AuthenticationOperation] Authenticating Apple ID with tokens...")
             do {
-                let (account, session) = try await self.authenticateWithToken(adsid: adsid, xcodeToken: xcodeToken)
+                let (account, session) = try await self.authenticateWithToken(adsid: adsid, xcodeToken: xcodeToken, weights: weights)
                 return (account, session)
             } catch {
                 self.debugLog("[AuthenticationOperation] Authentication failed with token. Fall back to email and password login: \(error)")
@@ -375,27 +352,27 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, 
             self.debugLog("Authenticating Apple ID...")
             
             do {
-                let (account, session) = try await self.authenticate(appleID: appleID, password: password)
+                let (account, session) = try await self.authenticate(appleID: appleID, password: password, weights: weights)
                 self.appleIDPassword = password
                 return (account, session)
             } catch ALTAppleAPIError.incorrectCredentials, ALTAppleAPIError.appSpecificPasswordRequired {
-                return try await self.presentSignInUI()
+                return try await self.presentSignInUI(weights: weights)
             } catch {
                 throw error
             }
         } else {
-            return try await self.presentSignInUI()
+            return try await self.presentSignInUI(weights: weights)
         }
     }
     
     @MainActor
-    private func presentSignInUI() async throws -> (ALTAccount, ALTAppleAPISession) {
+    private func presentSignInUI(weights: [OperationStep: Int64]?) async throws -> (ALTAccount, ALTAppleAPISession) {
         try await withCheckedThrowingContinuation { continuation in
             let authenticationViewController = self.storyboard.instantiateViewController(withIdentifier: "authenticationViewController") as! AuthenticationViewController
             authenticationViewController.authenticationHandler = { (appleID, password, completionHandler) in
                 Task {
                     do {
-                        let (account, session) = try await self.authenticate(appleID: appleID, password: password)
+                        let (account, session) = try await self.authenticate(appleID: appleID, password: password, weights: weights)
                         completionHandler(.success((account, session)))
                     } catch {
                         completionHandler(.failure(error))
@@ -421,88 +398,82 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, 
         }
     }
     
-    private func authenticateWithToken(adsid: String, xcodeToken: String) async throws -> (ALTAccount, ALTAppleAPISession) {
-        let anisetteData = try await withCheckedThrowingContinuation { (c: CheckedContinuation<ALTAnisetteData, any Error>) in
-            let fetchAnisetteDataOperation = FetchAnisetteDataOperation(context: self.context)
-            fetchAnisetteDataOperation.resultHandler = { (result) in
-                c.resume(with: result)
-            }
-            self.operationQueue.addOperation(fetchAnisetteDataOperation)
-        }
+    private func authenticateWithToken(adsid: String, xcodeToken: String, weights: [OperationStep: Int64]?) async throws -> (ALTAccount, ALTAppleAPISession) {
+        let anisetteData = try await FetchAnisetteDataOperation(context: self.context)
+            .execute(parentProgress: progress, weights: weights ?? OperationProgressWeights.authenticate)
         
         let session = ALTAppleAPISession(dsid: adsid, authToken: xcodeToken, anisetteData: anisetteData)
-        let account = try await withCheckedThrowingContinuation { (c: CheckedContinuation<ALTAccount, any Error>) in
-            ALTAppleAPI.shared.fetchAccount2(session: session) { result in
-                c.resume(with: result)
-            }
-        }
+        let account = try await ALTAppleAPI.shared.fetchAccount2(session: session)
         
         return (account, session)
     }
     
-    private func authenticate(appleID: String, password: String) async throws -> (ALTAccount, ALTAppleAPISession) {
+    private func authenticate(appleID: String, password: String, weights: [OperationStep: Int64]?) async throws -> (ALTAccount, ALTAppleAPISession) {
         self.appleIDEmailAddress = appleID
         
-        let anisetteData = try await withCheckedThrowingContinuation { (c: CheckedContinuation<ALTAnisetteData, any Error>) in
-            let fetchAnisetteDataOperation = FetchAnisetteDataOperation(context: self.context)
-            fetchAnisetteDataOperation.resultHandler = { (result) in
-                c.resume(with: result)
-            }
-            self.operationQueue.addOperation(fetchAnisetteDataOperation)
-        }
+        let anisetteData = try await FetchAnisetteDataOperation(context: self.context)
+            .execute(parentProgress: progress, weights: weights ?? OperationProgressWeights.authenticate)
         
-        return try await withCheckedThrowingContinuation { continuation in
-            let verificationHandler: ((@escaping (String?) -> Void) -> Void)?
-            
-            if let presentingViewController = self.presentingViewController {
-                verificationHandler = { (completionHandler) in
-                    Task { @MainActor in
-                        let alertController = UIAlertController(title: NSLocalizedString("Please enter the 6-digit verification code that was sent to your Apple devices.", comment: ""), message: nil, preferredStyle: .alert)
-                        alertController.addTextField { (textField) in
-                            textField.autocorrectionType = .no
-                            textField.autocapitalizationType = .none
-                            textField.keyboardType = .numberPad
-                            
-                            NotificationCenter.default.addObserver(self, selector: #selector(AuthenticationOperation.textFieldTextDidChange(_:)), name: UITextField.textDidChangeNotification, object: textField)
-                        }
+        let verificationHandler: ((@escaping (String?) -> Void) -> Void)?
+        
+        if let presentingViewController = self.presentingViewController {
+            verificationHandler = { (completionHandler) in
+                Task { @MainActor in
+                    let alertController = UIAlertController(title: NSLocalizedString("Please enter the 6-digit verification code that was sent to your Apple devices.", comment: ""), message: nil, preferredStyle: .alert)
+                    var observer: NSObjectProtocol?
+                    alertController.addTextField { (textField) in
+                        textField.autocorrectionType = .no
+                        textField.autocapitalizationType = .none
+                        textField.keyboardType = .numberPad
                         
-                        let submitAction = UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .default) { (action) in
-                            let textField = alertController.textFields?.first
-                            
-                            let code = textField?.text ?? ""
-                            completionHandler(code)
-                        }
-                        submitAction.isEnabled = false
-                        alertController.addAction(submitAction)
-                        self.submitCodeAction = submitAction
-                        
-                        alertController.addAction(UIAlertAction(title: RSTSystemLocalizedString("Cancel"), style: .cancel) { (action) in
-                            completionHandler(nil)
-                        })
-                        
-                        if self.navigationController.presentingViewController != nil {
-                            self.navigationController.present(alertController, animated: true, completion: nil)
-                        } else {
-                            presentingViewController.present(alertController, animated: true, completion: nil)
+                        observer = NotificationCenter.default.addObserver(forName: UITextField.textDidChangeNotification, object: textField, queue: .main) { [weak self] (notification) in
+                            guard let self = self, let textField = notification.object as? UITextField else { return }
+                            self.submitCodeAction?.isEnabled = (textField.text ?? "").count == 6
                         }
                     }
+                    
+                    let submitAction = UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .default) { (action) in
+                        if let observer = observer {
+                            NotificationCenter.default.removeObserver(observer)
+                        }
+                        let textField = alertController.textFields?.first
+                        
+                        let code = textField?.text ?? ""
+                        completionHandler(code)
+                    }
+                    submitAction.isEnabled = false
+                    alertController.addAction(submitAction)
+                    self.submitCodeAction = submitAction
+                    
+                    alertController.addAction(UIAlertAction(title: RSTSystemLocalizedString("Cancel"), style: .cancel) { (action) in
+                        if let observer = observer {
+                            NotificationCenter.default.removeObserver(observer)
+                        }
+                        completionHandler(nil)
+                    })
+                    
+                    if self.navigationController.presentingViewController != nil {
+                        self.navigationController.present(alertController, animated: true, completion: nil)
+                    } else {
+                        presentingViewController.present(alertController, animated: true, completion: nil)
+                    }
                 }
-            } else {
-                // No view controller to present security code alert, so don't provide verificationHandler.
-                verificationHandler = nil
             }
-                
-            ALTAppleAPI.shared.authenticate(appleID: appleID, password: password, anisetteData: anisetteData,
-                                            verificationHandler: verificationHandler) { (account, session, error) in
-                if let account = account, let session = session {
-                    Keychain.shared.appleIDAdsid = session.dsid
-                    Keychain.shared.appleIDXcodeToken = session.authToken
-                    continuation.resume(returning: (account, session))
-                } else {
-                    continuation.resume(throwing: error ?? OperationError.unknown())
-                }
-            }
+        } else {
+            verificationHandler = nil
         }
+        
+        let (account, session) = try await ALTAppleAPI.shared.authenticate(
+            appleID: appleID,
+            password: password,
+            anisetteData: anisetteData,
+            verificationHandler: verificationHandler
+        )
+        
+        Keychain.shared.appleIDAdsid = session.dsid
+        Keychain.shared.appleIDXcodeToken = session.authToken
+        
+        return (account, session)
     }
     
     private func fetchTeam(for account: ALTAccount, session: ALTAppleAPISession) async throws -> ALTTeam {
@@ -724,29 +695,22 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, 
         }
     }
     
-    private func cacheAppIDs(team: ALTTeam, session: ALTAppleAPISession) async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            let fetchAppIDsOperation = FetchAppIDsOperation(context: self.context)
-            fetchAppIDsOperation.resultHandler = { (result) in
-                do {
-                    let (_, context) = try result.get()
-                    var saveError: Error?
-                    context.performAndWait {
-                        do {
-                            try context.save()
-                        } catch {
-                            saveError = error
-                        }
-                    }
-                    if let saveError = saveError {
-                        throw saveError
-                    }
-                    continuation.resume()
-                } catch {
-                    continuation.resume(throwing: error)
-                }
+    private func cacheAppIDs(team: ALTTeam, session: ALTAppleAPISession, weights: [OperationStep: Int64]?) async throws {
+        let fetchAppIDsOperation = FetchAppIDsOperation(context: self.context)
+        let (_, context) = try await fetchAppIDsOperation.execute(
+            parentProgress: progress,
+            weights: weights ?? OperationProgressWeights.authenticate
+        )
+        var saveError: Error?
+        context.performAndWait {
+            do {
+                try context.save()
+            } catch {
+                saveError = error
             }
-            self.operationQueue.addOperation(fetchAppIDsOperation)
+        }
+        if let saveError = saveError {
+            throw saveError
         }
     }
     
@@ -795,7 +759,6 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, 
             
             return await withCheckedContinuation { continuation in
                 let context = AuthenticatedOperationContext(context: self.context)
-                context.operations.removeAllObjects() // Prevent deadlock due to endless waiting on previous operations to finish.
                 
                 let resignViewController = self.storyboard.instantiateViewController(withIdentifier: "resignAltStoreViewController") as! ResignAltStoreViewController
                 resignViewController.context = context
@@ -818,13 +781,7 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?, 
     }
 }
 
-extension AuthenticationOperation {
-    @objc func textFieldTextDidChange(_ notification: Notification) {
-        guard let textField = notification.object as? UITextField else { return }
-        
-        self.submitCodeAction?.isEnabled = (textField.text ?? "").count == 6
-    }
-}
+
 
 
 extension ALTAppleAPI {
@@ -846,6 +803,14 @@ extension ALTAppleAPI {
                 completionHandler(.success(account))
             } catch {
                 completionHandler(.failure(error))
+            }
+        }
+    }
+
+    func fetchAccount2(session: ALTAppleAPISession) async throws -> ALTAccount {
+        try await withCheckedThrowingContinuation { continuation in
+            self.fetchAccount2(session: session) { result in
+                continuation.resume(with: result)
             }
         }
     }
@@ -919,6 +884,18 @@ extension ALTAppleAPI {
                     continuation.resume(returning: teams)
                 } else {
                     continuation.resume(throwing: err ?? OperationError.unknown())
+                }
+            }
+        }
+    }
+
+    func authenticate(appleID: String, password: String, anisetteData: ALTAnisetteData, verificationHandler: ((@escaping (String?) -> Void) -> Void)?) async throws -> (ALTAccount, ALTAppleAPISession) {
+        try await withCheckedThrowingContinuation { continuation in
+            self.authenticate(appleID: appleID, password: password, anisetteData: anisetteData, verificationHandler: verificationHandler) { (account, session, error) in
+                if let account = account, let session = session {
+                    continuation.resume(returning: (account, session))
+                } else {
+                    continuation.resume(throwing: error ?? OperationError.unknown())
                 }
             }
         }

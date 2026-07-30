@@ -6,11 +6,11 @@
 //  Copyright © 2022 Riley Testut. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 import SafariServices
 import QuickLook
 import CoreData
-import AltStoreCore
+@preconcurrency import AltStoreCore
 
 import Nuke
 

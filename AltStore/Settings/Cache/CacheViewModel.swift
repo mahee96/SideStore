@@ -8,8 +8,8 @@
 
 import SwiftUI
 import CoreData
-import AltStoreCore
-import AltSign
+@preconcurrency import AltStoreCore
+@preconcurrency import AltSign
 
 struct CacheItem: Identifiable, Equatable {
     let id: String

@@ -9,7 +9,7 @@
 import Foundation
 import CoreData
 
-import AltSign
+@preconcurrency import AltSign
 
 @objc(InstalledExtension)
 public class InstalledExtension: BaseEntity, InstalledAppProtocol

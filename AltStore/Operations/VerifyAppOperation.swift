@@ -6,11 +6,11 @@
 //  Copyright © 2020 Riley Testut. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 import Foundation
 import CryptoKit
-import AltStoreCore
-import AltSign
+@preconcurrency import AltStoreCore
+@preconcurrency import AltSign
 
 import RegexBuilder
 
@@ -29,67 +29,45 @@ extension VerifyAppOperation {
     }
 }
 
-@objc(VerifyAppOperation)
-final class VerifyAppOperation: ResultOperation<Void>, OperationLogging {
-
+final class VerifyAppOperation: AsyncOperation<InstallAppOperationContext, Bool>, @unchecked Sendable {
     let permissionsMode: PermissionReviewMode
-    let context: InstallAppOperationContext
     init(permissionsMode: PermissionReviewMode, context: InstallAppOperationContext) {
         self.permissionsMode = permissionsMode
-        self.context = context
-        
-        super.init()
+        super.init(context: context)
     }
     
-    override func main() {
-        super.main()
+    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
+        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
-        do {
-            if let error = self.context.error {
-                throw error
-            }
-            let appName = self.context.app?.name ?? NSLocalizedString("The app", comment: "")
-            self.localizedFailure = String(format: NSLocalizedString("%@ could not be installed.", comment: ""), appName)
-            
-            guard let app = self.context.app else {
-                throw OperationError.invalidParameters("VerifyAppOperation.main: self.context.app is nil")
-            }
-            
-            if !["ny.litritt.ignited", "com.litritt.ignited"].contains(where: { $0 == app.bundleIdentifier }) {
-                guard app.bundleIdentifier == self.context.bundleIdentifier else {
-                    throw VerificationError.mismatchedBundleIdentifiers(sourceBundleID: self.context.bundleIdentifier, app: app)
-                }
-            }
-            
-            guard ProcessInfo.processInfo.isOperatingSystemAtLeast(app.minimumiOSVersion) else {
-                throw VerificationError.iOSVersionNotSupported(app: app, requiredOSVersion: app.minimumiOSVersion)
-            }
-            
-            guard let appVersion = self.context.appVersion else {
-                return self.finish(.success(()))
-            }
-            
-            Task  {
-                do {
-                    guard let ipaURL = self.context.ipaURL else { throw OperationError.appNotFound(name: app.name) }
-                                        
-                    try await self.verifyHash(of: app, at: ipaURL, matches: appVersion)
-                    try await self.verifyDownloadedVersion(of: app, matches: appVersion)
-                    
-                    // process missing permissions check only if the source is V2 or later
-                    if let source = appVersion.app?.source,
-                       source.isSourceAtLeastV2 {
-                        try await self.verifyPermissions(of: app, match: appVersion)
-                    }
-                    
-                    self.finish(.success(()))
-                } catch {
-                    self.finish(.failure(error))
-                }
-            }
-        } catch {
-            self.finish(.failure(error))
+        guard let app = self.context.app else {
+            throw OperationError.invalidParameters("VerifyAppOperation: context.app is nil")
         }
+
+        if !["ny.litritt.ignited", "com.litritt.ignited"].contains(where: { $0 == app.bundleIdentifier }) {
+            guard app.bundleIdentifier == self.context.bundleIdentifier else {
+                throw VerificationError.mismatchedBundleIdentifiers(sourceBundleID: self.context.bundleIdentifier, app: app)
+            }
+        }
+        
+        guard ProcessInfo.processInfo.isOperatingSystemAtLeast(app.minimumiOSVersion) else {
+            throw VerificationError.iOSVersionNotSupported(app: app, requiredOSVersion: app.minimumiOSVersion)
+        }
+        
+        guard let appVersion = context.appVersion else {
+            return false
+        }
+        
+        guard let ipaURL = context.ipaURL else { throw OperationError.appNotFound(name: app.name) }
+                            
+        try await self.verifyHash(of: app, at: ipaURL, matches: appVersion)
+        try await self.verifyDownloadedVersion(of: app, matches: appVersion)
+        
+        // process missing permissions check only if the source is V2 or later
+        if let source = appVersion.app?.source,
+           source.isSourceAtLeastV2 {
+            try await self.verifyPermissions(of: app, match: appVersion)
+        }
+        return true
     }
     
     private func verifyHash(of app: ALTApplication, at ipaURL: URL, @AsyncManaged matches appVersion: AppVersion) async throws {

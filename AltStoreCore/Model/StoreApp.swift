@@ -9,8 +9,8 @@
 import Foundation
 import CoreData
 
-import AltSign
-import UIKit
+@preconcurrency import AltSign
+@preconcurrency import UIKit
 
 import SemanticVersion
 

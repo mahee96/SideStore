@@ -6,7 +6,7 @@
 //  Copyright © 2019 Riley Testut. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 import SwiftUI
 import MobileCoreServices
 import Intents
@@ -14,7 +14,7 @@ import Combine
 import CoreData
 import UniformTypeIdentifiers
 import AltStoreCore
-import AltSign
+@preconcurrency import AltSign
 import SemanticVersion
 
 import Nuke

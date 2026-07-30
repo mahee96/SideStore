@@ -5,9 +5,8 @@
 //  Created by Magesh K on 8/7/26.
 //  Copyright © 2026 SideStore. All rights reserved.
 //
-import Foundation
 
-internal protocol OperationLogging where Self: Operation {
+internal protocol OperationLogging {
     func debugLog(_ text: @autoclosure () -> String)
     func verboseLog(_ text: @autoclosure () -> String)
 }

@@ -7,7 +7,7 @@
 //
 
 
-import UIKit
+@preconcurrency import UIKit
 import MarkdownKit
 
 struct MarkdownManager

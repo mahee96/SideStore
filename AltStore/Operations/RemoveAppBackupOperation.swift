@@ -7,47 +7,16 @@
 //
 
 import Foundation
-import AltStoreCore
+@preconcurrency import AltStoreCore
 
-@objc(RemoveAppBackupOperation)
-final class RemoveAppBackupOperation: ResultOperation<Void>, OperationLogging
-
+final class RemoveAppBackupOperation: AsyncOperation<InstallAppOperationContext, Bool>
 {
-    let context: InstallAppOperationContext
-    
+
     private let coordinator = NSFileCoordinator()
     private let coordinatorQueue = OperationQueue()
     
-    init(context: InstallAppOperationContext)
-    {
-        self.context = context
-        
-        super.init()
-        
-        self.coordinatorQueue.name = "AltStore - RemoveAppBackupOperation Queue"
-    }
-    
-    override func main()
-    {
-        super.main()
-        
-        if let error = self.context.error
-        {
-            self.finish(.failure(error))
-            return
-        }
-        
-        Task {
-             do {
-                 try await self.execute()
-                 self.finish(.success(()))
-             } catch {
-                 self.finish(.failure(error))
-             }
-         }
-    }
-    
-    private nonisolated func execute() async throws {
+    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
+        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         guard let installedApp = self.context.installedApp else {
             throw OperationError.invalidParameters("RemoveAppBackupOperation.main: self.context.installedApp is nil")
         }
@@ -58,12 +27,10 @@ final class RemoveAppBackupOperation: ResultOperation<Void>, OperationLogging
             throw OperationError.missingAppGroup
         }
         
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            let intent = NSFileAccessIntent.writingIntent(with: backupDirectoryURL, options: [.forDeleting])
-            self.coordinator.coordinate(with: [intent], queue: self.coordinatorQueue) { error in
-                continuation.resume(with: Result { try self.removeBackupItem(at: intent.url, backupDirectoryURL: backupDirectoryURL, coordinatorError: error) })
-            }
-        }
+        let intent = NSFileAccessIntent.writingIntent(with: backupDirectoryURL, options: [.forDeleting])
+        try await self.coordinator.coordinate(with: [intent], queue: self.coordinatorQueue)
+        try self.removeBackupItem(at: intent.url, backupDirectoryURL: backupDirectoryURL, coordinatorError: nil)
+        return true
     }
     
     private func backupDirectoryURL(for installedApp: InstalledApp) -> URL? {
@@ -74,21 +41,9 @@ final class RemoveAppBackupOperation: ResultOperation<Void>, OperationLogging
         if let coordinatorError { throw coordinatorError }
         do {
             try FileManager.default.removeItem(at: url)
-        } catch let error as CocoaError where error.code == CocoaError.Code.fileNoSuchFile {
-            // TODO: @mahee96: Find out why should in debug builds the app-groups is not expected to match
-//                    #if DEBUG
-//                    
-//                    // When debugging, it's expected that app groups don't match, so ignore.
-//                    self.finish(.success(()))
-//                    
-//                    #else
-            debugLog("[RemoveAppBackupOperation] Failed to remove app backup directory \(backupDirectoryURL.lastPathComponent). \(error.localizedDescription)")
-            throw error
-//                    #endif
         } catch {
             debugLog("[RemoveAppBackupOperation] Failed to remove app backup directory \(backupDirectoryURL.lastPathComponent). \(error.localizedDescription)")
             throw error
         }
     }
 }
-

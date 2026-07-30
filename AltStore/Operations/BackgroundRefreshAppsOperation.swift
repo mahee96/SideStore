@@ -6,9 +6,9 @@
 //  Copyright © 2020 Riley Testut. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 import CoreData
-import AltStoreCore
+@preconcurrency import AltStoreCore
 
 typealias RefreshError = RefreshErrorCode.Error
 enum RefreshErrorCode: Int, ALTErrorEnum, CaseIterable {
@@ -43,11 +43,8 @@ private let ReceivedApplicationState: @convention(c) (CFNotificationCenter?, Uns
     operation.receivedApplicationState(notification: name)
 }
 
-@objc(BackgroundRefreshAppsOperation)
-final class BackgroundRefreshAppsOperation: ResultOperation<[String: Result<InstalledApp, Error>]>, OperationLogging {
-
+final class BackgroundRefreshAppsOperation: AsyncOperation<OperationContext, [String: Result<InstalledApp, Error>]> {
     let installedApps: [InstalledApp]
-    private let managedObjectContext: NSManagedObjectContext
     
     var presentsFinishedNotification: Bool = true
     var ignoresServerNotFoundError: Bool = true
@@ -57,79 +54,64 @@ final class BackgroundRefreshAppsOperation: ResultOperation<[String: Result<Inst
     
     init(installedApps: [InstalledApp]) {
         self.installedApps = installedApps
-        self.managedObjectContext = installedApps.compactMap({ $0.managedObjectContext }).first ?? DatabaseManager.shared.persistentContainer.newBackgroundContext()
-        
-        super.init()
+        let dbContext = installedApps.compactMap({ $0.managedObjectContext }).first
+        super.init(context: OperationContext(dbBackgroundContext: dbContext))
     }
     
-    override func finish(_ result: Result<[String: Result<InstalledApp, Error>], Error>) {
-        super.finish(result)
+    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> [String: Result<InstalledApp, Error>] {
+        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
-        self.scheduleFinishedRefreshingNotification(for: result, delay: 0)
-        
-        self.managedObjectContext.perform {
-            self.stopListeningForRunningApps()
+        guard let dbContext = self.context.dbBackgroundContext else {
+            let error = OperationError.invalidParameters("BackgroundRefreshAppsOperation: context.dbBackgroundContext is nil")
+            self.scheduleFinishedRefreshingNotification(for: .failure(error), delay: 0)
+            throw error
         }
-        
-        Task { @MainActor in
-            if UIApplication.shared.applicationState == .background {
-                    
-            }
-        }
-    }
-    
-    override func main() {
-        super.main()
         
         guard !self.installedApps.isEmpty else {
-            self.finish(.failure(RefreshError(.noInstalledApps)))
-            return
+            let error = RefreshError(.noInstalledApps)
+            self.scheduleFinishedRefreshingNotification(for: .failure(error), delay: 0)
+            throw error
         }
 
         if UserDefaults.standard.enableEMPforWireguard {
             startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
         }
         
-        Task {
-            do {
-                let results = try await self.execute()
-                self.finish(.success(results))
-            } catch {
-                self.finish(.failure(error))
+        defer {
+            dbContext.perform {
+                self.stopListeningForRunningApps()
             }
         }
-    }
-
-    private nonisolated func execute() async throws -> [String: Result<InstalledApp, Error>] {
-        let documentsDirectory = FileManager.default.documentsDirectory.absoluteString
-
-        try await minimuxerStart(
-            try String(contentsOf: FileManager.default.documentsDirectory.appendingPathComponent("\(pairingFileName)")),
-            mountPath: documentsDirectory
-        )
         
-        if #available(iOS 17, *) {
-            // TODO: iOS 17 and above have a new JIT implementation that is completely broken in SideStore :(
+        do {
+            if #available(iOS 17, *) {
+                // TODO: iOS 17 and above have a new JIT implementation that is completely broken in SideStore :(
+            }
+
+            await dbContext.perform {
+                self.startListeningForRunningApps()
+            }
+
+            // Wait for 1 second (1 now, 1 later in FindServerOperation) to:
+            // a) give us time to discover AltServers
+            // b) give other processes a chance to respond to requestAppState notification
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+
+            let filteredApps = await dbContext.perform {
+                return self.installedApps.filter { !self.runningApplications.contains($0.bundleIdentifier) }
+            }
+
+            if !self.runningApplications.isEmpty {
+                self.verboseLog("[BackgroundRefreshAppsOperation] Skipping refreshing running apps: \(self.runningApplications)")
+            }
+
+            let results = try await self.refresh(filteredApps)
+            self.scheduleFinishedRefreshingNotification(for: .success(results), delay: 0)
+            return results
+        } catch {
+            self.scheduleFinishedRefreshingNotification(for: .failure(error), delay: 0)
+            throw error
         }
-
-        await self.managedObjectContext.perform {
-            self.startListeningForRunningApps()
-        }
-
-        // Wait for 1 second (1 now, 1 later in FindServerOperation) to:
-        // a) give us time to discover AltServers
-        // b) give other processes a chance to respond to requestAppState notification
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
-
-        let filteredApps = await self.managedObjectContext.perform {
-            return self.installedApps.filter { !self.runningApplications.contains($0.bundleIdentifier) }
-        }
-
-        if !self.runningApplications.isEmpty {
-            self.verboseLog("[BackgroundRefreshAppsOperation] Skipping refreshing running apps: \(self.runningApplications)")
-        }
-
-        return try await self.refresh(filteredApps)
     }
 
     private func refresh(_ apps: [InstalledApp]) async throws -> [String: Result<InstalledApp, Error>] {
@@ -247,9 +229,10 @@ final class BackgroundRefreshAppsOperation: ResultOperation<[String: Result<Inst
         }        
         
         // Perform synchronously to ensure app doesn't quit before we've finishing saving to disk.
-        let context = DatabaseManager.shared.persistentContainer.newBackgroundContext()
-        context.performAndWait {
-            self.saveRefreshAttempt(result: result, in: context)
+        if let dbContext = self.context.dbBackgroundContext {
+            dbContext.performAndWait {
+                self.saveRefreshAttempt(result: result, in: dbContext)
+            }
         }
     }
     

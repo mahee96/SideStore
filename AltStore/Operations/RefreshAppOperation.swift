@@ -8,48 +8,16 @@
 
 import Foundation
 import CoreData
-import AltStoreCore
-import AltSign
+@preconcurrency import AltStoreCore
+@preconcurrency import AltSign
 
-@objc(RefreshAppOperation)
-final class RefreshAppOperation: ResultOperation<InstalledApp>, OperationLogging
-
-{
-    let context: AppOperationContext
+final class RefreshAppOperation: AsyncOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
     
-    // Strong reference to managedObjectContext to keep it alive until we're finished.
-    let managedObjectContext: NSManagedObjectContext
-    
-    init(context: AppOperationContext)
-    {
-        self.context = context
-        self.managedObjectContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
+    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> InstalledApp {
+        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
-        super.init()
-    }
-    
-    override func main()
-    {
-        super.main()
-        
-        if let error = self.context.error {
-            self.finish(.failure(error))
-            return
-        }
-        
-        Task {
-            do {
-                let installed = try await self.execute()
-                self.finish(.success(installed))
-            } catch {
-                self.finish(.failure(error))
-            }
-        }
-    }
-    
-    private nonisolated func execute() async throws -> InstalledApp {
         guard let profiles = self.context.provisioningProfiles else {
-            throw OperationError.invalidParameters("RefreshAppOperation.main: self.context.provisioningProfiles is nil")
+            throw OperationError.invalidParameters("RefreshAppOperation.execute: self.context.provisioningProfiles is nil")
         }
         
         guard let app = self.context.app else { throw OperationError(.appNotFound(name: nil)) }
@@ -61,16 +29,26 @@ final class RefreshAppOperation: ResultOperation<InstalledApp>, OperationLogging
             }
         }
         
-        return try await self.managedObjectContext.perform {
-            try self.updateInstalledApp(for: app, profiles: profiles)
+        guard let dbContext = self.context.dbBackgroundContext else {
+            throw OperationError.invalidParameters("RefreshAppOperation: context.dbBackgroundContext is nil")
         }
+        
+        let installedApp = try await dbContext.perform {
+            try self.updateInstalledApp(for: app, profiles: profiles, in: dbContext)
+        }
+        
+        try await dbContext.perform {
+            try dbContext.save()
+        }
+        
+        return installedApp
     }
     
-    private func updateInstalledApp(for app: ALTApplication, profiles: [String: ALTProvisioningProfile]) throws -> InstalledApp {
+    private func updateInstalledApp(for app: ALTApplication, profiles: [String: ALTProvisioningProfile], in dbContext: NSManagedObjectContext) throws -> InstalledApp {
         self.progress.completedUnitCount += 1
         
         let predicate = NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), self.context.bundleIdentifier)
-        guard let installedApp = InstalledApp.first(satisfying: predicate, in: self.managedObjectContext) else {
+        guard let installedApp = InstalledApp.first(satisfying: predicate, in: dbContext) else {
             throw OperationError(.appNotFound(name: app.name))
         }
         installedApp.update(provisioningProfile: profiles.values.first!)

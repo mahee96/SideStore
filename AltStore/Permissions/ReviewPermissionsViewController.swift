@@ -6,10 +6,10 @@
 //  Copyright © 2023 Riley Testut. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 import SwiftUI
 
-import AltSign
+@preconcurrency import AltSign
 import AltStoreCore
 
 @available(iOS 15, *)

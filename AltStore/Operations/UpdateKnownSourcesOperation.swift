@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import AltStoreCore
+@preconcurrency import AltStoreCore
 
 private extension URL
 {
@@ -25,11 +25,11 @@ extension UpdateKnownSourcesOperation
     }
 }
 
-class UpdateKnownSourcesOperation: ResultOperation<([KnownSource], [KnownSource])>
+class UpdateKnownSourcesOperation: OperationLogging
 {
     private let session: URLSession
     
-    override init()
+    init()
     {
         let configuration = URLSessionConfiguration.default
         
@@ -42,21 +42,7 @@ class UpdateKnownSourcesOperation: ResultOperation<([KnownSource], [KnownSource]
         self.session = URLSession(configuration: configuration)
     }
     
-    override func main()
-    {
-        super.main()
-        
-        Task {
-            do {
-                let result = try await self.execute()
-                self.finish(.success(result))
-            } catch {
-                self.finish(.failure(error))
-            }
-        }
-    }
-    
-    private nonisolated func execute() async throws -> ([KnownSource], [KnownSource])
+    func execute() async throws -> ([KnownSource], [KnownSource])
     {
         let (data, response) = try await self.session.data(from: .sources)
         

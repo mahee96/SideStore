@@ -6,7 +6,7 @@
 //  Copyright © 2026 SideStore. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 import CoreData
 
 open class RSTDynamicDataSource<ContentType, CellType: UIView & RSTCellContentCell, ViewType: UIScrollView, DataSourceType>: RSTCellContentDataSource<ContentType, CellType, ViewType, DataSourceType> {

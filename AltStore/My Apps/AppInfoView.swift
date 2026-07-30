@@ -7,8 +7,8 @@
 //
 
 import SwiftUI
-import AltStoreCore
-import AltSign
+@preconcurrency import AltStoreCore
+@preconcurrency import AltSign
 
 struct AppInfoView: View {
     let installedApp: InstalledApp

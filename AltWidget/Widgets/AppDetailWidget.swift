@@ -8,7 +8,7 @@
 
 import WidgetKit
 import SwiftUI
-import AltStoreCore
+@preconcurrency import AltStoreCore
 
 struct AppDetailWidget: Widget
 {

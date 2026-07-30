@@ -6,7 +6,7 @@
 //  Copyright © 2021 Riley Testut. All rights reserved.
 //
 
-import UIKit
+@preconcurrency import UIKit
 import Combine
 import UniformTypeIdentifiers
 @preconcurrency import AltStoreCore
@@ -19,51 +19,19 @@ enum SideJITServerErrorType: Error {
  }
 
 @available(iOS 14, *)
-protocol EnableJITContext
+final class EnableJITOperation: AsyncOperation<InstallAppOperationContext, Bool>, @unchecked Sendable
 {
-    var installedApp: InstalledApp? { get }
-    
-    var error: Error? { get }
-}
-
-@available(iOS 14, *)
-final class EnableJITOperation<Context: EnableJITContext>: ResultOperation<Void>, OperationLogging, @unchecked Sendable
-
-{
-    let context: Context
-    
     private var cancellable: AnyCancellable?
     
-    init(context: Context)
-    {
-        self.context = context
-    }
-    
-    override func main()
-    {
-        super.main()
-        
-        Task {
-            do {
-                try await self.execute()
-                self.finish(.success(()))
-            } catch {
-                self.finish(.failure(error))
-            }
-        }
-    }
-    
-    private nonisolated func execute() async throws {
-        if let error = self.context.error
-        {
-            throw error
-        }
+    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
+        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         guard let installedApp = self.context.installedApp else {
             throw OperationError.invalidParameters("EnableJITOperation.main: self.context.installedApp is nil")
         }
         
         try await self.enableJIT(for: installedApp)
+        return true
     }
 
     private func enableJIT(for installedApp: InstalledApp) async throws

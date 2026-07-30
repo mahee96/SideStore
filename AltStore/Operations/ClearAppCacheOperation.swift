@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import AltStoreCore
+@preconcurrency import AltStoreCore
 
 import Nuke
 
@@ -38,32 +38,19 @@ struct BatchError: ALTLocalizedError {
     }
 }
 
-@objc(ClearAppCacheOperation)
-class ClearAppCacheOperation: ResultOperation<Void>, OperationLogging {
-
+class ClearAppCacheOperation: AsyncOperation<OperationContext, Bool> {
     private let coordinator = NSFileCoordinator()
     private let coordinatorQueue = OperationQueue()
     
-    override init() {
+    init(context: OperationContext = OperationContext()) {
         self.coordinatorQueue.name = "AltStore - ClearAppCacheOperation Queue"
+        super.init(context: context)
     }
     
-    override func main() {
-        super.main()
-        
+    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
+        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         self.clearNukeCache()
         
-        Task {
-            do {
-                try await self.execute()
-                self.finish(.success(()))
-            } catch {
-                self.finish(.failure(error))
-            }
-        }
-    }
-
-    private nonisolated func execute() async throws {
         var allErrors = [Error]()
         
         do { try await self.clearTemporaryDirectory() }
@@ -75,6 +62,7 @@ class ClearAppCacheOperation: ResultOperation<Void>, OperationLogging {
         if !allErrors.isEmpty {
             throw OperationError.cacheClearError(errors: allErrors.map { $0.localizedDescription })
         }
+        return true
     }
     
     private func clearNukeCache() {
@@ -83,12 +71,9 @@ class ClearAppCacheOperation: ResultOperation<Void>, OperationLogging {
     }
     
     private func clearTemporaryDirectory() async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            let intent = NSFileAccessIntent.writingIntent(with: FileManager.default.temporaryDirectory, options: [.forDeleting])
-            self.coordinator.coordinate(with: [intent], queue: self.coordinatorQueue) { error in
-                continuation.resume(with: Result { try self.clearTempDirItems(at: intent.url, coordinatorError: error) })
-            }
-        }
+        let intent = NSFileAccessIntent.writingIntent(with: FileManager.default.temporaryDirectory, options: [.forDeleting])
+        try await self.coordinator.coordinate(with: [intent], queue: self.coordinatorQueue)
+        try self.clearTempDirItems(at: intent.url, coordinatorError: nil)
     }
     
     private func clearTempDirItems(at url: URL, coordinatorError: Error?) throws {
@@ -122,12 +107,9 @@ class ClearAppCacheOperation: ResultOperation<Void>, OperationLogging {
             Set(InstalledApp.all(in: context).map { $0.bundleIdentifier })
         }
         
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            let intent = NSFileAccessIntent.writingIntent(with: backupsDirectory, options: [.forDeleting])
-            self.coordinator.coordinate(with: [intent], queue: self.coordinatorQueue) { error in
-                continuation.resume(with: Result { try self.removeBackupDirItems(at: intent.url, installedBundleIDs: installedAppBundleIDs, coordinatorError: error) })
-            }
-        }
+        let intent = NSFileAccessIntent.writingIntent(with: backupsDirectory, options: [.forDeleting])
+        try await self.coordinator.coordinate(with: [intent], queue: self.coordinatorQueue)
+        try self.removeBackupDirItems(at: intent.url, installedBundleIDs: installedAppBundleIDs, coordinatorError: nil)
     }
     
     private func removeBackupDirItems(at url: URL, installedBundleIDs: Set<String>, coordinatorError: Error?) throws {
@@ -159,6 +141,20 @@ class ClearAppCacheOperation: ResultOperation<Void>, OperationLogging {
         
         if !errors.isEmpty {
             throw OperationError.cacheClearError(errors: errors.map { $0.localizedDescription })
+        }
+    }
+}
+
+extension NSFileCoordinator {
+    func coordinate(with intents: [NSFileAccessIntent], queue: OperationQueue) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            self.coordinate(with: intents, queue: queue) { error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: ())
+                }
+            }
         }
     }
 }
