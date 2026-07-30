@@ -29,15 +29,15 @@ extension VerifyAppOperation {
     }
 }
 
-final class VerifyAppOperation: AsyncOperation<InstallAppOperationContext, Bool>, @unchecked Sendable {
+final class VerifyAppOperation: BaseOperation<InstallAppOperationContext, Bool>, @unchecked Sendable {
     let permissionsMode: PermissionReviewMode
-    init(permissionsMode: PermissionReviewMode, context: InstallAppOperationContext) {
+    init(permissionsMode: PermissionReviewMode, context: InstallAppOperationContext) throws {
         self.permissionsMode = permissionsMode
-        super.init(context: context)
+        try super.init(context: context)
     }
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         guard let app = self.context.app else {
             throw OperationError.invalidParameters("VerifyAppOperation: context.app is nil")

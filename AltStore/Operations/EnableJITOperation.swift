@@ -19,12 +19,12 @@ enum SideJITServerErrorType: Error {
  }
 
 @available(iOS 14, *)
-final class EnableJITOperation: AsyncOperation<InstallAppOperationContext, Bool>, @unchecked Sendable
+final class EnableJITOperation: BaseOperation<InstallAppOperationContext, Bool>, @unchecked Sendable
 {
     private var cancellable: AnyCancellable?
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         guard let installedApp = self.context.installedApp else {
             throw OperationError.invalidParameters("EnableJITOperation.main: self.context.installedApp is nil")

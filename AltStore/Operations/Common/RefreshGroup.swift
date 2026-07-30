@@ -14,7 +14,7 @@ import CoreData
 final class RefreshGroup: NSObject
 {
     let context: AuthenticatedOperationContext
-    let progress = Progress.discreteProgress(totalUnitCount: 0)
+    let progress = Progress.discreteProgress(totalUnitCount: 100)
     
     var completionHandler: (([String: Result<InstalledApp, Error>]) -> Void)?
     var beginInstallationHandler: ((InstalledApp) -> Void)?

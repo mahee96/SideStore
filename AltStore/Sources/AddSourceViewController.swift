@@ -508,7 +508,7 @@ private extension AddSourceViewController
         
         var fetchOperation: FetchSourceOperation?
         return Future<Source, Error> { promise in
-            fetchOperation = AppManager.shared.fetchSource(sourceURL: sourceURL, managedObjectContext: context) { result in
+            fetchOperation = try? AppManager.shared.fetchSource(sourceURL: sourceURL, managedObjectContext: context) { result in
                 promise(result)
             }
         }
@@ -742,7 +742,7 @@ private extension AddSourceViewController
                 {
                     dispatchGroup.enter()
                     
-                    AppManager.shared.fetchSource(sourceURL: sourceURL, managedObjectContext: context) { result in
+                    _ = try? AppManager.shared.fetchSource(sourceURL: sourceURL, managedObjectContext: context) { result in
                         // Serialize access to sourcesByURL.
                         context.performAndWait {
                             switch result

@@ -10,10 +10,10 @@ import Foundation
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class ExportResignedAppOperation: AsyncOperation<InstallAppOperationContext, URL>, @unchecked Sendable {
+final class ExportResignedAppOperation: BaseOperation<InstallAppOperationContext, URL>, @unchecked Sendable {
 
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> URL {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
 
         guard UserDefaults.standard.isExportResignedAppEnabled, let resignedApp = self.context.resignedApp else {
             throw OperationError.invalidParameters("ExportResignedAppOperation: context.resignedApp is nil")

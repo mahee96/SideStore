@@ -11,10 +11,10 @@ import CoreData
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class RefreshAppOperation: AsyncOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
+final class RefreshAppOperation: BaseOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> InstalledApp {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         guard let profiles = self.context.provisioningProfiles else {
             throw OperationError.invalidParameters("RefreshAppOperation.execute: self.context.provisioningProfiles is nil")
@@ -35,10 +35,6 @@ final class RefreshAppOperation: AsyncOperation<InstallAppOperationContext, Inst
         
         let installedApp = try await dbContext.perform {
             try self.updateInstalledApp(for: app, profiles: profiles, in: dbContext)
-        }
-        
-        try await dbContext.perform {
-            try dbContext.save()
         }
         
         return installedApp

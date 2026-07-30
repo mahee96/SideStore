@@ -43,7 +43,7 @@ private let ReceivedApplicationState: @convention(c) (CFNotificationCenter?, Uns
     operation.receivedApplicationState(notification: name)
 }
 
-final class BackgroundRefreshAppsOperation: AsyncOperation<OperationContext, [String: Result<InstalledApp, Error>]> {
+final class BackgroundRefreshAppsOperation: BaseOperation<OperationContext, [String: Result<InstalledApp, Error>]> {
     let installedApps: [InstalledApp]
     
     var presentsFinishedNotification: Bool = true
@@ -52,14 +52,14 @@ final class BackgroundRefreshAppsOperation: AsyncOperation<OperationContext, [St
     private let refreshIdentifier: String = UUID().uuidString
     private var runningApplications: Set<String> = []
     
-    init(installedApps: [InstalledApp]) {
+    init(installedApps: [InstalledApp]) throws {
         self.installedApps = installedApps
         let dbContext = installedApps.compactMap({ $0.managedObjectContext }).first
-        super.init(context: OperationContext(dbBackgroundContext: dbContext))
+        try super.init(context: OperationContext(dbBackgroundContext: dbContext))
     }
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> [String: Result<InstalledApp, Error>] {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         guard let dbContext = self.context.dbBackgroundContext else {
             let error = OperationError.invalidParameters("BackgroundRefreshAppsOperation: context.dbBackgroundContext is nil")
@@ -230,8 +230,14 @@ final class BackgroundRefreshAppsOperation: AsyncOperation<OperationContext, [St
         
         // Perform synchronously to ensure app doesn't quit before we've finishing saving to disk.
         if let dbContext = self.context.dbBackgroundContext {
+            let childContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+            childContext.parent = dbContext
+            childContext.performAndWait {
+                self.saveRefreshAttempt(result: result, in: childContext)
+            }
             dbContext.performAndWait {
-                self.saveRefreshAttempt(result: result, in: dbContext)
+                do { try dbContext.save() }
+                catch { debugLog("Failed to save parent context for refresh attempt. \(error.localizedDescription)") }
             }
         }
     }

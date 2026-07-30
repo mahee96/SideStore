@@ -9,10 +9,10 @@
 @preconcurrency import UIKit
 import Foundation
 @preconcurrency import AltStoreCore
-final class UserCustomizationOperation: AsyncOperation<InstallAppOperationContext, String>, @unchecked Sendable {
+final class UserCustomizationOperation: BaseOperation<InstallAppOperationContext, String>, @unchecked Sendable {
 
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> String {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
 
         guard let presentingVC = context.authenticatedContext.presentingViewController else {
             return context.targetBundleIdentifier

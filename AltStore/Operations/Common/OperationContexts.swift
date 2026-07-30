@@ -46,8 +46,7 @@ final class AuthenticatedOperationContext: OperationContext
         super.init(error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
     }
     
-    init(context: AuthenticatedOperationContext)
-    {
+    init(context: AuthenticatedOperationContext) {
         super.init(context: context)
         self.session = context.session
         self.team = context.team

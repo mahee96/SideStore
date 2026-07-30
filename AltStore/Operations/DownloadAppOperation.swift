@@ -12,7 +12,7 @@ import UniformTypeIdentifiers
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class DownloadAppOperation: AsyncOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
+final class DownloadAppOperation: BaseOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
     private(set) var app: AppProtocol
 
     private let appName: String
@@ -23,7 +23,7 @@ final class DownloadAppOperation: AsyncOperation<InstallAppOperationContext, ALT
     private let session = URLSession(configuration: .default)
     private let temporaryDirectory = FileManager.default.uniqueTemporaryURL()
 
-    init(app: AppProtocol, destinationURL: URL, context: InstallAppOperationContext) {
+    init(app: AppProtocol, destinationURL: URL, context: InstallAppOperationContext) throws {
         self.app = app
 
         self.appName = app.name
@@ -31,13 +31,11 @@ final class DownloadAppOperation: AsyncOperation<InstallAppOperationContext, ALT
         self.sourceURL = app.url
         self.destinationURL = destinationURL
 
-        super.init(context: context)
-
-        // App = 3, Dependencies = 1
+        try super.init(context: context)
     }
 
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ALTApplication {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         defer {
             if FileManager.default.fileExists(atPath: self.temporaryDirectory.path) {
                 do {

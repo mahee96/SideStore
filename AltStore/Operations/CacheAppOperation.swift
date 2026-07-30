@@ -9,10 +9,10 @@
 import Foundation
 @preconcurrency import AltStoreCore
 
-final class CacheAppOperation: AsyncOperation<InstallAppOperationContext, URL?>, @unchecked Sendable {
+final class CacheAppOperation: BaseOperation<InstallAppOperationContext, URL?>, @unchecked Sendable {
 
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> URL? {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
 
         guard let app = context.app else {
             debugLog("[CacheAppOperation] context.app is nil")

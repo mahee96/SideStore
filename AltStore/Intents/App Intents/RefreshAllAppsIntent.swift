@@ -216,7 +216,7 @@ private extension RefreshAllAppsIntent
         let installedApps = await context.perform { InstalledApp.fetchAppsForRefreshingAll(in: context) }
         
         try await withCheckedThrowingContinuation { continuation in
-            let operation = AppManager.shared.backgroundRefresh(installedApps, presentsNotifications: self.presentsNotifications) { (result) in
+            let operation = try? AppManager.shared.backgroundRefresh(installedApps, presentsNotifications: self.presentsNotifications) { (result) in
                 do
                 {
                     let results = try result.get()
@@ -237,6 +237,11 @@ private extension RefreshAllAppsIntent
                 {
                     continuation.resume(throwing: error)
                 }
+            }
+            
+            guard let operation else {
+                debugLog("[RefreshAllAppsIntent] backgroundRefresh instance is nil")
+                return 
             }
             
             operation.ignoresServerNotFoundError = false

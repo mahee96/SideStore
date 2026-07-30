@@ -18,18 +18,18 @@ extension BackupAppOperation {
     }
 }
 
-final class BackupAppOperation: AsyncOperation<InstallAppOperationContext, URL>, @unchecked Sendable {
+final class BackupAppOperation: BaseOperation<InstallAppOperationContext, URL>, @unchecked Sendable {
     let action: Action
     
     private var appName: String?
     
-    init(action: Action, context: InstallAppOperationContext) {
+    init(action: Action, context: InstallAppOperationContext) throws {
         self.action = action
-        super.init(context: context)
+        try super.init(context: context)
     }
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> URL {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         guard let installedApp = context.installedApp else {
             throw OperationError.invalidParameters("BackupAppOperation.execute: context.installedApp is nil")
         }

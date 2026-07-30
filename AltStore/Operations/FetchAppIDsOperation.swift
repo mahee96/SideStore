@@ -11,10 +11,10 @@ import CoreData
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class FetchAppIDsOperation: AsyncOperation<AuthenticatedOperationContext, ([AppID], NSManagedObjectContext)>, @unchecked Sendable {
+final class FetchAppIDsOperation: BaseOperation<AuthenticatedOperationContext, ([AppID], NSManagedObjectContext)>, @unchecked Sendable {
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ([AppID], NSManagedObjectContext) {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         guard
             let team = self.context.team,
             let session = self.context.session
@@ -38,7 +38,16 @@ final class FetchAppIDsOperation: AsyncOperation<AuthenticatedOperationContext, 
             throw OperationError.notAuthenticated
         }
         
-        let fetchedIdentifiers = fetchedAppIDs.map { $0.identifier }
+        var uniqueFetchedAppIDs = [ALTAppID]()
+        var seenIdentifiers = Set<String>()
+        for appID in fetchedAppIDs {
+            if !seenIdentifiers.contains(appID.identifier) {
+                seenIdentifiers.insert(appID.identifier)
+                uniqueFetchedAppIDs.append(appID)
+            }
+        }
+        
+        let fetchedIdentifiers = uniqueFetchedAppIDs.map { $0.identifier }
         
         let deletedAppIDsRequest = AppID.fetchRequest() as NSFetchRequest<AppID>
         deletedAppIDsRequest.predicate = NSPredicate(format: "%K == %@ AND NOT (%K IN %@)",
@@ -48,7 +57,27 @@ final class FetchAppIDsOperation: AsyncOperation<AuthenticatedOperationContext, 
         let deletedAppIDs = try dbContext.fetch(deletedAppIDsRequest)
         deletedAppIDs.forEach { dbContext.delete($0) }
         
-        let appIDs = fetchedAppIDs.map { AppID($0, team: team, context: dbContext) }
+        let existingAppIDsRequest = AppID.fetchRequest() as NSFetchRequest<AppID>
+        existingAppIDsRequest.predicate = NSPredicate(format: "%K == %@ AND %K IN %@",
+                                                      #keyPath(AppID.team), team,
+                                                      #keyPath(AppID.identifier), fetchedIdentifiers)
+        let existingAppIDs = try dbContext.fetch(existingAppIDsRequest)
+        let existingAppIDsByIdentifier = Dictionary(uniqueKeysWithValues: existingAppIDs.map { ($0.identifier, $0) })
+        
+        var appIDs = [AppID]()
+        for altAppID in uniqueFetchedAppIDs {
+            if let existingAppID = existingAppIDsByIdentifier[altAppID.identifier] {
+                existingAppID.name = altAppID.name
+                existingAppID.bundleIdentifier = altAppID.bundleIdentifier
+                existingAppID.features = altAppID.features
+                existingAppID.expirationDate = altAppID.expirationDate
+                appIDs.append(existingAppID)
+            } else {
+                let newAppID = AppID(altAppID, team: team, context: dbContext)
+                appIDs.append(newAppID)
+            }
+        }
+        
         return (appIDs, dbContext)
     }
 }

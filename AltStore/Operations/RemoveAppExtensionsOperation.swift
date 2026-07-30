@@ -11,16 +11,16 @@ import Foundation
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class RemoveAppExtensionsOperation: AsyncOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
+final class RemoveAppExtensionsOperation: BaseOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
     let localAppExtensions: Set<ALTApplication>?
     
-    init(context: InstallAppOperationContext, localAppExtensions: Set<ALTApplication>?) {
+    init(context: InstallAppOperationContext, localAppExtensions: Set<ALTApplication>?) throws {
         self.localAppExtensions = localAppExtensions
-        super.init(context: context)
+        try super.init(context: context)
     }
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ALTApplication {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         guard let targetAppBundle = context.app else {
             throw OperationError.invalidParameters("RemoveAppExtensionsOperation: context.app is nil")

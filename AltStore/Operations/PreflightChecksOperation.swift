@@ -11,18 +11,18 @@ import Foundation
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class PreflightChecksOperation: AsyncOperation<AuthenticatedOperationContext, Bool>, @unchecked Sendable {
+final class PreflightChecksOperation: BaseOperation<AuthenticatedOperationContext, Bool>, @unchecked Sendable {
     let operations: [AppOperation]
     let presentingViewController: UIViewController?
 
-    init(operations: [AppOperation], presentingViewController: UIViewController?, context: AuthenticatedOperationContext) {
+    init(operations: [AppOperation], presentingViewController: UIViewController?, context: AuthenticatedOperationContext) throws {
         self.operations = operations
         self.presentingViewController = presentingViewController
-        super.init(context: context)
+        try super.init(context: context)
     }
 
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
 
         let currentTeam = self.context.team ?? Keychain.shared.team
         let currentTeamID = currentTeam?.identifier

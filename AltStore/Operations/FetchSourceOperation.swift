@@ -11,7 +11,7 @@ import CoreData
 @preconcurrency import AltStoreCore
 import SemanticVersion
 
-final class FetchSourceOperation: AsyncOperation<OperationContext, Source>, @unchecked Sendable {
+final class FetchSourceOperation: BaseOperation<OperationContext, Source>, @unchecked Sendable {
     let sourceURL: URL
     
     // Non-nil when updating an existing source.
@@ -27,16 +27,16 @@ final class FetchSourceOperation: AsyncOperation<OperationContext, Source>, @unc
         return dateFormatter
     }()
     
-    init(sourceURL: URL, context: OperationContext) {
+    init(sourceURL: URL, context: OperationContext) throws {
         self.sourceURL = sourceURL
         self.session = URLSession.shared
-        super.init(context: context)
+        try super.init(context: context)
     }
     
-    init(source: Source, context: OperationContext) {
+    init(source: Source, context: OperationContext) throws {
         self.sourceURL = source.sourceURL
         self.session = URLSession.shared
-        super.init(context: context)
+        try super.init(context: context)
         if let dbContext = context.dbBackgroundContext {
             self.source = dbContext.object(with: source.objectID) as? Source
         }
@@ -49,7 +49,7 @@ final class FetchSourceOperation: AsyncOperation<OperationContext, Source>, @unc
     }
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Source {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         guard let dbContext = self.context.dbBackgroundContext else {
             throw OperationError.invalidParameters("FetchSourceOperation: context.dbBackgroundContext is nil")

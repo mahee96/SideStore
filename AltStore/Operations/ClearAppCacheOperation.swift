@@ -38,17 +38,17 @@ struct BatchError: ALTLocalizedError {
     }
 }
 
-class ClearAppCacheOperation: AsyncOperation<OperationContext, Bool> {
+class ClearAppCacheOperation: BaseOperation<OperationContext, Bool>, @unchecked Sendable {
     private let coordinator = NSFileCoordinator()
     private let coordinatorQueue = OperationQueue()
     
-    init(context: OperationContext = OperationContext()) {
+    override init(context: OperationContext = OperationContext()) throws {
         self.coordinatorQueue.name = "AltStore - ClearAppCacheOperation Queue"
-        super.init(context: context)
+        try super.init(context: context)
     }
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         self.clearNukeCache()
         
         var allErrors = [Error]()

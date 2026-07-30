@@ -138,7 +138,9 @@ final class BonjourDiscoveryManagerV2: NSObject, ObservableObject {
                 guard let self = self else { return }
                 debugLog("[BonjourDiscoveryV2] Search timeout reached.")
                 self.isSearching = false
-            } catch {}
+            } catch {
+                debugLog("[BonjourDiscoveryV2] Sleep cancelled: \(error.localizedDescription)")
+            }
         }
     }
     

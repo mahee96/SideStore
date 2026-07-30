@@ -11,13 +11,13 @@ import Foundation
 @preconcurrency import AltSign
 import CoreData
 
-class FetchProvisioningProfilesOperation: AsyncOperation<AppOperationContext, [String: ALTProvisioningProfile]>, @unchecked Sendable {
+class FetchProvisioningProfilesOperation: BaseOperation<AppOperationContext, [String: ALTProvisioningProfile]>, @unchecked Sendable {
     var additionalEntitlements: [ALTEntitlement: Any]?
     
     // this class is abstract or shouldn't be instantiated outside, use the subclasses
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> [String: ALTProvisioningProfile] {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         if let error = self.context.error {
             self.debugLog("[FetchProvisioningProfiles] Context has pre-existing error: \(error.localizedDescription)")
             throw error

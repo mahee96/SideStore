@@ -11,18 +11,17 @@ import Foundation
 @preconcurrency import AltSign
 import CoreData
 
-final class DeactivateAppOperation: AsyncOperation<OperationContext, InstalledApp>, @unchecked Sendable
+final class DeactivateAppOperation: BaseOperation<OperationContext, InstalledApp>, @unchecked Sendable
 {
     let app: InstalledApp
     
-    init(app: InstalledApp, context: OperationContext)
-    {
+    init(app: InstalledApp, context: OperationContext) throws {
         self.app = app
-        super.init(context: context)
+        try super.init(context: context)
     }
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> InstalledApp {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         guard let backgroundContext = self.context.dbBackgroundContext else {
             throw OperationError.invalidParameters("DeactivateAppOperation: context.dbBackgroundContext is nil")
         }
@@ -31,9 +30,6 @@ final class DeactivateAppOperation: AsyncOperation<OperationContext, InstalledAp
         }
 
         try await self.performDeactivate(for: installedApp)
-        try await backgroundContext.perform {
-            try backgroundContext.save()
-        }
         return await backgroundContext.perform {
             backgroundContext.object(with: self.app.objectID) as! InstalledApp
         }

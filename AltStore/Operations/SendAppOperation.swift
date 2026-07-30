@@ -12,10 +12,10 @@ import Network
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class SendAppOperation: AsyncOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
+final class SendAppOperation: BaseOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ALTApplication {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
 
         guard let resignedApp = self.context.resignedApp else {
             throw OperationError.invalidParameters("SendAppOperation.main: self.resignedApp is nil")

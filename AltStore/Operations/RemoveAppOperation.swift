@@ -10,10 +10,10 @@ import Foundation
 import CoreData
 @preconcurrency import AltStoreCore
 
-final class RemoveAppOperation: AsyncOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
+final class RemoveAppOperation: BaseOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> InstalledApp {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         guard let installedApp = self.context.installedApp else {
             throw OperationError.invalidParameters("RemoveAppOperation.main: self.context.installedApp is nil")
         }
@@ -31,7 +31,6 @@ final class RemoveAppOperation: AsyncOperation<InstallAppOperationContext, Insta
         }
         try await backgroundContext.perform {
             _ = self.markInactive(installedApp, in: backgroundContext)
-            try backgroundContext.save()
         }
         
         return try await backgroundContext.perform {

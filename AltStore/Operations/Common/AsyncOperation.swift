@@ -9,8 +9,25 @@
 @preconcurrency import UIKit
 @preconcurrency import AltStoreCore
 
-class AsyncOperation<Context: OperationContext, Result>: NSObject, ProgressReporting, OperationLogging, @unchecked Sendable {
-    private(set) var progress: Progress!
+protocol AsyncOperation<T>: AnyObject, ProgressReporting, OperationLogging {
+    associatedtype T
+    
+    var isCancelled: Bool { get }
+    var stepType: OperationStep { get }
+
+    @discardableResult
+    func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> T
+    func cancel()
+}
+
+class BaseOperation<Context: OperationContext, Result>: NSObject, AsyncOperation, @unchecked Sendable{
+    typealias T = Result
+
+    private(set) var _progress: Progress!
+    private(set) var progress: Progress {
+        get { _progress }
+        set { _progress = newValue }
+    }
     private(set) var context: Context!
     
     private(set) var isCancelled = false
@@ -22,15 +39,17 @@ class AsyncOperation<Context: OperationContext, Result>: NSObject, ProgressRepor
     
     var totalUnitCount: Int64 { 100 }
     
-    init(context: Context) {
-        super.init()
+    init(context: Context) throws {
+        if Self.self === BaseOperation.self {
+            throw AbstractClassError.abstractInitializerInvoked
+        }
+        super.init()        
         self.context = context
         self.progress = Progress.discreteProgress(totalUnitCount: self.totalUnitCount)
         self.progress.cancellationHandler = { [weak self] in self?.cancel() }
     }
     
-    @discardableResult
-    func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Result {
+    func executePreconditionCheck(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws {
         let unitCount = weights?[self.stepType] ?? pendingUnitCount
         if let parentProgress = parentProgress, unitCount > 0 {
             parentProgress.addChild(self.progress, withPendingUnitCount: unitCount)
@@ -41,6 +60,11 @@ class AsyncOperation<Context: OperationContext, Result>: NSObject, ProgressRepor
         if let error = self.context.error {
             throw error
         }
+    }
+    
+    @discardableResult
+    func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Result
+    {
         throw AbstractClassError.abstractMethodInvoked
     }
     

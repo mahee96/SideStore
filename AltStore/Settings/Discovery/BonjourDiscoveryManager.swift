@@ -155,7 +155,9 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject {
                         self.startFallbackSearches(in: domainWithDot)
                     }
                 }
-            } catch {}
+            } catch {
+                debugLog("[BonjourDiscovery] Fallback task sleep cancelled: \(error.localizedDescription)")
+            }
         }
         
         // Stop loading spinner after 5.0 seconds if we haven't found anything
@@ -167,7 +169,9 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject {
                     debugLog("[BonjourDiscovery] Search timeout reached.")
                     self.isSearching = false
                 }
-            } catch {}
+            } catch {
+                debugLog("[BonjourDiscovery] Timeout task sleep cancelled: \(error.localizedDescription)")
+            }
         }
     }
     

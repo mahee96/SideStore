@@ -13,7 +13,7 @@ import Starscream
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class FetchAnisetteDataOperation: AsyncOperation<OperationContext, ALTAnisetteData>, @unchecked Sendable {
+final class FetchAnisetteDataOperation: BaseOperation<OperationContext, ALTAnisetteData>, @unchecked Sendable {
     var url: URL?
     var startProvisioningURL: URL?
     var endProvisioningURL: URL?
@@ -25,7 +25,7 @@ final class FetchAnisetteDataOperation: AsyncOperation<OperationContext, ALTAnis
     var deviceId: String?
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ALTAnisetteData {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         return try await self.startProvisioningFlow()
     }
 

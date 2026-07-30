@@ -44,7 +44,7 @@ enum AuthenticationErrorCode: Int, ALTErrorEnum, CaseIterable {
 
 typealias AuthenticationResult = (ALTTeam, ALTCertificate?, ALTAppleAPISession)
 
-final class AuthenticationOperation: AsyncOperation<AuthenticatedOperationContext, AuthenticationResult>, @unchecked Sendable {
+final class AuthenticationOperation: BaseOperation<AuthenticatedOperationContext, AuthenticationResult>, @unchecked Sendable {
     private weak var presentingViewController: UIViewController?
     
     private lazy var navigationController: UINavigationController = {
@@ -67,106 +67,108 @@ final class AuthenticationOperation: AsyncOperation<AuthenticatedOperationContex
     let skipDeviceRegistration: Bool
     let skipCertificateProvisioning: Bool
 
-    init(context: AuthenticatedOperationContext, presentingViewController: UIViewController?, skipDeviceRegistration: Bool = false, skipCertificateProvisioning: Bool = false) {
+    init(context: AuthenticatedOperationContext, presentingViewController: UIViewController?, skipDeviceRegistration: Bool = false, skipCertificateProvisioning: Bool = false) throws {
         self.presentingViewController = presentingViewController
         self.skipDeviceRegistration = skipDeviceRegistration
         self.skipCertificateProvisioning = skipCertificateProvisioning
         
-        super.init(context: context)
+        try super.init(context: context)
         
         self.operationQueue.name = "com.altstore.AuthenticationOperation"
     }
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> AuthenticationResult {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
 
-        if let newEmail = self.appleIDEmailAddress,
-           let currentEmail = Keychain.shared.appleIDEmailAddress,
-           newEmail.lowercased() != currentEmail.lowercased() {
-            self.debugLog("[Authentication] Email address changed from '\(currentEmail)' to '\(newEmail)'. Clearing cached in-memory session, team, and certificate.")
-            Keychain.shared.team = nil
-            Keychain.shared.session = nil
-            Keychain.shared.certificate = nil
-        }
-        
-        // try to use cached session
-        if
-            let certificate = Keychain.shared.certificate,
-            let session = Keychain.shared.session,
-            let team = Keychain.shared.team {
-            if session.anisetteData.date.timeIntervalSinceNow < -40.0 {
-                do {
-                    let anisetteData = try await FetchAnisetteDataOperation(context: self.context).execute(parentProgress: self.progress, pendingUnitCount: 0, weights: weights ?? OperationProgressWeights.authenticate)
-                    session.anisetteData = anisetteData
-                } catch {
-                    self.verboseLog("[Authentication] Failed to update anisette data for cached session: \(error)")
-                }
+        return try await TaskChainSerializer.shared.serialize {
+            if let newEmail = self.appleIDEmailAddress,
+               let currentEmail = Keychain.shared.appleIDEmailAddress,
+               newEmail.lowercased() != currentEmail.lowercased() {
+                self.debugLog("[Authentication] Email address changed from '\(currentEmail)' to '\(newEmail)'. Clearing cached in-memory session, team, and certificate.")
+                Keychain.shared.team = nil
+                Keychain.shared.session = nil
+                Keychain.shared.certificate = nil
             }
             
-            // Validate if the cached session and certificate are still active on Apple's servers
-            do {
-                let certificates = try await ALTAppleAPI.shared.fetchCertificates(for: team, session: session)
-                self.activeCertificates = certificates
+            // try to use cached session
+            if
+                let certificate = Keychain.shared.certificate,
+                let session = Keychain.shared.session,
+                let team = Keychain.shared.team {
+                if session.anisetteData.date.timeIntervalSinceNow < -40.0 {
+                    do {
+                        let anisetteData = try await FetchAnisetteDataOperation(context: self.context).execute(parentProgress: self.progress, pendingUnitCount: 0, weights: weights ?? OperationProgressWeights.authenticate)
+                        session.anisetteData = anisetteData
+                    } catch {
+                        self.verboseLog("[Authentication] Failed to update anisette data for cached session: \(error)")
+                    }
+                }
                 
-                if self.skipCertificateProvisioning || certificates.contains(where: { $0.serialNumber == certificate.serialNumber }) {
-                    self.debugLog("[Authentication] Cached session and certificate (or skipProvisioning) are still valid.")
-                    self.context.team = team
-                    self.context.session = session
-                    self.context.certificate = certificate
-                    try await self.postAuthenticationCleanup(result: .success((team, certificate, session)))
-                    return (team, certificate, session)
-                } else {
-                    self.debugLog("[Authentication] Cached certificate is no longer active on developer portal.")
+                // Validate if the cached session and certificate are still active on Apple's servers
+                do {
+                    let certificates = try await ALTAppleAPI.shared.fetchCertificates(for: team, session: session)
+                    self.activeCertificates = certificates
+                    
+                    if self.skipCertificateProvisioning || certificates.contains(where: { $0.serialNumber == certificate.serialNumber }) {
+                        self.debugLog("[Authentication] Cached session and certificate (or skipProvisioning) are still valid.")
+                        self.context.team = team
+                        self.context.session = session
+                        self.context.certificate = certificate
+                        try await self.postAuthenticationCleanup(result: .success((team, certificate, session)))
+                        return (team, certificate, session)
+                    } else {
+                        self.debugLog("[Authentication] Cached certificate is no longer active on developer portal.")
+                    }
+                } catch {
+                    self.debugLog("[Authentication] Failed to validate cached session: \(error)")
                 }
-            } catch {
-                self.debugLog("[Authentication] Failed to validate cached session: \(error)")
             }
-        }
-        
-        // new login
-        do {
-            let stepWeight: Int64 = self.skipDeviceRegistration ? 33 : 25
             
-            let (account, session) = try await self.signIn(weights: weights)
-            self.context.session = session
-            self.progress.completedUnitCount = stepWeight
-            if self.isCancelled { throw OperationError.cancelled }
-            
-            let team = try await self.fetchTeam(for: account, session: session)
-            self.context.team = team
-            self.progress.completedUnitCount = stepWeight * 2
-            if self.isCancelled { throw OperationError.cancelled }
-            
-            let certificate: ALTCertificate?
-            if self.skipCertificateProvisioning {
-                certificate = Keychain.shared.signingCertificate.flatMap { try? ALTCertificate(p12Data: $0, password: nil) }
-            } else {
-                certificate = try await self.fetchCertificate(for: team, session: session)
-                self.context.certificate = certificate
-            }
-            self.progress.completedUnitCount = stepWeight * 3
-            if self.isCancelled { throw OperationError.cancelled }
-            
-            if !self.skipDeviceRegistration {
-                _ = try await self.registerCurrentDevice(for: team, session: session)
-                self.progress.completedUnitCount = stepWeight * 4
+            // new login
+            do {
+                let stepWeight: Int64 = self.skipDeviceRegistration ? 33 : 25
+                
+                let (account, session) = try await self.signIn(weights: weights)
+                self.context.session = session
+                self.progress.completedUnitCount = stepWeight
                 if self.isCancelled { throw OperationError.cancelled }
-            }
-            
-            self.progress.completedUnitCount = 100
-            try await self.save(team)
-            if self.isCancelled { throw OperationError.cancelled }
-            
-            try await self.cacheAppIDs(team: team, session: session, weights: weights)
-            Keychain.shared.team = team
-            Keychain.shared.certificate = certificate
-            Keychain.shared.session = session
-            try await self.postAuthenticationCleanup(result: .success((team, certificate, session)))
-            return (team, certificate, session)
+                
+                let team = try await self.fetchTeam(for: account, session: session)
+                self.context.team = team
+                self.progress.completedUnitCount = stepWeight * 2
+                if self.isCancelled { throw OperationError.cancelled }
+                
+                let certificate: ALTCertificate?
+                if self.skipCertificateProvisioning {
+                    certificate = Keychain.shared.signingCertificate.flatMap { try? ALTCertificate(p12Data: $0, password: nil) }
+                } else {
+                    certificate = try await self.fetchCertificate(for: team, session: session)
+                    self.context.certificate = certificate
+                }
+                self.progress.completedUnitCount = stepWeight * 3
+                if self.isCancelled { throw OperationError.cancelled }
+                
+                if !self.skipDeviceRegistration {
+                    _ = try await self.registerCurrentDevice(for: team, session: session)
+                    self.progress.completedUnitCount = stepWeight * 4
+                    if self.isCancelled { throw OperationError.cancelled }
+                }
+                
+                self.progress.completedUnitCount = 100
+                try await self.save(team)
+                if self.isCancelled { throw OperationError.cancelled }
+                
+                try await self.cacheAppIDs(team: team, session: session, weights: weights)
+                Keychain.shared.team = team
+                Keychain.shared.certificate = certificate
+                Keychain.shared.session = session
+                try await self.postAuthenticationCleanup(result: .success((team, certificate, session)))
+                return (team, certificate, session)
 
-        } catch {
-            try? await self.postAuthenticationCleanup(result: .failure(error))
-            throw error
+            } catch {
+                try? await self.postAuthenticationCleanup(result: .failure(error))
+                throw error
+            }
         }
     }
     
@@ -203,8 +205,6 @@ final class AuthenticationOperation: AsyncOperation<AuthenticatedOperationContex
         }
         
         team.update(team: altTeam)
-                        
-        try context.save()
     }
     
     private func postAuthenticationCleanup(result: Result<(ALTTeam, ALTCertificate?, ALTAppleAPISession), Error>) async throws {
@@ -233,7 +233,9 @@ final class AuthenticationOperation: AsyncOperation<AuthenticatedOperationContex
                     Keychain.shared.signingCertificatePassword = altCertificate.machineIdentifier
                 }
             }
-        } catch {}
+        } catch {
+            self.verboseLog("[AuthenticationOperation] Skipping post-authentication alerts and certificate caching because authentication failed: \(error.localizedDescription)")
+        }
         
         await MainActor.run {
             self.navigationController.dismiss(animated: true, completion: nil)
@@ -281,9 +283,6 @@ final class AuthenticationOperation: AsyncOperation<AuthenticatedOperationContex
                     UserDefaults.standard.activeAppsLimit = InstalledApp.freeAccountActiveAppsLimit
             }
         }
-        
-        // Save
-        try context.save()
         
         // Update keychain
         Keychain.shared.appleIDEmailAddress = self.appleIDEmailAddress ?? altTeam.account.appleID // Prefer the user's provided email address over the one associated with their account (which may be outdated).
@@ -696,22 +695,11 @@ final class AuthenticationOperation: AsyncOperation<AuthenticatedOperationContex
     }
     
     private func cacheAppIDs(team: ALTTeam, session: ALTAppleAPISession, weights: [OperationStep: Int64]?) async throws {
-        let fetchAppIDsOperation = FetchAppIDsOperation(context: self.context)
-        let (_, context) = try await fetchAppIDsOperation.execute(
+        let fetchAppIDsOperation = try FetchAppIDsOperation(context: self.context)
+        try await fetchAppIDsOperation.execute(
             parentProgress: progress,
             weights: weights ?? OperationProgressWeights.authenticate
         )
-        var saveError: Error?
-        context.performAndWait {
-            do {
-                try context.save()
-            } catch {
-                saveError = error
-            }
-        }
-        if let saveError = saveError {
-            throw saveError
-        }
     }
     
     @MainActor

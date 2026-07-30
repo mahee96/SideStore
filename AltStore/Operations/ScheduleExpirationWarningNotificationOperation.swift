@@ -10,16 +10,16 @@ import UserNotifications
 import Foundation
 @preconcurrency import AltStoreCore
 
-final class ScheduleExpirationWarningNotificationOperation: AsyncOperation<OperationContext, Bool>, @unchecked Sendable {
+final class ScheduleExpirationWarningNotificationOperation: BaseOperation<OperationContext, Bool>, @unchecked Sendable {
     let installedApp: InstalledApp
 
-    init(installedApp: InstalledApp, context: OperationContext) {
+    init(installedApp: InstalledApp, context: OperationContext) throws {
         self.installedApp = installedApp
-        super.init(context: context)
+        try super.init(context: context)
     }
 
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
 
         let center = UNUserNotificationCenter.current()
         let now = Date()

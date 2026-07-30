@@ -15,7 +15,7 @@ import CoreData
 
 let shortcutURLonDelay = URL(string: "shortcuts://run-shortcut?name=TurnOnDataDelay")!
 
-final class InstallAppOperation: AsyncOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
+final class InstallAppOperation: BaseOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
     private static let selfInstallSuspendDelayNs: UInt64 = 2_000_000_000
 
     let storeApp: StoreApp?
@@ -23,14 +23,14 @@ final class InstallAppOperation: AsyncOperation<InstallAppOperationContext, Inst
     
     private var didCleanUp = false
     
-    init(context: InstallAppOperationContext, app: any AppProtocol) {
+    init(context: InstallAppOperationContext, app: any AppProtocol) throws {
         self.storeApp = app as? StoreApp
-        super.init(context: context)
+        try super.init(context: context)
         self.progress.totalUnitCount = 100
     }
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> InstalledApp {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         defer {
             self.cleanUp()
             self.removeRefreshedIPA()
@@ -67,10 +67,6 @@ final class InstallAppOperation: AsyncOperation<InstallAppOperationContext, Inst
             provisioningProfiles: provisioningProfiles,
             storeBuildVersion: storeBuildVersion
         )
-        
-        try await backgroundContext.perform {
-            try backgroundContext.save()
-        }
         
         return installedApp
     }

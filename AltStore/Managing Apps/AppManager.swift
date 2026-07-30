@@ -119,7 +119,7 @@ extension AppManager
             for app in installedApps
             {
                 guard app.bundleIdentifier != StoreApp.altstoreAppID else {
-                    let scheduleNotifOp = ScheduleExpirationWarningNotificationOperation(
+                    let scheduleNotifOp = try ScheduleExpirationWarningNotificationOperation(
                         installedApp: app,
                         context: OperationContext()
                     )
@@ -193,17 +193,25 @@ extension AppManager
         }
     }
     
-    @discardableResult
     func authenticate(presentingViewController: UIViewController?,
-                      context: AuthenticatedOperationContext = AuthenticatedOperationContext(),
                       skipDeviceRegistration: Bool = true,
                       skipCertificateProvisioning: Bool = false,
-                      completionHandler: @escaping (Result<(ALTTeam, ALTCertificate?, ALTAppleAPISession), Error>) -> Void) -> AuthenticationOperation
+                      completionHandler: @escaping (Result<(ALTTeam, ALTCertificate?, ALTAppleAPISession), Error>) -> Void)
     {
-        let authenticationOperation = AuthenticationOperation(context: context, presentingViewController: presentingViewController, skipDeviceRegistration: skipDeviceRegistration, skipCertificateProvisioning: skipCertificateProvisioning)
+        let dbBackgroundContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
+        let context = AuthenticatedOperationContext(
+            presentingViewController: presentingViewController,
+            dbBackgroundContext: dbBackgroundContext
+        )
         
-        Task.detached {
+        Task {
             do {
+                let authenticationOperation = try AuthenticationOperation(
+                    context: context,
+                    presentingViewController: presentingViewController,
+                    skipDeviceRegistration: skipDeviceRegistration,
+                    skipCertificateProvisioning: skipCertificateProvisioning
+                )
                 let result = try await authenticationOperation.execute()
                 completionHandler(.success(result))
             } catch {
@@ -211,8 +219,6 @@ extension AppManager
                 completionHandler(.failure(error))
             }
         }
-        
-        return authenticationOperation
     }
     
     func deactivateApps(for app: ALTApplication, presentingViewController: UIViewController?, completion: @escaping (Result<Void, Error>) -> Void)
@@ -341,8 +347,12 @@ extension AppManager
     func fetchSource(sourceURL: URL, managedObjectContext: NSManagedObjectContext) async throws -> Source
     {
         try await withCheckedThrowingContinuation { continuation in
-            self.fetchSource(sourceURL: sourceURL, managedObjectContext: managedObjectContext) { result in
-                continuation.resume(with: result)
+            do {
+                try fetchSource(sourceURL: sourceURL, managedObjectContext: managedObjectContext) { result in
+                    continuation.resume(with: result)
+                }
+            }catch {
+                continuation.resume(throwing: error)
             }
         }
     }
@@ -350,7 +360,7 @@ extension AppManager
     func fetchSources() async throws -> (Set<Source>, NSManagedObjectContext)
     {
         try await withCheckedThrowingContinuation { continuation in
-            self.fetchSources { result in
+            fetchSources { result in
                 continuation.resume(with: result)
             }
         }
@@ -483,10 +493,10 @@ extension AppManager
     @discardableResult
     func fetchSource(sourceURL: URL,
                      managedObjectContext: NSManagedObjectContext,
-                     completionHandler: @escaping (Result<Source, Error>) -> Void) -> FetchSourceOperation
+                     completionHandler: @escaping (Result<Source, Error>) -> Void) throws -> FetchSourceOperation
     {
         let context = OperationContext(dbBackgroundContext: managedObjectContext)
-        let fetchSourceOperation = FetchSourceOperation(sourceURL: sourceURL, context: context)
+        let fetchSourceOperation = try FetchSourceOperation(sourceURL: sourceURL, context: context)
         Task {
             do {
                 let source = try await fetchSourceOperation.execute()
@@ -495,60 +505,75 @@ extension AppManager
                 completionHandler(.failure(error))
             }
         }
-        
         return fetchSourceOperation
     }
     
     func fetchSources(completionHandler: @escaping (Result<(Set<Source>, NSManagedObjectContext), FetchSourcesError>) -> Void)
     {
-        DatabaseManager.shared.persistentContainer.performBackgroundTask { (context) in
-            let sources = Source.all(in: context)
-            guard !sources.isEmpty else { return completionHandler(.failure(.init(OperationError.noSources))) }
-            
+        Task {
             let managedObjectContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
+            var sourceData = [(objectID: NSManagedObjectID, sourceURL: URL)]()
             
-            Task {
-                var fetchedSources = Set<Source>()
-                var errors = [Source: Error]()
-                
-                await withTaskGroup(of: (Source, Result<Source, Error>).self) { taskGroup in
-                    for source in sources {
-                        taskGroup.addTask {
-                            let context = OperationContext(dbBackgroundContext: managedObjectContext)
-                            let fetchSourceOperation = FetchSourceOperation(source: source, context: context)
+            managedObjectContext.performAndWait {
+                let sources = Source.all(in: managedObjectContext)
+                sourceData = sources.map { ($0.objectID, $0.sourceURL) }
+            }
+            
+            guard !sourceData.isEmpty else {
+                completionHandler(.failure(.init(OperationError.noSources)))
+                return
+            }
+            
+            var fetchedSources = Set<Source>()
+            var errors = [Source: Error]()
+            
+            await withTaskGroup(of: (NSManagedObjectID, Result<Void, Error>).self) { taskGroup in
+                for data in sourceData {
+                    taskGroup.addTask {
+                        do {
+                            let taskContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
                             do {
-                                let result = try await fetchSourceOperation.execute()
-                                return (source, .success(result))
+                                let source = taskContext.performAndWait { taskContext.object(with: data.objectID) as! Source }
+                                let context = OperationContext(dbBackgroundContext: taskContext)
+                                let fetchSourceOperation = try FetchSourceOperation(source: source, context: context)
+                                try await fetchSourceOperation.execute()
+                                try taskContext.performAndWait {
+                                    try taskContext.save()
+                                }
                             } catch {
-                                return (source, .failure(error))
+                                throw error
                             }
+                            return (data.objectID, .success(()))
+                        } catch {
+                            return (data.objectID, .failure(error))
                         }
                     }
-                    
-                    for await (source, result) in taskGroup {
+                }
+                
+                for await (objectID, result) in taskGroup {
+                    managedObjectContext.performAndWait {
+                        let source = managedObjectContext.object(with: objectID) as! Source
                         switch result {
-                        case .success(let fetchedSource):
-                            fetchedSources.insert(fetchedSource)
-                        case .failure(let nsError as NSError):
-                            let source = managedObjectContext.object(with: source.objectID) as! Source
-                            let title = String(format: NSLocalizedString("Unable to Refresh “%@” Source", comment: ""), source.name)
-                            let error = nsError.withLocalizedTitle(title)
-                            errors[source] = error
-                            source.error = error.sanitizedForSerialization()
+                            case .success:
+                                fetchedSources.insert(source)
+                            case .failure(let nsError as NSError):
+                                let title = String(format: NSLocalizedString("Unable to Refresh “%@” Source", comment: ""), source.name)
+                                let error = nsError.withLocalizedTitle(title)
+                                errors[source] = error
+                                source.error = error.sanitizedForSerialization()
                         }
                     }
                 }
-                
-                
-                await managedObjectContext.perform {
-                    if !errors.isEmpty {
-                        let sources = Set(sources.compactMap { managedObjectContext.object(with: $0.objectID) as? Source })
-                        completionHandler(.failure(.init(sources: sources, errors: errors, context: managedObjectContext)))
-                    } else {
-                        completionHandler(.success((fetchedSources, managedObjectContext)))
-                    }
-                    NotificationCenter.default.post(name: AppManager.didFetchSourceNotification, object: self)
+            }
+            
+            await managedObjectContext.perform {
+                if !errors.isEmpty {
+                    let sourcesSet = Set(sourceData.compactMap { managedObjectContext.object(with: $0.objectID) as? Source })
+                    completionHandler(.failure(.init(sources: sourcesSet, errors: errors, context: managedObjectContext)))
+                } else {
+                    completionHandler(.success((fetchedSources, managedObjectContext)))
                 }
+                NotificationCenter.default.post(name: AppManager.didFetchSourceNotification, object: self)
             }
         }
     }
@@ -557,11 +582,12 @@ extension AppManager
     {
         Task {
             do {
-                let context = AuthenticatedOperationContext()
-                let authOperation = AuthenticationOperation(context: context, presentingViewController: nil)
+                let managedObjectContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
+                let context = AuthenticatedOperationContext(dbBackgroundContext: managedObjectContext)
+                let authOperation = try AuthenticationOperation(context: context, presentingViewController: nil)
                 try await authOperation.execute()
                 
-                let fetchAppIDsOperation = FetchAppIDsOperation(context: context)
+                let fetchAppIDsOperation = try FetchAppIDsOperation(context: context)
                 let result = try await fetchAppIDsOperation.execute()
                 completionHandler(.success(result))
             } catch {
@@ -789,20 +815,21 @@ extension AppManager
     }
 
     @discardableResult
-    func backgroundRefresh(_ installedApps: [InstalledApp], presentsNotifications: Bool = false, completionHandler: @escaping (Result<[String: Result<InstalledApp, Error>], Error>) -> Void) -> BackgroundRefreshAppsOperation
+    func backgroundRefresh(_ installedApps: [InstalledApp],
+                           presentsNotifications: Bool = false,
+                           completionHandler: @escaping (Result<[String: Result<InstalledApp, Error>], Error>) -> Void) throws -> BackgroundRefreshAppsOperation
     {
-        let backgroundRefreshAppsOperation = BackgroundRefreshAppsOperation(installedApps: installedApps)
-        backgroundRefreshAppsOperation.presentsFinishedNotification = presentsNotifications
-        
+        let backgroundRefreshAppsOperation = try BackgroundRefreshAppsOperation(installedApps: installedApps)
         Task.detached {
             do {
+                backgroundRefreshAppsOperation.presentsFinishedNotification = presentsNotifications
+                
                 let result = try await backgroundRefreshAppsOperation.execute()
                 completionHandler(.success(result))
             } catch {
                 completionHandler(.failure(error))
             }
         }
-        
         return backgroundRefreshAppsOperation
     }
 
@@ -972,7 +999,7 @@ private extension AppManager
             if group.context.session == nil
             {
                 do {
-                    let authenticationOperation = AuthenticationOperation(
+                    let authenticationOperation = try AuthenticationOperation(
                         context: group.context,
                         presentingViewController: presentingViewController,
                         skipDeviceRegistration: false
@@ -1001,7 +1028,7 @@ private extension AppManager
             }
             
             do {
-                let validateOp = PreflightChecksOperation(
+                let validateOp = try PreflightChecksOperation(
                     operations: unhandledOperations,
                     presentingViewController: presentingViewController,
                     context: group.context
@@ -1036,21 +1063,8 @@ private extension AppManager
                 continue
             }
             
-            let progress = progress(for: operation)
-            if let progress
-            {
-                group.progress.totalUnitCount += 1
-                group.progress.addChild(progress, withPendingUnitCount: 1)
-                
-                if group.context.session != nil
-                {
-                    // Finished authenticating, so increase completed unit count.
-                    progress.completedUnitCount += 20
-                }
-            }
-            
             do {
-                let result = try await self.performPipeline(for: operation, group: group, progress: progress)
+                let result = try await self.performPipeline(for: operation, group: group)
                 // persist the result
                 if let context = result.managedObjectContext {
                     do {
@@ -1078,7 +1092,7 @@ private extension AppManager
                 group.set(.success(result), forAppWithBundleIdentifier: result.bundleIdentifier)
                 
                 if result.bundleIdentifier == StoreApp.altstoreAppID {
-                    let scheduleNotifOp = ScheduleExpirationWarningNotificationOperation(
+                    let scheduleNotifOp = try ScheduleExpirationWarningNotificationOperation(
                         installedApp: result,
                         context: InstallAppOperationContext(
                             bundleIdentifier: result.bundleIdentifier,
@@ -1127,7 +1141,7 @@ private extension AppManager
         }
     }
     
-    private func performPipeline(for operation: AppOperation, group: RefreshGroup, progress: Progress?) async throws -> InstalledApp
+    private func performPipeline(for operation: AppOperation, group: RefreshGroup) async throws -> InstalledApp
     {
         let context = InstallAppOperationContext(bundleIdentifier: operation.bundleIdentifier, authenticatedContext: group.context)
         
@@ -1175,7 +1189,7 @@ private extension AppManager
                 downloadingApp: downloadingApp,
                 additionalEntitlements: additionalEntitlements,
                 permissionsMode: permissionsMode,
-                progress: progress,
+                progress: group.progress,
                 weights: weights
             ) {
                 finalApp = result
@@ -1234,14 +1248,14 @@ private extension AppManager
                 return nil
                 
             case .fetchProvisioningProfilesInstall:
-                let installOp = FetchProvisioningProfilesInstallOperation(context: context)
+                let installOp = try FetchProvisioningProfilesInstallOperation(context: context)
                 installOp.additionalEntitlements = additionalEntitlements
                 let profiles = try await installOp.execute(parentProgress: progress, weights: weights)
                 context.provisioningProfiles = profiles
                 return nil
                 
             case .fetchProvisioningProfilesRefresh:
-                let refreshOp = FetchProvisioningProfilesRefreshOperation(context: context)
+                let refreshOp = try FetchProvisioningProfilesRefreshOperation(context: context)
                 let profiles = try await refreshOp.execute(parentProgress: progress, weights: weights)
                 context.provisioningProfiles = profiles
                 return nil
@@ -1288,7 +1302,7 @@ private extension AppManager
                 
             case .installBackupApp:
                 if let installedApp = appOperation.app as? InstalledApp {
-                    let op = InstallBackupAppOperation(app: installedApp, context: context)
+                    let op = try InstallBackupAppOperation(app: installedApp, context: context)
                     try await op.execute(parentProgress: progress, weights: weights)
                 }
                 return nil
@@ -1299,40 +1313,40 @@ private extension AppManager
                 return installedApp
                 
             case .backupApp:
-                let backupOp = BackupAppOperation(action: .backup, context: context)
+                let backupOp = try BackupAppOperation(action: .backup, context: context)
                 try await backupOp.execute(parentProgress: progress, weights: weights)
                 return nil
                 
             case .removeAppBackup:
-                let removeBackupOp = RemoveAppBackupOperation(context: context)
+                let removeBackupOp = try RemoveAppBackupOperation(context: context)
                 try await removeBackupOp.execute(parentProgress: progress, weights: weights)
                 return nil
                 
             case .removeApp:
-                let removeOp = RemoveAppOperation(context: context)
+                let removeOp = try RemoveAppOperation(context: context)
                 try await removeOp.execute(parentProgress: progress, weights: weights)
                 return nil
                 
             case .deactivateApp:
                 if let app = appOperation.app as? InstalledApp {
-                    let deactivateOp = DeactivateAppOperation(app: app, context: context)
+                    let deactivateOp = try DeactivateAppOperation(app: app, context: context)
                     try await deactivateOp.execute(parentProgress: progress, weights: weights)
                 }
                 return nil
                 
             case .enableJIT:
-                let enableJITOp = EnableJITOperation(context: context)
+                let enableJITOp = try EnableJITOperation(context: context)
                 try await enableJITOp.execute(parentProgress: progress, weights: weights)
                 return nil
 
             case .preflightChecks:
-                let validateOp = PreflightChecksOperation(operations: [appOperation], presentingViewController: group.context.presentingViewController, context: group.context)
+                let validateOp = try PreflightChecksOperation(operations: [appOperation], presentingViewController: group.context.presentingViewController, context: group.context)
                 try await validateOp.execute(parentProgress: progress, weights: weights)
                 return nil
                 
             case .scheduleExpirationWarningNotification:
                 if let installedApp = context.installedApp {
-                    let notifOp = ScheduleExpirationWarningNotificationOperation(installedApp: installedApp, context: context)
+                    let notifOp = try ScheduleExpirationWarningNotificationOperation(installedApp: installedApp, context: context)
                     try await notifOp.execute(parentProgress: progress, weights: weights)
                 }
                 return nil

@@ -9,14 +9,13 @@
 import Foundation
 @preconcurrency import AltStoreCore
 
-final class RemoveAppBackupOperation: AsyncOperation<InstallAppOperationContext, Bool>
+final class RemoveAppBackupOperation: BaseOperation<InstallAppOperationContext, Bool>
 {
-
     private let coordinator = NSFileCoordinator()
     private let coordinatorQueue = OperationQueue()
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         guard let installedApp = self.context.installedApp else {
             throw OperationError.invalidParameters("RemoveAppBackupOperation.main: self.context.installedApp is nil")
         }

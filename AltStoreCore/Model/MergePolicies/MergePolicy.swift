@@ -212,10 +212,9 @@ extension MergePolicy{
                 }
                 
             default:
-//                break
                 // Unknown context-level conflict.
-//                assertionFailure("MergePolicy is only intended to work with database-level conflicts.")
-                assertionFailure("Context Conflict Detected: is there ambigious data in your incoming sources?\nConflict:\(conflict)")
+                let entityName = conflict.conflictingObjects.first?.entity.name ?? "Unknown"
+                assertionFailure("Context Conflict Detected for table '\(entityName)': is there ambiguous data?\nConflict:\(conflict)")
             }
         }
     }

@@ -10,16 +10,16 @@ import Foundation
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class InstallBackupAppOperation: AsyncOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
+final class InstallBackupAppOperation: BaseOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
     let app: InstalledApp
 
-    init(app: InstalledApp, context: InstallAppOperationContext) {
+    init(app: InstalledApp, context: InstallAppOperationContext) throws {
         self.app = app
-        super.init(context: context)
+        try super.init(context: context)
     }
 
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> InstalledApp {
-        try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
 
         guard ALTApplication(fileURL: app.fileURL) != nil else {
             throw OperationError.appNotFound(name: app.name)
