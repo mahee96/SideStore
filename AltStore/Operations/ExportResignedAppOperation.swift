@@ -15,8 +15,12 @@ final class ExportResignedAppOperation: BaseOperation<InstallAppOperationContext
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> URL {
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
 
-        guard UserDefaults.standard.isExportResignedAppEnabled, let resignedApp = self.context.resignedApp else {
+        guard let resignedApp = self.context.resignedApp else {
             throw OperationError.invalidParameters("ExportResignedAppOperation: context.resignedApp is nil")
+        }
+
+        guard UserDefaults.standard.isExportResignedAppEnabled else {
+            return resignedApp.fileURL
         }
 
         let sourceURL = resignedApp.fileURL

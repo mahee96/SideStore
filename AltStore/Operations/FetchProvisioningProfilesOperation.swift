@@ -35,7 +35,7 @@ class FetchProvisioningProfilesOperation: BaseOperation<AppOperationContext, [St
         }
         
         let effectiveBundleId = self.context.targetBundleIdentifier
-        self.debugLog("[FetchProvisioningProfiles] Executing for app \(app.name) (\(app.bundleIdentifier)), targetBundleID: \(effectiveBundleId), team: \(team.identifier) (\(team.name)), useMainProfile: \(self.context.useMainProfile)")
+        self.debugLog("[FetchProvisioningProfiles] Executing for app \(app.bundleIdentifier), targetBundleID: \(effectiveBundleId), team: \(team.identifier), useMainProfile: \(self.context.useMainProfile)")
         
         self.progress.totalUnitCount = Int64(1 + app.appExtensions.count)
 

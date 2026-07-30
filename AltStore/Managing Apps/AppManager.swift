@@ -766,7 +766,7 @@ extension AppManager
     {
         let group = group ?? RefreshGroup()
         
-        Task{
+        group.activeTask = Task {
             do {
                 try await self.perform(installedApps.map { .refresh($0) }, presentingViewController: presentingViewController, group: group)
             } catch {
@@ -898,7 +898,7 @@ extension AppManager
             }
         }
         
-        Task {
+        group.activeTask = Task {
             do {
                 try await self.perform([operation], presentingViewController: presentingViewController, group: group)
             } catch {
@@ -1041,7 +1041,14 @@ private extension AppManager
             
             
             // run the operation pipeline
-            try await self.performOperations(for: operations, group: group)
+            try await withThrowingTaskGroup(of: Void.self) { taskGroup in
+                for operation in operations {
+                    taskGroup.addTask {
+                        try await self.performOperation(for: operation, group: group)
+                    }
+                }
+                while let _ = try await taskGroup.next() {}
+            }
             await MainActor.run {
                 group.completionHandler?(group.results)
             }
@@ -1050,94 +1057,100 @@ private extension AppManager
         return group
     }
     
-    private func performOperations(for operations: [AppOperation], group: RefreshGroup) async throws {
-        for operation in operations
+    private func performOperation(for operation: AppOperation, group: RefreshGroup) async throws {
+        debugLog("[AppManager] performOperation: Starting execution for app: \(operation.bundleIdentifier)")
+        let isSideStore = (operation.app as? ALTApplication)?.isAltStoreApp == true             ||
+                           operation.bundleIdentifier.contains(ALTApplication.altstoreBundleID) ||
+                           operation.bundleIdentifier == StoreApp.altstoreAppID
+        
+        if isSideStore && group.context.isSideStoreResignDismissed
         {
-            let isSideStore = (operation.app as? ALTApplication)?.isAltStoreApp == true             ||
-                               operation.bundleIdentifier.contains(ALTApplication.altstoreBundleID) ||
-                               operation.bundleIdentifier == StoreApp.altstoreAppID
-            
-            if isSideStore && group.context.isSideStoreResignDismissed
-            {
-                group.set(.failure(OperationError.cancelled), forAppWithBundleIdentifier: operation.bundleIdentifier)
-                continue
+            debugLog("[AppManager] performOperation: SideStore resign dismissed, cancelling app: \(operation.bundleIdentifier)")
+            group.set(.failure(OperationError.cancelled), forAppWithBundleIdentifier: operation.bundleIdentifier)
+            return
+        }
+        
+        do {
+            let result = try await self.performPipeline(for: operation, group: group)
+            // persist the result
+            if let context = result.managedObjectContext {
+                do {
+                    try context.performAndWait {
+                        if context.hasChanges {
+                            try context.save()
+                        }
+                    }
+                } catch {
+                    debugLog("[AppManager] perform(): Failed to save InstalledApp to database. \(error.localizedDescription)")
+                }
             }
             
-            do {
-                let result = try await self.performPipeline(for: operation, group: group)
-                // persist the result
-                if let context = result.managedObjectContext {
-                    do {
-                        try context.performAndWait {
-                            if context.hasChanges {
-                                try context.save()
-                            }
-                        }
-                    } catch {
-                        debugLog("[AppManager] perform(): Failed to save InstalledApp to database. \(error.localizedDescription)")
+            // request update view context's in-mem coredata caches (coz we worked so far on bg context)
+            DatabaseManager.shared.viewContext.performAndWait {
+                if let managedObject = operation.app as? NSManagedObject {
+                    if managedObject.managedObjectContext === DatabaseManager.shared.viewContext {
+                        DatabaseManager.shared.viewContext.refresh(managedObject, mergeChanges: true)
+                    } else if let viewObject = try? DatabaseManager.shared.viewContext.existingObject(with: managedObject.objectID) {
+                        DatabaseManager.shared.viewContext.refresh(viewObject, mergeChanges: true)
                     }
                 }
-                
-                // request update view context's in-mem coredata caches (coz we worked so far on bg context)
-                DatabaseManager.shared.viewContext.performAndWait {
-                    if let managedObject = operation.app as? NSManagedObject {
-                        if managedObject.managedObjectContext === DatabaseManager.shared.viewContext {
-                            DatabaseManager.shared.viewContext.refresh(managedObject, mergeChanges: true)
-                        } else if let viewObject = try? DatabaseManager.shared.viewContext.existingObject(with: managedObject.objectID) {
-                            DatabaseManager.shared.viewContext.refresh(viewObject, mergeChanges: true)
-                        }
-                    }
-                }
-                
-                group.set(.success(result), forAppWithBundleIdentifier: result.bundleIdentifier)
-                
-                if result.bundleIdentifier == StoreApp.altstoreAppID {
-                    let scheduleNotifOp = try ScheduleExpirationWarningNotificationOperation(
-                        installedApp: result,
-                        context: InstallAppOperationContext(
-                            bundleIdentifier: result.bundleIdentifier,
-                            authenticatedContext: group.context
-                        )
+            }
+            
+            group.set(.success(result), forAppWithBundleIdentifier: result.bundleIdentifier)
+            
+            if result.bundleIdentifier == StoreApp.altstoreAppID {
+                let scheduleNotifOp = try ScheduleExpirationWarningNotificationOperation(
+                    installedApp: result,
+                    context: InstallAppOperationContext(
+                        bundleIdentifier: result.bundleIdentifier,
+                        authenticatedContext: group.context
                     )
-                    try await scheduleNotifOp.execute()
-                }
-                
-                WidgetCenter.shared.reloadAllTimelines()
-                
-            } catch {
-                var appName: String!
-                if let app = operation.app as? (NSManagedObject & AppProtocol) {
-                    if let context = app.managedObjectContext {
-                        context.performAndWait {
-                            appName = app.name
-                        }
-                    } else {
-                        appName = NSLocalizedString("Unknown App", comment: "")
+                )
+                try await scheduleNotifOp.execute()
+            }
+            
+            WidgetCenter.shared.reloadAllTimelines()
+            debugLog("[AppManager] performOperation: Completed execution successfully for app: \(operation.bundleIdentifier)")
+            
+        } catch {
+            if Task.isCancelled {
+                debugLog("[AppManager] performOperation: Execution CANCELLED for app: \(operation.bundleIdentifier)")
+            } else {
+                debugLog("[AppManager] performOperation: Execution failed for app: \(operation.bundleIdentifier) with error: \(error.localizedDescription)")
+            }
+            
+            var appName: String!
+            if let app = operation.app as? (NSManagedObject & AppProtocol) {
+                if let context = app.managedObjectContext {
+                    context.performAndWait {
+                        appName = app.name
                     }
                 } else {
-                    appName = operation.app.name
+                    appName = NSLocalizedString("Unknown App", comment: "")
                 }
-
-                let localizedTitle: String
-                switch operation
-                {
-                    case .install:    localizedTitle = String(format: NSLocalizedString("Failed to Install %@",        comment: ""), appName)
-                    case .refresh:    localizedTitle = String(format: NSLocalizedString("Failed to Refresh %@",        comment: ""), appName)
-                    case .update:     localizedTitle = String(format: NSLocalizedString("Failed to Update %@",         comment: ""), appName)
-                    case .activate:   localizedTitle = String(format: NSLocalizedString("Failed to Activate %@",       comment: ""), appName)
-                    case .deactivate: localizedTitle = String(format: NSLocalizedString("Failed to Deactivate %@",     comment: ""), appName)
-                    case .backup:     localizedTitle = String(format: NSLocalizedString("Failed to Backup %@",         comment: ""), appName)
-                    case .restore:    localizedTitle = String(format: NSLocalizedString("Failed to Restore %@ Backup", comment: ""), appName)
-                    case .resign:     localizedTitle = String(format: NSLocalizedString("Failed to Resign %@",         comment: ""), appName)
-                    case .remove:     localizedTitle = String(format: NSLocalizedString("Failed to Remove %@",         comment: ""), appName)
-                    case .enableJIT:  localizedTitle = String(format: NSLocalizedString("Failed to Enable JIT for %@", comment: ""), appName)
-                }
-                
-                let nsError = error as NSError
-                let mappedError = nsError.withLocalizedTitle(localizedTitle)
-                group.set(.failure(mappedError), forAppWithBundleIdentifier: operation.bundleIdentifier)
-                log(mappedError, operation: operation.loggedErrorOperation, app: operation.app)
+            } else {
+                appName = operation.app.name
             }
+
+            let localizedTitle: String
+            switch operation
+            {
+                case .install:    localizedTitle = String(format: NSLocalizedString("Failed to Install %@",        comment: ""), appName)
+                case .refresh:    localizedTitle = String(format: NSLocalizedString("Failed to Refresh %@",        comment: ""), appName)
+                case .update:     localizedTitle = String(format: NSLocalizedString("Failed to Update %@",         comment: ""), appName)
+                case .activate:   localizedTitle = String(format: NSLocalizedString("Failed to Activate %@",       comment: ""), appName)
+                case .deactivate: localizedTitle = String(format: NSLocalizedString("Failed to Deactivate %@",     comment: ""), appName)
+                case .backup:     localizedTitle = String(format: NSLocalizedString("Failed to Backup %@",         comment: ""), appName)
+                case .restore:    localizedTitle = String(format: NSLocalizedString("Failed to Restore %@ Backup", comment: ""), appName)
+                case .resign:     localizedTitle = String(format: NSLocalizedString("Failed to Resign %@",         comment: ""), appName)
+                case .remove:     localizedTitle = String(format: NSLocalizedString("Failed to Remove %@",         comment: ""), appName)
+                case .enableJIT:  localizedTitle = String(format: NSLocalizedString("Failed to Enable JIT for %@", comment: ""), appName)
+            }
+            
+            let nsError = error as NSError
+            let mappedError = nsError.withLocalizedTitle(localizedTitle)
+            group.set(.failure(mappedError), forAppWithBundleIdentifier: operation.bundleIdentifier)
+            log(mappedError, operation: operation.loggedErrorOperation, app: operation.app)
         }
     }
     

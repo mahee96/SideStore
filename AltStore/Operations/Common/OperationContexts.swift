@@ -100,7 +100,7 @@ class AppOperationContext: OperationContext
     {
         self.bundleIdentifier = bundleIdentifier
         self.authenticatedContext = authenticatedContext
-        super.init()
+        super.init(error: nil, presentingViewController: authenticatedContext.presentingViewController, dbBackgroundContext: authenticatedContext.dbBackgroundContext)
     }
     
     subscript<T>(dynamicMember keyPath: WritableKeyPath<AuthenticatedOperationContext, T>) -> T

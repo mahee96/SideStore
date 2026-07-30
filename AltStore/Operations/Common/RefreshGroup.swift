@@ -25,40 +25,14 @@ final class RefreshGroup: NSObject
     // so they don't die out from under us.
     private(set) var _contexts = Set<NSManagedObjectContext>()
     
-    private var isFinished = false
+    var activeTask: Task<Void, Never>?
     private let lock = NSLock()
-    
-    private let dispatchGroup = DispatchGroup()
-    private var operations: [Foundation.Operation] = []
     
     init(context: AuthenticatedOperationContext = AuthenticatedOperationContext())
     {
         self.context = context
         
         super.init()
-    }
-    
-    /// Used to keep track of which operations belong to this group.
-    /// This does _not_ add them to any operation queue.
-    func add(_ operations: [Foundation.Operation])
-    {
-        for operation in operations
-        {
-            self.dispatchGroup.enter()
-            
-            operation.completionBlock = { [weak self] in
-                self?.dispatchGroup.leave()
-            }
-        }
-        
-        if self.operations.isEmpty && !operations.isEmpty
-        {
-            self.dispatchGroup.notify(queue: .global()) { [weak self] in
-                self?.finish()
-            }
-        }
-        
-        self.operations.append(contentsOf: operations)
     }
     
     func set(_ result: Result<InstalledApp, Error>, forAppWithBundleIdentifier bundleIdentifier: String)
@@ -78,21 +52,6 @@ final class RefreshGroup: NSObject
     
     func cancel()
     {
-        self.operations.forEach { $0.cancel() }
-    }
-}
-
-private extension RefreshGroup
-{
-    func finish()
-    {
-        let (shouldFinish, results) = self.lock.withLock { () -> (Bool, [String: Result<InstalledApp, Error>]?) in
-            guard !self.isFinished else { return (false, nil) }
-            self.isFinished = true
-            return (true, self.results)
-        }
-        
-        guard shouldFinish, let results = results else { return }
-        self.completionHandler?(results)
+        self.activeTask?.cancel()
     }
 }
