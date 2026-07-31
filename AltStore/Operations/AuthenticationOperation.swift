@@ -107,8 +107,8 @@ final class AuthenticationOperation: BaseOperation<AuthenticatedOperationContext
             Keychain.shared.certificate = nil
         }
 
-        // PHASE 1: Resolve valid session (Locked)
-        let authResult = try await TaskChainSerializer.shared.serialize { () -> AuthenticationResult in
+        // PHASE 1: Resolve valid session (Coalesced)
+        let authResult = try await TaskChainCoalescer.shared.coalesce(key: "apple_auth") { () -> AuthenticationResult in
             // Check L1 - Session Cache
             if let cache = SessionCache.loadFromKeychain() {
                 if let validatedResult = try await self.validateSessionCache(cache, weights: weights) {
