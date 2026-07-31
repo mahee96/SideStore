@@ -74,7 +74,7 @@ class ReviewPermissionsViewController: UICollectionViewController
         
         let appearance = UINavigationBarAppearance()
         appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor(resource: .gradientTop)
+        appearance.backgroundColor = .settingsBackground
         appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
         appearance.buttonAppearance = buttonAppearance
         self.navigationItem.standardAppearance = appearance
@@ -87,14 +87,14 @@ class ReviewPermissionsViewController: UICollectionViewController
         if #available(iOS 16, *)
         {
             self.collectionView.backgroundView = UIHostingConfiguration {
-                LinearGradient(colors: [Color(UIColor(resource: .gradientTop)), Color(.gradientBottom)], startPoint: .top, endPoint: .bottom)
+                Color(.settingsBackground)
             }
             .margins(.all, 0)
             .makeContentView()
         }
         else
         {
-            self.collectionView.backgroundColor = UIColor(resource: .gradientBottom)
+            self.collectionView.backgroundColor = .settingsBackground
         }
         
         self.dataSource.proxy = self
@@ -122,7 +122,7 @@ extension ReviewPermissionsViewController
             
             var configuration = UICollectionLayoutListConfiguration(appearance: .insetGrouped)
             configuration.showsSeparators = true
-            configuration.separatorConfiguration.color = UIColor(resource: .gradientBottom).withAlphaComponent(0.7)
+            configuration.separatorConfiguration.color = UIColor.white.withAlphaComponent(0.2)
             configuration.separatorConfiguration.bottomSeparatorInsets.leading = 20
             configuration.backgroundColor = .clear
             
@@ -235,7 +235,7 @@ extension ReviewPermissionsViewController
             }
             
             var backgroundConfig = UIBackgroundConfiguration.listGroupedCell()
-            backgroundConfig.backgroundColor = UIColor(resource: .darkButtonBackground)
+            backgroundConfig.backgroundColor = .settingsHighlighted
             backgroundConfig.visualEffect = nil
             cell.backgroundConfiguration = backgroundConfig
         }
