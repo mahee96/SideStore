@@ -119,6 +119,10 @@ final class AuthenticationOperation: BaseOperation<AuthenticatedOperationContext
             // L2: Sign-in (Silent credentials sign-in or fallback to UI)
             return try await self.performNewSignIn(weights: weights)
         }
+        
+        self.context.team = authResult.0
+        self.context.certificate = authResult.1
+        self.context.session = authResult.2
 
         // PHASE 2: Post-Authentication Work (Unlocked)
         return try await self.performPostAuthenticationWork(result: authResult, weights: weights)

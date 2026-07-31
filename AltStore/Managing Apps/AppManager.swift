@@ -1024,6 +1024,8 @@ private extension AppManager
             {
                 let progress = Progress.discreteProgress(totalUnitCount: 100)
                 self.set(progress, for: operation)
+                
+                group.progress.addChild(progress, withPendingUnitCount: 100 / Int64(operations.count))
             }
             
             // take whatever it is - valid or nil, both works
@@ -1229,6 +1231,7 @@ private extension AppManager
         let additionalEntitlements = OperationEntitlements.defaultAdditionalEntitlements
         var finalApp: InstalledApp?
         
+        let operationProgress = self.progress(for: operation)
         for step in steps {
             if let result = try await executeStep(
                 step,
@@ -1238,7 +1241,7 @@ private extension AppManager
                 downloadingApp: downloadingApp,
                 additionalEntitlements: additionalEntitlements,
                 permissionsMode: permissionsMode,
-                progress: group.progress,
+                progress: operationProgress,
                 weights: weights
             ) {
                 finalApp = result
