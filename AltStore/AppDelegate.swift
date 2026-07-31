@@ -117,7 +117,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         
         
         Task {
+            debugLog("[AppDelegate] Boot sequence starting...")
             await AppBootManager.shared.performBootSequence()
+            debugLog("[AppDelegate] Boot sequence completed.")
         }
         
         DatabaseManager.shared.start { (error) in

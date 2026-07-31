@@ -53,8 +53,17 @@ public final class AppBootManager {
     }
     
     public nonisolated func startMinimuxer(pairingFile: String) async throws {
-        try await minimuxerStart(pairingFile, mountPath: FileManager.default.documentsDirectory.absoluteString)
+        debugLog("[AppBootManager] startMinimuxer() entered")
+        var success = false
         self.isMinimuxerStarted = true
+        defer {
+            if !success {
+                self.isMinimuxerStarted = false
+            }
+            debugLog("[AppBootManager] startMinimuxer() exited (success: \(success))")
+        }
+        
+        try await minimuxerStart(pairingFile, mountPath: FileManager.default.documentsDirectory.absoluteString)
         
         // Validate the pairing by trying to fetch the UDID
         do {
@@ -62,21 +71,30 @@ public final class AppBootManager {
             let deviceUDID = try await fetchUDID()
             debugLog("[AppBootManager] startMinimuxer(): Minimuxer fetchUDID() based connection test SUCCEEDED. UDID: \(deviceUDID ?? "nil")")
             self.needsPairingPrompt = false
+            success = true
         } catch {
             if error.isMinimuxerPairingFile {
                 debugLog("[AppBootManager] startMinimuxer(): Minimuxer fetchUDID() based connection test FAILED. \(error)")
-                self.isMinimuxerStarted = false
                 self.needsPairingPrompt = true
                 throw error
             } else {
                 debugLog("[AppBootManager] startMinimuxer(): Minimuxer fetchUDID() based connection test FAILED but PAIRING FILE IS VALID. \(error)")
+                success = true
             }
         }
     }
     
     public nonisolated func performBootSequence() async {
+        debugLog("[AppBootManager] performBootSequence() entered")
+        defer {
+            debugLog("[AppBootManager] performBootSequence() exited")
+        }
         // 1. Structured concurrent child task A
         async let jitCheck: Void = {
+            debugLog("[AppBootManager] performBootSequence(): JIT check starting")
+            defer {
+                debugLog("[AppBootManager] performBootSequence(): JIT check completed")
+            }
             if #available(iOS 17, *), !UserDefaults.standard.sidejitenable {
                 do {
                     try await self.isSideJITServerDetected()
@@ -94,6 +112,10 @@ public final class AppBootManager {
         
         // 2. Structured concurrent child task B
         async let minimuxerCheck: Void = {
+            debugLog("[AppBootManager] performBootSequence(): Minimuxer check starting")
+            defer {
+                debugLog("[AppBootManager] performBootSequence(): Minimuxer check completed")
+            }
             #if targetEnvironment(simulator)
             do {
                 try await self.startMinimuxer(pairingFile: "ignored-for-sim")
