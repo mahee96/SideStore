@@ -158,7 +158,24 @@ public class BaseEntity: NSManagedObject, Fetchable
     internal class func restore(from dictionary: [String: Any], context: NSManagedObjectContext) -> BaseEntity? {
         let entityDesc = self.entity()
         guard let entityName = entityDesc.name else { return nil }
-        let object = NSEntityDescription.insertNewObject(forEntityName: entityName, into: context) as! BaseEntity
+        
+        var lookupKeys = [String: Any]()
+        if let constraints = entityDesc.uniquenessConstraints as? [[String]] {
+            for constraintGroup in constraints {
+                for keyName in constraintGroup {
+                    if let val = dictionary[keyName] {
+                        lookupKeys[keyName] = val
+                    }
+                }
+            }
+        }
+        
+        let object: BaseEntity
+        if !lookupKeys.isEmpty, let existing = self.fetchExisting(matching: lookupKeys, context: context) {
+            object = existing
+        } else {
+            object = NSEntityDescription.insertNewObject(forEntityName: entityName, into: context) as! BaseEntity
+        }
         
         // Populate attributes
         for (name, attribute) in entityDesc.attributesByName {
