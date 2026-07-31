@@ -36,32 +36,38 @@ final class BackupAppOperation: BaseOperation<InstallAppOperationContext, URL>, 
             throw OperationError.invalidParameters("BackupAppOperation.execute: context.installedApp is nil")
         }
         
-        self.debugLog("[BackupAppOperation] Ready to open app and observe backup. InstalledApp: \(installedApp.bundleIdentifier)")
-        try await self.openAppAndObserve(installedApp: installedApp)
+        guard let context = installedApp.managedObjectContext else {
+            throw OperationError.invalidParameters("BackupAppOperation: installedApp.managedObjectContext is nil")
+        }
+        let (bundleID, fileURL, name, openAppURL) = context.performAndWait {
+            (installedApp.bundleIdentifier, installedApp.fileURL, installedApp.name, installedApp.openAppURL)
+        }
+        
+        self.debugLog("[BackupAppOperation] Ready to open app and observe backup. InstalledApp: \(bundleID)")
+        try await self.openAppAndObserve(installedApp: installedApp, bundleIdentifier: bundleID, name: name, openAppURL: openAppURL)
         self.debugLog("[BackupAppOperation] execute() completed successfully.")
-        return installedApp.fileURL
+        return fileURL
     }
     
-    private func constructBackupURLs(for installedApp: InstalledApp) throws -> (openURL: URL, returnURL: URL) {
-        let appName = installedApp.name
-        self.appName = appName
+    private func constructBackupURLs(bundleIdentifier: String, name: String, openAppURL: URL) throws -> (openURL: URL, returnURL: URL) {
+        self.appName = name
         
-        guard let bundleIdentifier = Bundle.main.bundleIdentifier,
-              let altstoreOpenURL = URL(string: "sidestore-\(bundleIdentifier)://")
+        guard let appGroupBundleID = Bundle.main.bundleIdentifier,
+              let altstoreOpenURL = URL(string: "sidestore-\(appGroupBundleID)://")
         else {
-            throw OperationError.openAppFailed(name: appName)
+            throw OperationError.openAppFailed(name: name)
         }
 
         var returnURLComponents = URLComponents(url: altstoreOpenURL, resolvingAgainstBaseURL: false)
         returnURLComponents?.host = "appBackupResponse"
-        guard let returnURL = returnURLComponents?.url else { throw OperationError.openAppFailed(name: appName) }
+        guard let returnURL = returnURLComponents?.url else { throw OperationError.openAppFailed(name: name) }
 
         var openURLComponents = URLComponents()
-        openURLComponents.scheme = installedApp.openAppURL.scheme
+        openURLComponents.scheme = openAppURL.scheme
         openURLComponents.host = self.action.rawValue
         openURLComponents.queryItems = [URLQueryItem(name: "returnURL", value: returnURL.absoluteString)]
         
-        guard let openURL = openURLComponents.url else { throw OperationError.openAppFailed(name: appName) }
+        guard let openURL = openURLComponents.url else { throw OperationError.openAppFailed(name: name) }
         return (openURL, returnURL)
     }
 
@@ -109,8 +115,8 @@ final class BackupAppOperation: BaseOperation<InstallAppOperationContext, URL>, 
         }
     }
 
-    private func openAppAndObserve(installedApp: InstalledApp) async throws {
-        let (openURL, returnURL) = try self.constructBackupURLs(for: installedApp)
+    private func openAppAndObserve(installedApp: InstalledApp, bundleIdentifier: String, name: String, openAppURL: URL) async throws {
+        let (openURL, returnURL) = try self.constructBackupURLs(bundleIdentifier: bundleIdentifier, name: name, openAppURL: openAppURL)
         self.debugLog("[BackupAppOperation] openAppAndObserve() constructed URLs. openURL: \(openURL.absoluteString), returnURL: \(returnURL.absoluteString)")
         
         self.debugLog("[BackupAppOperation] Starting observation...")
@@ -136,14 +142,15 @@ final class BackupAppOperation: BaseOperation<InstallAppOperationContext, URL>, 
                 object: nil,
                 queue: .main
             ) { _ in
+                self.debugLog("[BackupAppOperation] willEnterForegroundNotification received. Starting 5-second grace period timer...")
                 timeoutTimer?.invalidate()
                 if let observer = applicationWillReturnObserver { NotificationCenter.default.removeObserver(observer) }
-                if let observer = backupResponseObserver { NotificationCenter.default.removeObserver(observer) }
                 
                 timeoutTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: false) { _ in
                     Task { @MainActor in
                         try? await Task.sleep(nanoseconds: 1_000_000_000)
                         guard !hasResumed else { return }
+                        self.debugLog("[BackupAppOperation] 5-second timer expired without receiving backup completion response. Timing out.")
                         hasResumed = true
                         removeObservers()
                         AppDelegate.dumpSideBackupLogsIfNeeded()
@@ -157,13 +164,18 @@ final class BackupAppOperation: BaseOperation<InstallAppOperationContext, URL>, 
                 object: nil,
                 queue: nil
             ) { notification in
-                guard !hasResumed else { return }
+                self.debugLog("[BackupAppOperation] appBackupDidFinish notification received. UserInfo: \(String(describing: notification.userInfo))")
+                guard !hasResumed else {
+                    self.debugLog("[BackupAppOperation] Warning: already resumed. Ignoring notification.")
+                    return
+                }
                 hasResumed = true
                 removeObservers()
                 AppDelegate.dumpSideBackupLogsIfNeeded()
                 
                 let result = notification.userInfo?[AppDelegate.appBackupResultKey] as? Result<Void, Error> ?? .failure(OperationError.unknownResult)
                 let mappedResult = result.mapError { self.mapBackupError($0) }
+                self.debugLog("[BackupAppOperation] Resuming continuation with mapped result: \(mappedResult)")
                 if case .success = mappedResult {
                     self.progress.completedUnitCount += 1
                 }
@@ -175,6 +187,7 @@ final class BackupAppOperation: BaseOperation<InstallAppOperationContext, URL>, 
                 let openedSuccessfully = await self.openApp(url: openURL)
                 if !openedSuccessfully {
                     guard !hasResumed else { return }
+                    self.debugLog("[BackupAppOperation] Failed to open target application. Resuming with error.")
                     hasResumed = true
                     removeObservers()
                     continuation.resume(throwing: OperationError.openAppFailed(name: installedApp.name))

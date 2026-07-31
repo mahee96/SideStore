@@ -38,7 +38,9 @@ final class FetchSourceOperation: BaseOperation<OperationContext, Source>, @unch
         self.session = URLSession.shared
         try super.init(context: context)
         if let dbContext = context.dbBackgroundContext {
-            self.source = dbContext.object(with: source.objectID) as? Source
+            dbContext.performAndWait {
+                self.source = dbContext.object(with: source.objectID) as? Source
+            }
         }
     }
     
