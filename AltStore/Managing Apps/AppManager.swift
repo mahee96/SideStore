@@ -1234,15 +1234,21 @@ private extension AppManager
         weights: [OperationStep: Int64]
     ) async throws -> InstalledApp? {
         switch step {
+            
+            case .userCustomization:
+                try await UserCustomizationOperation(context: context)
+                    .execute(parentProgress: progress, weights: weights)
+                return nil
+
             case .downloadApp:
                 let downloadedAppURL = context.temporaryDirectory.appendingPathComponent("Cached.app")
                 let downloadedApp = try await DownloadAppOperation(app: downloadingApp, destinationURL: downloadedAppURL, context: context)
                     .execute(parentProgress: progress, weights: weights)
                 context.app = downloadedApp
                 return nil
-                
-            case .userCustomization:
-                try await UserCustomizationOperation(context: context)
+            
+            case .verifyApp:
+                try await VerifyAppOperation(permissionsMode: permissionsMode, context: context)
                     .execute(parentProgress: progress, weights: weights)
                 return nil
                 
@@ -1250,9 +1256,9 @@ private extension AppManager
                 try await CacheAppOperation(context: context)
                     .execute(parentProgress: progress, weights: weights)
                 return nil
-                
-            case .verifyApp:
-                try await VerifyAppOperation(permissionsMode: permissionsMode, context: context)
+            
+            case .stageApp:
+                try await StageAppOperation(context: context)
                     .execute(parentProgress: progress, weights: weights)
                 return nil
                 

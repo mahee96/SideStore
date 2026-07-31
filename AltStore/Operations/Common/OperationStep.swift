@@ -35,6 +35,7 @@ enum OperationStep: Hashable {
     case resignApp
     case scheduleExpirationWarningNotification
     case sendApp
+    case stageApp
     case userCustomization
     case preflightChecks
     case verifyApp
@@ -65,6 +66,7 @@ enum OperationStep: Hashable {
         ObjectIdentifier(ResignAppOperation.self): .resignApp,
         ObjectIdentifier(ScheduleExpirationWarningNotificationOperation.self): .scheduleExpirationWarningNotification,
         ObjectIdentifier(SendAppOperation.self): .sendApp,
+        ObjectIdentifier(StageAppOperation.self): .stageApp,
         ObjectIdentifier(UserCustomizationOperation.self): .userCustomization,
         ObjectIdentifier(PreflightChecksOperation.self): .preflightChecks,
         ObjectIdentifier(VerifyAppOperation.self): .verifyApp

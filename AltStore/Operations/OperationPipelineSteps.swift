@@ -13,16 +13,16 @@ struct OperationPipelineSteps {
         switch operation {
             case .install, .update:
                 return [
-                    .downloadApp,
                     .userCustomization,
-                    .cacheApp,
+                    .downloadApp,
                     .verifyApp,
                     .cacheApp,
+                    .stageApp,
+                    .patchAppIcon,
                     .removeAppExtensions,
                     .fetchAnisetteData,
                     .fetchProvisioningProfilesInstall,
                     .prepareAppExtensionBundleIDs,
-                    .patchAppIcon,
                     .resignApp,
                     .exportResignedApp,
                     .sendApp,
@@ -30,13 +30,12 @@ struct OperationPipelineSteps {
                 ]
             case .resign:
                 return [
-                    .userCustomization,
-                    .verifyApp,
+                    .stageApp,
+                    .patchAppIcon,
                     .removeAppExtensions,
                     .fetchAnisetteData,
                     .fetchProvisioningProfilesInstall,
                     .prepareAppExtensionBundleIDs,
-                    .patchAppIcon,
                     .resignApp,
                     .exportResignedApp,
                     .sendApp,
@@ -59,16 +58,12 @@ struct OperationPipelineSteps {
                     return [
                         .installBackupApp,
                         .restoreApp,
-                        .downloadApp,
-                        .userCustomization,
-                        .cacheApp,
-                        .verifyApp,
-                        .cacheApp,
+                        .stageApp,
+                        .patchAppIcon,
                         .removeAppExtensions,
                         .fetchAnisetteData,
                         .fetchProvisioningProfilesInstall,
                         .prepareAppExtensionBundleIDs,
-                        .patchAppIcon,
                         .resignApp,
                         .exportResignedApp,
                         .sendApp,
@@ -91,7 +86,19 @@ struct OperationPipelineSteps {
             case .backup:
                 return [
                     .installBackupApp,
-                    .backupApp
+                    .backupApp,
+                    .restoreApp,
+                    .stageApp,
+                    .patchAppIcon,
+                    .removeAppExtensions,
+                    .fetchAnisetteData,
+                    .fetchProvisioningProfilesInstall,
+                    .prepareAppExtensionBundleIDs,
+                    .resignApp,
+                    .exportResignedApp,
+                    .sendApp,
+                    .installApp,
+                    .removeAppBackup
                 ]
             case .restore:
                 if UserDefaults.standard.isLegacyDeactivationSupported {
@@ -104,16 +111,12 @@ struct OperationPipelineSteps {
                     return [
                         .installBackupApp,
                         .restoreApp,
-                        .downloadApp,
-                        .userCustomization,
-                        .cacheApp,
-                        .verifyApp,
-                        .cacheApp,
+                        .stageApp,
+                        .patchAppIcon,
                         .removeAppExtensions,
                         .fetchAnisetteData,
                         .fetchProvisioningProfilesInstall,
                         .prepareAppExtensionBundleIDs,
-                        .patchAppIcon,
                         .resignApp,
                         .exportResignedApp,
                         .sendApp,
