@@ -94,8 +94,14 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         let leftPadding = String(repeating: " ", count: max(0, paddingCount / 2))
         let rightPadding = String(repeating: " ", count: max(0, paddingCount - leftPadding.count))
 
+        // register console logging and start capturing
+        let suffixFormat: SuffixFormat = UserDefaults.standard.isRotateLogsOnStartupEnabled ? .timestamp : .none
+        consoleLog.updateConfiguration(baseName: "console", suffixFormat: suffixFormat, policy: .subsequent)
         consoleLog.startCapturing()
+
+        // register crash handler
         setupCrashHandler()
+        
         debugLog("===================================================")
         debugLog("|               App is Starting up                |")
         debugLog("===================================================")

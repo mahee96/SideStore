@@ -82,6 +82,15 @@ public extension UserDefaults
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
     }
+    @objc var isRotateLogsOnStartupEnabled: Bool {
+        get {
+            if self.object(forKey: #function) == nil {
+                return true
+            }
+            return self.bool(forKey: #function)
+        }
+        set { self.set(newValue, forKey: #function) }
+    }
     @objc var isBetaUpdatesEnabled: Bool {
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
@@ -287,6 +296,7 @@ public extension UserDefaults
             #keyPath(UserDefaults.isVerboseOperationsLoggingEnabled): false,
             #keyPath(UserDefaults.isAltSignVerboseLoggingEnabled): true,
             #keyPath(UserDefaults.isMinimuxerVerboseLoggingEnabled): true,
+            #keyPath(UserDefaults.isRotateLogsOnStartupEnabled): true,
             #keyPath(UserDefaults.recreateDatabaseOnNextStart): false,
             #keyPath(UserDefaults.isBackgroundRefreshEnabled): true,
             #keyPath(UserDefaults.enableEMPforWireguard): false,

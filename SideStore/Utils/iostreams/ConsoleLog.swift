@@ -9,10 +9,36 @@
 
 import Foundation
 
+public enum SuffixFormat: String {
+    case none
+    case timestamp
+}
+
+public enum UpdatePolicy {
+    case immediate
+    case subsequent
+}
+
+public struct LogNameInfo {
+    public let name: String
+    public let suffix: String
+    public let fileExtension: String
+    
+    public var fileName: String {
+        return name + suffix + fileExtension
+    }
+}
+
 class ConsoleLog {
     private static let CONSOLE_LOGS_DIRECTORY = "ConsoleLogs"
     private static let CONSOLE_LOG_NAME_PREFIX = "console"
     private static let CONSOLE_LOG_EXTN = ".log"
+    
+    private var configuredBaseName: String = ConsoleLog.CONSOLE_LOG_NAME_PREFIX
+    private var configuredSuffixFormat: SuffixFormat = .timestamp
+    
+    public private(set) var activeLogInfo: LogNameInfo?
+    private var compositeStream: OutputStream?
     
     private lazy var consoleLogger: ConsoleLogger = {
         let logFileHandle = createLogFileHandle()!
@@ -28,19 +54,57 @@ class ConsoleLog {
         )
         let syslogOutputStream = SyslogOutputStream()
         let compositeStream = CompositeOutputStream([fileOutputStream, syslogOutputStream])
+        self.compositeStream = compositeStream
         
         return UnBufferedConsoleLogger(stream: compositeStream)
     }()
     
+    public func formatFileName(baseName: String, suffixFormat: SuffixFormat) -> LogNameInfo {
+        let (name, ext) = splitFileName(baseName, defaultExtn: ConsoleLog.CONSOLE_LOG_EXTN)
+        switch suffixFormat {
+        case .none:
+            return LogNameInfo(name: name, suffix: "", fileExtension: ext)
+        case .timestamp:
+            let currentTime = Date()
+            let dateTimeStamp = DateTimeUtil.getDateInTimeStamp(date: currentTime)
+            return LogNameInfo(name: name, suffix: "_" + dateTimeStamp, fileExtension: ext)
+        }
+    }
+    
+    private func splitFileName(_ fileName: String, defaultExtn: String) -> (name: String, extn: String) {
+        let url = URL(fileURLWithPath: fileName)
+        let ext = url.pathExtension
+        if ext.isEmpty {
+            return (fileName, defaultExtn)
+        } else {
+            return (url.deletingPathExtension().lastPathComponent, "." + ext)
+        }
+    }
+    
+    public func updateConfiguration(baseName: String, suffixFormat: SuffixFormat, policy: UpdatePolicy = .subsequent) {
+        self.configuredBaseName = baseName
+        self.configuredSuffixFormat = suffixFormat
+        
+        if policy == .immediate {
+            let newInfo = formatFileName(baseName: baseName, suffixFormat: suffixFormat)
+            self.activeLogInfo = newInfo
+            self.compositeStream?.close() // Triggers lazy recreation of the handle on next print/write
+        }
+    }
+    
     private func createLogFileHandle() -> FileHandle? {
-        let parentDir = logFileURL.deletingLastPathComponent()
+        if activeLogInfo == nil {
+            activeLogInfo = formatFileName(baseName: configuredBaseName, suffixFormat: configuredSuffixFormat)
+        }
+        let url = logFileURL
+        let parentDir = url.deletingLastPathComponent()
         if !FileManager.default.fileExists(atPath: parentDir.path) {
             try? FileManager.default.createDirectory(at: parentDir, withIntermediateDirectories: true, attributes: nil)
         }
-        if !FileManager.default.fileExists(atPath: logFileURL.path) {
-            FileManager.default.createFile(atPath: logFileURL.path, contents: nil, attributes: nil)
+        if !FileManager.default.fileExists(atPath: url.path) {
+            FileManager.default.createFile(atPath: url.path, contents: nil, attributes: nil)
         }
-        let handle = try? FileHandle(forWritingTo: logFileURL)
+        let handle = try? FileHandle(forWritingTo: url)
         handle?.seekToEndOfFile()
         return handle
     }
@@ -55,24 +119,19 @@ class ConsoleLog {
         return consoleLogsDir
     }()
     
-    public lazy var logName: String = {
-        logFileURL.lastPathComponent
-    }()
+    public var logName: String {
+        if activeLogInfo == nil {
+            activeLogInfo = formatFileName(baseName: configuredBaseName, suffixFormat: configuredSuffixFormat)
+        }
+        return activeLogInfo?.fileName ?? ""
+    }
     
-    public lazy var logFileURL: URL = {
-        // get current timestamp
-        let currentTime = Date()
-        let dateTimeStamp = DateTimeUtil.getDateInTimeStamp(date: currentTime)
-        
-        // create a log file with the current timestamp
-        let logName = DateTimeUtil.getTimeStampSuffixedFileName(
-            fileName: ConsoleLog.CONSOLE_LOG_NAME_PREFIX,
-            timestamp: dateTimeStamp,
-            extn: ConsoleLog.CONSOLE_LOG_EXTN
-        )
-        let logFileURL = consoleLogsDir.appendingPathComponent(logName)
-        return logFileURL
-    }()
+    public var logFileURL: URL {
+        if activeLogInfo == nil {
+            activeLogInfo = formatFileName(baseName: configuredBaseName, suffixFormat: configuredSuffixFormat)
+        }
+        return consoleLogsDir.appendingPathComponent(activeLogInfo!.fileName)
+    }
     
     func startCapturing() {
         consoleLogger.startCapturing()

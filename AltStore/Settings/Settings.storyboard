@@ -1748,6 +1748,41 @@
                                         <edgeInsets key="layoutMargins" top="8" left="30" bottom="8" right="30"/>
                                         <userDefinedRuntimeAttributes>
                                             <userDefinedRuntimeAttribute type="number" keyPath="style">
+                                                <integer key="value" value="2"/>
+                                            </userDefinedRuntimeAttribute>
+                                        </userDefinedRuntimeAttributes>
+                                    </tableViewCell>
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" rowHeight="51" id="rot-lg-cell" customClass="InsetGroupTableViewCell" customModule="SideStore" customModuleProvider="target">
+                                        <rect key="frame" x="0.0" y="2553.3333282470703" width="402" height="51"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="rot-lg-cell" id="rot-lg-content">
+                                            <rect key="frame" x="0.0" y="0.0" width="402" height="51"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" text="Rotate Logs on Startup" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="rot-lg-label">
+                                                    <rect key="frame" x="30.000000000000014" y="15.333333333333334" width="225.33333333333337" height="20.333333333333329"/>
+                                                    <fontDescription key="fontDescription" type="boldSystem" pointSize="17"/>
+                                                    <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" ambiguous="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="rot-lg-switch" userLabel="Rotate Logs on Startup Switch">
+                                                    <rect key="frame" x="311" y="11.666666666666664" width="63" height="28"/>
+                                                    <connections>
+                                                        <action selector="toggleRotateLogsOnStartup:" destination="aMk-Xp-UL8" eventType="valueChanged" id="rot-lg-action-conn"/>
+                                                    </connections>
+                                                </switch>
+                                            </subviews>
+                                            <constraints>
+                                                <constraint firstAttribute="trailingMargin" secondItem="rot-lg-switch" secondAttribute="trailing" id="rot-lg-c1"/>
+                                                <constraint firstItem="rot-lg-label" firstAttribute="centerY" secondItem="rot-lg-content" secondAttribute="centerY" id="rot-lg-c2"/>
+                                                <constraint firstItem="rot-lg-label" firstAttribute="leading" secondItem="rot-lg-content" secondAttribute="leadingMargin" id="rot-lg-c3"/>
+                                                <constraint firstItem="rot-lg-switch" firstAttribute="centerY" secondItem="rot-lg-content" secondAttribute="centerY" id="rot-lg-c4"/>
+                                            </constraints>
+                                        </tableViewCellContentView>
+                                        <color key="backgroundColor" white="1" alpha="0.14999999999999999" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <edgeInsets key="layoutMargins" top="8" left="30" bottom="8" right="30"/>
+                                        <userDefinedRuntimeAttributes>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="style">
                                                 <integer key="value" value="3"/>
                                             </userDefinedRuntimeAttribute>
                                         </userDefinedRuntimeAttributes>
@@ -1780,6 +1815,7 @@
                         <outlet property="githubButton" destination="oqj-4S-I9l" id="sxB-LE-gA2"/>
                         <outlet property="mastodonButton" destination="B8Q-e7-beR" id="Kbe-Og-rsg"/>
                         <outlet property="minimuxerVerboseLoggingSwitch" destination="os8-7F-rSm" id="gxg-Gx-xwO"/>
+                        <outlet property="rotateLogsOnStartupSwitch" destination="rot-lg-switch" id="rot-lg-outlet-conn"/>
                         <outlet property="noIdleTimeoutSwitch" destination="iQA-wm-5ag" id="jHC-js-q0Y"/>
                         <outlet property="recreateDatabaseSwitch" destination="uGv-Lb-Ita" id="BMU-cK-0ee"/>
                         <outlet property="threadsButton" destination="AWk-yE-9LI" id="SOc-ei-4gK"/>

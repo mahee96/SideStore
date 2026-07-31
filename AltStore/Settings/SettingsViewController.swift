@@ -111,6 +111,7 @@ extension SettingsViewController
         case recreateDatabase           // row 5 - Recreate Database on Next Start
         case altSignVerboseLogging      // row 6 - AltSign Verbose Logging
         case minimuxerVerboseLogging    // row 7 - Minimuxer Verbose Logging
+        case rotateLogsOnStartup        // row 8 - Rotate Logs on Startup
     }
 }
 
@@ -143,6 +144,7 @@ final class SettingsViewController: UITableViewController
     @IBOutlet private var verboseOperationsLoggingSwitch: UISwitch!
     @IBOutlet private var altSignVerboseLoggingSwitch: UISwitch!
     @IBOutlet private var minimuxerVerboseLoggingSwitch: UISwitch!
+    @IBOutlet private var rotateLogsOnStartupSwitch: UISwitch!
     
 //    @IBOutlet private var refreshSideJITServer: UILabel!
     @IBOutlet private var disableResponseCachingSwitch: UISwitch!
@@ -531,6 +533,7 @@ private extension SettingsViewController
         self.verboseOperationsLoggingSwitch.isOn = UserDefaults.standard.isVerboseOperationsLoggingEnabled
         self.altSignVerboseLoggingSwitch.isOn = UserDefaults.standard.isAltSignVerboseLoggingEnabled
         self.minimuxerVerboseLoggingSwitch.isOn = UserDefaults.standard.isMinimuxerVerboseLoggingEnabled
+        self.rotateLogsOnStartupSwitch.isOn = UserDefaults.standard.isRotateLogsOnStartupEnabled
 
         self.recreateDatabaseSwitch.isOn = UserDefaults.standard.recreateDatabaseOnNextStart
 
@@ -779,6 +782,13 @@ private extension SettingsViewController
         // update it in database
         UserDefaults.standard.isMinimuxerVerboseLoggingEnabled = sender.isOn
         minimuxerSetLogging(sender.isOn)
+    }
+
+    @IBAction func toggleRotateLogsOnStartup(_ sender: UISwitch) {
+        UserDefaults.standard.isRotateLogsOnStartupEnabled = sender.isOn
+        let suffixFormat: SuffixFormat = sender.isOn ? .timestamp : .none
+        let appDelegate = UIApplication.shared.delegate as! AppDelegate
+        appDelegate.consoleLog.updateConfiguration(baseName: "console", suffixFormat: suffixFormat, policy: .immediate)
     }
 
     @IBAction func toggleRecreateDatabaseSwitch(_ sender: UISwitch) {
@@ -1746,7 +1756,7 @@ extension SettingsViewController
                 let segue = UIStoryboardSegue(identifier: "operationsLoggingControl", source: self, destination: operationsLoggingController)
                 self.present(segue.destination, animated: true, completion: nil)
                 
-            case .responseCaching, .verboseOperationsLogging, .altSignVerboseLogging, .minimuxerVerboseLogging, .recreateDatabase : break
+            case .responseCaching, .verboseOperationsLogging, .altSignVerboseLogging, .minimuxerVerboseLogging, .recreateDatabase, .rotateLogsOnStartup : break
             }
             
             
