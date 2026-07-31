@@ -25,7 +25,10 @@ final class ScheduleExpirationWarningNotificationOperation: BaseOperation<Operat
 
         let center = UNUserNotificationCenter.current()
         let now = Date()
-        let expirationDate = installedApp.expirationDate
+        var expirationDate = Date()
+        installedApp.managedObjectContext?.performAndWait {
+            expirationDate = installedApp.expirationDate
+        }
 
         let milestones: [(id: String, timeBeforeExp: TimeInterval, title: String, body: String)] = [
             ("24h", 24 * 60 * 60, "SideStore Expiring Soon", "SideStore will expire in 24 hours. Open the app and refresh it to prevent it from expiring."),

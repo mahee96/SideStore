@@ -96,6 +96,7 @@ extension AppManager
     func update() async
     {
         let dbBackgroundContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
+        var altstoreAppObjectID: NSManagedObjectID?
     
         #if targetEnvironment(simulator)
         // Apps aren't ever actually installed to simulator, so just do nothing rather than delete them from database.
@@ -103,57 +104,69 @@ extension AppManager
         
         do
         {
-            let installedApps = InstalledApp.all(in: dbBackgroundContext)
-            
-            if UserDefaults.standard.legacySideloadedApps == nil
-            {
-                // First time updating apps since updating AltStore to use custom UTIs,
-                // so cache all existing apps temporarily to prevent us from accidentally
-                // deleting them due to their custom UTI not existing (yet).
-                let apps = installedApps.map { $0.bundleIdentifier }
-                UserDefaults.standard.legacySideloadedApps = apps
-            }
-            
-            let legacySideloadedApps = Set(UserDefaults.standard.legacySideloadedApps ?? [])
-            
-            for app in installedApps
-            {
-                guard app.bundleIdentifier != StoreApp.altstoreAppID else {
-                    let scheduleNotifOp = try ScheduleExpirationWarningNotificationOperation(
-                        installedApp: app,
-                        context: OperationContext()
-                    )
-                    try await scheduleNotifOp.execute()
-                    continue
+            try await dbBackgroundContext.perform {
+                let installedApps = InstalledApp.all(in: dbBackgroundContext)
+                
+                if UserDefaults.standard.legacySideloadedApps == nil
+                {
+                    // First time updating apps since updating AltStore to use custom UTIs,
+                    // so cache all existing apps temporarily to prevent us from accidentally
+                    // deleting them due to their custom UTI not existing (yet).
+                    let apps = installedApps.map { $0.bundleIdentifier }
+                    UserDefaults.standard.legacySideloadedApps = apps
                 }
                 
-                guard !self.isActivelyManagingApp(withBundleID: app.bundleIdentifier) else { continue }
+                let legacySideloadedApps = Set(UserDefaults.standard.legacySideloadedApps ?? [])
                 
-                if !UserDefaults.standard.isLegacyDeactivationSupported
+                for app in installedApps
                 {
-                    // We can't (ab)use provisioning profiles to deactivate apps,
-                    // which means we must delete apps to free up active slots.
-                    // So, only check if active apps are installed to prevent
-                    // false positives when checking inactive apps.
-                    guard app.isActive else { continue }
-                }
-                
-                let uti = UTTypeCopyDeclaration(app.installedAppUTI as CFString)?.takeRetainedValue() as NSDictionary?
-                if uti == nil && !legacySideloadedApps.contains(app.bundleIdentifier)
-                {
-                    // This UTI is not declared by any apps, which means this app has been deleted by the user.
-                    // This app is also not a legacy sideloaded app, so we can assume it's fine to delete it.
-                    dbBackgroundContext.delete(app)
+                    guard app.bundleIdentifier != StoreApp.altstoreAppID else {
+                        altstoreAppObjectID = app.objectID
+                        continue
+                    }
                     
-                    if var patchedApps = UserDefaults.standard.patchedApps, let index = patchedApps.firstIndex(of: app.bundleIdentifier)
+                    guard !self.isActivelyManagingApp(withBundleID: app.bundleIdentifier) else { continue }
+                    
+                    if !UserDefaults.standard.isLegacyDeactivationSupported
                     {
-                        patchedApps.remove(at: index)
-                        UserDefaults.standard.patchedApps = patchedApps
+                        // We can't (ab)use provisioning profiles to deactivate apps,
+                        // which means we must delete apps to free up active slots.
+                        // So, only check if active apps are installed to prevent
+                        // false positives when checking inactive apps.
+                        guard app.isActive else { continue }
+                    }
+                    
+                    let uti = UTTypeCopyDeclaration(app.installedAppUTI as CFString)?.takeRetainedValue() as NSDictionary?
+                    if uti == nil && !legacySideloadedApps.contains(app.bundleIdentifier)
+                    {
+                        // This UTI is not declared by any apps, which means this app has been deleted by the user.
+                        // This app is also not a legacy sideloaded app, so we can assume it's fine to delete it.
+                        dbBackgroundContext.delete(app)
+                        
+                        if var patchedApps = UserDefaults.standard.patchedApps, let index = patchedApps.firstIndex(of: app.bundleIdentifier)
+                        {
+                            patchedApps.remove(at: index)
+                            UserDefaults.standard.patchedApps = patchedApps
+                        }
                     }
                 }
+                
+                if dbBackgroundContext.hasChanges {
+                    try dbBackgroundContext.save()
+                }
             }
             
-            try dbBackgroundContext.save()
+            if let objectID = altstoreAppObjectID {
+                let context = OperationContext(dbBackgroundContext: dbBackgroundContext)
+                let app = try await dbBackgroundContext.perform {
+                    dbBackgroundContext.object(with: objectID) as! InstalledApp
+                }
+                let scheduleNotifOp = try ScheduleExpirationWarningNotificationOperation(
+                    installedApp: app,
+                    context: context
+                )
+                try await scheduleNotifOp.execute()
+            }
         }
         catch
         {
@@ -163,7 +176,9 @@ extension AppManager
         
         do
         {
-            let installedAppBundleIDs = InstalledApp.all(in: dbBackgroundContext).map { $0.bundleIdentifier }
+            let installedAppBundleIDs = try await dbBackgroundContext.perform {
+                InstalledApp.all(in: dbBackgroundContext).map { $0.bundleIdentifier }
+            }
                             
             let cachedAppDirectories = try FileManager.default.contentsOfDirectory(at: InstalledApp.appsDirectoryURL,
                                                                                    includingPropertiesForKeys: [.isDirectoryKey, .nameKey],
