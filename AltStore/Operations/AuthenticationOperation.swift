@@ -822,8 +822,8 @@ final class AuthenticationOperation: BaseOperation<AuthenticatedOperationContext
     }
     
     private func cacheAppIDs(team: ALTTeam, session: ALTAppleAPISession, weights: [OperationStep: Int64]?) async throws {
-        let fetchAppIDsOperation = try FetchAppIDsOperation(context: self.context)
-        try await fetchAppIDsOperation.execute(
+        let syncAppIDsOperation = try SyncAppIDsOperation(context: self.context)
+        try await syncAppIDsOperation.execute(
             parentProgress: progress,
             weights: weights ?? OperationProgressWeights.authenticate
         )

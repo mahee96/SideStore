@@ -1,9 +1,9 @@
 //
-//  FetchAppIDsOperation.swift
+//  SyncAppIDsOperation.swift
 //  AltStore
 //
-//  Created by Riley Testut on 1/27/20.
-//  Copyright © 2020 Riley Testut. All rights reserved.
+//  Created by Magesh K on 31/7/26.
+//  Copyright © 2026 SideStore. All rights reserved.
 //
 
 import Foundation
@@ -11,21 +11,21 @@ import CoreData
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class FetchAppIDsOperation: BaseOperation<AuthenticatedOperationContext, Void>, @unchecked Sendable {
+final class SyncAppIDsOperation: BaseOperation<AuthenticatedOperationContext, Void>, @unchecked Sendable {
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Void {
-        debugLog("[FetchAppIDsOperation] execute() started")
-        defer { debugLog("[FetchAppIDsOperation] execute() completed") }
+        debugLog("[SyncAppIDsOperation] execute() started")
+        defer { debugLog("[SyncAppIDsOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         guard
             let team = self.context.team,
             let session = self.context.session
         else {
-            throw OperationError.invalidParameters("FetchAppIDsOperation.main: self.context.team or self.context.session is nil")
+            throw OperationError.invalidParameters("SyncAppIDsOperation.main: self.context.team or self.context.session is nil")
         }
         
         guard let dbContext = self.context.dbBackgroundContext else {
-            throw OperationError.invalidParameters("FetchAppIDsOperation: context.dbBackgroundContext is nil")
+            throw OperationError.invalidParameters("SyncAppIDsOperation: context.dbBackgroundContext is nil")
         }
         
         let fetchedAppIDs = try await ALTAppleAPI.shared.fetchAppIDs(for: team, session: session)

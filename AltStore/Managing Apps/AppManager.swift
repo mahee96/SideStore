@@ -578,7 +578,7 @@ extension AppManager
         }
     }
     
-    func fetchAppIDs(completionHandler: @escaping (Result<Void, Error>) -> Void)
+    func syncAppIDs(completionHandler: @escaping (Result<Void, Error>) -> Void)
     {
         Task {
             do {
@@ -587,8 +587,8 @@ extension AppManager
                 let authOperation = try AuthenticationOperation(context: context, presentingViewController: nil)
                 try await authOperation.execute()
                 
-                let fetchAppIDsOperation = try FetchAppIDsOperation(context: context)
-                try await fetchAppIDsOperation.execute()
+                let syncAppIDsOperation = try SyncAppIDsOperation(context: context)
+                try await syncAppIDsOperation.execute()
                 completionHandler(.success(()))
             } catch {
                 completionHandler(.failure(error))
@@ -1423,7 +1423,7 @@ private extension AppManager
                 return nil
                 
             case .fetchAppIDs:
-                try await FetchAppIDsOperation(context: group.context)
+                try await SyncAppIDsOperation(context: group.context)
                     .execute(parentProgress: progress, weights: weights)
                 return nil
                 

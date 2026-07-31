@@ -110,12 +110,12 @@ struct OperationsLoggingControlView: View {
                         
                         CustomSection(header: Text("AppIDs related Operations"))
                         {
-                            CustomToggle("1. FetchAppIDs", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: FetchAppIDsOperation.self) },
-                                set: { value in
-                                    self.viewModel.updateDatabase(for: FetchAppIDsOperation.self, value: value)
-                                }
-                            ))
+                             CustomToggle("1. SyncAppIDs", isOn: Binding(
+                                 get: { self.viewModel.getFromDatabase(for: SyncAppIDsOperation.self) },
+                                 set: { value in
+                                     self.viewModel.updateDatabase(for: SyncAppIDsOperation.self, value: value)
+                                 }
+                             ))
                         }
                         
                         CustomSection(header: Text("Sources related Operations"))

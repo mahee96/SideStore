@@ -54,7 +54,7 @@ enum OperationStep: Hashable {
         ObjectIdentifier(EnableJITOperation.self): .enableJIT,
         ObjectIdentifier(ExportResignedAppOperation.self): .exportResignedApp,
         ObjectIdentifier(FetchAnisetteDataOperation.self): .fetchAnisetteData,
-        ObjectIdentifier(FetchAppIDsOperation.self): .fetchAppIDs,
+        ObjectIdentifier(SyncAppIDsOperation.self): .fetchAppIDs,
         ObjectIdentifier(FetchProvisioningProfilesInstallOperation.self): .fetchProvisioningProfilesInstall,
         ObjectIdentifier(FetchProvisioningProfilesRefreshOperation.self): .fetchProvisioningProfilesRefresh,
         ObjectIdentifier(FetchSourceOperation.self): .fetchSource,

@@ -616,7 +616,7 @@ private extension MyAppsViewController
     
     func fetchAppIDs()
     {
-        AppManager.shared.fetchAppIDs { (result) in
+        AppManager.shared.syncAppIDs { (result) in
             do
             {
                 try result.get()

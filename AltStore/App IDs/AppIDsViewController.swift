@@ -167,7 +167,7 @@ private extension AppIDsViewController
         guard !self.isLoading else { return }
         self.isLoading = true
         
-        AppManager.shared.fetchAppIDs { [weak self] (result) in
+        AppManager.shared.syncAppIDs { [weak self] (result) in
             guard let self = self else { return }
             do
             {
