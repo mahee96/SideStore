@@ -13,10 +13,10 @@ import Foundation
 
 final class ResignAppOperation: BaseOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ALTApplication {
+    override func execute(parentProgress: Progress?) async throws -> ALTApplication {
         debugLog("[ResignAppOperation] execute() started")
         defer { debugLog("[ResignAppOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
         
         guard
             let app = self.context.app,
@@ -32,15 +32,15 @@ final class ResignAppOperation: BaseOperation<InstallAppOperationContext, ALTApp
         
         debugLog("[ResignAppOperation] Resigning app \(self.context.bundleIdentifier)...")
         
-        // Prepare app bundle
-        let prepareAppProgress = Progress.discreteProgress(totalUnitCount: 2)
-        self.progress.addChild(prepareAppProgress, withPendingUnitCount: 3)
+        self.setProgress(5)
         
         let effectiveBundleId = self.context.targetBundleIdentifier
         
-        let appBundleURL = try await self.prepareAppBundle(for: app, profiles: profiles, appexBundleIds: context.appexBundleIds ?? [:], parentProgress: prepareAppProgress)
+        let appBundleURL = try await self.prepareAppBundle(for: app, profiles: profiles, appexBundleIds: context.appexBundleIds ?? [:])
         
-        let resignedURL = try await self.resignAppBundle(at: appBundleURL, team: team, certificate: certificate, profiles: Array(profiles.values), parentProgress: prepareAppProgress)
+        self.setProgress(40)
+        
+        let resignedURL = try await self.resignAppBundle(at: appBundleURL, team: team, certificate: certificate, profiles: Array(profiles.values))
         
         let updatedApp = AnyApp(
             name: app.name,
@@ -57,16 +57,13 @@ final class ResignAppOperation: BaseOperation<InstallAppOperationContext, ALTApp
         
         self.debugLog("[ResignAppOperation] Resigned app \(self.context.bundleIdentifier) to \(resignedApplication.bundleIdentifier).")
         
+        self.setProgress(100)
+        
         return resignedApplication
     }
 
     
-    private func prepareAppBundle(for app: ALTApplication, profiles: [String: ALTProvisioningProfile], appexBundleIds: [String: String], parentProgress: Progress) async throws -> URL {
-        let progress = Progress.discreteProgress(totalUnitCount: 1)
-        parentProgress.addChild(progress, withPendingUnitCount: 1)
-        defer {
-            progress.completedUnitCount = 1
-        }
+    private func prepareAppBundle(for app: ALTApplication, profiles: [String: ALTProvisioningProfile], appexBundleIds: [String: String]) async throws -> URL {
 
         let bundleIdentifier = context.targetBundleIdentifier
         let finalBundleIdentifier: String
@@ -216,9 +213,9 @@ final class ResignAppOperation: BaseOperation<InstallAppOperationContext, ALTApp
         }
     }
     
-    private func resignAppBundle(at fileURL: URL, team: ALTTeam, certificate: ALTCertificate, profiles: [ALTProvisioningProfile], parentProgress: Progress) async throws -> URL {
+    private func resignAppBundle(at fileURL: URL, team: ALTTeam, certificate: ALTCertificate, profiles: [ALTProvisioningProfile]) async throws -> URL {
         let signer = ALTSigner(team: team, certificate: certificate)
-        try await signer.signApp(at: fileURL, provisioningProfiles: profiles, parentProgress: parentProgress)
+        try await signer.signApp(at: fileURL, provisioningProfiles: profiles, parentProgress: self.progress)
         return try FileManager.default.zipAppBundle(at: fileURL)
     }
     
@@ -256,7 +253,7 @@ extension ALTSigner {
                     continuation.resume(throwing: error ?? OperationError.unknown())
                 }
             }
-            parentProgress.addChild(progress, withPendingUnitCount: 1)
+            parentProgress.addChild(progress, withPendingUnitCount: 50)
         }
     }
 }

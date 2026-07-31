@@ -211,7 +211,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
             startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
         }
         Task {
-            await AppManager.shared.update()
+            await AppManager.shared.reconcileInstalledApps()
         }
     }
 

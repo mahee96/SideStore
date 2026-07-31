@@ -42,28 +42,33 @@ class ClearAppCacheOperation: BaseOperation<OperationContext, Bool>, @unchecked 
     private let coordinator = NSFileCoordinator()
     private let coordinatorQueue = OperationQueue()
     
-    override init(context: OperationContext = OperationContext()) throws {
+    override init(context: OperationContext) throws {
         self.coordinatorQueue.name = "AltStore - ClearAppCacheOperation Queue"
         try super.init(context: context)
     }
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
+    override func execute(parentProgress: Progress?) async throws -> Bool {
         debugLog("[ClearAppCacheOperation] execute() started")
         defer { debugLog("[ClearAppCacheOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
+        self.setProgress(10)
         self.clearNukeCache()
         
+        self.setProgress(30)
         var allErrors = [Error]()
         
         do { try await self.clearTemporaryDirectory() }
         catch { allErrors.append(error) }
         
+        self.setProgress(60)
         do { try await self.removeUninstalledAppBackupDirectories() }
         catch { allErrors.append(error) }
         
+        self.setProgress(90)
         if !allErrors.isEmpty {
             throw OperationError.cacheClearError(errors: allErrors.map { $0.localizedDescription })
         }
+        self.setProgress(100)
         return true
     }
     
@@ -85,7 +90,20 @@ class ClearAppCacheOperation: BaseOperation<OperationContext, Bool>, @unchecked 
                                                                    includingPropertiesForKeys: [],
                                                                    options: [.skipsSubdirectoryDescendants, .skipsHiddenFiles])
         var errors = [Error]()
-        for fileURL in fileURLs {
+        let count = fileURLs.count
+        let startProgress = self.progress.completedUnitCount
+        let endProgress: Int64 = 60
+        let range = endProgress - startProgress
+        guard count > 0 else {
+            self.setProgress(endProgress)
+            return
+        }
+        
+        for (index, fileURL) in fileURLs.enumerated() {
+            if range > 0 {
+                let percent = startProgress + Int64(Double(index + 1) / Double(count) * Double(range))
+                self.setProgress(percent)
+            }
             do {
                 self.verboseLog("[ClearAppCacheOperation] Removing item from temporary directory: \(fileURL.lastPathComponent)")
                 try FileManager.default.removeItem(at: fileURL)
@@ -119,6 +137,7 @@ class ClearAppCacheOperation: BaseOperation<OperationContext, Bool>, @unchecked 
         
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory), isDirectory.boolValue else {
+            self.setProgress(90)
             return
         }
         
@@ -126,7 +145,20 @@ class ClearAppCacheOperation: BaseOperation<OperationContext, Bool>, @unchecked 
                                                                    includingPropertiesForKeys: [.isDirectoryKey, .nameKey],
                                                                    options: [.skipsSubdirectoryDescendants, .skipsHiddenFiles])
         var errors = [Error]()
-        for backupDirectory in fileURLs {
+        let count = fileURLs.count
+        let startProgress = self.progress.completedUnitCount
+        let endProgress: Int64 = 90
+        let range = endProgress - startProgress
+        guard count > 0 else {
+            self.setProgress(endProgress)
+            return
+        }
+        
+        for (index, backupDirectory) in fileURLs.enumerated() {
+            if range > 0 {
+                let percent = startProgress + Int64(Double(index + 1) / Double(count) * Double(range))
+                self.setProgress(percent)
+            }
             do {
                 let resourceValues = try backupDirectory.resourceValues(forKeys: [.isDirectoryKey, .nameKey])
                 guard let isDir = resourceValues.isDirectory, let bundleID = resourceValues.name else { continue }

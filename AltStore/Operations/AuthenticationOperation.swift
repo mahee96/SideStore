@@ -92,10 +92,10 @@ final class AuthenticationOperation: BaseOperation<AuthenticatedOperationContext
         self.operationQueue.name = "com.altstore.AuthenticationOperation"
     }
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> AuthenticationResult {
+    override func execute(parentProgress: Progress?) async throws -> AuthenticationResult {
         debugLog("[AuthenticationOperation] execute() started")
         defer { debugLog("[AuthenticationOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
 
         // Reset Keychain if email address changed
         if let newEmail = self.appleIDEmailAddress,
@@ -111,13 +111,13 @@ final class AuthenticationOperation: BaseOperation<AuthenticatedOperationContext
         let authResult = try await TaskChainCoalescer.shared.coalesce(key: "apple_auth") { () -> AuthenticationResult in
             // Check L1 - Session Cache
             if let cache = SessionCache.loadFromKeychain() {
-                if let validatedResult = try await self.validateSessionCache(cache, weights: weights) {
+                if let validatedResult = try await self.validateSessionCache(cache) {
                     return validatedResult
                 }
             }
             
             // L2: Sign-in (Silent credentials sign-in or fallback to UI)
-            return try await self.performNewSignIn(weights: weights)
+            return try await self.performNewSignIn()
         }
         
         self.context.team = authResult.0
@@ -125,14 +125,14 @@ final class AuthenticationOperation: BaseOperation<AuthenticatedOperationContext
         self.context.session = authResult.2
 
         // PHASE 2: Post-Authentication Work (Unlocked)
-        return try await self.performPostAuthenticationWork(result: authResult, weights: weights)
+        return try await self.performPostAuthenticationWork(result: authResult)
     }
     
-    private func validateSessionCache(_ cache: SessionCache, weights: [OperationStep: Int64]?) async throws -> AuthenticationResult? {
+    private func validateSessionCache(_ cache: SessionCache) async throws -> AuthenticationResult? {
         // Update anisette data if expired
         if cache.session.anisetteData.date.timeIntervalSinceNow < -40.0 {
             do {
-                let anisetteData = try await FetchAnisetteDataOperation(context: self.context).execute(parentProgress: self.progress, pendingUnitCount: 0, weights: weights ?? OperationProgressWeights.authenticate)
+                let anisetteData = try await FetchAnisetteDataOperation(context: self.context).execute(parentProgress: self.progress)
                 cache.session.anisetteData = anisetteData
             } catch {
                 self.verboseLog("[Authentication] Failed to update anisette data for cached session: \(error)")
@@ -158,14 +158,14 @@ final class AuthenticationOperation: BaseOperation<AuthenticatedOperationContext
         return nil
     }
     
-    private func performNewSignIn(weights: [OperationStep: Int64]?) async throws -> AuthenticationResult {
+    private func performNewSignIn() async throws -> AuthenticationResult {
         let stepWeight: Int64 = self.skipDeviceRegistration ? 33 : 25
         
         self.verboseLog("[Authentication] execute: Invoking signIn...")
-        let (account, session) = try await self.signIn(weights: weights)
+        let (account, session) = try await self.signIn()
         self.debugLog("[Authentication] execute: signIn completed successfully.")
         self.context.session = session
-        self.progress.completedUnitCount = stepWeight
+        self.setProgress(stepWeight)
         if self.isCancelled { throw OperationError.cancelled }
         
         self.verboseLog("[Authentication] execute: Invoking fetchTeam...")
@@ -191,35 +191,35 @@ final class AuthenticationOperation: BaseOperation<AuthenticatedOperationContext
         return (team, certificate, session)
     }
     
-    private func performPostAuthenticationWork(result: AuthenticationResult, weights: [OperationStep: Int64]?) async throws -> AuthenticationResult {
+    private func performPostAuthenticationWork(result: AuthenticationResult) async throws -> AuthenticationResult {
         let (team, certificate, session) = result
         let stepWeight: Int64 = self.skipDeviceRegistration ? 33 : 25
         
         do {
             self.debugLog("[Authentication] execute: Invoking save(team) checkpoint...")
             try await self.save(team)
-            self.progress.completedUnitCount = stepWeight * 2
+            self.setProgress(stepWeight * 2)
             if self.isCancelled { throw OperationError.cancelled }
             
-            self.progress.completedUnitCount = stepWeight * 3
+            self.setProgress(stepWeight * 3)
             if self.isCancelled { throw OperationError.cancelled }
             
             if !self.skipDeviceRegistration {
                 self.verboseLog("[Authentication] execute: Invoking registerCurrentDevice...")
                 _ = try await self.registerCurrentDevice(for: team, session: session)
                 self.debugLog("[Authentication] execute: registerCurrentDevice completed successfully.")
-                self.progress.completedUnitCount = stepWeight * 4
+                self.setProgress(stepWeight * 4)
                 if self.isCancelled { throw OperationError.cancelled }
             }
             
-            self.progress.completedUnitCount = 100
+            self.setProgress(100)
             self.verboseLog("[Authentication] execute: Invoking save(team)...")
             try await self.save(team)
             self.debugLog("[Authentication] execute: save(team) completed successfully.")
             if self.isCancelled { throw OperationError.cancelled }
             
             self.verboseLog("[Authentication] execute: Invoking cacheAppIDs...")
-            try await self.cacheAppIDs(team: team, session: session, weights: weights)
+            try await self.cacheAppIDs(team: team, session: session)
             self.debugLog("[Authentication] execute: cacheAppIDs completed successfully.")
             
             self.verboseLog("[Authentication] execute: Invoking postAuthenticationCleanup with success...")
@@ -428,11 +428,11 @@ final class AuthenticationOperation: BaseOperation<AuthenticatedOperationContext
         }
     }
     
-    private func signIn(weights: [OperationStep: Int64]?) async throws -> (ALTAccount, ALTAppleAPISession) {
+    private func signIn() async throws -> (ALTAccount, ALTAppleAPISession) {
         if let adsid = Keychain.shared.appleIDAdsid, let xcodeToken = Keychain.shared.appleIDXcodeToken {
             self.verboseLog("[AuthenticationOperation] Authenticating Apple ID with tokens...")
             do {
-                let (account, session) = try await self.authenticateWithToken(adsid: adsid, xcodeToken: xcodeToken, weights: weights)
+                let (account, session) = try await self.authenticateWithToken(adsid: adsid, xcodeToken: xcodeToken)
                 return (account, session)
             } catch {
                 self.debugLog("[AuthenticationOperation] Authentication failed with token. Fall back to email and password login: \(error)")
@@ -443,21 +443,21 @@ final class AuthenticationOperation: BaseOperation<AuthenticatedOperationContext
             self.debugLog("Authenticating Apple ID...")
             
             do {
-                let (account, session) = try await self.authenticate(appleID: appleID, password: password, weights: weights)
+                let (account, session) = try await self.authenticate(appleID: appleID, password: password)
                 self.appleIDPassword = password
                 return (account, session)
             } catch ALTAppleAPIError.incorrectCredentials, ALTAppleAPIError.appSpecificPasswordRequired {
-                return try await self.presentSignInUI(weights: weights)
+                return try await self.presentSignInUI()
             } catch {
                 throw error
             }
         } else {
-            return try await self.presentSignInUI(weights: weights)
+            return try await self.presentSignInUI()
         }
     }
     
     @MainActor
-    private func presentSignInUI(weights: [OperationStep: Int64]?) async throws -> (ALTAccount, ALTAppleAPISession) {
+    private func presentSignInUI() async throws -> (ALTAccount, ALTAppleAPISession) {
         self.verboseLog("[Authentication] presentSignInUI: Preparing to present sign-in UI...")
         return try await withCheckedThrowingContinuation { continuation in
             let authenticationViewController = self.storyboard.instantiateViewController(withIdentifier: "authenticationViewController") as! AuthenticationViewController
@@ -465,7 +465,7 @@ final class AuthenticationOperation: BaseOperation<AuthenticatedOperationContext
                 self.verboseLog("[Authentication] presentSignInUI: authenticationHandler invoked for Apple ID \(appleID)...")
                 Task {
                     do {
-                        let (account, session) = try await self.authenticate(appleID: appleID, password: password, weights: weights)
+                        let (account, session) = try await self.authenticate(appleID: appleID, password: password)
                         self.debugLog("[Authentication] presentSignInUI: AuthenticationOperation.authenticate succeeded.")
                         completionHandler(.success((account, session)))
                     } catch {
@@ -500,9 +500,9 @@ final class AuthenticationOperation: BaseOperation<AuthenticatedOperationContext
         }
     }
     
-    private func authenticateWithToken(adsid: String, xcodeToken: String, weights: [OperationStep: Int64]?) async throws -> (ALTAccount, ALTAppleAPISession) {
+    private func authenticateWithToken(adsid: String, xcodeToken: String) async throws -> (ALTAccount, ALTAppleAPISession) {
         let anisetteData = try await FetchAnisetteDataOperation(context: self.context)
-            .execute(parentProgress: progress, weights: weights ?? OperationProgressWeights.authenticate)
+            .execute(parentProgress: progress)
         
         let session = ALTAppleAPISession(dsid: adsid, authToken: xcodeToken, anisetteData: anisetteData)
         let account = try await ALTAppleAPI.shared.fetchAccount2(session: session)
@@ -510,11 +510,11 @@ final class AuthenticationOperation: BaseOperation<AuthenticatedOperationContext
         return (account, session)
     }
     
-    private func authenticate(appleID: String, password: String, weights: [OperationStep: Int64]?) async throws -> (ALTAccount, ALTAppleAPISession) {
+    private func authenticate(appleID: String, password: String) async throws -> (ALTAccount, ALTAppleAPISession) {
         self.appleIDEmailAddress = appleID
         
         let anisetteData = try await FetchAnisetteDataOperation(context: self.context)
-            .execute(parentProgress: progress, weights: weights ?? OperationProgressWeights.authenticate)
+            .execute(parentProgress: progress)
         
         let verificationHandler: ((@escaping (String?) -> Void) -> Void)?
         
@@ -825,12 +825,9 @@ final class AuthenticationOperation: BaseOperation<AuthenticatedOperationContext
         }
     }
     
-    private func cacheAppIDs(team: ALTTeam, session: ALTAppleAPISession, weights: [OperationStep: Int64]?) async throws {
+    private func cacheAppIDs(team: ALTTeam, session: ALTAppleAPISession) async throws {
         let syncAppIDsOperation = try SyncAppIDsOperation(context: self.context)
-        try await syncAppIDsOperation.execute(
-            parentProgress: progress,
-            weights: weights ?? OperationProgressWeights.authenticate
-        )
+        try await syncAppIDsOperation.execute(parentProgress: progress)
     }
     
     @MainActor

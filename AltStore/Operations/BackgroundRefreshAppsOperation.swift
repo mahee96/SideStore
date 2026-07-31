@@ -58,10 +58,11 @@ final class BackgroundRefreshAppsOperation: BaseOperation<OperationContext, [Str
         try super.init(context: OperationContext(dbBackgroundContext: dbContext))
     }
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> [String: Result<InstalledApp, Error>] {
+    override func execute(parentProgress: Progress?) async throws -> [String: Result<InstalledApp, Error>] {
         debugLog("[BackgroundRefreshAppsOperation] execute() started")
         defer { debugLog("[BackgroundRefreshAppsOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
+        self.setProgress(10)
         
         guard let dbContext = self.context.dbBackgroundContext else {
             let error = OperationError.invalidParameters("BackgroundRefreshAppsOperation: context.dbBackgroundContext is nil")
@@ -132,10 +133,9 @@ final class BackgroundRefreshAppsOperation: BaseOperation<OperationContext, [Str
                 }
             }
             group.completionHandler = { (results) in
+                self.setProgress(100)
                 continuation.resume(returning: results)
             }
-            
-            self.progress.addChild(group.progress, withPendingUnitCount: 1)
         }
     }
     

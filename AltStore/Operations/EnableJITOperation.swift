@@ -23,16 +23,18 @@ final class EnableJITOperation: BaseOperation<InstallAppOperationContext, Bool>,
 {
     private var cancellable: AnyCancellable?
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
+    override func execute(parentProgress: Progress?) async throws -> Bool {
         debugLog("[EnableJITOperation] execute() started")
         defer { debugLog("[EnableJITOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
+        self.setProgress(10)
         
         guard let installedApp = self.context.installedApp else {
             throw OperationError.invalidParameters("EnableJITOperation.main: self.context.installedApp is nil")
         }
         
         try await self.enableJIT(for: installedApp)
+        self.setProgress(100)
         return true
     }
 
@@ -45,8 +47,10 @@ final class EnableJITOperation: BaseOperation<InstallAppOperationContext, Bool>,
             guard let serverURL = URL(string: sideJITIP) else {
                 throw OperationError.unableToConnectSideJIT
             }
+            self.setProgress(30)
             do {
                 try await enableJITSideJITServer(serverURL: serverURL, installedApp: installedApp)
+                self.setProgress(90)
                 self.debugLog("JIT Enabled Successfully :3 (code made by Stossy11!)")
             } catch {
                 if let serverError = error as? SideJITServerErrorType {
@@ -75,10 +79,13 @@ final class EnableJITOperation: BaseOperation<InstallAppOperationContext, Bool>,
                 throw OperationError.invalidParameters("EnableJITOperation: installedApp.managedObjectContext is nil")
             }
             let targetBundleId = await ctx.perform { installedApp.resignedBundleIdentifier }
+            self.setProgress(30)
 
             var lastError: Error?
             let maxRetries = 3
-            for _ in 0..<maxRetries {
+            for retry in 0..<maxRetries {
+                let percent = 30 + Int64(Double(retry) / Double(maxRetries) * 60.0)
+                self.setProgress(percent)
                 do {
                     try await debugApp(targetBundleId)
                     return

@@ -12,15 +12,17 @@ import Foundation
 
 final class CleanStagedAppOperation: BaseOperation<InstallAppOperationContext, Void>, @unchecked Sendable {
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws {
+    override func execute(parentProgress: Progress?) async throws {
         debugLog("[CleanStagedAppOperation] execute() started")
         defer { debugLog("[CleanStagedAppOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
+        self.setProgress(10)
         
         let tempDir = self.context.temporaryDirectory
         debugLog("[CleanStagedAppOperation] Removing temporary staged app directory: \(tempDir)")
         
         if FileManager.default.fileExists(atPath: tempDir.path) {
+            self.setProgress(40)
             do {
                 try FileManager.default.removeItem(at: tempDir)
                 debugLog("[CleanStagedAppOperation] Successfully removed temporary staged app directory.")
@@ -28,5 +30,6 @@ final class CleanStagedAppOperation: BaseOperation<InstallAppOperationContext, V
                 debugLog("[CleanStagedAppOperation] Failed to remove temporary staged app directory: \(error)")
             }
         }
+        self.setProgress(100)
     }
 }

@@ -18,15 +18,17 @@ final class InstallBackupAppOperation: BaseOperation<InstallAppOperationContext,
         try super.init(context: context)
     }
 
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> InstalledApp {
+    override func execute(parentProgress: Progress?) async throws -> InstalledApp {
         debugLog("[InstallBackupAppOperation] execute() started")
         defer { debugLog("[InstallBackupAppOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
+        self.setProgress(10)
 
         guard ALTApplication(fileURL: app.fileURL) != nil else {
             throw OperationError.appNotFound(name: app.name)
         }
 
+        self.setProgress(20)
         let temporaryDirectoryURL = context.temporaryDirectory.appendingPathComponent("SideBackup-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: temporaryDirectoryURL, withIntermediateDirectories: true, attributes: nil)
 
@@ -34,11 +36,13 @@ final class InstallBackupAppOperation: BaseOperation<InstallAppOperationContext,
             throw OperationError.appNotFound(name: "SideBackup")
         }
 
+        self.setProgress(40)
         let unzippedAppBundleURL = try FileManager.default.unzipAppBundle(at: sidebackupFileURL, toDirectory: temporaryDirectoryURL)
         guard let unzippedAppBundle = Bundle(url: unzippedAppBundleURL) else {
             throw OperationError.invalidApp
         }
 
+        self.setProgress(70)
         if var infoDictionary = unzippedAppBundle.infoDictionary {
             infoDictionary["CFBundleDisplayName"] = app.name
             infoDictionary[kCFBundleIdentifierKey as String] = context.targetBundleIdentifier
@@ -67,10 +71,12 @@ final class InstallBackupAppOperation: BaseOperation<InstallAppOperationContext,
             try (infoDictionary as NSDictionary).write(to: unzippedAppBundle.infoPlistURL)
         }
 
+        self.setProgress(90)
         guard let backupApp = ALTApplication(fileURL: unzippedAppBundleURL) else {
             throw OperationError.invalidApp
         }
         context.app = backupApp
+        self.setProgress(100)
         return app
     }
 }

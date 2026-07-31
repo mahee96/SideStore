@@ -28,9 +28,9 @@ final class BackupAppOperation: BaseOperation<InstallAppOperationContext, URL>, 
         try super.init(context: context)
     }
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> URL {
+    override func execute(parentProgress: Progress?) async throws -> URL {
         self.debugLog("[BackupAppOperation] execute() started. Action: \(action.rawValue)")
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
         guard let installedApp = context.installedApp else {
             self.debugLog("[BackupAppOperation] Error: context.installedApp is nil")
             throw OperationError.invalidParameters("BackupAppOperation.execute: context.installedApp is nil")
@@ -177,7 +177,7 @@ final class BackupAppOperation: BaseOperation<InstallAppOperationContext, URL>, 
                 let mappedResult = result.mapError { self.mapBackupError($0) }
                 self.debugLog("[BackupAppOperation] Resuming continuation with mapped result: \(mappedResult)")
                 if case .success = mappedResult {
-                    self.progress.completedUnitCount += 1
+                    self.setProgress(self.progress.completedUnitCount + 1)
                 }
                 continuation.resume(with: mappedResult)
             }

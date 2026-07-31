@@ -16,7 +16,7 @@ protocol AsyncOperation<T>: AnyObject, ProgressReporting, OperationLogging {
     var stepType: OperationStep { get }
 
     @discardableResult
-    func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> T
+    func execute(parentProgress: Progress?) async throws -> T
     func cancel()
 }
 
@@ -49,14 +49,30 @@ class BaseOperation<Context: OperationContext, Result>: NSObject, AsyncOperation
         self.progress.cancellationHandler = { [weak self] in self?.cancel() }
     }
     
-    func executePreconditionCheck(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws {
+    func setProgress(_ completedUnitCount: Int64) {
+        let previous = self.progress.completedUnitCount
+        self.progress.completedUnitCount = completedUnitCount
+        verboseLog("[\(String(describing: type(of: self)))] Progress updated: \(previous) -> \(completedUnitCount) (total: \(self.progress.totalUnitCount))")
+    }
+    
+    func executePreconditionCheck(parentProgress: Progress?) async throws {
         let className = String(describing: type(of: self))
         debugLog("[\(className)] executePreconditionCheck() started")
         defer { debugLog("[\(className)] executePreconditionCheck() completed") }
         
-        let unitCount = weights?[self.stepType] ?? pendingUnitCount
-        if let parentProgress = parentProgress, unitCount > 0 {
-            parentProgress.addChild(self.progress, withPendingUnitCount: unitCount)
+        let unitCount: Int64
+        if let parentProgress = parentProgress {
+            let steps = self.context.steps.isEmpty ? [ExecutionStep(self.stepType, 100)] : self.context.steps
+            if let match = steps.first(where: { $0.step == self.stepType }) {
+                unitCount = match.weight
+            } else {
+                throw OperationError.invalidParameters("Missing progress weight for operation step: \(self.stepType) in steps list")
+            }
+            
+            if unitCount > 0 {
+                verboseLog("[\(className)] Adding child progress to parent with weight: \(unitCount) (parent total: \(parentProgress.totalUnitCount))")
+                parentProgress.addChild(self.progress, withPendingUnitCount: unitCount)
+            }
         }
         if self.isCancelled {
             throw OperationError.cancelled
@@ -67,19 +83,14 @@ class BaseOperation<Context: OperationContext, Result>: NSObject, AsyncOperation
     }
     
     @discardableResult
-    func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Result
+    func execute(parentProgress: Progress?) async throws -> Result
     {
         throw AbstractClassError.abstractMethodInvoked
     }
     
     @discardableResult
-    func execute(parentProgress: Progress?, weights: [OperationStep: Int64]?) async throws -> Result {
-        try await self.execute(parentProgress: parentProgress, pendingUnitCount: 0, weights: weights)
-    }
-    
-    @discardableResult
-    func execute(parentProgress: Progress? = nil, pendingUnitCount: Int64 = 1) async throws -> Result {
-        try await self.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: nil)
+    func execute() async throws -> Result {
+        try await self.execute(parentProgress: nil)
     }
     
     func cancel() {

@@ -13,10 +13,10 @@ import CoreData
 
 final class RefreshAppOperation: BaseOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> InstalledApp {
+    override func execute(parentProgress: Progress?) async throws -> InstalledApp {
         debugLog("[RefreshAppOperation] execute() started")
         defer { debugLog("[RefreshAppOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
         
         guard let profiles = self.context.provisioningProfiles else {
             throw OperationError.invalidParameters("RefreshAppOperation.execute: self.context.provisioningProfiles is nil")
@@ -43,7 +43,7 @@ final class RefreshAppOperation: BaseOperation<InstallAppOperationContext, Insta
     }
     
     private func updateInstalledApp(for app: ALTApplication, profiles: [String: ALTProvisioningProfile], in dbContext: NSManagedObjectContext) throws -> InstalledApp {
-        self.progress.completedUnitCount += 1
+        self.setProgress(self.progress.completedUnitCount + 1)
         
         let predicate = NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), self.context.bundleIdentifier)
         guard let installedApp = InstalledApp.first(satisfying: predicate, in: dbContext) else {

@@ -12,22 +12,25 @@ import Foundation
 
 final class ExportResignedAppOperation: BaseOperation<InstallAppOperationContext, URL>, @unchecked Sendable {
 
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> URL {
+    override func execute(parentProgress: Progress?) async throws -> URL {
         debugLog("[ExportResignedAppOperation] execute() started")
         defer { debugLog("[ExportResignedAppOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
+        self.setProgress(10)
 
         guard let resignedApp = self.context.resignedApp else {
             throw OperationError.invalidParameters("ExportResignedAppOperation: context.resignedApp is nil")
         }
 
         guard UserDefaults.standard.isExportResignedAppEnabled else {
+            self.setProgress(100)
             return resignedApp.fileURL
         }
 
         let sourceURL = resignedApp.fileURL
         let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let resignedAppsURL = documentsURL.appendingPathComponent("ResignedApps")
+        self.setProgress(30)
         do {
             if !FileManager.default.fileExists(atPath: resignedAppsURL.path) {
                 try FileManager.default.createDirectory(at: resignedAppsURL, withIntermediateDirectories: true, attributes: nil)
@@ -41,6 +44,7 @@ final class ExportResignedAppOperation: BaseOperation<InstallAppOperationContext
         let isSideBackup = utis?.first?["UTTypeDescription"] as? String == "SideStore Backup App"
         let destPath = isSideBackup ? resignedApp.name + "-sidebackup" : resignedApp.name
         let destinationURL = resignedAppsURL.appendingPathComponent(destPath + ".app")
+        self.setProgress(60)
         do {
             if FileManager.default.fileExists(atPath: destinationURL.path) {
                 try FileManager.default.removeItem(at: destinationURL)
@@ -49,6 +53,7 @@ final class ExportResignedAppOperation: BaseOperation<InstallAppOperationContext
             debugLog("Failed to delete existing file at destination: \(error)")
             throw error
         }
+        self.setProgress(80)
         do {
             try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
             debugLog("File copied to: \(destinationURL.path)")
@@ -56,6 +61,7 @@ final class ExportResignedAppOperation: BaseOperation<InstallAppOperationContext
             debugLog("Failed to copy file to destination: \(error)")
             throw error
         }
+        self.setProgress(100)
         return destinationURL
     }
 }

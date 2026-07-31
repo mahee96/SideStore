@@ -233,7 +233,7 @@ extension LaunchViewController {
         guard !didFinishLaunching else { return }
         didFinishLaunching = true
         
-        await AppManager.shared.update()
+        await AppManager.shared.reconcileInstalledApps()
         AppManager.shared.updateAllSources { result in
             guard case .failure(let error) = result else { return }
             debugLog("Failed to update sources on launch. \(error.localizedDescription)")

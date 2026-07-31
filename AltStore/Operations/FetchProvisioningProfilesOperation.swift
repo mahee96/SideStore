@@ -16,10 +16,10 @@ class FetchProvisioningProfilesOperation: BaseOperation<AppOperationContext, [St
     
     // this class is abstract or shouldn't be instantiated outside, use the subclasses
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> [String: ALTProvisioningProfile] {
+    override func execute(parentProgress: Progress?) async throws -> [String: ALTProvisioningProfile] {
         debugLog("[FetchProvisioningProfilesOperation] execute() started")
         defer { debugLog("[FetchProvisioningProfilesOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
         if let error = self.context.error {
             self.debugLog("[FetchProvisioningProfiles] Context has pre-existing error: \(error.localizedDescription)")
             throw error
@@ -39,16 +39,16 @@ class FetchProvisioningProfilesOperation: BaseOperation<AppOperationContext, [St
         let effectiveBundleId = self.context.targetBundleIdentifier
         self.debugLog("[FetchProvisioningProfiles] Executing for app \(app.bundleIdentifier), targetBundleID: \(effectiveBundleId), team: \(team.identifier), useMainProfile: \(self.context.useMainProfile)")
         
-        self.progress.totalUnitCount = Int64(1 + app.appExtensions.count)
+        self.setProgress(10)
 
         self.debugLog("[FetchProvisioningProfiles] Preparing main provisioning profile for \(app.bundleIdentifier)...")
         let profile = try await self.prepareProvisioningProfile(for: app, parentApp: nil, team: team, session: session)
         self.debugLog("[FetchProvisioningProfiles] Main profile prepared successfully for \(effectiveBundleId), expiration: \(String(describing: profile.expirationDate))")
-        self.progress.completedUnitCount += 1
         
         var profiles = [effectiveBundleId: profile]
         
-        if !self.context.useMainProfile {
+        if !self.context.useMainProfile && !app.appExtensions.isEmpty {
+            self.setProgress(50)
             self.debugLog("[FetchProvisioningProfiles] Preparing profiles for \(app.appExtensions.count) app extensions...")
             try await withThrowingTaskGroup(of: (String, ALTProvisioningProfile).self) { group in
                 for appExtension in app.appExtensions {
@@ -62,12 +62,24 @@ class FetchProvisioningProfilesOperation: BaseOperation<AppOperationContext, [St
                     }
                 }
                 
+                var completedCount = 0
+                let totalExtensions = app.appExtensions.count
+                let startProgress = self.progress.completedUnitCount
+                let endProgress: Int64 = 100
+                let range = endProgress - startProgress
+                
                 for try await (bundleId, extProfile) in group {
                     profiles[bundleId] = extProfile
                     self.debugLog("[FetchProvisioningProfiles] Added profile for extension bundle ID: \(bundleId)")
-                    self.progress.completedUnitCount += 1
+                    completedCount += 1
+                    if range > 0 {
+                        let percent = startProgress + Int64(Double(completedCount) / Double(totalExtensions) * Double(range))
+                        self.setProgress(percent)
+                    }
                 }
             }
+        } else {
+            self.setProgress(100)
         }
         
         self.debugLog("[FetchProvisioningProfiles] Total profiles prepared: \(profiles.count) -> keys: \(Array(profiles.keys))")
@@ -238,7 +250,7 @@ class FetchProvisioningProfilesOperation: BaseOperation<AppOperationContext, [St
 
 class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperation, @unchecked Sendable {
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> [String : ALTProvisioningProfile] {
+    override func execute(parentProgress: Progress?) async throws -> [String : ALTProvisioningProfile] {
         if self.context.app?.bundle.bundleURL.path.contains("SideBackup") == true || self.context.app?.bundle.bundleURL.path.contains("AltBackup") == true {
             var appGroups = self.context.app?.entitlements[.appGroups] as? [String] ?? []
             if !appGroups.contains(Bundle.baseAltStoreAppGroupID) {

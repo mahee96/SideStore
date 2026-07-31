@@ -50,10 +50,10 @@ final class FetchSourceOperation: BaseOperation<OperationContext, Source>, @unch
         self.dataTask?.cancel()
     }
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Source {
+    override func execute(parentProgress: Progress?) async throws -> Source {
         debugLog("[FetchSourceOperation] execute() started")
         defer { debugLog("[FetchSourceOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
         
         guard let dbContext = self.context.dbBackgroundContext else {
             throw OperationError.invalidParameters("FetchSourceOperation: context.dbBackgroundContext is nil")
@@ -80,13 +80,15 @@ final class FetchSourceOperation: BaseOperation<OperationContext, Source>, @unch
             return identifier
         }
         
-        return try dbContext.performAndWait {
+        let fetchedSource = try dbContext.performAndWait {
             if let source = Source.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(Source.identifier), identifier), in: dbContext) {
                 return source
             } else {
                 throw OperationError.noSources
             }
         }
+        self.setProgress(100)
+        return fetchedSource
     }
     
     private func fetchSourceData(with request: URLRequest) async throws -> (Data, URLResponse) {
@@ -100,7 +102,6 @@ final class FetchSourceOperation: BaseOperation<OperationContext, Source>, @unch
                     continuation.resume(throwing: OperationError.unknown())
                 }
             }
-            self.progress.addChild(dataTask.progress, withPendingUnitCount: 1)
             dataTask.resume()
             self.dataTask = dataTask
         }

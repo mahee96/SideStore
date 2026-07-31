@@ -13,10 +13,11 @@ import Foundation
 
 final class StageAppOperation: BaseOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ALTApplication {
+    override func execute(parentProgress: Progress?) async throws -> ALTApplication {
         debugLog("[StageAppOperation] execute() started")
         defer { debugLog("[StageAppOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
+        self.setProgress(10)
         
         if let app = self.context.app,
            app.bundle.bundleURL.path.contains("SideBackup") || app.bundle.bundleURL.path.contains("AltBackup"),
@@ -31,23 +32,27 @@ final class StageAppOperation: BaseOperation<InstallAppOperationContext, ALTAppl
         let fileURL = app.fileURL
         let tempDir = self.context.temporaryDirectory
         
+        self.setProgress(30)
         if !FileManager.default.fileExists(atPath: tempDir.path) {
             try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true, attributes: nil)
         }
         
         if fileURL.path.hasPrefix(tempDir.path) {
             debugLog("[StageAppOperation] App is already in temporary directory: \(fileURL)")
+            self.setProgress(100)
             return app
         }
         
         let destinationURL = tempDir.appendingPathComponent(fileURL.lastPathComponent)
         debugLog("[StageAppOperation] Copying cached app from \(fileURL) to \(destinationURL)")
         
+        self.setProgress(60)
         if FileManager.default.fileExists(atPath: destinationURL.path) {
             debugLog("[StageAppOperation] Removing pre-existing app bundle at destination: \(destinationURL)")
             try FileManager.default.removeItem(at: destinationURL)
         }
         
+        self.setProgress(80)
         debugLog("[StageAppOperation] Copying item from \(fileURL) to \(destinationURL)")
         try FileManager.default.copyItem(at: fileURL, to: destinationURL)
         debugLog("[StageAppOperation] Successfully copied app bundle to destination.")
@@ -57,6 +62,7 @@ final class StageAppOperation: BaseOperation<InstallAppOperationContext, ALTAppl
         }
         
         self.context.app = stagedApp
+        self.setProgress(100)
         return stagedApp
     }
 }

@@ -18,14 +18,16 @@ final class ScheduleExpirationWarningNotificationOperation: BaseOperation<Operat
         try super.init(context: context)
     }
 
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
+    override func execute(parentProgress: Progress?) async throws -> Bool {
         debugLog("[ScheduleExpirationWarningNotificationOperation] execute() started")
         defer { debugLog("[ScheduleExpirationWarningNotificationOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
+        self.setProgress(10)
 
         let center = UNUserNotificationCenter.current()
         let now = Date()
         var expirationDate = Date()
+        self.setProgress(30)
         installedApp.managedObjectContext?.performAndWait {
             expirationDate = installedApp.expirationDate
         }
@@ -37,9 +39,20 @@ final class ScheduleExpirationWarningNotificationOperation: BaseOperation<Operat
         ]
 
         let allIdentifiers = milestones.map { "\(AppManager.expirationWarningNotificationID).\($0.id)" }
+        self.setProgress(50)
         center.removePendingNotificationRequests(withIdentifiers: allIdentifiers)
 
-        for milestone in milestones {
+        let startProgress = self.progress.completedUnitCount
+        let endProgress: Int64 = 95
+        let range = endProgress - startProgress
+        let count = milestones.count
+        
+        for (index, milestone) in milestones.enumerated() {
+            if range > 0 {
+                let percent = startProgress + Int64(Double(index + 1) / Double(count) * Double(range))
+                self.setProgress(percent)
+            }
+            
             let identifier = "\(AppManager.expirationWarningNotificationID).\(milestone.id)"
             let targetDate = expirationDate.addingTimeInterval(-milestone.timeBeforeExp)
             let triggerInterval = targetDate.timeIntervalSince(now)
@@ -57,6 +70,7 @@ final class ScheduleExpirationWarningNotificationOperation: BaseOperation<Operat
 
             try await center.add(request)
         }
+        self.setProgress(100)
         return true
     }
 }

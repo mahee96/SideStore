@@ -93,119 +93,122 @@ class AppManager: ObservableObject
 
 extension AppManager
 {
-    func update() async
+    func reconcileInstalledApps() async
     {
-        let dbBackgroundContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
-        var altstoreAppObjectID: NSManagedObjectID?
+        await Task.detached {
+            let dbBackgroundContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
+            var altstoreAppObjectID: NSManagedObjectID?
     
-        #if targetEnvironment(simulator)
-        // Apps aren't ever actually installed to simulator, so just do nothing rather than delete them from database.
-        #else
+            #if targetEnvironment(simulator)
+            // Apps aren't ever actually installed to simulator, so just do nothing rather than delete them from database.
+            #else
         
-        do
-        {
-            try await dbBackgroundContext.perform {
-                let installedApps = InstalledApp.all(in: dbBackgroundContext)
+            do
+            {
+                try await dbBackgroundContext.perform {
+                    let installedApps = InstalledApp.all(in: dbBackgroundContext)
                 
-                if UserDefaults.standard.legacySideloadedApps == nil
-                {
-                    // First time updating apps since updating AltStore to use custom UTIs,
-                    // so cache all existing apps temporarily to prevent us from accidentally
-                    // deleting them due to their custom UTI not existing (yet).
-                    let apps = installedApps.map { $0.bundleIdentifier }
-                    UserDefaults.standard.legacySideloadedApps = apps
-                }
-                
-                let legacySideloadedApps = Set(UserDefaults.standard.legacySideloadedApps ?? [])
-                
-                for app in installedApps
-                {
-                    guard app.bundleIdentifier != StoreApp.altstoreAppID else {
-                        altstoreAppObjectID = app.objectID
-                        continue
-                    }
-                    
-                    guard !self.isActivelyManagingApp(withBundleID: app.bundleIdentifier) else { continue }
-                    
-                    if !UserDefaults.standard.isLegacyDeactivationSupported
+                    if UserDefaults.standard.legacySideloadedApps == nil
                     {
-                        // We can't (ab)use provisioning profiles to deactivate apps,
-                        // which means we must delete apps to free up active slots.
-                        // So, only check if active apps are installed to prevent
-                        // false positives when checking inactive apps.
-                        guard app.isActive else { continue }
+                        // First time updating apps since updating AltStore to use custom UTIs,
+                        // so cache all existing apps temporarily to prevent us from accidentally
+                        // deleting them due to their custom UTI not existing (yet).
+                        let apps = installedApps.map { $0.bundleIdentifier }
+                        UserDefaults.standard.legacySideloadedApps = apps
                     }
-                    
-                    let uti = UTTypeCopyDeclaration(app.installedAppUTI as CFString)?.takeRetainedValue() as NSDictionary?
-                    if uti == nil && !legacySideloadedApps.contains(app.bundleIdentifier)
+                
+                    let legacySideloadedApps = Set(UserDefaults.standard.legacySideloadedApps ?? [])
+                
+                    for app in installedApps
                     {
-                        // This UTI is not declared by any apps, which means this app has been deleted by the user.
-                        // This app is also not a legacy sideloaded app, so we can assume it's fine to delete it.
-                        dbBackgroundContext.delete(app)
-                        
-                        if var patchedApps = UserDefaults.standard.patchedApps, let index = patchedApps.firstIndex(of: app.bundleIdentifier)
+                        guard app.bundleIdentifier != StoreApp.altstoreAppID else {
+                            altstoreAppObjectID = app.objectID
+                            continue
+                        }
+                    
+                        guard !self.isActivelyManagingApp(withBundleID: app.bundleIdentifier) else { continue }
+                    
+                        if !UserDefaults.standard.isLegacyDeactivationSupported
                         {
-                            patchedApps.remove(at: index)
-                            UserDefaults.standard.patchedApps = patchedApps
+                            // We can't (ab)use provisioning profiles to deactivate apps,
+                            // which means we must delete apps to free up active slots.
+                            // So, only check if active apps are installed to prevent
+                            // false positives when checking inactive apps.
+                            guard app.isActive else { continue }
+                        }
+                    
+                        let uti = UTTypeCopyDeclaration(app.installedAppUTI as CFString)?.takeRetainedValue() as NSDictionary?
+                        if uti == nil && !legacySideloadedApps.contains(app.bundleIdentifier)
+                        {
+                            // This UTI is not declared by any apps, which means this app has been deleted by the user.
+                            // This app is also not a legacy sideloaded app, so we can assume it's fine to delete it.
+                            dbBackgroundContext.delete(app)
+                        
+                            if var patchedApps = UserDefaults.standard.patchedApps, let index = patchedApps.firstIndex(of: app.bundleIdentifier)
+                            {
+                                patchedApps.remove(at: index)
+                                UserDefaults.standard.patchedApps = patchedApps
+                            }
                         }
                     }
-                }
                 
-                if dbBackgroundContext.hasChanges {
-                    try dbBackgroundContext.save()
-                }
-            }
-            
-            if let objectID = altstoreAppObjectID {
-                let context = OperationContext(dbBackgroundContext: dbBackgroundContext)
-                let app = try await dbBackgroundContext.perform {
-                    dbBackgroundContext.object(with: objectID) as! InstalledApp
-                }
-                let scheduleNotifOp = try ScheduleExpirationWarningNotificationOperation(
-                    installedApp: app,
-                    context: context
-                )
-                try await scheduleNotifOp.execute()
-            }
-        }
-        catch
-        {
-            debugLog("Error while fetching installed apps. \(error)")
-        }
-        #endif
-        
-        do
-        {
-            let installedAppBundleIDs = try await dbBackgroundContext.perform {
-                InstalledApp.all(in: dbBackgroundContext).map { $0.bundleIdentifier }
-            }
-                            
-            let cachedAppDirectories = try FileManager.default.contentsOfDirectory(at: InstalledApp.appsDirectoryURL,
-                                                                                   includingPropertiesForKeys: [.isDirectoryKey, .nameKey],
-                                                                                   options: [.skipsSubdirectoryDescendants, .skipsHiddenFiles])
-            for appDirectory in cachedAppDirectories
-            {
-                do
-                {
-                    let resourceValues = try appDirectory.resourceValues(forKeys: [.isDirectoryKey, .nameKey])
-                    guard let isDirectory = resourceValues.isDirectory, let bundleID = resourceValues.name else { continue }
-                    
-                    if isDirectory && !installedAppBundleIDs.contains(bundleID) && !self.isActivelyManagingApp(withBundleID: bundleID)
-                    {
-                        debugLog("DELETING CACHED APP: \(bundleID)")
-                        try FileManager.default.removeItem(at: appDirectory)
+                    if dbBackgroundContext.hasChanges {
+                        try dbBackgroundContext.save()
                     }
                 }
-                catch
-                {
-                    debugLog("Failed to remove cached app directory. \(error)")
+            
+                if let objectID = altstoreAppObjectID {
+                    let context = OperationContext(steps: .scheduleExpirationWarningNotification, dbBackgroundContext: dbBackgroundContext)
+                    let app = try await dbBackgroundContext.perform {
+                        dbBackgroundContext.object(with: objectID) as! InstalledApp
+                    }
+                    let scheduleNotifOp = try ScheduleExpirationWarningNotificationOperation(
+                        installedApp: app,
+                        context: context
+                    )
+                    try await scheduleNotifOp.execute()
                 }
             }
-        }
-        catch
-        {
-            debugLog("Failed to remove cached apps. \(error)")
-        }
+            catch
+            {
+                debugLog("Error while fetching installed apps. \(error)")
+            }
+            #endif
+        
+            do
+            {
+                let installedAppBundleIDs = try await dbBackgroundContext.perform {
+                    InstalledApp.all(in: dbBackgroundContext).map { $0.bundleIdentifier }
+                }
+                            
+                let cachedAppDirectories = try FileManager.default.contentsOfDirectory(at: InstalledApp.appsDirectoryURL,
+                                                                                       includingPropertiesForKeys: [.isDirectoryKey, .nameKey],
+                                                                                       options: [.skipsSubdirectoryDescendants, .skipsHiddenFiles])
+                for appDirectory in cachedAppDirectories
+                {
+                    do
+                    {
+                        let resourceValues = try appDirectory.resourceValues(forKeys: [.isDirectoryKey, .nameKey])
+                        guard let isDirectory = resourceValues.isDirectory, let bundleID = resourceValues.name else { continue }
+                    
+                        if isDirectory && !installedAppBundleIDs.contains(bundleID) && !self.isActivelyManagingApp(withBundleID: bundleID)
+                        {
+                            debugLog("DELETING CACHED APP: \(bundleID)")
+                            try FileManager.default.removeItem(at: appDirectory)
+                        }
+                    }
+                    catch
+                    {
+                        debugLog("Failed to remove cached app directory. \(error)")
+                    }
+                }
+            }
+            catch
+            {
+                debugLog("Failed to remove cached apps. \(error)")
+            }
+    
+        }.value
     }
     
     func authenticate(presentingViewController: UIViewController?,
@@ -315,7 +318,8 @@ extension AppManager
     {
         Task.detached {
             do {
-                try await ClearAppCacheOperation().execute()
+                let context = OperationContext(steps: .clearAppCache)
+                try await ClearAppCacheOperation(context: context).execute()
                 completion(.success(()))
             } catch {
                 completion(.failure(error))
@@ -1135,12 +1139,10 @@ private extension AppManager
             group.set(.success(result), forAppWithBundleIdentifier: result.bundleIdentifier)
             
             if result.bundleIdentifier == StoreApp.altstoreAppID {
+                let context = OperationContext(steps: .scheduleExpirationWarningNotification, dbBackgroundContext: group.context.dbBackgroundContext)
                 let scheduleNotifOp = try ScheduleExpirationWarningNotificationOperation(
                     installedApp: result,
-                    context: InstallAppOperationContext(
-                        bundleIdentifier: result.bundleIdentifier,
-                        authenticatedContext: group.context
-                    )
+                    context: context
                 )
                 try await scheduleNotifOp.execute()
             }
@@ -1193,7 +1195,12 @@ private extension AppManager
     
     private func performPipeline(for operation: AppOperation, group: RefreshGroup) async throws -> InstalledApp
     {
-        let context = InstallAppOperationContext(bundleIdentifier: operation.bundleIdentifier, authenticatedContext: group.context)
+        let pipeline = OperationStepsDefinition.pipeline(for: operation)
+        let context = InstallAppOperationContext(
+            steps: pipeline,
+            bundleIdentifier: operation.bundleIdentifier,
+            authenticatedContext: group.context
+        )
         
         if case .install(_, let customID) = operation { context.customBundleIdentifier  = customID }
         if case .update(_,  let customID) = operation { context.customBundleIdentifier  = customID }
@@ -1226,23 +1233,20 @@ private extension AppManager
         }
         let permissionsMode = UserDefaults.shared.permissionCheckingDisabled ? .none : permissionReviewMode
         
-        let weights = OperationProgressWeights.forOperation(operation)
-        let steps = OperationPipelineSteps.steps(for: operation)
         let additionalEntitlements = OperationEntitlements.defaultAdditionalEntitlements
         var finalApp: InstalledApp?
         
         let operationProgress = self.progress(for: operation)
-        for step in steps {
+        for pipelineStep in pipeline {
             if let result = try await executeStep(
-                step,
+                pipelineStep.step,
                 context: context,
                 appOperation: operation,
                 group: group,
                 downloadingApp: downloadingApp,
                 additionalEntitlements: additionalEntitlements,
                 permissionsMode: permissionsMode,
-                progress: operationProgress,
-                weights: weights
+                progress: operationProgress
             ) {
                 finalApp = result
             }
@@ -1262,59 +1266,58 @@ private extension AppManager
         downloadingApp: AppProtocol,
         additionalEntitlements: [ALTEntitlement: Any]?,
         permissionsMode: VerifyAppOperation.PermissionReviewMode,
-        progress: Progress?,
-        weights: [OperationStep: Int64]
+        progress: Progress?
     ) async throws -> InstalledApp? {
         switch step {
             
             case .userCustomization:
                 try await UserCustomizationOperation(context: context)
-                    .execute(parentProgress: progress, weights: weights)
+                    .execute(parentProgress: progress)
                 return nil
 
             case .downloadApp:
                 let downloadedAppURL = context.temporaryDirectory.appendingPathComponent("App.app")
                 let downloadedApp = try await DownloadAppOperation(app: downloadingApp, destinationURL: downloadedAppURL, context: context)
-                    .execute(parentProgress: progress, weights: weights)
+                    .execute(parentProgress: progress)
                 context.app = downloadedApp
                 return nil
             
             case .verifyApp:
                 try await VerifyAppOperation(permissionsMode: permissionsMode, context: context)
-                    .execute(parentProgress: progress, weights: weights)
+                    .execute(parentProgress: progress)
                 return nil
                 
             case .cacheApp:
                 try await CacheAppOperation(context: context)
-                    .execute(parentProgress: progress, weights: weights)
+                    .execute(parentProgress: progress)
                 return nil
             
             case .stageApp:
                 try await StageAppOperation(context: context)
-                    .execute(parentProgress: progress, weights: weights)
+                    .execute(parentProgress: progress)
                 return nil
                 
             case .removeAppExtensions:
                 let localAppExtensions = (appOperation.app as? ALTApplication)?.appExtensions
                 try await RemoveAppExtensionsOperation(context: context, localAppExtensions: localAppExtensions)
-                    .execute(parentProgress: progress, weights: weights)
+                    .execute(parentProgress: progress)
                 return nil
                 
             case .fetchAnisetteData:
                 try await FetchAnisetteDataOperation(context: group.context)
-                    .execute(parentProgress: progress, weights: weights)
+                    .execute(parentProgress: progress)
                 return nil
                 
             case .fetchProvisioningProfilesInstall:
                 let installOp = try FetchProvisioningProfilesInstallOperation(context: context)
                 installOp.additionalEntitlements = additionalEntitlements
-                let profiles = try await installOp.execute(parentProgress: progress, weights: weights)
+                let profiles = try await installOp.execute(parentProgress: progress)
                 context.provisioningProfiles = profiles
                 return nil
                 
             case .fetchProvisioningProfilesRefresh:
                 let refreshOp = try FetchProvisioningProfilesRefreshOperation(context: context)
-                let profiles = try await refreshOp.execute(parentProgress: progress, weights: weights)
+                let profiles = try await refreshOp.execute(parentProgress: progress)
                 context.provisioningProfiles = profiles
                 return nil
                 
@@ -1332,28 +1335,28 @@ private extension AppManager
                 
             case .patchAppIcon:
                 try await PatchAppIconOperation(context: context)
-                    .execute(parentProgress: progress, weights: weights)
+                    .execute(parentProgress: progress)
                 return nil
                 
             case .resignApp:
                 let resignedApp = try await ResignAppOperation(context: context)
-                    .execute(parentProgress: progress, weights: weights)
+                    .execute(parentProgress: progress)
                 context.resignedApp = resignedApp
                 return nil
                 
             case .exportResignedApp:
                 try await ExportResignedAppOperation(context: context)
-                    .execute(parentProgress: progress, weights: weights)
+                    .execute(parentProgress: progress)
                 return nil
                 
             case .sendApp:
                 try await SendAppOperation(context: context)
-                    .execute(parentProgress: progress, weights: weights)
+                    .execute(parentProgress: progress)
                 return nil
                 
             case .installApp:
                 let installedApp = try await InstallAppOperation(context: context, app: appOperation.app)
-                    .execute(parentProgress: progress, weights: weights)
+                    .execute(parentProgress: progress)
                 let bundleID = installedApp.bundleIdentifier
                 context.installedApp = installedApp
                 if let index = UserDefaults.standard.legacySideloadedApps?.firstIndex(of: bundleID) {
@@ -1364,7 +1367,7 @@ private extension AppManager
             case .installBackupApp:
                 if let installedApp = appOperation.app as? InstalledApp {
                     let op = try InstallBackupAppOperation(app: installedApp, context: context)
-                    let resultApp = try await op.execute(parentProgress: progress, weights: weights)
+                    let resultApp = try await op.execute(parentProgress: progress)
                     context.installedApp = resultApp
                     return resultApp
                 }
@@ -1372,83 +1375,83 @@ private extension AppManager
 
             case .refreshApp:
                 let installedApp = try await RefreshAppOperation(context: context)
-                    .execute(parentProgress: progress, weights: weights)
+                    .execute(parentProgress: progress)
                 return installedApp
                 
             case .backupApp:
                 let backupOp = try BackupAppOperation(action: .backup, context: context)
-                try await backupOp.execute(parentProgress: progress, weights: weights)
+                try await backupOp.execute(parentProgress: progress)
                 return context.installedApp
                 
             case .restoreApp:
                 let restoreOp = try BackupAppOperation(action: .restore, context: context)
-                try await restoreOp.execute(parentProgress: progress, weights: weights)
+                try await restoreOp.execute(parentProgress: progress)
                 return context.installedApp
                 
             case .removeAppBackup:
                 let removeBackupOp = try RemoveAppBackupOperation(context: context)
-                try await removeBackupOp.execute(parentProgress: progress, weights: weights)
+                try await removeBackupOp.execute(parentProgress: progress)
                 return context.installedApp
                 
             case .removeApp:
                 let removeOp = try RemoveAppOperation(context: context)
-                let installedApp = try await removeOp.execute(parentProgress: progress, weights: weights)
+                let installedApp = try await removeOp.execute(parentProgress: progress)
                 return installedApp
                 
             case .deactivateApp:
                 if let app = appOperation.app as? InstalledApp {
                     let deactivateOp = try DeactivateAppOperation(app: app, context: context)
-                    let installedApp = try await deactivateOp.execute(parentProgress: progress, weights: weights)
+                    let installedApp = try await deactivateOp.execute(parentProgress: progress)
                     return installedApp
                 }
                 return nil
                 
             case .enableJIT:
                 let enableJITOp = try EnableJITOperation(context: context)
-                try await enableJITOp.execute(parentProgress: progress, weights: weights)
+                try await enableJITOp.execute(parentProgress: progress)
                 return context.installedApp
 
             case .preflightChecks:
                 let validateOp = try PreflightChecksOperation(operations: [appOperation], presentingViewController: group.context.presentingViewController, context: group.context)
-                try await validateOp.execute(parentProgress: progress, weights: weights)
+                try await validateOp.execute(parentProgress: progress)
                 return nil
                 
             case .scheduleExpirationWarningNotification:
                 if let installedApp = context.installedApp {
                     let notifOp = try ScheduleExpirationWarningNotificationOperation(installedApp: installedApp, context: context)
-                    try await notifOp.execute(parentProgress: progress, weights: weights)
+                    try await notifOp.execute(parentProgress: progress)
                 }
                 return nil
             case .authentication:
                 try await AuthenticationOperation(context: group.context, presentingViewController: group.context.presentingViewController)
-                    .execute(parentProgress: progress, weights: weights)
+                    .execute(parentProgress: progress)
                 return nil
                 
             case .backgroundRefreshApps:
                 let apps = context.installedApp.map { [$0] } ?? []
                 try await BackgroundRefreshAppsOperation(installedApps: apps)
-                    .execute(parentProgress: progress, weights: weights)
+                    .execute(parentProgress: progress)
                 return nil
                 
             case .clearAppCache:
                 try await ClearAppCacheOperation(context: context)
-                    .execute(parentProgress: progress, weights: weights)
+                    .execute(parentProgress: progress)
                 return nil
                 
             case .cleanStagedApp:
                 try await CleanStagedAppOperation(context: context)
-                    .execute(parentProgress: progress, weights: weights)
+                    .execute(parentProgress: progress)
                 return nil
                 
             case .fetchAppIDs:
                 try await SyncAppIDsOperation(context: group.context)
-                    .execute(parentProgress: progress, weights: weights)
+                    .execute(parentProgress: progress)
                 return nil
                 
             case .fetchSource:
                 if let sourceURL = (downloadingApp as? StoreApp)?.source?.sourceURL {
                     try await FetchSourceOperation(sourceURL: sourceURL, context: context)
-                        .execute(parentProgress: progress, weights: weights)
+                        .execute(parentProgress: progress)
                 }
                 return nil
                 
@@ -1487,6 +1490,7 @@ private extension AppManager
             case .refresh, .activate, .deactivate, .deleteApp, .backup, .restore, .resign, .remove, .enableJIT: 
                 self.refreshProgress[bundleID] = progress
             }
+            debugLog("[AppManager] setProgress: \(String(describing: progress)) for operation: \(operation), totalUnitCount: \(progress?.totalUnitCount ?? 0)")
         }
     }
 }

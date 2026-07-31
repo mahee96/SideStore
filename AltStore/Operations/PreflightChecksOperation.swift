@@ -21,15 +21,26 @@ final class PreflightChecksOperation: BaseOperation<AuthenticatedOperationContex
         try super.init(context: context)
     }
 
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
+    override func execute(parentProgress: Progress?) async throws -> Bool {
         debugLog("[PreflightChecksOperation] execute() started")
         defer { debugLog("[PreflightChecksOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
+        self.setProgress(10)
 
         let currentTeam = self.context.team ?? Keychain.shared.team
         let currentTeamID = currentTeam?.identifier
 
-        for operation in operations {
+        let startProgress = self.progress.completedUnitCount
+        let endProgress: Int64 = 90
+        let range = endProgress - startProgress
+        let count = operations.count
+        
+        for (index, operation) in operations.enumerated() {
+            if range > 0 {
+                let percent = startProgress + Int64(Double(index + 1) / Double(count) * Double(range))
+                self.setProgress(percent)
+            }
+            
             let isSideStore = (operation.app as? ALTApplication)?.isAltStoreApp == true ||
                                operation.bundleIdentifier.contains(ALTApplication.altstoreBundleID) ||
                                operation.bundleIdentifier == StoreApp.altstoreAppID
@@ -93,6 +104,7 @@ final class PreflightChecksOperation: BaseOperation<AuthenticatedOperationContex
                 default: continue
             }
         }
+        self.setProgress(100)
         return true
     }
     

@@ -34,7 +34,7 @@ final class DownloadAppOperation: BaseOperation<InstallAppOperationContext, ALTA
         try super.init(context: context)
     }
 
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ALTApplication {
+    override func execute(parentProgress: Progress?) async throws -> ALTApplication {
         debugLog("[DownloadAppOperation] execute() started")
         defer {
             debugLog("[DownloadAppOperation] execute() completed")
@@ -46,7 +46,7 @@ final class DownloadAppOperation: BaseOperation<InstallAppOperationContext, ALTA
                 }
             }
         }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
         
         if self.isCancelled { throw OperationError.cancelled }
         if let error = self.context.error { throw error }
@@ -152,7 +152,7 @@ final class DownloadAppOperation: BaseOperation<InstallAppOperationContext, ALTA
         try FileManager.default.copyItem(at: application.fileURL, to: self.destinationURL, shouldReplace: true)
         
         guard let copiedApplication = ALTApplication(fileURL: self.destinationURL) else { throw OperationError.invalidApp }
-        self.progress.completedUnitCount = 100
+        self.setProgress(100)
         return copiedApplication
     }
     
@@ -161,7 +161,7 @@ final class DownloadAppOperation: BaseOperation<InstallAppOperationContext, ALTA
         
         if sourceURL.isFileURL {
             fileURL = sourceURL
-            self.progress.completedUnitCount = 75
+            self.setProgress(75)
         } else {
             // Regular app
             fileURL = try await downloadFile(from: sourceURL)
@@ -227,7 +227,7 @@ final class DownloadAppOperation: BaseOperation<InstallAppOperationContext, ALTA
             } else {
                 debugLog("[DownloadAppOperation] downloadFile: completed at \(fileURL.path)")
             }
-            self.progress.completedUnitCount = 75
+            self.setProgress(75)
             return fileURL
         }catch{
             debugLog("[DownloadAppOperation] download failed for url: \(downloadURL)")

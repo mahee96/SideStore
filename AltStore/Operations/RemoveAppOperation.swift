@@ -12,10 +12,10 @@ import CoreData
 
 final class RemoveAppOperation: BaseOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> InstalledApp {
+    override func execute(parentProgress: Progress?) async throws -> InstalledApp {
         debugLog("[RemoveAppOperation] execute() started")
         defer { debugLog("[RemoveAppOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
         guard let installedApp = self.context.installedApp else {
             throw OperationError.invalidParameters("RemoveAppOperation.main: self.context.installedApp is nil")
         }
@@ -51,7 +51,7 @@ final class RemoveAppOperation: BaseOperation<InstallAppOperationContext, Instal
     }
     
     private func markInactive(_ installedApp: InstalledApp, in backgroundContext: NSManagedObjectContext) -> InstalledApp {
-        self.progress.completedUnitCount += 1
+        self.setProgress(self.progress.completedUnitCount + 1)
         let installedApp = backgroundContext.object(with: installedApp.objectID) as! InstalledApp
         installedApp.isActive = false
         return installedApp

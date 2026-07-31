@@ -36,10 +36,11 @@ final class VerifyAppOperation: BaseOperation<InstallAppOperationContext, Bool>,
         try super.init(context: context)
     }
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
+    override func execute(parentProgress: Progress?) async throws -> Bool {
         debugLog("[VerifyAppOperation] execute() started")
         defer { debugLog("[VerifyAppOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
+        self.setProgress(10)
         
         guard let app = self.context.app else {
             throw OperationError.invalidParameters("VerifyAppOperation: context.app is nil")
@@ -56,19 +57,25 @@ final class VerifyAppOperation: BaseOperation<InstallAppOperationContext, Bool>,
         }
         
         guard let appVersion = context.appVersion else {
+            self.setProgress(100)
             return false
         }
         
         guard let ipaURL = context.ipaURL else { throw OperationError.appNotFound(name: app.name) }
+        self.setProgress(30)
                             
         try await self.verifyHash(of: app, at: ipaURL, matches: appVersion)
+        self.setProgress(60)
+        
         try await self.verifyDownloadedVersion(of: app, matches: appVersion)
+        self.setProgress(80)
         
         // process missing permissions check only if the source is V2 or later
         if let source = appVersion.app?.source,
            source.isSourceAtLeastV2 {
             try await self.verifyPermissions(of: app, match: appVersion)
         }
+        self.setProgress(100)
         return true
     }
     

@@ -14,10 +14,11 @@ import Network
 
 final class SendAppOperation: BaseOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ALTApplication {
+    override func execute(parentProgress: Progress?) async throws -> ALTApplication {
         debugLog("[SendAppOperation] execute() started")
         defer { debugLog("[SendAppOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
+        self.setProgress(10)
 
         guard let resignedApp = self.context.resignedApp else {
             throw OperationError.invalidParameters("SendAppOperation.main: self.resignedApp is nil")
@@ -56,6 +57,6 @@ final class SendAppOperation: BaseOperation<InstallAppOperationContext, ALTAppli
         }
         let bytes = Data(data)
         try await yeetAppAFC(bundleIdentifier, bytes)
-        self.progress.completedUnitCount += 1
+        self.setProgress(100)
     }
 }

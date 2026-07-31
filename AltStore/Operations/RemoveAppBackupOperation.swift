@@ -14,13 +14,17 @@ final class RemoveAppBackupOperation: BaseOperation<InstallAppOperationContext, 
     private let coordinator = NSFileCoordinator()
     private let coordinatorQueue = OperationQueue()
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
+    override func execute(parentProgress: Progress?) async throws -> Bool {
         debugLog("[RemoveAppBackupOperation] execute() started")
         defer { debugLog("[RemoveAppBackupOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
+        self.setProgress(10)
+        
         guard let installedApp = self.context.installedApp else {
             throw OperationError.invalidParameters("RemoveAppBackupOperation.main: self.context.installedApp is nil")
         }
+        
+        self.setProgress(30)
         let backupDirectoryURL: URL? = await installedApp.managedObjectContext?.perform {
             self.backupDirectoryURL(for: installedApp)
         }
@@ -28,9 +32,14 @@ final class RemoveAppBackupOperation: BaseOperation<InstallAppOperationContext, 
             throw OperationError.missingAppGroup
         }
         
+        self.setProgress(60)
         let intent = NSFileAccessIntent.writingIntent(with: backupDirectoryURL, options: [.forDeleting])
         try await self.coordinator.coordinate(with: [intent], queue: self.coordinatorQueue)
+        
+        self.setProgress(80)
         try self.removeBackupItem(at: intent.url, backupDirectoryURL: backupDirectoryURL, coordinatorError: nil)
+        
+        self.setProgress(100)
         return true
     }
     

@@ -64,19 +64,24 @@ final class FetchAnisetteDataOperation: BaseOperation<OperationContext, ALTAnise
         return TimeZone.current.abbreviation() ?? "UTC"
     }
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ALTAnisetteData {
+    override func execute(parentProgress: Progress?) async throws -> ALTAnisetteData {
         debugLog("[FetchAnisetteDataOperation] execute() started")
         defer { debugLog("[FetchAnisetteDataOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
+        self.setProgress(10)
         
         if let authContext = self.context as? AuthenticatedOperationContext,
            let session = authContext.session,
            session.anisetteData.date.timeIntervalSinceNow > -30.0 {
             self.debugLog("[FetchAnisetteDataOperation] Skipping anisette fetch: Anisette data is still fresh (\(-session.anisetteData.date.timeIntervalSinceNow)s old).")
+            self.setProgress(100)
             return session.anisetteData
         }
         
-        return try await self.startProvisioningFlow()
+        self.setProgress(20)
+        let result = try await self.startProvisioningFlow()
+        self.setProgress(100)
+        return result
     }
 
     private func startProvisioningFlow() async throws -> ALTAnisetteData {
@@ -132,12 +137,14 @@ final class FetchAnisetteDataOperation: BaseOperation<OperationContext, ALTAnise
         
         // TODO: Pass in proper view context to show the Toast messages
         let viewContext = self.context.presentingViewController
+        self.setProgress(30)
         let urlString = try await self.getAnisetteServerUrl(viewContext)
 
         // set as preferred
         UserDefaults.standard.menuAnisetteURL = urlString
         let url = URL(string: urlString)
         self.url = url
+        self.setProgress(60)
         self.verboseLog("[FetchAnisetteDataOperation] Anisette URL: \(self.url!.absoluteString)")
 
         if let identifier = Keychain.shared.identifier,

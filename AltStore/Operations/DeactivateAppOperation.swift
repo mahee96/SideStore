@@ -20,10 +20,12 @@ final class DeactivateAppOperation: BaseOperation<OperationContext, InstalledApp
         try super.init(context: context)
     }
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> InstalledApp {
+    override func execute(parentProgress: Progress?) async throws -> InstalledApp {
         debugLog("[DeactivateAppOperation] execute() started")
         defer { debugLog("[DeactivateAppOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
+        self.setProgress(10)
+        
         guard let backgroundContext = self.context.dbBackgroundContext else {
             throw OperationError.invalidParameters("DeactivateAppOperation: context.dbBackgroundContext is nil")
         }
@@ -32,9 +34,12 @@ final class DeactivateAppOperation: BaseOperation<OperationContext, InstalledApp
         }
 
         try await self.performDeactivate(for: installedApp)
-        return await backgroundContext.perform {
+        
+        let result = await backgroundContext.perform {
             backgroundContext.object(with: self.app.objectID) as! InstalledApp
         }
+        self.setProgress(100)
+        return result
     }
     
     @discardableResult
@@ -43,9 +48,17 @@ final class DeactivateAppOperation: BaseOperation<OperationContext, InstalledApp
         let allIdentifiers = [installedApp.resignedBundleIdentifier] + appExIdentifiers
 
         var removedAny = false
-        for identifier in allIdentifiers {
+        let count = allIdentifiers.count
+        let startProgress = self.progress.completedUnitCount
+        let endProgress: Int64 = 90
+        let range = endProgress - startProgress
+        
+        for (index, identifier) in allIdentifiers.enumerated() {
             try await removeProvisioningProfile(identifier)
-            self.progress.completedUnitCount += 1
+            if range > 0 {
+                let percent = startProgress + Int64(Double(index + 1) / Double(count) * Double(range))
+                self.setProgress(percent)
+            }
             removedAny = true
         }
         guard removedAny else {

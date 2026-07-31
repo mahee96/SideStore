@@ -29,14 +29,14 @@ final class InstallAppOperation: BaseOperation<InstallAppOperationContext, Insta
         self.progress.totalUnitCount = 100
     }
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> InstalledApp {
+    override func execute(parentProgress: Progress?) async throws -> InstalledApp {
         debugLog("[InstallAppOperation] execute() started")
         defer {
             debugLog("[InstallAppOperation] execute() completed")
             self.cleanUp()
             self.removeRefreshedIPA()
         }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
         
         guard
             let certificate = context.certificate,
@@ -62,6 +62,7 @@ final class InstallAppOperation: BaseOperation<InstallAppOperationContext, Insta
         }
         self.backgroundContext = backgroundContext
         
+        self.setProgress(10)
         let installedApp = try await installApp(
             in: backgroundContext,
             certificate: certificate,
@@ -161,6 +162,8 @@ final class InstallAppOperation: BaseOperation<InstallAppOperationContext, Insta
             return (installedApp, isDifferentSideStore, installedApp.bundleIdentifier, isSelfReinstall)
         }
         
+        self.setProgress(30)
+        
         // Temporary directory and resigned .ipa no longer needed — delete now before AltStore quits.
         cleanUp()
         
@@ -172,12 +175,16 @@ final class InstallAppOperation: BaseOperation<InstallAppOperationContext, Insta
         // Phase 2: IPA installation
         try await installIPA(bundleID)
         
+        self.setProgress(90)
+        
         // Phase 3: Post-install CoreData write — update refreshedDate
         if !isDifferentSideStore && !isSelfReinstall {
             await backgroundContext.perform {
                 installedApp.refreshedDate = Date()
             }
         }
+        
+        self.setProgress(100)
         return installedApp
     }
     

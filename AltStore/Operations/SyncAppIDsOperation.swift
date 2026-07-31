@@ -13,10 +13,10 @@ import CoreData
 
 final class SyncAppIDsOperation: BaseOperation<AuthenticatedOperationContext, Void>, @unchecked Sendable {
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Void {
+    override func execute(parentProgress: Progress?) async throws -> Void {
         debugLog("[SyncAppIDsOperation] execute() started")
         defer { debugLog("[SyncAppIDsOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
         guard
             let team = self.context.team,
             let session = self.context.session
@@ -24,11 +24,14 @@ final class SyncAppIDsOperation: BaseOperation<AuthenticatedOperationContext, Vo
             throw OperationError.invalidParameters("SyncAppIDsOperation.main: self.context.team or self.context.session is nil")
         }
         
+        self.setProgress(10)
+        
         guard let dbContext = self.context.dbBackgroundContext else {
             throw OperationError.invalidParameters("SyncAppIDsOperation: context.dbBackgroundContext is nil")
         }
         
         let fetchedAppIDs = try await ALTAppleAPI.shared.fetchAppIDs(for: team, session: session)
+        self.setProgress(50)
         
         try await dbContext.perform {
             try self.syncAppIDs(fetchedAppIDs, team: team, in: dbContext)
@@ -36,6 +39,7 @@ final class SyncAppIDsOperation: BaseOperation<AuthenticatedOperationContext, Vo
                 try dbContext.save()
             }
         }
+        self.setProgress(100)
     }
     
     private func syncAppIDs(_ fetchedAppIDs: [ALTAppID], team: ALTTeam, in dbContext: NSManagedObjectContext) throws {
@@ -70,7 +74,17 @@ final class SyncAppIDsOperation: BaseOperation<AuthenticatedOperationContext, Vo
         let existingAppIDsByIdentifier = Dictionary(uniqueKeysWithValues: existingAppIDs.map { ($0.identifier, $0) })
         
         var appIDs = [AppID]()
-        for altAppID in uniqueFetchedAppIDs {
+        let startProgress = self.progress.completedUnitCount
+        let endProgress: Int64 = 95
+        let range = endProgress - startProgress
+        let count = uniqueFetchedAppIDs.count
+        
+        for (index, altAppID) in uniqueFetchedAppIDs.enumerated() {
+            if range > 0 {
+                let percent = startProgress + Int64(Double(index + 1) / Double(count) * Double(range))
+                self.setProgress(percent)
+            }
+            
             if let existingAppID = existingAppIDsByIdentifier[altAppID.identifier] {
                 existingAppID.name = altAppID.name
                 existingAppID.bundleIdentifier = altAppID.bundleIdentifier

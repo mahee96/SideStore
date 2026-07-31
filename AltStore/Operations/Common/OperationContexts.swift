@@ -18,9 +18,11 @@ class OperationContext
     var error: Error?
     var presentingViewController: UIViewController?
     var dbBackgroundContext: NSManagedObjectContext?
+    let steps: [ExecutionStep]
     
-    init(error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
+    init(steps: [ExecutionStep], error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
     {
+        self.steps = steps
         self.error = error
         self.presentingViewController = presentingViewController
         self.dbBackgroundContext = dbBackgroundContext
@@ -28,6 +30,7 @@ class OperationContext
     
     init(context: OperationContext)
     {
+        self.steps = context.steps
         self.error = context.error
         self.presentingViewController = context.presentingViewController
         self.dbBackgroundContext = context.dbBackgroundContext
@@ -70,9 +73,9 @@ class CachedOperationContext: OperationContext
         }
     }
     
-    override init(error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
+    override init(steps: [ExecutionStep], error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
     {
-        super.init(error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
+        super.init(steps: steps, error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
     }
     
     init(context: CachedOperationContext) {
@@ -91,7 +94,7 @@ final class AuthenticatedOperationContext: CachedOperationContext
     
     override init(error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
     {
-        super.init(error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
+        super.init(steps: .authenticate, error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
     }
     
     init(context: AuthenticatedOperationContext) {
@@ -144,11 +147,11 @@ class AppOperationContext: OperationContext
     }
     private var _error: Error?
     
-    init(bundleIdentifier: String, authenticatedContext: AuthenticatedOperationContext)
+    init(steps: [ExecutionStep], bundleIdentifier: String, authenticatedContext: AuthenticatedOperationContext)
     {
         self.bundleIdentifier = bundleIdentifier
         self.authenticatedContext = authenticatedContext
-        super.init(error: nil, presentingViewController: authenticatedContext.presentingViewController, dbBackgroundContext: authenticatedContext.dbBackgroundContext)
+        super.init(steps: steps, error: nil, presentingViewController: authenticatedContext.presentingViewController, dbBackgroundContext: authenticatedContext.dbBackgroundContext)
     }
     
     subscript<T>(dynamicMember keyPath: WritableKeyPath<AuthenticatedOperationContext, T>) -> T

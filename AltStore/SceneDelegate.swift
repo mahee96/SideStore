@@ -49,7 +49,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
         guard DatabaseManager.shared.isStarted else { return }
         
         Task {
-            await AppManager.shared.update()
+            await AppManager.shared.reconcileInstalledApps()
         }
     }
 

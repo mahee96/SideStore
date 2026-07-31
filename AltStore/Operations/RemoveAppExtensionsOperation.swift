@@ -19,10 +19,11 @@ final class RemoveAppExtensionsOperation: BaseOperation<InstallAppOperationConte
         try super.init(context: context)
     }
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ALTApplication {
+    override func execute(parentProgress: Progress?) async throws -> ALTApplication {
         debugLog("[RemoveAppExtensionsOperation] execute() started")
         defer { debugLog("[RemoveAppExtensionsOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
+        self.setProgress(10)
         
         guard let targetAppBundle = context.app else {
             throw OperationError.invalidParameters("RemoveAppExtensionsOperation: context.app is nil")
@@ -30,9 +31,11 @@ final class RemoveAppExtensionsOperation: BaseOperation<InstallAppOperationConte
         
         // target App Bundle doesn't contain extensions so don't bother
         guard !targetAppBundle.appExtensions.isEmpty else {
+            self.setProgress(100)
             return targetAppBundle
         }
         
+        self.setProgress(30)
         let excessExtensions = processExtensionsInfo(from: targetAppBundle, localAppExtensions: localAppExtensions)
         
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -44,7 +47,7 @@ final class RemoveAppExtensionsOperation: BaseOperation<InstallAppOperationConte
                     // background mode: remove only the excess extensions automatically for re-installs
                     //                  keep all extensions for fresh install (localAppBundle = nil)
                     do {
-                        try self.removeExtensions(from: excessExtensions)
+                        try self.removeExtensions(from: excessExtensions, endPercent: 100)
                         continuation.resume(returning: ())
                     } catch {
                         continuation.resume(throwing: error)
@@ -52,6 +55,7 @@ final class RemoveAppExtensionsOperation: BaseOperation<InstallAppOperationConte
                     return
                 }
                 
+                self.setProgress(50)
                 /// Foreground prompt:
                 let firstSentence: String
                 if UserDefaults.standard.activeAppLimitIncludesExtensions {
@@ -68,15 +72,18 @@ final class RemoveAppExtensionsOperation: BaseOperation<InstallAppOperationConte
                 }))
                 alertController.addAction(UIAlertAction(title: NSLocalizedString("Keep App Extensions (Use Main Profile)", comment: ""), style: .default) { _ in
                     self.context.useMainProfile = true
+                    self.setProgress(100)
                     continuation.resume(returning: ())
                 })
                 alertController.addAction(UIAlertAction(title: NSLocalizedString("Keep App Extensions (Register App ID for Each Extension)", comment: ""), style: .default) { _ in
+                    self.setProgress(100)
                     continuation.resume(returning: ())
                 })
                 alertController.addAction(UIAlertAction(title: NSLocalizedString("Remove App Extensions", comment: ""), style: .destructive) { _ in
                     do {
-                        try self.removeExtensions(from: targetAppBundle.appExtensions)
+                        try self.removeExtensions(from: targetAppBundle.appExtensions, endPercent: 85)
                         try self.updateManifest()
+                        self.setProgress(100)
                         continuation.resume(returning: ())
                     } catch {
                         continuation.resume(throwing: error)
@@ -86,7 +93,7 @@ final class RemoveAppExtensionsOperation: BaseOperation<InstallAppOperationConte
                 alertController.addAction(UIAlertAction(title: NSLocalizedString("Choose App Extensions", comment: ""), style: .default) { _ in
                     let popoverContentController = AppExtensionViewHostingController(extensions: targetAppBundle.appExtensions) { selection in
                         do {
-                            try self.removeExtensions(from: Set(selection))
+                            try self.removeExtensions(from: Set(selection), endPercent: 100)
                             continuation.resume(returning: ())
                         } catch {
                             continuation.resume(throwing: error)
@@ -118,12 +125,25 @@ final class RemoveAppExtensionsOperation: BaseOperation<InstallAppOperationConte
                 }
             }
         }
+        self.setProgress(100)
         return targetAppBundle
     }
     
-    private func removeExtensions(from extensions: Set<ALTApplication>) throws {
+    private func removeExtensions(from extensions: Set<ALTApplication>, endPercent: Int64) throws {
         let isLoggingEnabled = OperationsLoggingControl.getFromDatabase(for: RemoveAppExtensionsOperation.self)
-        for appExtension in extensions {
+        let startProgress = self.progress.completedUnitCount
+        let range = endPercent - startProgress
+        guard !extensions.isEmpty else {
+            self.setProgress(endPercent)
+            return
+        }
+        let array = Array(extensions)
+        let count = array.count
+        for (index, appExtension) in array.enumerated() {
+            if range > 0 {
+                let percent = startProgress + Int64(Double(index + 1) / Double(count) * Double(range))
+                self.setProgress(percent)
+            }
             if isLoggingEnabled {
                 debugLog("Deleting extension \(appExtension.bundleIdentifier)")
             }

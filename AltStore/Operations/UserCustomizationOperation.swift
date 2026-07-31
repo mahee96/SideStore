@@ -11,20 +11,24 @@ import Foundation
 @preconcurrency import AltStoreCore
 final class UserCustomizationOperation: BaseOperation<InstallAppOperationContext, String?>, @unchecked Sendable {
 
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> String? {
+    override func execute(parentProgress: Progress?) async throws -> String? {
         debugLog("[UserCustomizationOperation] execute() started")
         defer { debugLog("[UserCustomizationOperation] execute() completed") }
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
+        self.setProgress(10)
 
         guard UserDefaults.standard.customizeAppId else {
+            self.setProgress(100)
             return nil
         }
 
         guard let presentingVC = context.authenticatedContext.presentingViewController else {
+            self.setProgress(100)
             return context.targetBundleIdentifier
         }
 
         let initialBundleID = context.targetBundleIdentifier
+        self.setProgress(40)
         let resolution: BundleIDResolution = try await makeBundleIDOverrideAlert(
             initialBundleID: initialBundleID,
             presentingVC: presentingVC
@@ -38,6 +42,7 @@ final class UserCustomizationOperation: BaseOperation<InstallAppOperationContext
         case .cancelled:
             throw OperationError.cancelled
         }
+        self.setProgress(100)
         return context.targetBundleIdentifier
     }
 
