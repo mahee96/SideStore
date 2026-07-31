@@ -16,9 +16,16 @@ class ConsoleLog {
     
     private lazy var consoleLogger: ConsoleLogger = {
         let logFileHandle = createLogFileHandle()!
-        let fileOutputStream = FileOutputStream(fileHandle: logFileHandle) { [weak self] in
-            return self?.createLogFileHandle()
-        }
+        let fileOutputStream = FileOutputStream(
+            fileHandle: logFileHandle,
+            fileHandleProvider: { [weak self] in
+                return self?.createLogFileHandle()
+            },
+            fileExistsProvider: { [weak self] in
+                guard let self = self else { return false }
+                return FileManager.default.fileExists(atPath: self.logFileURL.path)
+            }
+        )
         let syslogOutputStream = SyslogOutputStream()
         let compositeStream = CompositeOutputStream([fileOutputStream, syslogOutputStream])
         
@@ -26,6 +33,10 @@ class ConsoleLog {
     }()
     
     private func createLogFileHandle() -> FileHandle? {
+        let parentDir = logFileURL.deletingLastPathComponent()
+        if !FileManager.default.fileExists(atPath: parentDir.path) {
+            try? FileManager.default.createDirectory(at: parentDir, withIntermediateDirectories: true, attributes: nil)
+        }
         if !FileManager.default.fileExists(atPath: logFileURL.path) {
             FileManager.default.createFile(atPath: logFileURL.path, contents: nil, attributes: nil)
         }

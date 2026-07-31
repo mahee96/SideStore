@@ -7,25 +7,30 @@
 //
 
 import Foundation
+import QuartzCore
 
 public class FileOutputStream: OutputStream {
     public var fileHandleProvider: (() -> FileHandle?)?
+    public var fileExistsProvider: (() -> Bool)?
     
     private var fileHandle: FileHandle?
     private var lastFailureTime: Date?
+    private var lastExistsCheckTime: Double = 0
     
-    public init(fileHandle: FileHandle, fileHandleProvider: @escaping () -> FileHandle?) {
+    public init(fileHandle: FileHandle, fileHandleProvider: @escaping () -> FileHandle?, fileExistsProvider: @escaping () -> Bool) {
         self.fileHandle = fileHandle
         self.fileHandleProvider = fileHandleProvider
+        self.fileExistsProvider = fileExistsProvider
     }
     
     public func write(_ data: Data) {
         do {
-            // Check if the open file has been unlinked (deleted) from disk
-            if let handle = self.fileHandle {
-                var statBuffer = stat()
-                if fstat(handle.fileDescriptor, &statBuffer) == 0 && statBuffer.st_nlink == 0 {
-                    // File was deleted from the directory list! Clear handle to trigger recreate.
+            // Check if the file still exists on disk, but rate-limited to at most once every 1.0 second using high-perf clock
+            let now = CACurrentMediaTime()
+            if now - lastExistsCheckTime >= 1.0 {
+                lastExistsCheckTime = now
+                if let existsProvider = fileExistsProvider, !existsProvider() {
+                    // File was deleted! Clear handle to trigger recreate.
                     self.fileHandle = nil
                 }
             }
