@@ -19,8 +19,10 @@ class AnisetteDataViewModel: ObservableObject {
     
     @Published var isOfflineMode: Bool = false
     @Published var isLoading: Bool = false
-    @Published var errorMessage: String? = nil
-    @Published var successMessage: String? = nil
+    
+    @Published var viewMode: Int = 0 // 0 = Interactive, 1 = Raw JSON
+    @Published var rawEditableJSON: String = ""
+    @Published var serverReturnedHeadersJSON: String = "{}"
     
     init() {
         Task {
@@ -37,6 +39,30 @@ class AnisetteDataViewModel: ObservableObject {
         customLocalUserID = config.customLocalUserID ?? ""
         customLocale = config.customLocale ?? ""
         customTimeZone = config.customTimeZone ?? ""
+        
+        updateRawEditableJSON()
+        
+        let serverHeaders = await AnisetteConfigManager.shared.loadServerHeaders()
+        if let data = try? JSONSerialization.data(withJSONObject: serverHeaders, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]),
+           let str = String(data: data, encoding: .utf8) {
+            serverReturnedHeadersJSON = str
+        }
+    }
+    
+    func updateRawEditableJSON() {
+        var dict: [String: String] = [
+            "clientInfo": clientInfo,
+            "userAgent": userAgent
+        ]
+        if !customDeviceID.isEmpty { dict["customDeviceID"] = customDeviceID }
+        if !customLocalUserID.isEmpty { dict["customLocalUserID"] = customLocalUserID }
+        if !customLocale.isEmpty { dict["customLocale"] = customLocale }
+        if !customTimeZone.isEmpty { dict["customTimeZone"] = customTimeZone }
+        
+        if let data = try? JSONSerialization.data(withJSONObject: dict, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]),
+           let str = String(data: data, encoding: .utf8) {
+            rawEditableJSON = str
+        }
     }
     
     func save() async {
@@ -50,7 +76,31 @@ class AnisetteDataViewModel: ObservableObject {
             customTimeZone: customTimeZone.isEmpty ? nil : customTimeZone
         )
         await AnisetteConfigManager.shared.saveConfig(config)
-        successMessage = "Saved configuration successfully."
+        updateRawEditableJSON()
+        showToast(text: "Saved configuration successfully.")
+    }
+    
+    func saveRawJSON() async {
+        guard let data = rawEditableJSON.data(using: .utf8) else {
+            showToast(text: "Encoding Failed", detailText: "Unable to encode JSON as UTF-8.")
+            return
+        }
+        
+        do {
+            let config = try Foundation.JSONDecoder().decode(AnisetteConfig.self, from: data)
+            
+            clientInfo = config.clientInfo
+            userAgent = config.userAgent
+            customDeviceID = config.customDeviceID ?? ""
+            customLocalUserID = config.customLocalUserID ?? ""
+            customLocale = config.customLocale ?? ""
+            customTimeZone = config.customTimeZone ?? ""
+            
+            await AnisetteConfigManager.shared.saveConfig(config)
+            showToast(text: "JSON configuration saved successfully!")
+        } catch {
+            showToast(text: "Invalid JSON Structure", error: error)
+        }
     }
     
     func reset() async {
@@ -61,13 +111,13 @@ class AnisetteDataViewModel: ObservableObject {
         customLocalUserID = ""
         customLocale = ""
         customTimeZone = ""
-        successMessage = "Reset to default configuration."
+        updateRawEditableJSON()
+        await save()
+        showToast(text: "Reset to default configuration.")
     }
     
     func importJSON(url: URL) async {
         isLoading = true
-        errorMessage = nil
-        successMessage = nil
         defer { isLoading = false }
         
         do {
@@ -85,9 +135,10 @@ class AnisetteDataViewModel: ObservableObject {
             customLocalUserID = config.customLocalUserID ?? ""
             customLocale = config.customLocale ?? ""
             customTimeZone = config.customTimeZone ?? ""
-            successMessage = "Imported successfully from '\(url.lastPathComponent)'."
+            updateRawEditableJSON()
+            showToast(text: "Imported successfully", detailText: url.lastPathComponent)
         } catch {
-            errorMessage = "Failed to import configuration: \(error.localizedDescription)"
+            showToast(text: "Import Failed", error: error)
         }
     }
     
@@ -98,15 +149,13 @@ class AnisetteDataViewModel: ObservableObject {
             try data.write(to: tempURL, options: .atomic)
             return tempURL
         } catch {
-            errorMessage = "Failed to export configuration: \(error.localizedDescription)"
+            showToast(text: "Export Failed", error: error)
             return nil
         }
     }
     
     func fetchFreshFromServer() async {
         isLoading = true
-        errorMessage = nil
-        successMessage = nil
         defer { isLoading = false }
         
         do {
@@ -120,26 +169,79 @@ class AnisetteDataViewModel: ObservableObject {
             request.timeoutInterval = 10
             
             let (data, _) = try await URLSession.shared.data(for: request)
-            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: String],
-                  let fetchedClientInfo = json["client_info"],
-                  let fetchedUserAgent = json["user_agent"] else {
-                throw NSError(domain: "AnisetteDataViewModel", code: -2, userInfo: [NSLocalizedDescriptionKey: "Server response is not a valid V3 client info JSON."])
+            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: String] else {
+                throw NSError(domain: "AnisetteDataViewModel", code: -2, userInfo: [NSLocalizedDescriptionKey: "Server response is not a valid JSON."])
             }
             
-            clientInfo = fetchedClientInfo
-            userAgent = fetchedUserAgent
-            let config = AnisetteConfig(
-                clientInfo: clientInfo,
-                userAgent: userAgent,
-                customDeviceID: customDeviceID.isEmpty ? nil : customDeviceID,
-                customLocalUserID: customLocalUserID.isEmpty ? nil : customLocalUserID,
-                customLocale: customLocale.isEmpty ? nil : customLocale,
-                customTimeZone: customTimeZone.isEmpty ? nil : customTimeZone
-            )
-            await AnisetteConfigManager.shared.saveConfig(config)
-            successMessage = "Fetched fresh config from '\(url.host ?? "server")'."
+            // Save the server returned headers
+            await AnisetteConfigManager.shared.saveServerHeaders(json)
+            
+            // Refresh the server headers display
+            let serverHeaders = await AnisetteConfigManager.shared.loadServerHeaders()
+            if let data = try? JSONSerialization.data(withJSONObject: serverHeaders, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]),
+               let str = String(data: data, encoding: .utf8) {
+                serverReturnedHeadersJSON = str
+            }
+            
+            showToast(text: "Fetched server config!", detailText: url.host)
         } catch {
-            errorMessage = "Failed to fetch from server: \(error.localizedDescription)"
+            showToast(text: "Fetch Failed", error: error)
+        }
+    }
+    
+    func loadServerHeadersIntoOverrides() async {
+        let serverHeaders = await AnisetteConfigManager.shared.loadServerHeaders()
+        guard !serverHeaders.isEmpty else {
+            showToast(text: "No fetched headers found", detailText: "Fetch from server first.")
+            return
+        }
+        
+        // Casing helper to lookup keys flexibly in both camelCase and snake_case
+        func getValue(forKeys keys: [String]) -> String? {
+            for key in keys {
+                if let val = serverHeaders[key] {
+                    return val
+                }
+            }
+            return nil
+        }
+        
+        if let val = getValue(forKeys: ["client_info", "clientInfo", "X-Mme-Client-Info"]) {
+            clientInfo = val
+        }
+        if let val = getValue(forKeys: ["user_agent", "userAgent", "User-Agent"]) {
+            userAgent = val
+        }
+        if let val = getValue(forKeys: ["custom_device_id", "customDeviceID", "X-Mme-Device-Id", "deviceUniqueIdentifier"]) {
+            customDeviceID = val
+        }
+        if let val = getValue(forKeys: ["custom_local_user_id", "customLocalUserID", "X-Apple-I-MD-LU", "localUserID"]) {
+            customLocalUserID = val
+        }
+        if let val = getValue(forKeys: ["custom_locale", "customLocale", "X-Apple-Locale", "locale"]) {
+            customLocale = val
+        }
+        if let val = getValue(forKeys: ["custom_time_zone", "customTimeZone", "X-Apple-I-TimeZone", "timeZone"]) {
+            customTimeZone = val
+        }
+        
+        // Save and update
+        await save()
+        showToast(text: "Loaded fetched data into overrides!")
+    }
+    
+    func showToast(text: String, detailText: String? = nil, error: Error? = nil) {
+        let toast: ToastView
+        if let error = error {
+            toast = ToastView(error: error, opensLog: true)
+        } else {
+            toast = ToastView(text: text, detailText: detailText)
+        }
+        
+        let keyWindow = UIApplication.shared.windows.first { $0.isKeyWindow }
+        if let rootVC = keyWindow?.rootViewController {
+            let presentingVC = rootVC.presentedViewController ?? rootVC
+            toast.show(in: presentingVC)
         }
     }
 }
@@ -150,244 +252,283 @@ struct AnisetteDataView: View {
     @State private var showingFileImporter = false
     @State private var showingShareSheet = false
     @State private var exportFileURL: URL? = nil
-    @State private var isCopied = false
-    
-    var rawJSONString: String {
-        var dict = [
-            "client_info": viewModel.clientInfo,
-            "user_agent": viewModel.userAgent
-        ]
-        if !viewModel.customDeviceID.isEmpty { dict["custom_device_id"] = viewModel.customDeviceID }
-        if !viewModel.customLocalUserID.isEmpty { dict["custom_local_user_id"] = viewModel.customLocalUserID }
-        if !viewModel.customLocale.isEmpty { dict["custom_locale"] = viewModel.customLocale }
-        if !viewModel.customTimeZone.isEmpty { dict["custom_time_zone"] = viewModel.customTimeZone }
-        
-        if let data = try? JSONSerialization.data(withJSONObject: dict, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]),
-           let str = String(data: data, encoding: .utf8) {
-            return str
-        }
-        return "{}"
-    }
+    @State private var isCopiedServer = false
     
     var body: some View {
-        List {
-            // Section 1: Mode Selection
-            Section {
-                Toggle(isOn: $viewModel.isOfflineMode) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Use Offline Config File")
-                            .font(.body)
-                        Text("Bypasses fetching client info from servers")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .onChange(of: viewModel.isOfflineMode) { newValue in
-                    Task {
-                        await viewModel.save()
-                    }
-                }
-            } header: {
-                Text("Operational Mode")
-            } footer: {
-                Text("When enabled, SideStore uses the locally saved JSON configuration parameters for all authentication headers without making client_info requests to servers.")
+        VStack(spacing: 0) {
+            Picker("View Mode", selection: $viewModel.viewMode) {
+                Text("Interactive").tag(0)
+                Text("Raw JSON").tag(1)
             }
+            .pickerStyle(.segmented)
+            .padding()
+            .background(Color(.systemGroupedBackground))
             
-            // Section 2: Header Customization
-            Section {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Client Info (X-Mme-Client-Info)")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.secondary)
-                    
-                    TextEditor(text: $viewModel.clientInfo)
-                        .font(.system(.caption, design: .monospaced))
-                        .frame(minHeight: 80)
-                        .padding(4)
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(6)
-                }
-                .padding(.vertical, 4)
-                
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("User Agent")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.secondary)
-                    
-                    TextEditor(text: $viewModel.userAgent)
-                        .font(.system(.caption, design: .monospaced))
-                        .frame(minHeight: 80)
-                        .padding(4)
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(6)
-                }
-                .padding(.vertical, 4)
-                
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Device ID Override (Optional)")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.secondary)
-                    
-                    TextField("System Generated", text: $viewModel.customDeviceID)
-                        .font(.system(.caption, design: .monospaced))
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
-                        .padding(8)
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(6)
-                }
-                .padding(.vertical, 4)
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Local User ID Override (Optional)")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.secondary)
-                    
-                    TextField("System Generated", text: $viewModel.customLocalUserID)
-                        .font(.system(.caption, design: .monospaced))
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
-                        .padding(8)
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(6)
-                }
-                .padding(.vertical, 4)
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Locale Override (Optional)")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.secondary)
-                    
-                    TextField("e.g. en_US", text: $viewModel.customLocale)
-                        .font(.system(.caption, design: .monospaced))
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
-                        .padding(8)
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(6)
-                }
-                .padding(.vertical, 4)
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Time Zone Override (Optional)")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.secondary)
-                    
-                    TextField("e.g. UTC, GMT", text: $viewModel.customTimeZone)
-                        .font(.system(.caption, design: .monospaced))
-                        .autocapitalization(.allCharacters)
-                        .disableAutocorrection(true)
-                        .padding(8)
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(6)
-                }
-                .padding(.vertical, 4)
-                
-                SwiftUI.Button {
-                    Task {
-                        await viewModel.save()
+            List {
+                // Section 1: Operational Mode
+                Section {
+                    Toggle(isOn: $viewModel.isOfflineMode) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Use Offline Config File")
+                                .font(.body)
+                            Text("Bypasses fetching client info from servers")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
-                } label: {
-                    HStack {
-                        Spacer()
-                        Text("Save Changes")
-                            .font(.headline)
-                        Spacer()
+                    .onChange(of: viewModel.isOfflineMode) { _ in
+                        Task {
+                            await viewModel.save()
+                        }
                     }
+                } header: {
+                    Text("Operational Mode")
+                } footer: {
+                    Text("When enabled, SideStore uses the locally saved JSON configuration parameters for all authentication headers without making client_info requests to servers.")
                 }
-                .disabled(viewModel.clientInfo.isEmpty || viewModel.userAgent.isEmpty)
-            } header: {
-                Text("Custom Parameters")
-            }
-            
-            // Section 3: Raw JSON Preview
-            Section {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("JSON Representation")
-                            .font(.caption.weight(.semibold))
-                            .foregroundColor(.secondary)
+                
+                if viewModel.viewMode == 0 {
+                    // SECTION 2: INTERACTIVE CUSTOMIZATION
+                    Section {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Client Info (X-Mme-Client-Info)")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(.secondary)
+                            
+                            TextEditor(text: $viewModel.clientInfo)
+                                .font(.system(.caption, design: .monospaced))
+                                .frame(minHeight: 80)
+                                .padding(4)
+                                .background(Color(.secondarySystemGroupedBackground))
+                                .cornerRadius(6)
+                        }
+                        .padding(.vertical, 4)
                         
-                        Spacer()
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("User Agent")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(.secondary)
+                            
+                            TextEditor(text: $viewModel.userAgent)
+                                .font(.system(.caption, design: .monospaced))
+                                .frame(minHeight: 80)
+                                .padding(4)
+                                .background(Color(.secondarySystemGroupedBackground))
+                                .cornerRadius(6)
+                        }
+                        .padding(.vertical, 4)
+                        
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Device ID Override (Optional)")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(.secondary)
+                            
+                            TextField("System Generated", text: $viewModel.customDeviceID)
+                                .font(.system(.caption, design: .monospaced))
+                                .autocapitalization(.none)
+                                .disableAutocorrection(true)
+                                .padding(8)
+                                .background(Color(.secondarySystemGroupedBackground))
+                                .cornerRadius(6)
+                        }
+                        .padding(.vertical, 4)
+                        
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Local User ID Override (Optional)")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(.secondary)
+                            
+                            TextField("System Generated", text: $viewModel.customLocalUserID)
+                                .font(.system(.caption, design: .monospaced))
+                                .autocapitalization(.none)
+                                .disableAutocorrection(true)
+                                .padding(8)
+                                .background(Color(.secondarySystemGroupedBackground))
+                                .cornerRadius(6)
+                        }
+                        .padding(.vertical, 4)
+                        
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Locale Override (Optional)")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(.secondary)
+                            
+                            TextField("e.g. en_US", text: $viewModel.customLocale)
+                                .font(.system(.caption, design: .monospaced))
+                                .autocapitalization(.none)
+                                .disableAutocorrection(true)
+                                .padding(8)
+                                .background(Color(.secondarySystemGroupedBackground))
+                                .cornerRadius(6)
+                        }
+                        .padding(.vertical, 4)
+                        
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Time Zone Override (Optional)")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(.secondary)
+                            
+                            TextField("e.g. UTC, GMT", text: $viewModel.customTimeZone)
+                                .font(.system(.caption, design: .monospaced))
+                                .autocapitalization(.allCharacters)
+                                .disableAutocorrection(true)
+                                .padding(8)
+                                .background(Color(.secondarySystemGroupedBackground))
+                                .cornerRadius(6)
+                        }
+                        .padding(.vertical, 4)
                         
                         SwiftUI.Button {
-                            UIPasteboard.general.string = rawJSONString
-                            withAnimation {
-                                isCopied = true
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                                withAnimation {
-                                    isCopied = false
-                                }
+                            Task {
+                                await viewModel.save()
                             }
                         } label: {
-                            Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
-                                .font(.footnote)
-                                .foregroundColor(isCopied ? .green : .accentColor)
+                            HStack {
+                                Spacer()
+                                Text("Save Overrides")
+                                    .font(.headline)
+                                Spacer()
+                            }
                         }
+                        .disabled(viewModel.clientInfo.isEmpty || viewModel.userAgent.isEmpty)
+                    } header: {
+                        Text("Custom Parameters")
+                    }
+                } else {
+                    // SECTION 3: RAW JSON VIEW
+                    Section {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Configuration JSON (Editable)")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(.secondary)
+                            
+                            TextEditor(text: $viewModel.rawEditableJSON)
+                                .font(.system(.caption, design: .monospaced))
+                                .frame(minHeight: 300)
+                                .padding(4)
+                                .background(Color(.secondarySystemGroupedBackground))
+                                .cornerRadius(6)
+                        }
+                        .padding(.vertical, 4)
+                        
+                        SwiftUI.Button {
+                            Task {
+                                await viewModel.saveRawJSON()
+                            }
+                        } label: {
+                            HStack {
+                                Spacer()
+                                Text("Save Raw JSON")
+                                    .font(.headline)
+                                Spacer()
+                            }
+                        }
+                        .disabled(viewModel.rawEditableJSON.isEmpty)
+                    } header: {
+                        Text("Raw Configuration JSON")
+                    }
+                }
+                
+                // SECTION 4: SERVER RETURNED HEADERS (READ-ONLY)
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Last Server Response JSON")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(.secondary)
+                            
+                            Spacer()
+                            
+                            SwiftUI.Button {
+                                UIPasteboard.general.string = viewModel.serverReturnedHeadersJSON
+                                withAnimation {
+                                    isCopiedServer = true
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                    withAnimation {
+                                        isCopiedServer = false
+                                    }
+                                }
+                            } label: {
+                                Image(systemName: isCopiedServer ? "checkmark" : "doc.on.doc")
+                                    .font(.footnote)
+                                    .foregroundColor(isCopiedServer ? .green : .accentColor)
+                            }
+                        }
+                        
+                        ScrollView(.horizontal, showsIndicators: true) {
+                            Text(viewModel.serverReturnedHeadersJSON)
+                                .font(.system(size: 11, design: .monospaced))
+                                .padding(8)
+                                .background(Color(.secondarySystemBackground))
+                                .cornerRadius(6)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                    
+                    SwiftUI.Button {
+                        Task {
+                            await viewModel.loadServerHeadersIntoOverrides()
+                        }
+                    } label: {
+                        Label("Load Fetched Data into Overrides", systemImage: "square.and.arrow.down.on.square")
+                    }
+                    .disabled(viewModel.serverReturnedHeadersJSON == "{}" || viewModel.serverReturnedHeadersJSON.isEmpty)
+                } header: {
+                    Text("Server Returned Headers (Read-Only)")
+                } footer: {
+                    Text("Displays raw headers cached from successful anisette server handshakes. Use this to copy exact parameters sent by client/server.")
+                }
+                
+                // SECTION 5: ACTIONS
+                Section {
+                    SwiftUI.Button {
+                        Task {
+                            await viewModel.fetchFreshFromServer()
+                        }
+                    } label: {
+                        Label("Fetch Fresh from Active Server", systemImage: "arrow.clockwise")
                     }
                     
-                    ScrollView(.horizontal, showsIndicators: true) {
-                        Text(rawJSONString)
-                            .font(.system(size: 11, design: .monospaced))
-                            .padding(8)
-                            .background(Color(.secondarySystemBackground))
-                            .cornerRadius(6)
+                    SwiftUI.Button {
+                        showingFileImporter = true
+                    } label: {
+                        Label("Import Config JSON", systemImage: "square.and.arrow.down")
                     }
-                }
-                .padding(.vertical, 4)
-            } header: {
-                Text("Preview")
-            }
-            
-            // Section 4: File & Actions Integration
-            Section {
-                SwiftUI.Button {
-                    Task {
-                        await viewModel.fetchFreshFromServer()
-                    }
-                } label: {
-                    Label("Fetch Fresh from Active Server", systemImage: "arrow.clockwise")
-                }
-                
-                SwiftUI.Button {
-                    showingFileImporter = true
-                } label: {
-                    Label("Import Config JSON", systemImage: "square.and.arrow.down")
-                }
-                
-                SwiftUI.Button {
-                    Task {
-                        if let url = await viewModel.exportJSON() {
-                            exportFileURL = url
-                            showingShareSheet = true
-                        }
-                    }
-                } label: {
-                    Label("Export Config JSON", systemImage: "square.and.arrow.up")
-                }
-                
-                SwiftUI.Button(role: .destructive) {
-                    showingResetAlert = true
-                } label: {
-                    Label("Reset to Defaults", systemImage: "arrow.circlepath")
-                        .foregroundColor(.red)
-                }
-                .alert("Reset to Defaults?", isPresented: $showingResetAlert) {
-                    SwiftUI.Button("Reset", role: .destructive) {
+                    
+                    SwiftUI.Button {
                         Task {
-                            await viewModel.reset()
+                            if let url = await viewModel.exportJSON() {
+                                exportFileURL = url
+                                showingShareSheet = true
+                            }
                         }
+                    } label: {
+                        Label("Export Config JSON", systemImage: "square.and.arrow.up")
                     }
-                    SwiftUI.Button("Cancel", role: .cancel) {}
-                } message: {
-                    Text("This will restore the client headers to the default recommended macOS values.")
+                    
+                    SwiftUI.Button(role: .destructive) {
+                        showingResetAlert = true
+                    } label: {
+                        Label("Reset to Defaults", systemImage: "arrow.circlepath")
+                            .foregroundColor(.red)
+                    }
+                    .alert("Reset to Defaults?", isPresented: $showingResetAlert) {
+                        SwiftUI.Button("Reset", role: .destructive) {
+                            Task {
+                                await viewModel.reset()
+                            }
+                        }
+                        SwiftUI.Button("Cancel", role: .cancel) {}
+                    } message: {
+                        Text("This will restore the client headers to the default recommended macOS values.")
+                    }
+                } header: {
+                    Text("Actions")
                 }
-            } header: {
-                Text("Actions")
             }
+            .listStyle(.insetGrouped)
         }
-        .listStyle(.insetGrouped)
         .navigationTitle("Client Config")
         .navigationBarTitleDisplayMode(.inline)
         .overlay(
@@ -397,38 +538,6 @@ struct AnisetteDataView: View {
                         .padding()
                         .background(RoundedRectangle(cornerRadius: 10).fill(Color(.systemBackground)))
                         .shadow(radius: 10)
-                }
-            }
-        )
-        .overlay(
-            VStack {
-                Spacer()
-                if let error = viewModel.errorMessage {
-                    Text(error)
-                        .font(.subheadline)
-                        .padding()
-                        .background(Color.red.opacity(0.9))
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                        .padding()
-                        .onAppear {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                                viewModel.errorMessage = nil
-                            }
-                        }
-                } else if let success = viewModel.successMessage {
-                    Text(success)
-                        .font(.subheadline)
-                        .padding()
-                        .background(Color.green.opacity(0.9))
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                        .padding()
-                        .onAppear {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                                viewModel.successMessage = nil
-                            }
-                        }
                 }
             }
         )
@@ -445,7 +554,7 @@ struct AnisetteDataView: View {
                     }
                 }
             case .failure(let error):
-                viewModel.errorMessage = "Failed to select file: \(error.localizedDescription)"
+                viewModel.showToast(text: "File Selection Failed", error: error)
             }
         }
         .sheet(isPresented: $showingShareSheet) {

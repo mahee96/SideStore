@@ -12,9 +12,25 @@ import Foundation
 public final class AppBootManager {
     public static let shared = AppBootManager()
     
-    @MainActor public var isMinimuxerStarted = false
-    @MainActor public var needsPairingPrompt = false
-    @MainActor public var needsSideJITPrompt = false
+    private let lock = NSLock()
+    
+    private var _isMinimuxerStarted = false
+    public var isMinimuxerStarted: Bool {
+        get { lock.withLock { _isMinimuxerStarted } }
+        set { lock.withLock { _isMinimuxerStarted = newValue } }
+    }
+    
+    private var _needsPairingPrompt = false
+    public var needsPairingPrompt: Bool {
+        get { lock.withLock { _needsPairingPrompt } }
+        set { lock.withLock { _needsPairingPrompt = newValue } }
+    }
+    
+    private var _needsSideJITPrompt = false
+    public var needsSideJITPrompt: Bool {
+        get { lock.withLock { _needsSideJITPrompt } }
+        set { lock.withLock { _needsSideJITPrompt = newValue } }
+    }
     
     private init() {}
     
@@ -38,25 +54,19 @@ public final class AppBootManager {
     
     public nonisolated func startMinimuxer(pairingFile: String) async throws {
         try await minimuxerStart(pairingFile, mountPath: FileManager.default.documentsDirectory.absoluteString)
-        await MainActor.run {
-            self.isMinimuxerStarted = true
-        }
+        self.isMinimuxerStarted = true
         
         // Validate the pairing by trying to fetch the UDID
         do {
             debugLog("[AppBootManager] startMinimuxer(): Minimuxer fetchUDID() based connection starting...")
             let deviceUDID = try await fetchUDID()
             debugLog("[AppBootManager] startMinimuxer(): Minimuxer fetchUDID() based connection test SUCCEEDED. UDID: \(deviceUDID ?? "nil")")
-            await MainActor.run {
-                self.needsPairingPrompt = false
-            }
+            self.needsPairingPrompt = false
         } catch {
             if error.isMinimuxerPairingFile {
                 debugLog("[AppBootManager] startMinimuxer(): Minimuxer fetchUDID() based connection test FAILED. \(error)")
-                await MainActor.run {
-                    self.isMinimuxerStarted = false
-                    self.needsPairingPrompt = true
-                }
+                self.isMinimuxerStarted = false
+                self.needsPairingPrompt = true
                 throw error
             } else {
                 debugLog("[AppBootManager] startMinimuxer(): Minimuxer fetchUDID() based connection test FAILED but PAIRING FILE IS VALID. \(error)")
@@ -70,9 +80,7 @@ public final class AppBootManager {
             if #available(iOS 17, *), !UserDefaults.standard.sidejitenable {
                 do {
                     try await self.isSideJITServerDetected()
-                    await MainActor.run {
-                        self.needsSideJITPrompt = true
-                    }
+                    self.needsSideJITPrompt = true
                 } catch {
                     debugLog("Cannot find sideJITServer")
                 }
@@ -100,9 +108,7 @@ public final class AppBootManager {
                     debugLog("[AppBootManager] Failed to start minimuxer: \(error)")
                 }
             } else {
-                await MainActor.run {
-                    self.needsPairingPrompt = true
-                }
+                self.needsPairingPrompt = true
             }
             #endif
         }()

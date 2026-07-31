@@ -93,7 +93,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         minimuxerSetLogging(UserDefaults.standard.isMinimuxerVerboseLoggingEnabled)
 
         // Trigger daily boot sync for Anisette servers if needed
-        Task {
+        Task.detached {
             await AnisetteServersManager.shared.performDailySyncIfNeeded()
         }
 

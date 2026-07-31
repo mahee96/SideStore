@@ -238,6 +238,8 @@ final class FetchAnisetteDataOperation: BaseOperation<OperationContext, ALTAnise
                 }
             }
             
+            await AnisetteConfigManager.shared.saveServerHeaders(json)
+            
             var formattedJSON: [String: String] = ["deviceSerialNumber": "0"]
             if let machineID = json["X-Apple-I-MD-M"] { formattedJSON["machineID"] = machineID }
             if let oneTimePassword = json["X-Apple-I-MD"] { formattedJSON["oneTimePassword"] = oneTimePassword }
@@ -429,6 +431,8 @@ final class FetchAnisetteDataOperation: BaseOperation<OperationContext, ALTAnise
         if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: String] {
             if let clientInfo = json["client_info"] {
                 self.verboseLog("[FetchAnisetteDataOperation] Server is V3")
+                
+                await AnisetteConfigManager.shared.saveServerHeaders(json)
                 
                 self.verboseLog("[FetchAnisetteDataOperation] Overriding server Client-Info '\(clientInfo)' and User-Agent '\(json["user_agent"] ?? "")' with defaults")
                 self.clientInfo = FetchAnisetteDataOperation.defaultClientInfo

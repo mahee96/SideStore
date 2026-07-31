@@ -525,10 +525,10 @@ struct AnisetteServersView: View {
                             Label("Anisette Client Configuration", systemImage: "macbook.and.iphone")
                         }
                         Toggle(isOn: Binding(
-                            get: { UserDefaults.standard.disableAnisetteRotation },
-                            set: { UserDefaults.standard.disableAnisetteRotation = $0 }
+                            get: { !UserDefaults.standard.disableAnisetteRotation },
+                            set: { UserDefaults.standard.disableAnisetteRotation = !$0 }
                         )) {
-                            Label("Disable Auto Rotation", systemImage: "arrow.triangle.2.circlepath")
+                            Label("Enable Auto Rotation", systemImage: "arrow.triangle.2.circlepath")
                         }
                     } header: {
                         Text("Customization")

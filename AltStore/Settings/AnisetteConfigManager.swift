@@ -41,6 +41,31 @@ public actor AnisetteConfigManager {
         return libraryDirectory.appendingPathComponent("anisette-config.json")
     }
     
+    private var serverHeadersFileURL: URL {
+        let libraryDirectory = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first!
+        return libraryDirectory.appendingPathComponent("anisette-server-headers.json")
+    }
+    
+    public func saveServerHeaders(_ headers: [String: String]) {
+        var existing = loadServerHeaders()
+        for (key, val) in headers {
+            existing[key] = val
+        }
+        let encoder = Foundation.JSONEncoder()
+        encoder.outputFormatting = .prettyPrinted
+        if let data = try? encoder.encode(existing) {
+            try? data.write(to: serverHeadersFileURL, options: .atomic)
+        }
+    }
+    
+    public func loadServerHeaders() -> [String: String] {
+        if let data = try? Data(contentsOf: serverHeadersFileURL),
+           let headers = try? Foundation.JSONDecoder().decode([String: String].self, from: data) {
+            return headers
+        }
+        return [:]
+    }
+    
     public nonisolated var isOfflineMode: Bool {
         get {
             UserDefaults.standard.isAnisetteOfflineMode
