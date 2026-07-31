@@ -13,6 +13,8 @@ import Foundation
 final class ExportResignedAppOperation: BaseOperation<InstallAppOperationContext, URL>, @unchecked Sendable {
 
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> URL {
+        debugLog("[ExportResignedAppOperation] execute() started")
+        defer { debugLog("[ExportResignedAppOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
 
         guard let resignedApp = self.context.resignedApp else {

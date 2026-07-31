@@ -49,6 +49,8 @@ final class FetchSourceOperation: BaseOperation<OperationContext, Source>, @unch
     }
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Source {
+        debugLog("[FetchSourceOperation] execute() started")
+        defer { debugLog("[FetchSourceOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         guard let dbContext = self.context.dbBackgroundContext else {

@@ -22,6 +22,8 @@ final class PreflightChecksOperation: BaseOperation<AuthenticatedOperationContex
     }
 
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
+        debugLog("[PreflightChecksOperation] execute() started")
+        defer { debugLog("[PreflightChecksOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
 
         let currentTeam = self.context.team ?? Keychain.shared.team

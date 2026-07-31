@@ -44,6 +44,8 @@ class UpdateKnownSourcesOperation: OperationLogging
     
     func execute() async throws -> ([KnownSource], [KnownSource])
     {
+        debugLog("[UpdateKnownSourcesOperation] execute() started")
+        defer { debugLog("[UpdateKnownSourcesOperation] execute() completed") }
         let (data, response) = try await self.session.data(from: .sources)
         
         if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 404 {

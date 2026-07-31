@@ -30,11 +30,13 @@ final class InstallAppOperation: BaseOperation<InstallAppOperationContext, Insta
     }
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> InstalledApp {
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        debugLog("[InstallAppOperation] execute() started")
         defer {
+            debugLog("[InstallAppOperation] execute() completed")
             self.cleanUp()
             self.removeRefreshedIPA()
         }
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         guard
             let certificate = context.certificate,

@@ -14,6 +14,8 @@ import Foundation
 final class ResignAppOperation: BaseOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ALTApplication {
+        debugLog("[ResignAppOperation] execute() started")
+        defer { debugLog("[ResignAppOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         guard

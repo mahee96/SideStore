@@ -14,6 +14,8 @@ import CoreData
 final class RefreshAppOperation: BaseOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> InstalledApp {
+        debugLog("[RefreshAppOperation] execute() started")
+        defer { debugLog("[RefreshAppOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         guard let profiles = self.context.provisioningProfiles else {

@@ -65,6 +65,8 @@ final class FetchAnisetteDataOperation: BaseOperation<OperationContext, ALTAnise
     }
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ALTAnisetteData {
+        debugLog("[FetchAnisetteDataOperation] execute() started")
+        defer { debugLog("[FetchAnisetteDataOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         if let authContext = self.context as? AuthenticatedOperationContext,

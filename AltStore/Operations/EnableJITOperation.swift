@@ -24,6 +24,8 @@ final class EnableJITOperation: BaseOperation<InstallAppOperationContext, Bool>,
     private var cancellable: AnyCancellable?
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
+        debugLog("[EnableJITOperation] execute() started")
+        defer { debugLog("[EnableJITOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         guard let installedApp = self.context.installedApp else {

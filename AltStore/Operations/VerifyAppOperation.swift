@@ -37,6 +37,8 @@ final class VerifyAppOperation: BaseOperation<InstallAppOperationContext, Bool>,
     }
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
+        debugLog("[VerifyAppOperation] execute() started")
+        defer { debugLog("[VerifyAppOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         guard let app = self.context.app else {

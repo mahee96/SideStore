@@ -12,6 +12,8 @@ import Foundation
 final class UserCustomizationOperation: BaseOperation<InstallAppOperationContext, String?>, @unchecked Sendable {
 
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> String? {
+        debugLog("[UserCustomizationOperation] execute() started")
+        defer { debugLog("[UserCustomizationOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
 
         guard UserDefaults.standard.customizeAppId else {

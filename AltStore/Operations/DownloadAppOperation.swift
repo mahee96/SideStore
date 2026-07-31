@@ -35,8 +35,9 @@ final class DownloadAppOperation: BaseOperation<InstallAppOperationContext, ALTA
     }
 
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ALTApplication {
-        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        debugLog("[DownloadAppOperation] execute() started")
         defer {
+            debugLog("[DownloadAppOperation] execute() completed")
             if FileManager.default.fileExists(atPath: self.temporaryDirectory.path) {
                 do {
                     try FileManager.default.removeItem(at: self.temporaryDirectory)
@@ -45,6 +46,7 @@ final class DownloadAppOperation: BaseOperation<InstallAppOperationContext, ALTA
                 }
             }
         }
+        try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         if self.isCancelled { throw OperationError.cancelled }
         if let error = self.context.error { throw error }

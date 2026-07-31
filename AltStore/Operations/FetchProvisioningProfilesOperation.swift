@@ -17,6 +17,8 @@ class FetchProvisioningProfilesOperation: BaseOperation<AppOperationContext, [St
     // this class is abstract or shouldn't be instantiated outside, use the subclasses
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> [String: ALTProvisioningProfile] {
+        debugLog("[FetchProvisioningProfilesOperation] execute() started")
+        defer { debugLog("[FetchProvisioningProfilesOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         if let error = self.context.error {
             self.debugLog("[FetchProvisioningProfiles] Context has pre-existing error: \(error.localizedDescription)")
@@ -235,6 +237,19 @@ class FetchProvisioningProfilesOperation: BaseOperation<AppOperationContext, [St
 }
 
 class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperation, @unchecked Sendable {
+    
+    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> [String : ALTProvisioningProfile] {
+        if self.context.app?.bundle.bundleURL.path.contains("SideBackup") == true || self.context.app?.bundle.bundleURL.path.contains("AltBackup") == true {
+            var appGroups = self.context.app?.entitlements[.appGroups] as? [String] ?? []
+            if !appGroups.contains(Bundle.baseAltStoreAppGroupID) {
+                appGroups.append(Bundle.baseAltStoreAppGroupID)
+            }
+            var stepAdditionalEntitlements = self.additionalEntitlements ?? [:]
+            stepAdditionalEntitlements[.appGroups] = appGroups
+            self.additionalEntitlements = stepAdditionalEntitlements
+        }
+        return try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+    }
     
     // modify Operations are allowed for the app groups and other stuffs
     override func fetchProvisioningProfile(for appID: ALTAppID,

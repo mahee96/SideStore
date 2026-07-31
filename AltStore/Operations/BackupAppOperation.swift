@@ -29,12 +29,16 @@ final class BackupAppOperation: BaseOperation<InstallAppOperationContext, URL>, 
     }
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> URL {
+        self.debugLog("[BackupAppOperation] execute() started. Action: \(action.rawValue)")
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         guard let installedApp = context.installedApp else {
+            self.debugLog("[BackupAppOperation] Error: context.installedApp is nil")
             throw OperationError.invalidParameters("BackupAppOperation.execute: context.installedApp is nil")
         }
         
+        self.debugLog("[BackupAppOperation] Ready to open app and observe backup. InstalledApp: \(installedApp.bundleIdentifier)")
         try await self.openAppAndObserve(installedApp: installedApp)
+        self.debugLog("[BackupAppOperation] execute() completed successfully.")
         return installedApp.fileURL
     }
     
@@ -81,17 +85,20 @@ final class BackupAppOperation: BaseOperation<InstallAppOperationContext, URL>, 
 
     @MainActor
     private func openApp(url: URL) async -> Bool {
+        self.debugLog("[BackupAppOperation] openApp() called with URL: \(url.absoluteString)")
         let currentTime = CFAbsoluteTimeGetCurrent()
         return await withCheckedContinuation { (continuation: CheckedContinuation<Bool, Never>) in
             UIApplication.shared.open(url, options: [:]) { success in
                 let elapsedTime = CFAbsoluteTimeGetCurrent() - currentTime
+                self.debugLog("[BackupAppOperation] openApp() completion handler success: \(success), elapsedTime: \(elapsedTime)s")
                 if success {
                     continuation.resume(returning: true)
                 } else if elapsedTime < 0.5 {
-                    self.debugLog("Failed to open app too quickly, retrying after a few seconds...")
+                    self.debugLog("[BackupAppOperation] Failed to open app too quickly, retrying after a few seconds...")
                     Task { @MainActor in
                         try? await Task.sleep(nanoseconds: 2_000_000_000)
                         UIApplication.shared.open(url, options: [:]) { retrySuccess in
+                            self.debugLog("[BackupAppOperation] openApp() retry completion handler success: \(retrySuccess)")
                             continuation.resume(returning: retrySuccess)
                         }
                     }
@@ -103,7 +110,10 @@ final class BackupAppOperation: BaseOperation<InstallAppOperationContext, URL>, 
     }
 
     private func openAppAndObserve(installedApp: InstalledApp) async throws {
-        let (openURL, _) = try self.constructBackupURLs(for: installedApp)
+        let (openURL, returnURL) = try self.constructBackupURLs(for: installedApp)
+        self.debugLog("[BackupAppOperation] openAppAndObserve() constructed URLs. openURL: \(openURL.absoluteString), returnURL: \(returnURL.absoluteString)")
+        
+        self.debugLog("[BackupAppOperation] Starting observation...")
         
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             var timeoutTimer: Timer?

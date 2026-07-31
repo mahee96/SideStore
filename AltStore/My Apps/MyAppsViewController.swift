@@ -1342,6 +1342,7 @@ private extension MyAppsViewController
     
     func backup(_ installedApp: InstalledApp)
     {
+        debugLog("[UI] User clicked 'Back Up' for app: \(installedApp.bundleIdentifier)")
         Task { @MainActor in
             let title = NSLocalizedString("Start Backup?", comment: "")
             let message = NSLocalizedString("This will replace any previous backups. Please leave SideStore open until the backup is complete.", comment: "")
@@ -1351,6 +1352,7 @@ private extension MyAppsViewController
             
             let actionTitle = String(format: NSLocalizedString("Back Up %@", comment: ""), installedApp.name)
             alertController.addAction(UIAlertAction(title: actionTitle, style: .default, handler: { (action) in
+                debugLog("[UI] User confirmed backup dialog for app: \(installedApp.bundleIdentifier). Triggering AppManager.shared.backup.")
                 AppManager.shared.backup(installedApp, presentingViewController: self) { (result) in
                     do
                     {

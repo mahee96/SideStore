@@ -681,6 +681,7 @@ extension AppManager
     @discardableResult
     func install<T: AppProtocol>(_ app: T, presentingViewController: UIViewController?, context: AuthenticatedOperationContext = AuthenticatedOperationContext(), completionHandler: @escaping (Result<InstalledApp, Error>) -> Void) -> RefreshGroup
     {
+        debugLog("[AppManager] install() called for app: \(app.bundleIdentifier)")
         let group = RefreshGroup(context: context)
         group.completionHandler = { (results) in
             do
@@ -707,6 +708,7 @@ extension AppManager
 
     func installIPA(at ipaURL: URL, context: AuthenticatedOperationContext = AuthenticatedOperationContext(), progressHandler: ((Progress) -> Void)? = nil) async throws -> InstalledApp
     {
+        debugLog("[AppManager] installIPA() called for file: \(ipaURL.lastPathComponent)")
         guard ipaURL.pathExtension.lowercased() == "ipa" else { throw OperationError.invalidApp }
 
         let temporaryDirectory = FileManager.default.uniqueTemporaryURL()
@@ -730,6 +732,7 @@ extension AppManager
     @discardableResult
     func update(_ installedApp: InstalledApp, to version: AppVersion? = nil, presentingViewController: UIViewController?, context: AuthenticatedOperationContext = AuthenticatedOperationContext(), completionHandler: @escaping (Result<InstalledApp, Error>) -> Void) -> Progress
     {
+        debugLog("[AppManager] update() called for app: \(installedApp.bundleIdentifier)")
         guard let appVersion = version ?? installedApp.storeApp?.latestSupportedVersion else {
             completionHandler(.failure(OperationError.appNotFound(name: installedApp.name)))
             return Progress.discreteProgress(totalUnitCount: 1)
@@ -764,6 +767,7 @@ extension AppManager
     @discardableResult
     func refresh(_ installedApps: [InstalledApp], presentingViewController: UIViewController?, group: RefreshGroup? = nil) -> RefreshGroup
     {
+        debugLog("[AppManager] refresh() called for apps: \(installedApps.map { $0.bundleIdentifier })")
         let group = group ?? RefreshGroup()
         
         group.activeTask = Task {
@@ -780,42 +784,50 @@ extension AppManager
     }
     func activate(_ installedApp: InstalledApp, presentingViewController: UIViewController?, completionHandler: @escaping (Result<InstalledApp, Error>) -> Void)
     {
+        debugLog("[AppManager] activate() called for app: \(installedApp.bundleIdentifier)")
         self.performSingleOperation(.activate(installedApp), presentingViewController: presentingViewController, completionHandler: completionHandler)
     }
     
     func deactivate(_ installedApp: InstalledApp, presentingViewController: UIViewController?, completionHandler: @escaping (Result<InstalledApp, Error>) -> Void)
     {
+        debugLog("[AppManager] deactivate() called for app: \(installedApp.bundleIdentifier)")
         self.performSingleOperation(.deactivate(installedApp), presentingViewController: presentingViewController, completionHandler: completionHandler)
     }
     
     func deleteApp(_ installedApp: InstalledApp, presentingViewController: UIViewController?, completionHandler: @escaping (Result<InstalledApp, Error>) -> Void)
     {
+        debugLog("[AppManager] deleteApp() called for app: \(installedApp.bundleIdentifier)")
         self.performSingleOperation(.deleteApp(installedApp), presentingViewController: presentingViewController, completionHandler: completionHandler)
     }
     
     @discardableResult
     func resign(_ installedApp: InstalledApp, alternateIconMode: AlternateIconMode = .preserve, presentingViewController: UIViewController?, completionHandler: @escaping (Result<InstalledApp, Error>) -> Void) -> RefreshGroup
     {
+        debugLog("[AppManager] resign() called for app: \(installedApp.bundleIdentifier)")
         return self.performSingleOperation(.resign(installedApp, alternateIconMode: alternateIconMode), presentingViewController: presentingViewController, completionHandler: completionHandler)
     }
     
     func backup(_ installedApp: InstalledApp, presentingViewController: UIViewController?, completionHandler: @escaping (Result<InstalledApp, Error>) -> Void)
     {
+        debugLog("[AppManager] backup() called for app: \(installedApp.bundleIdentifier)")
         self.performSingleOperation(.backup(installedApp), presentingViewController: presentingViewController, completionHandler: completionHandler)
     }
     
     func restore(_ installedApp: InstalledApp, presentingViewController: UIViewController?, completionHandler: @escaping (Result<InstalledApp, Error>) -> Void)
     {
+        debugLog("[AppManager] restore() called for app: \(installedApp.bundleIdentifier)")
         self.performSingleOperation(.restore(installedApp), presentingViewController: presentingViewController, completionHandler: completionHandler)
     }
     
     func remove(_ installedApp: InstalledApp, completionHandler: @escaping (Result<Void, Error>) -> Void)
     {
+        debugLog("[AppManager] remove() called for app: \(installedApp.bundleIdentifier)")
         self.performVoidOperation(.remove(installedApp), presentingViewController: nil, completionHandler: completionHandler)
     }
     
     func enableJIT(for installedApp: InstalledApp, completionHandler: @escaping (Result<Void, Error>) -> Void)
     {
+        debugLog("[AppManager] enableJIT() called for app: \(installedApp.bundleIdentifier)")
         self.performVoidOperation(.enableJIT(installedApp), presentingViewController: nil, completionHandler: completionHandler)
     }
 
@@ -902,11 +914,13 @@ extension AppManager
                 completionHandler(.failure(error))
             }
         }
-        
+        debugLog("[AppManager] performSingleOperation started for: \(operation.bundleIdentifier)")
         group.activeTask = Task {
             do {
+                debugLog("[AppManager] performSingleOperation executing task for: \(operation.bundleIdentifier)")
                 try await self.perform([operation], presentingViewController: presentingViewController, group: group)
             } catch {
+                debugLog("[AppManager] performSingleOperation task failed for: \(operation.bundleIdentifier) with error: \(error)")
                 completionHandler(.failure(error))
             }
         }

@@ -21,6 +21,8 @@ final class DeactivateAppOperation: BaseOperation<OperationContext, InstalledApp
     }
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> InstalledApp {
+        debugLog("[DeactivateAppOperation] execute() started")
+        defer { debugLog("[DeactivateAppOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         guard let backgroundContext = self.context.dbBackgroundContext else {
             throw OperationError.invalidParameters("DeactivateAppOperation: context.dbBackgroundContext is nil")

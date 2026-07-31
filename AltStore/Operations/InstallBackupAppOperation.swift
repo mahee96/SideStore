@@ -19,6 +19,8 @@ final class InstallBackupAppOperation: BaseOperation<InstallAppOperationContext,
     }
 
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> InstalledApp {
+        debugLog("[InstallBackupAppOperation] execute() started")
+        defer { debugLog("[InstallBackupAppOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
 
         guard ALTApplication(fileURL: app.fileURL) != nil else {

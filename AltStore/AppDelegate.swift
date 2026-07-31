@@ -34,14 +34,30 @@ extension AppDelegate
     static let exportCertificateCallbackTemplateKey = "callback"
     
     static func dumpSideBackupLogsIfNeeded() {
-        if let altstoreAppGroup = Bundle.main.altstoreAppGroup,
-           let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: altstoreAppGroup) {
-            let logFileURL = containerURL.appendingPathComponent("Logs", isDirectory: true).appendingPathComponent("SideBackup.log")
-            if let logContents = try? String(contentsOf: logFileURL, encoding: .utf8), !logContents.isEmpty {
-                debugLog("\n[SideBackup Logs]\n\n\(logContents.trimmingCharacters(in: .whitespacesAndNewlines))\n\n[SideBackup Logs End]\n\n")
-                // Delete after reading so stale logs don't persist
-                try? FileManager.default.removeItem(at: logFileURL)
+        guard let altstoreAppGroup = Bundle.main.altstoreAppGroup else {
+            debugLog("[AppDelegate] dumpSideBackupLogsIfNeeded: altstoreAppGroup is nil")
+            return
+        }
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: altstoreAppGroup) else {
+            debugLog("[AppDelegate] dumpSideBackupLogsIfNeeded: Failed to get container URL for \(altstoreAppGroup)")
+            return
+        }
+        let logFileURL = containerURL.appendingPathComponent("Logs", isDirectory: true).appendingPathComponent("SideBackup.log")
+        debugLog("[AppDelegate] Checking for SideBackup log at: \(logFileURL.path)")
+        if FileManager.default.fileExists(atPath: logFileURL.path) {
+            do {
+                let logContents = try String(contentsOf: logFileURL, encoding: .utf8)
+                if logContents.isEmpty {
+                    debugLog("[AppDelegate] SideBackup log file is empty.")
+                } else {
+                    debugLog("\n[SideBackup Logs]\n\n\(logContents.trimmingCharacters(in: .whitespacesAndNewlines))\n\n[SideBackup Logs End]\n\n")
+                }
+                try FileManager.default.removeItem(at: logFileURL)
+            } catch {
+                debugLog("[AppDelegate] Failed to read or delete SideBackup log file: \(error)")
             }
+        } else {
+            debugLog("[AppDelegate] SideBackup log file does not exist on disk.")
         }
     }
 }

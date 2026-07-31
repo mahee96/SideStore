@@ -20,6 +20,8 @@ final class RemoveAppExtensionsOperation: BaseOperation<InstallAppOperationConte
     }
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ALTApplication {
+        debugLog("[RemoveAppExtensionsOperation] execute() started")
+        defer { debugLog("[RemoveAppExtensionsOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         guard let targetAppBundle = context.app else {

@@ -59,6 +59,8 @@ final class BackgroundRefreshAppsOperation: BaseOperation<OperationContext, [Str
     }
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> [String: Result<InstalledApp, Error>] {
+        debugLog("[BackgroundRefreshAppsOperation] execute() started")
+        defer { debugLog("[BackgroundRefreshAppsOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         guard let dbContext = self.context.dbBackgroundContext else {

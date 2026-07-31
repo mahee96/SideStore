@@ -18,12 +18,22 @@ final class StageAppOperation: BaseOperation<InstallAppOperationContext, ALTAppl
         defer { debugLog("[StageAppOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
+        if let app = self.context.app,
+           app.bundle.bundleURL.path.contains("SideBackup") || app.bundle.bundleURL.path.contains("AltBackup"),
+           let installedApp = self.context.installedApp {
+            self.context.app = ALTApplication(fileURL: installedApp.fileURL)
+        }
+        
         guard let app = self.context.app else {
             throw OperationError.invalidParameters("StageAppOperation: context.app is nil")
         }
         
         let fileURL = app.fileURL
         let tempDir = self.context.temporaryDirectory
+        
+        if !FileManager.default.fileExists(atPath: tempDir.path) {
+            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true, attributes: nil)
+        }
         
         if fileURL.path.hasPrefix(tempDir.path) {
             debugLog("[StageAppOperation] App is already in temporary directory: \(fileURL)")

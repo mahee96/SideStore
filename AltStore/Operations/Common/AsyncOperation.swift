@@ -50,6 +50,10 @@ class BaseOperation<Context: OperationContext, Result>: NSObject, AsyncOperation
     }
     
     func executePreconditionCheck(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws {
+        let className = String(describing: type(of: self))
+        debugLog("[\(className)] executePreconditionCheck() started")
+        defer { debugLog("[\(className)] executePreconditionCheck() completed") }
+        
         let unitCount = weights?[self.stepType] ?? pendingUnitCount
         if let parentProgress = parentProgress, unitCount > 0 {
             parentProgress.addChild(self.progress, withPendingUnitCount: unitCount)

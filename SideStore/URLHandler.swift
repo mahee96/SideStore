@@ -15,8 +15,16 @@ class URLHandler {
     
     @discardableResult
     func handle(_ url: URL) -> Bool {
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return false }
-        guard let host = components.host?.lowercased() else { return false }
+        debugLog("[URLHandler] handle(_:) called with URL: \(url.absoluteString)")
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+            debugLog("[URLHandler] Failed to parse URLComponents for \(url)")
+            return false
+        }
+        guard let host = components.host?.lowercased() else {
+            debugLog("[URLHandler] Host is nil for \(url)")
+            return false
+        }
+        debugLog("[URLHandler] Matched host: \(host), path: \(url.path.lowercased())")
         
         switch host {
         case "appbackupresponse":

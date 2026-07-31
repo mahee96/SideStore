@@ -78,6 +78,8 @@ final class AuthenticationOperation: BaseOperation<AuthenticatedOperationContext
     }
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> AuthenticationResult {
+        debugLog("[AuthenticationOperation] execute() started")
+        defer { debugLog("[AuthenticationOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
 
         return try await TaskChainSerializer.shared.serialize {

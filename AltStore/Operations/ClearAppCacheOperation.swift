@@ -48,6 +48,8 @@ class ClearAppCacheOperation: BaseOperation<OperationContext, Bool>, @unchecked 
     }
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
+        debugLog("[ClearAppCacheOperation] execute() started")
+        defer { debugLog("[ClearAppCacheOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         self.clearNukeCache()
         

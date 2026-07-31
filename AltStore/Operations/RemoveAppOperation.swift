@@ -13,6 +13,8 @@ import CoreData
 final class RemoveAppOperation: BaseOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> InstalledApp {
+        debugLog("[RemoveAppOperation] execute() started")
+        defer { debugLog("[RemoveAppOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         guard let installedApp = self.context.installedApp else {
             throw OperationError.invalidParameters("RemoveAppOperation.main: self.context.installedApp is nil")

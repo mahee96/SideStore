@@ -12,6 +12,8 @@
 final class PatchAppIconOperation: BaseOperation<InstallAppOperationContext, URL>, @unchecked Sendable {
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> URL {
+        debugLog("[PatchAppIconOperation] execute() started")
+        defer { debugLog("[PatchAppIconOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         guard let app = self.context.app else {

@@ -89,8 +89,14 @@ struct OperationPipelineSteps {
             case .backup:
                 return [
                     .installBackupApp,
+                    .fetchAnisetteData,
+                    .fetchProvisioningProfilesInstall,
+                    .prepareAppExtensionBundleIDs,
+                    .resignApp,
+                    .exportResignedApp,
+                    .sendApp,
+                    .installApp,
                     .backupApp,
-                    .restoreApp,
                     .stageApp,
                     .patchAppIcon,
                     .removeAppExtensions,

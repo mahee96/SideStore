@@ -14,6 +14,8 @@ import CoreData
 final class FetchAppIDsOperation: BaseOperation<AuthenticatedOperationContext, ([AppID], NSManagedObjectContext)>, @unchecked Sendable {
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ([AppID], NSManagedObjectContext) {
+        debugLog("[FetchAppIDsOperation] execute() started")
+        defer { debugLog("[FetchAppIDsOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         guard
             let team = self.context.team,

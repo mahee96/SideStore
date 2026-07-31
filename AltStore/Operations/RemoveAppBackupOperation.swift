@@ -15,6 +15,8 @@ final class RemoveAppBackupOperation: BaseOperation<InstallAppOperationContext, 
     private let coordinatorQueue = OperationQueue()
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Bool {
+        debugLog("[RemoveAppBackupOperation] execute() started")
+        defer { debugLog("[RemoveAppBackupOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         guard let installedApp = self.context.installedApp else {
             throw OperationError.invalidParameters("RemoveAppBackupOperation.main: self.context.installedApp is nil")

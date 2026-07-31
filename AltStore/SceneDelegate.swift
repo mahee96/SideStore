@@ -97,6 +97,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>)
     {
         guard let context = URLContexts.first else { return }
+        debugLog("[SceneDelegate] scene(_:openURLContexts:) called with URL: \(context.url)")
         self.open(context)
     }
 }
@@ -105,6 +106,7 @@ private extension SceneDelegate
 {
     func open(_ context: UIOpenURLContext)
     {
+        debugLog("[SceneDelegate] open(_:) called with URL: \(context.url)")
         if context.url.isFileURL
         {
             guard context.url.pathExtension.lowercased() == "ipa" else { return }
