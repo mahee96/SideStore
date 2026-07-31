@@ -15,11 +15,24 @@ class ConsoleLog {
     private static let CONSOLE_LOG_EXTN = ".log"
     
     private lazy var consoleLogger: ConsoleLogger = {
-        let logFileHandle = createLogFileHandle()
-        let fileOutputStream = FileOutputStream(logFileHandle)
+        let logFileHandle = createLogFileHandle()!
+        let fileOutputStream = FileOutputStream(fileHandle: logFileHandle) { [weak self] in
+            return self?.createLogFileHandle()
+        }
+        let syslogOutputStream = SyslogOutputStream()
+        let compositeStream = CompositeOutputStream([fileOutputStream, syslogOutputStream])
         
-        return UnBufferedConsoleLogger(stream: fileOutputStream)
+        return UnBufferedConsoleLogger(stream: compositeStream)
     }()
+    
+    private func createLogFileHandle() -> FileHandle? {
+        if !FileManager.default.fileExists(atPath: logFileURL.path) {
+            FileManager.default.createFile(atPath: logFileURL.path, contents: nil, attributes: nil)
+        }
+        let handle = try? FileHandle(forWritingTo: logFileURL)
+        handle?.seekToEndOfFile()
+        return handle
+    }
     
     private lazy var consoleLogsDir: URL = {
         // create a directory for console logs
@@ -49,16 +62,6 @@ class ConsoleLog {
         let logFileURL = consoleLogsDir.appendingPathComponent(logName)
         return logFileURL
     }()
-    
-    
-    private func createLogFileHandle() -> FileHandle {
-        if !FileManager.default.fileExists(atPath: logFileURL.path) {
-            FileManager.default.createFile(atPath: logFileURL.path, contents: nil, attributes: nil)
-        }
-        
-        // return the file handle
-        return try! FileHandle(forWritingTo: logFileURL)
-    }
     
     func startCapturing() {
         consoleLogger.startCapturing()

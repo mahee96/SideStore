@@ -9,21 +9,114 @@
 import Foundation
 
 public class FileOutputStream: OutputStream {
-    private let fileHandle: FileHandle
+    public var fileHandleProvider: (() -> FileHandle?)?
     
-    init(_ fileHandle: FileHandle) {
+    private var fileHandle: FileHandle?
+    private var lastFailureTime: Date?
+    
+    public init(fileHandle: FileHandle, fileHandleProvider: @escaping () -> FileHandle?) {
         self.fileHandle = fileHandle
+        self.fileHandleProvider = fileHandleProvider
     }
     
     public func write(_ data: Data) {
-        fileHandle.write(data)
+        do {
+            // Check if the open file has been unlinked (deleted) from disk
+            if let handle = self.fileHandle {
+                var statBuffer = stat()
+                if fstat(handle.fileDescriptor, &statBuffer) == 0 && statBuffer.st_nlink == 0 {
+                    // File was deleted from the directory list! Clear handle to trigger recreate.
+                    self.fileHandle = nil
+                }
+            }
+            
+            try self.ensureFileHandle()
+            
+            guard let fileHandle = self.fileHandle else { return }
+            
+            if #available(iOS 13.4, macOS 10.15.4, *) {
+                try fileHandle.write(contentsOf: data)
+            } else {
+                fileHandle.write(data)
+            }
+            
+            // A successful write resets the failure cooldown
+            lastFailureTime = nil
+        } catch {
+            self.fileHandle = nil
+            
+            let now = Date()
+            if let lastFail = lastFailureTime, now.timeIntervalSince(lastFail) < 10.0 {
+                // Within 10-second cooldown window, skip retry
+                self.logErrorToStderr("FileOutputStream: Write failed. Cooldown active. Skipping recreation.")
+                return
+            }
+            
+            // Try to recreate exactly once
+            if let provider = fileHandleProvider, let newHandle = provider() {
+                self.fileHandle = newHandle
+                lastFailureTime = nil
+                
+                do {
+                    if #available(iOS 13.4, macOS 10.15.4, *) {
+                        try newHandle.write(contentsOf: data)
+                    } else {
+                        newHandle.write(data)
+                    }
+                } catch {
+                    self.fileHandle = nil
+                    lastFailureTime = Date() // Record failing point
+                    self.logErrorToStderr("FileOutputStream: Re-created file handle but writing still failed: \(error.localizedDescription)")
+                }
+            } else {
+                lastFailureTime = Date() // Record failing point
+                self.logErrorToStderr("FileOutputStream: Failed to re-create file handle via provider.")
+            }
+        }
+    }
+    
+    private func ensureFileHandle() throws {
+        if fileHandle == nil {
+            let now = Date()
+            if let lastFail = lastFailureTime, now.timeIntervalSince(lastFail) < 10.0 {
+                throw NSError(domain: "FileOutputStream", code: 1, userInfo: [NSLocalizedDescriptionKey: "Within 10-second cooldown window"])
+            }
+            
+            if let provider = fileHandleProvider, let newHandle = provider() {
+                self.fileHandle = newHandle
+                lastFailureTime = nil
+            } else {
+                lastFailureTime = Date()
+                throw NSError(domain: "FileOutputStream", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to recreate file handle via provider"])
+            }
+        }
+    }
+    
+    private func logErrorToStderr(_ message: String) {
+        let errorMsg = message + "\n"
+        if let errorData = errorMsg.data(using: .utf8) {
+            errorData.withUnsafeBytes { rawBuffer in
+                if let base = rawBuffer.baseAddress {
+                    _ = Darwin.write(STDERR_FILENO, base, errorData.count)
+                }
+            }
+        }
     }
     
     public func flush() {
-        fileHandle.synchronizeFile()
+        if #available(iOS 13.0, macOS 10.15, *) {
+            try? fileHandle?.synchronize()
+        } else {
+            fileHandle?.synchronizeFile()
+        }
     }
     
     public func close() {
-        fileHandle.closeFile()
+        if #available(iOS 13.0, macOS 10.15, *) {
+            try? fileHandle?.close()
+        } else {
+            fileHandle?.closeFile()
+        }
+        fileHandle = nil
     }
 }
