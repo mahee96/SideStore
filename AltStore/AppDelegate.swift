@@ -146,6 +146,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
             else
             {
                 debugLog("Started DatabaseManager.")
+                debugLog("Reconciling any staged drafts started...")
+                Self.reconcileSelfReinstallationIfNeeded()
+                debugLog("Reconcile any staged drafts completed.")
             }
         }
         
@@ -572,6 +575,69 @@ private extension AppDelegate {
             
             // Also write to NSLog (Apple System Log)
             NSLog("%@", message)
+        }
+    }
+    
+    static func reconcileSelfReinstallationIfNeeded() {
+        guard let appGroup = Bundle.main.altstoreAppGroup,
+              let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup) else {
+            debugLog("[AppDelegate] reconcileSelfReinstallation: Failed to get App Group container.")
+            return
+        }
+        
+        let jsonURL = containerURL.appendingPathComponent("StagedSelfReinstall.json")
+        guard FileManager.default.fileExists(atPath: jsonURL.path) else {
+            debugLog("[AppDelegate] reconcileSelfReinstallation: No staged self-reinstall metadata file found at \(jsonURL.path).")
+            return
+        }
+        
+        defer {
+            try? FileManager.default.removeItem(at: jsonURL)
+        }
+        
+        guard let jsonData = try? Data(contentsOf: jsonURL),
+              let stagedData = (try? JSONSerialization.jsonObject(with: jsonData, options: [])) as? [String: Any] else {
+            debugLog("[AppDelegate] reconcileSelfReinstallation: Failed to read StagedSelfReinstall.json.")
+            return
+        }
+        
+        let stagedUUID = stagedData["lastRunningProfileUUID"] as? String
+        
+        let profileURL = Bundle.main.bundleURL.appendingPathComponent("embedded.mobileprovision")
+        guard FileManager.default.fileExists(atPath: profileURL.path) else {
+            debugLog("[AppDelegate] reconcileSelfReinstallation: embedded.mobileprovision not found.")
+            return
+        }
+        
+        guard let profile = try? ALTProvisioningProfile(url: profileURL) else {
+            debugLog("[AppDelegate] reconcileSelfReinstallation: Failed to parse embedded.mobileprovision.")
+            return
+        }
+        
+        let currentUUID = profile.UUID.uuidString
+        debugLog("[AppDelegate] reconcileSelfReinstallation: Current UUID: \(currentUUID), Staged UUID: \(stagedUUID ?? "nil")")
+        
+        if currentUUID == stagedUUID {
+            debugLog("[AppDelegate] reconcileSelfReinstallation: UUID matches! Applying staged updates to SideStore app in database.")
+            let context = DatabaseManager.shared.persistentContainer.newBackgroundContext()
+            context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+            
+            context.performAndWait {
+                do {
+                    if let _ = InstalledApp.deserialize(from: jsonData, format: .json, context: context) {
+                        if context.hasChanges {
+                            try context.save()
+                            debugLog("[AppDelegate] reconcileSelfReinstallation: Database successfully updated and saved.")
+                        }
+                    } else {
+                        debugLog("[AppDelegate] reconcileSelfReinstallation: Failed to restore InstalledApp from staged JSON data.")
+                    }
+                } catch {
+                    debugLog("[AppDelegate] reconcileSelfReinstallation: CoreData error during save: \(error)")
+                }
+            }
+        } else {
+            debugLog("[AppDelegate] reconcileSelfReinstallation: UUID mismatch. Reinstallation was not completed or failed.")
         }
     }
 }

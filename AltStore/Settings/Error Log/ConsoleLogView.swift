@@ -178,14 +178,6 @@ public struct ConsoleLogView: View {
                         .foregroundColor(.white)
                         .font(.system(size: 19))
                 }
-                
-                SwiftUI.Button(action: {
-                    copyVisibleLogs()
-                }) {
-                    Image(systemName: "doc.on.doc")
-                        .foregroundColor(.white)
-                        .font(.system(size: 19))
-                }
 
                 SwiftUI.Button(action: {
                     showShareSheet = true

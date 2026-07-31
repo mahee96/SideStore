@@ -133,17 +133,30 @@ final class InstallAppOperation: BaseOperation<InstallAppOperationContext, Insta
                 )
             }
             
-            // TODO: @mahee96: we will revisit this later, coz for sidestore itself, it cannot continue once installIPA kills current instance and installs on top
+            // This preserves our data in a serilized format that will be restored at boot onyl if installtion actually completed indicated by embedded provision uuid being different.
             let isSelfReinstall = !isDifferentSideStore &&
                                    installedApp.storeApp?.bundleIdentifier.range(of: Bundle.Info.appbundleIdentifier) != nil
             if isSelfReinstall {
-               // Flush changes to disk now in case the changes are lost when iOS kills current process
-               do {
-                   try installedApp.managedObjectContext?.save()
-               } catch {
-                   self.debugLog("Failed to flush installedApp to disk: \(error)")
-               }
-           }
+                if let newProfile = provisioningProfiles[installedApp.bundleIdentifier],
+                   let appGroup = Bundle.main.altstoreAppGroup,
+                   let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup) {
+                    let jsonURL = containerURL.appendingPathComponent("StagedSelfReinstall.json")
+                    
+                    // Update refreshedDate inside the transient model context
+                    installedApp.refreshedDate = Date()
+                    
+                    // Serialize the entire InstalledApp entity with all its composition relations
+                    if let stagedData = installedApp.serialize(format: .json),
+                       var dict = (try? JSONSerialization.jsonObject(with: stagedData, options: [])) as? [String: Any] {
+                        dict["lastRunningProfileUUID"] = newProfile.UUID.uuidString
+                        
+                        if let finalData = try? JSONSerialization.data(withJSONObject: dict, options: [.prettyPrinted, .sortedKeys]) {
+                            try? finalData.write(to: jsonURL)
+                            self.debugLog("[InstallAppOperation] Wrote recursively serialized staged self-reinstall metadata to JSON: \(jsonURL.path)")
+                        }
+                    }
+                }
+            }
             
             return (installedApp, isDifferentSideStore, installedApp.bundleIdentifier, isSelfReinstall)
         }
@@ -160,8 +173,8 @@ final class InstallAppOperation: BaseOperation<InstallAppOperationContext, Insta
         try await installIPA(bundleID)
         
         // Phase 3: Post-install CoreData write — update refreshedDate
-        if !isDifferentSideStore {
-            try await backgroundContext.perform {
+        if !isDifferentSideStore && !isSelfReinstall {
+            await backgroundContext.perform {
                 installedApp.refreshedDate = Date()
             }
         }
