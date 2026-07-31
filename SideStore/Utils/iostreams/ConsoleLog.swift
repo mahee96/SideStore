@@ -93,6 +93,8 @@ class ConsoleLog {
     }
     
     private func createLogFileHandle() -> FileHandle? {
+        let isRecreation = (activeLogInfo != nil)
+        
         if activeLogInfo == nil {
             activeLogInfo = formatFileName(baseName: configuredBaseName, suffixFormat: configuredSuffixFormat)
         }
@@ -101,11 +103,33 @@ class ConsoleLog {
         if !FileManager.default.fileExists(atPath: parentDir.path) {
             try? FileManager.default.createDirectory(at: parentDir, withIntermediateDirectories: true, attributes: nil)
         }
-        if !FileManager.default.fileExists(atPath: url.path) {
+        let fileExists = FileManager.default.fileExists(atPath: url.path)
+        if !fileExists {
             FileManager.default.createFile(atPath: url.path, contents: nil, attributes: nil)
         }
         let handle = try? FileHandle(forWritingTo: url)
         handle?.seekToEndOfFile()
+        
+        if !fileExists && isRecreation, let handle = handle {
+            let timestamp = DateTimeUtil.getDateInTimeStamp(date: Date())
+            let header = """
+            
+            ===================================================
+            [WARNING] Log file was deleted/missing mid-session.
+            [WARNING] Recreated log file at: \(timestamp)
+            ===================================================
+            
+            
+            """
+            if let data = header.data(using: .utf8) {
+                if #available(iOS 13.4, macOS 10.15.4, *) {
+                    try? handle.write(contentsOf: data)
+                } else {
+                    handle.write(data)
+                }
+            }
+        }
+        
         return handle
     }
     
