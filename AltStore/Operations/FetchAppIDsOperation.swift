@@ -11,9 +11,9 @@ import CoreData
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class FetchAppIDsOperation: BaseOperation<AuthenticatedOperationContext, ([AppID], NSManagedObjectContext)>, @unchecked Sendable {
+final class FetchAppIDsOperation: BaseOperation<AuthenticatedOperationContext, Void>, @unchecked Sendable {
     
-    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ([AppID], NSManagedObjectContext) {
+    override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> Void {
         debugLog("[FetchAppIDsOperation] execute() started")
         defer { debugLog("[FetchAppIDsOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
@@ -30,12 +30,15 @@ final class FetchAppIDsOperation: BaseOperation<AuthenticatedOperationContext, (
         
         let fetchedAppIDs = try await ALTAppleAPI.shared.fetchAppIDs(for: team, session: session)
         
-        return try await dbContext.perform {
+        try await dbContext.perform {
             try self.syncAppIDs(fetchedAppIDs, team: team, in: dbContext)
+            if dbContext.hasChanges {
+                try dbContext.save()
+            }
         }
     }
     
-    private func syncAppIDs(_ fetchedAppIDs: [ALTAppID], team: ALTTeam, in dbContext: NSManagedObjectContext) throws -> ([AppID], NSManagedObjectContext) {
+    private func syncAppIDs(_ fetchedAppIDs: [ALTAppID], team: ALTTeam, in dbContext: NSManagedObjectContext) throws {
         guard let team = Team.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(Team.identifier), team.identifier), in: dbContext) else {
             throw OperationError.notAuthenticated
         }
@@ -79,8 +82,6 @@ final class FetchAppIDsOperation: BaseOperation<AuthenticatedOperationContext, (
                 appIDs.append(newAppID)
             }
         }
-        
-        return (appIDs, dbContext)
     }
 }
 

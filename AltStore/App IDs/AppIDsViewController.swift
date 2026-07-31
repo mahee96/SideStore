@@ -171,8 +171,7 @@ private extension AppIDsViewController
             guard let self = self else { return }
             do
             {
-                let (_, context) = try result.get()
-                try context.save()
+                try result.get()
             }
             catch
             {

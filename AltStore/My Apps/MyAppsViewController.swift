@@ -619,10 +619,7 @@ private extension MyAppsViewController
         AppManager.shared.fetchAppIDs { (result) in
             do
             {
-                let (_, context) = try result.get()
-                try context.performAndWait {
-                    try context.save()
-                }
+                try result.get()
                 DispatchQueue.main.async {
                     self.collectionView.reloadSections([Section.activeApps.rawValue, Section.inactiveApps.rawValue])
                 }

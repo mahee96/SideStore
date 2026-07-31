@@ -578,7 +578,7 @@ extension AppManager
         }
     }
     
-    func fetchAppIDs(completionHandler: @escaping (Result<([AppID], NSManagedObjectContext), Error>) -> Void)
+    func fetchAppIDs(completionHandler: @escaping (Result<Void, Error>) -> Void)
     {
         Task {
             do {
@@ -588,8 +588,8 @@ extension AppManager
                 try await authOperation.execute()
                 
                 let fetchAppIDsOperation = try FetchAppIDsOperation(context: context)
-                let result = try await fetchAppIDsOperation.execute()
-                completionHandler(.success(result))
+                try await fetchAppIDsOperation.execute()
+                completionHandler(.success(()))
             } catch {
                 completionHandler(.failure(error))
             }
