@@ -14,6 +14,7 @@ enum OperationStep: Hashable {
     case backgroundRefreshApps
     case cacheApp
     case clearAppCache
+    case cleanStagedApp
     case deactivateApp
     case downloadApp
     case enableJIT
@@ -47,6 +48,7 @@ enum OperationStep: Hashable {
         ObjectIdentifier(BackgroundRefreshAppsOperation.self): .backgroundRefreshApps,
         ObjectIdentifier(CacheAppOperation.self): .cacheApp,
         ObjectIdentifier(ClearAppCacheOperation.self): .clearAppCache,
+        ObjectIdentifier(CleanStagedAppOperation.self): .cleanStagedApp,
         ObjectIdentifier(DeactivateAppOperation.self): .deactivateApp,
         ObjectIdentifier(DownloadAppOperation.self): .downloadApp,
         ObjectIdentifier(EnableJITOperation.self): .enableJIT,

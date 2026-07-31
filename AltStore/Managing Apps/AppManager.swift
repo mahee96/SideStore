@@ -1241,7 +1241,7 @@ private extension AppManager
                 return nil
 
             case .downloadApp:
-                let downloadedAppURL = context.temporaryDirectory.appendingPathComponent("Cached.app")
+                let downloadedAppURL = context.temporaryDirectory.appendingPathComponent("App.app")
                 let downloadedApp = try await DownloadAppOperation(app: downloadingApp, destinationURL: downloadedAppURL, context: context)
                     .execute(parentProgress: progress, weights: weights)
                 context.app = downloadedApp
@@ -1400,6 +1400,11 @@ private extension AppManager
                 
             case .clearAppCache:
                 try await ClearAppCacheOperation(context: context)
+                    .execute(parentProgress: progress, weights: weights)
+                return nil
+                
+            case .cleanStagedApp:
+                try await CleanStagedAppOperation(context: context)
                     .execute(parentProgress: progress, weights: weights)
                 return nil
                 

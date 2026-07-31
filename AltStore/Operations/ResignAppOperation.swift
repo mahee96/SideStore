@@ -79,7 +79,12 @@ final class ResignAppOperation: BaseOperation<InstallAppOperationContext, ALTApp
         let fileURL = app.fileURL
 
         let appBundleURL = self.context.temporaryDirectory.appendingPathComponent("App.app")
-        try FileManager.default.copyItem(at: fileURL, to: appBundleURL)
+        if fileURL.path != appBundleURL.path {
+            if FileManager.default.fileExists(atPath: appBundleURL.path) {
+                try FileManager.default.removeItem(at: appBundleURL)
+            }
+            try FileManager.default.copyItem(at: fileURL, to: appBundleURL)
+        }
         
         guard let appBundle = Bundle(url: appBundleURL) else { throw ALTError(.missingAppBundle) }
         guard let infoDictionary = appBundle.completeInfoDictionary else { throw ALTError(.missingInfoPlist) }

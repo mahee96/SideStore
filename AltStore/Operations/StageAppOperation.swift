@@ -14,6 +14,8 @@ import Foundation
 final class StageAppOperation: BaseOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
     
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ALTApplication {
+        debugLog("[StageAppOperation] execute() started")
+        defer { debugLog("[StageAppOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
         
         guard let app = self.context.app else {
@@ -30,7 +32,15 @@ final class StageAppOperation: BaseOperation<InstallAppOperationContext, ALTAppl
         
         let destinationURL = tempDir.appendingPathComponent(fileURL.lastPathComponent)
         debugLog("[StageAppOperation] Copying cached app from \(fileURL) to \(destinationURL)")
-        try FileManager.default.copyItem(at: fileURL, to: destinationURL, shouldReplace: true)
+        
+        if FileManager.default.fileExists(atPath: destinationURL.path) {
+            debugLog("[StageAppOperation] Removing pre-existing app bundle at destination: \(destinationURL)")
+            try FileManager.default.removeItem(at: destinationURL)
+        }
+        
+        debugLog("[StageAppOperation] Copying item from \(fileURL) to \(destinationURL)")
+        try FileManager.default.copyItem(at: fileURL, to: destinationURL)
+        debugLog("[StageAppOperation] Successfully copied app bundle to destination.")
         
         guard let stagedApp = ALTApplication(fileURL: destinationURL) else {
             throw OperationError.invalidApp

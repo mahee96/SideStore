@@ -27,6 +27,7 @@ struct OperationPipelineSteps {
                     .exportResignedApp,
                     .sendApp,
                     .installApp,
+                    .cleanStagedApp
                 ]
             case .resign:
                 return [
@@ -39,7 +40,8 @@ struct OperationPipelineSteps {
                     .resignApp,
                     .exportResignedApp,
                     .sendApp,
-                    .installApp
+                    .installApp,
+                    .cleanStagedApp
                 ]
             case .refresh:
                 return [
@@ -68,7 +70,8 @@ struct OperationPipelineSteps {
                         .exportResignedApp,
                         .sendApp,
                         .installApp,
-                        .removeAppBackup
+                        .removeAppBackup,
+                        .cleanStagedApp
                     ]
                 }
             case .deactivate:
@@ -98,7 +101,8 @@ struct OperationPipelineSteps {
                     .exportResignedApp,
                     .sendApp,
                     .installApp,
-                    .removeAppBackup
+                    .removeAppBackup,
+                    .cleanStagedApp
                 ]
             case .restore:
                 if UserDefaults.standard.isLegacyDeactivationSupported {
@@ -121,7 +125,8 @@ struct OperationPipelineSteps {
                         .exportResignedApp,
                         .sendApp,
                         .installApp,
-                        .removeAppBackup
+                        .removeAppBackup,
+                        .cleanStagedApp
                     ]
                 }
             case .remove:
