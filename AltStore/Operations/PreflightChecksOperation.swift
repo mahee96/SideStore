@@ -49,7 +49,7 @@ final class PreflightChecksOperation: BaseOperation<AuthenticatedOperationContex
                     } else {
                         incomingTargetID = nil
                     }
-                case .refresh(let installedApp),    .activate(let installedApp),    .deactivate(let installedApp),
+                case .refresh(let installedApp),    .activate(let installedApp),    .deactivate(let installedApp), .deleteApp(let installedApp),
                      .backup(let installedApp),     .restore(let installedApp),     .resign(let installedApp, _),
                      .remove(let installedApp),     .enableJIT(let installedApp):
                     

@@ -27,6 +27,8 @@ enum OperationStep: Hashable {
     case installBackupApp
     case patchAppIcon
     case refreshApp
+    case restoreApp
+    case prepareAppExtensionBundleIDs
     case removeAppBackup
     case removeAppExtensions
     case removeApp

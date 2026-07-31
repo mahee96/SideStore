@@ -1277,6 +1277,37 @@ private extension MyAppsViewController
         }
     }
     
+    func deleteApp(_ installedApp: InstalledApp, completionHandler: ((Result<InstalledApp, Error>) -> Void)? = nil)
+    {
+        guard installedApp.isActive else { return }
+        
+        Task { @MainActor in
+            AppManager.shared.deleteApp(installedApp, presentingViewController: self) { (result) in
+                do
+                {
+                    let app = try result.get()
+                    try? app.managedObjectContext?.save()
+                    
+                    debugLog("Finished deleting app: \(app.bundleIdentifier)")
+                }
+                catch is CancellationError
+                {
+                    // Ignore
+                }
+                catch
+                {
+                    debugLog("Failed to delete app: \(error)")
+                    
+                    DispatchQueue.main.async {
+                        ToastView(error: error, opensLog: true).show(in: self)
+                    }
+                }
+                
+                completionHandler?(result)
+            }
+        }
+    }
+    
     func remove(_ installedApp: InstalledApp)
     {
         let title = String(format: NSLocalizedString("Remove “%@” from SideStore?", comment: ""), installedApp.name)
@@ -1814,6 +1845,10 @@ extension MyAppsViewController
             self.deactivate(installedApp)
         }
         
+        let deleteAppAction = UIAction(title: NSLocalizedString("Delete App", comment: ""), image: UIImage(systemName: "trash"), attributes: .destructive) { (action) in
+            self.deleteApp(installedApp)
+        }
+        
         let removeAction = UIAction(title: NSLocalizedString("Remove", comment: ""), image: UIImage(systemName: "trash"), attributes: .destructive) { (action) in
             self.remove(installedApp)
         }
@@ -1937,7 +1972,11 @@ extension MyAppsViewController
             
             if installedApp.isActive
             {
-                actions.append(deactivateAction)
+                if installedApp.bundleIdentifier != StoreApp.altstoreAppID
+                {
+                    actions.append(deactivateAction)
+                    actions.append(deleteAppAction)
+                }
                 // import backup into shared backups dir is allowed
                 actions.append(importBackupAction)
             }
@@ -1987,6 +2026,7 @@ extension MyAppsViewController
             restorePreviousBackupAction,
             infoAction,
             deactivateAction,
+            deleteAppAction,
             removeAction,
         ]
         

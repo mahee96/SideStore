@@ -17,6 +17,12 @@ final class RemoveAppOperation: BaseOperation<InstallAppOperationContext, Instal
         guard let installedApp = self.context.installedApp else {
             throw OperationError.invalidParameters("RemoveAppOperation.main: self.context.installedApp is nil")
         }
+        
+        let bundleID = await installedApp.managedObjectContext?.perform { installedApp.bundleIdentifier }
+        if bundleID == Bundle.main.bundleIdentifier || bundleID == StoreApp.altstoreAppID {
+            throw OperationError.invalidParameters("SideStore cannot delete itself.")
+        }
+        
         let resignedBundleIdentifier = await installedApp.managedObjectContext?.perform {
             self.resignedBundleIdentifier(for: installedApp)
         }

@@ -18,6 +18,7 @@ enum AppOperation
     case refresh(InstalledApp)
     case activate(InstalledApp)
     case deactivate(InstalledApp)
+    case deleteApp(InstalledApp)
     case backup(InstalledApp)
     case restore(InstalledApp)
     case resign(InstalledApp, alternateIconMode: AlternateIconMode = .preserve)
@@ -29,7 +30,7 @@ enum AppOperation
         {
         case .install(let app, _), .update(let app, _):
             return app
-        case .refresh(let app), .activate(let app), .deactivate(let app),
+        case .refresh(let app), .activate(let app), .deactivate(let app), .deleteApp(let app),
              .backup(let app),  .restore(let app),  .resign(let app, _),
              .remove(let app),  .enableJIT(let app):
             return app
@@ -59,6 +60,7 @@ enum AppOperation
         case .refresh: return .refresh
         case .activate: return .activate
         case .deactivate: return .deactivate
+        case .deleteApp: return .deactivate
         case .backup: return .backup
         case .restore: return .restore
         case .resign: return .resign

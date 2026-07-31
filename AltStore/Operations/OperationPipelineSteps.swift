@@ -21,6 +21,7 @@ struct OperationPipelineSteps {
                     .removeAppExtensions,
                     .fetchAnisetteData,
                     .fetchProvisioningProfilesInstall,
+                    .prepareAppExtensionBundleIDs,
                     .patchAppIcon,
                     .resignApp,
                     .exportResignedApp,
@@ -34,6 +35,7 @@ struct OperationPipelineSteps {
                     .removeAppExtensions,
                     .fetchAnisetteData,
                     .fetchProvisioningProfilesInstall,
+                    .prepareAppExtensionBundleIDs,
                     .patchAppIcon,
                     .resignApp,
                     .exportResignedApp,
@@ -55,7 +57,8 @@ struct OperationPipelineSteps {
                     ]
                 } else {
                     return [
-                        .backupApp,
+                        .installBackupApp,
+                        .restoreApp,
                         .downloadApp,
                         .userCustomization,
                         .cacheApp,
@@ -64,6 +67,7 @@ struct OperationPipelineSteps {
                         .removeAppExtensions,
                         .fetchAnisetteData,
                         .fetchProvisioningProfilesInstall,
+                        .prepareAppExtensionBundleIDs,
                         .patchAppIcon,
                         .resignApp,
                         .exportResignedApp,
@@ -79,34 +83,51 @@ struct OperationPipelineSteps {
                     ]
                 } else {
                     return [
+                        .installBackupApp,
+                        .backupApp,
                         .removeApp
                     ]
                 }
             case .backup:
                 return [
+                    .installBackupApp,
                     .backupApp
                 ]
             case .restore:
-                return [
-                    .backupApp,
-                    .downloadApp,
-                    .userCustomization,
-                    .cacheApp,
-                    .verifyApp,
-                    .cacheApp,
-                    .removeAppExtensions,
-                    .fetchAnisetteData,
-                    .fetchProvisioningProfilesInstall,
-                    .patchAppIcon,
-                    .resignApp,
-                    .exportResignedApp,
-                    .sendApp,
-                    .installApp,
-                    .removeAppBackup
-                ]
+                if UserDefaults.standard.isLegacyDeactivationSupported {
+                    return [
+                        .fetchAnisetteData,
+                        .fetchProvisioningProfilesRefresh,
+                        .refreshApp
+                    ]
+                } else {
+                    return [
+                        .installBackupApp,
+                        .restoreApp,
+                        .downloadApp,
+                        .userCustomization,
+                        .cacheApp,
+                        .verifyApp,
+                        .cacheApp,
+                        .removeAppExtensions,
+                        .fetchAnisetteData,
+                        .fetchProvisioningProfilesInstall,
+                        .prepareAppExtensionBundleIDs,
+                        .patchAppIcon,
+                        .resignApp,
+                        .exportResignedApp,
+                        .sendApp,
+                        .installApp,
+                        .removeAppBackup
+                    ]
+                }
             case .remove:
                 return [
                     .removeAppBackup,
+                    .removeApp
+                ]
+            case .deleteApp:
+                return [
                     .removeApp
                 ]
             case .enableJIT:

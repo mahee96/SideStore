@@ -34,7 +34,55 @@ class OperationContext
     }
 }
 
-final class AuthenticatedOperationContext: OperationContext
+class CachedOperationContext: OperationContext
+{
+    private let appIDsLock = NSLock()
+    private var _appIDs: [ALTAppID]?
+    var appIDs: [ALTAppID]? {
+        get {
+            appIDsLock.withLock { _appIDs }
+        }
+        set {
+            appIDsLock.withLock { _appIDs = newValue }
+        }
+    }
+    
+    func appendAppID(_ appID: ALTAppID) {
+        appIDsLock.withLock {
+            _appIDs?.append(appID)
+        }
+    }
+    
+    private let appGroupsLock = NSLock()
+    private var _appGroups: [ALTAppGroup]?
+    var appGroups: [ALTAppGroup]? {
+        get {
+            appGroupsLock.withLock { _appGroups }
+        }
+        set {
+            appGroupsLock.withLock { _appGroups = newValue }
+        }
+    }
+    
+    func appendAppGroup(_ appGroup: ALTAppGroup) {
+        appGroupsLock.withLock {
+            _appGroups?.append(appGroup)
+        }
+    }
+    
+    override init(error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
+    {
+        super.init(error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
+    }
+    
+    init(context: CachedOperationContext) {
+        super.init(context: context)
+        self.appIDs = context.appIDs
+        self.appGroups = context.appGroups
+    }
+}
+
+final class AuthenticatedOperationContext: CachedOperationContext
 {
     var session: ALTAppleAPISession?
     var team: ALTTeam?

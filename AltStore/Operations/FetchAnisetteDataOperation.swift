@@ -14,22 +14,116 @@ import Starscream
 @preconcurrency import AltSign
 
 final class FetchAnisetteDataOperation: BaseOperation<OperationContext, ALTAnisetteData>, @unchecked Sendable {
+    public static let defaultClientInfo = "<MacBookPro18,3> <macOS;26.6;25F84> <com.apple.AuthKit/1 (com.apple.dt.Xcode/3594.4.19)>"
+    public static let defaultUserAgent = "AuthKit/1 (Macintosh; OS X 26.6) (com.apple.dt.Xcode/3594.4.19)"
+
     var url: URL?
     var startProvisioningURL: URL?
     var endProvisioningURL: URL?
     
     var clientInfo: String?
     var userAgent: String?
+    var activeConfig: AnisetteConfig?
     
     var mdLu: String?
     var deviceId: String?
     
+    var resolvedClientInfo: String {
+        self.activeConfig?.clientInfo ?? self.clientInfo ?? FetchAnisetteDataOperation.defaultClientInfo
+    }
+    
+    var resolvedUserAgent: String {
+        self.activeConfig?.userAgent ?? self.userAgent ?? FetchAnisetteDataOperation.defaultUserAgent
+    }
+    
+    var resolvedDeviceID: String {
+        if let custom = self.activeConfig?.customDeviceID, !custom.isEmpty {
+            return custom
+        }
+        return self.deviceId ?? ""
+    }
+    
+    var resolvedLocalUserID: String {
+        if let custom = self.activeConfig?.customLocalUserID, !custom.isEmpty {
+            return custom
+        }
+        return self.mdLu ?? ""
+    }
+    
+    var resolvedLocale: String {
+        if let custom = self.activeConfig?.customLocale, !custom.isEmpty {
+            return custom
+        }
+        return Locale.current.identifier
+    }
+    
+    var resolvedTimeZone: String {
+        if let custom = self.activeConfig?.customTimeZone, !custom.isEmpty {
+            return custom
+        }
+        return TimeZone.current.abbreviation() ?? "UTC"
+    }
+    
     override func execute(parentProgress: Progress?, pendingUnitCount: Int64, weights: [OperationStep: Int64]?) async throws -> ALTAnisetteData {
         try await super.executePreconditionCheck(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        
+        if let authContext = self.context as? AuthenticatedOperationContext,
+           let session = authContext.session,
+           session.anisetteData.date.timeIntervalSinceNow > -30.0 {
+            self.debugLog("[FetchAnisetteDataOperation] Skipping anisette fetch: Anisette data is still fresh (\(-session.anisetteData.date.timeIntervalSinceNow)s old).")
+            return session.anisetteData
+        }
+        
         return try await self.startProvisioningFlow()
     }
 
     private func startProvisioningFlow() async throws -> ALTAnisetteData {
+        let config = await AnisetteConfigManager.shared.loadConfig()
+        self.activeConfig = config
+        
+        let isOffline = AnisetteConfigManager.shared.isOfflineMode
+        
+        do {
+            return try await self.performProvisioning()
+        } catch {
+            self.debugLog("[FetchAnisetteDataOperation] Provisioning flow failed: \(error). Checking recovery options...")
+            if isOffline {
+                self.debugLog("[FetchAnisetteDataOperation] Recovery: Deleting local config and retrying online.")
+                await AnisetteConfigManager.shared.deleteConfigFile()
+                
+                // Clear state properties so performProvisioning will fetch fresh data from server
+                self.clientInfo = nil
+                self.userAgent = nil
+                
+                do {
+                    return try await self.performProvisioning()
+                } catch {
+                    self.debugLog("[FetchAnisetteDataOperation] Recovery attempt failed: \(error)")
+                    throw error
+                }
+            }
+            throw error
+        }
+    }
+
+    private func performProvisioning() async throws -> ALTAnisetteData {
+        let config = await AnisetteConfigManager.shared.loadConfig()
+        self.activeConfig = config
+        
+        let isOffline = AnisetteConfigManager.shared.isOfflineMode
+        if isOffline {
+            self.clientInfo = config.clientInfo
+            self.userAgent = config.userAgent
+            self.verboseLog("[FetchAnisetteDataOperation] Running in OFFLINE config mode. clientInfo: \(self.clientInfo!), userAgent: \(self.userAgent!)")
+        } else {
+            if self.clientInfo == nil {
+                self.clientInfo = FetchAnisetteDataOperation.defaultClientInfo
+            }
+            if self.userAgent == nil {
+                self.userAgent = FetchAnisetteDataOperation.defaultUserAgent
+            }
+        }
+        
         if let error = self.context.error {
             throw error
         }
@@ -59,6 +153,20 @@ final class FetchAnisetteDataOperation: BaseOperation<OperationContext, ALTAnise
         }
 
         let lastServer = UserDefaults.standard.menuAnisetteURL
+        
+        if UserDefaults.standard.disableAnisetteRotation {
+            self.verboseLog("[FetchAnisetteDataOperation] Auto-rotation disabled. Pinging currently active server: \(lastServer)")
+            guard let url = URL(string: lastServer) else {
+                throw NSError(domain: "AnisetteError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Active server URL is invalid: \(lastServer)"])
+            }
+            let success = try await pingServer(url)
+            if success {
+                return lastServer
+            } else {
+                throw NSError(domain: "AnisetteError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Active server is offline: \(lastServer)"])
+            }
+        }
+        
         let startIndex = serverUrls.firstIndex(of: lastServer) ?? 0
         
         for triedCount in 0..<serverUrls.count {
@@ -136,9 +244,9 @@ final class FetchAnisetteDataOperation: BaseOperation<OperationContext, ALTAnise
             if let routingInfo = json["X-Apple-I-MD-RINFO"] { formattedJSON["routingInfo"] = routingInfo }
             
             if v3 {
-                formattedJSON["deviceDescription"] = self.clientInfo!
-                formattedJSON["localUserID"] = self.mdLu!
-                formattedJSON["deviceUniqueIdentifier"] = self.deviceId!
+                formattedJSON["deviceDescription"] = self.resolvedClientInfo
+                formattedJSON["localUserID"] = self.resolvedLocalUserID
+                formattedJSON["deviceUniqueIdentifier"] = self.resolvedDeviceID
                 
                 let formatter = DateFormatter()
                 formatter.locale = Locale(identifier: "en_US_POSIX")
@@ -147,8 +255,8 @@ final class FetchAnisetteDataOperation: BaseOperation<OperationContext, ALTAnise
                 formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
                 let dateString = formatter.string(from: Date())
                 formattedJSON["date"] = dateString
-                formattedJSON["locale"] = Locale.current.identifier
-                formattedJSON["timeZone"] = TimeZone.current.abbreviation()
+                formattedJSON["locale"] = self.resolvedLocale
+                formattedJSON["timeZone"] = self.resolvedTimeZone
             } else {
                 if let deviceDescription = json["X-MMe-Client-Info"] { formattedJSON["deviceDescription"] = deviceDescription }
                 if let localUserID = json["X-Apple-I-MD-LU"] { formattedJSON["localUserID"] = localUserID }
@@ -258,10 +366,10 @@ final class FetchAnisetteDataOperation: BaseOperation<OperationContext, ALTAnise
                 url: self.url!,
                 startProvisioningURL: self.startProvisioningURL!,
                 endProvisioningURL: self.endProvisioningURL!,
-                clientInfo: self.clientInfo!,
-                userAgent: self.userAgent!,
-                mdLu: self.mdLu!,
-                deviceId: self.deviceId!,
+                clientInfo: self.resolvedClientInfo,
+                userAgent: self.resolvedUserAgent,
+                mdLu: self.resolvedLocalUserID,
+                deviceId: self.resolvedDeviceID,
                 parentOperation: self
             )
             return try await session.start()
@@ -273,13 +381,13 @@ final class FetchAnisetteDataOperation: BaseOperation<OperationContext, ALTAnise
     
     func buildAppleRequest(url: URL) -> URLRequest {
         var request = URLRequest(url: url)
-        request.setValue(self.clientInfo!, forHTTPHeaderField: "X-Mme-Client-Info")
-        request.setValue(self.userAgent!, forHTTPHeaderField: "User-Agent")
+        request.setValue(self.resolvedClientInfo, forHTTPHeaderField: "X-Mme-Client-Info")
+        request.setValue(self.resolvedUserAgent, forHTTPHeaderField: "User-Agent")
         request.setValue("text/x-xml-plist", forHTTPHeaderField: "Content-Type")
         request.setValue("*/*", forHTTPHeaderField: "Accept")
 
-        request.setValue(self.mdLu!, forHTTPHeaderField: "X-Apple-I-MD-LU")
-        request.setValue(self.deviceId!, forHTTPHeaderField: "X-Mme-Device-Id")
+        request.setValue(self.resolvedLocalUserID, forHTTPHeaderField: "X-Apple-I-MD-LU")
+        request.setValue(self.resolvedDeviceID, forHTTPHeaderField: "X-Mme-Device-Id")
 
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
@@ -288,14 +396,22 @@ final class FetchAnisetteDataOperation: BaseOperation<OperationContext, ALTAnise
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
         let dateString = formatter.string(from: Date())
         request.setValue(dateString, forHTTPHeaderField: "X-Apple-I-Client-Time")
-        request.setValue(Locale.current.identifier, forHTTPHeaderField: "X-Apple-Locale")
-        request.setValue(TimeZone.current.abbreviation(), forHTTPHeaderField: "X-Apple-I-TimeZone")
+        request.setValue(self.resolvedLocale, forHTTPHeaderField: "X-Apple-Locale")
+        request.setValue(self.resolvedTimeZone, forHTTPHeaderField: "X-Apple-I-TimeZone")
         return request
     }
     
     // MARK: - V3: FETCHING
     
     private func fetchClientInfo() async throws {
+        let isOffline = AnisetteConfigManager.shared.isOfflineMode
+        if isOffline {
+            let config = await AnisetteConfigManager.shared.loadConfig()
+            self.clientInfo = config.clientInfo
+            self.userAgent = config.userAgent
+            self.verboseLog("[FetchAnisetteDataOperation] Offline mode enabled. Skipping server client_info fetch.")
+        }
+        
         if self.clientInfo != nil &&
            self.userAgent != nil &&
            self.mdLu != nil &&
@@ -314,10 +430,14 @@ final class FetchAnisetteDataOperation: BaseOperation<OperationContext, ALTAnise
             if let clientInfo = json["client_info"] {
                 self.verboseLog("[FetchAnisetteDataOperation] Server is V3")
                 
-                self.clientInfo = clientInfo
-                self.userAgent = json["user_agent"]!
+                self.verboseLog("[FetchAnisetteDataOperation] Overriding server Client-Info '\(clientInfo)' and User-Agent '\(json["user_agent"] ?? "")' with defaults")
+                self.clientInfo = FetchAnisetteDataOperation.defaultClientInfo
+                self.userAgent = FetchAnisetteDataOperation.defaultUserAgent
                 self.verboseLog("[FetchAnisetteDataOperation] Client-Info: \(self.clientInfo!)")
                 self.verboseLog("[FetchAnisetteDataOperation] User-Agent: \(self.userAgent!)")
+                
+                let config = AnisetteConfig(clientInfo: self.clientInfo!, userAgent: self.userAgent!)
+                await AnisetteConfigManager.shared.saveConfig(config)
                 
                 if Keychain.shared.identifier == nil {
                     self.verboseLog("[FetchAnisetteDataOperation] Generating identifier")

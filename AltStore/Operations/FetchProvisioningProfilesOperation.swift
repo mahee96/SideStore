@@ -74,29 +74,10 @@ class FetchProvisioningProfilesOperation: BaseOperation<AppOperationContext, [St
 
     
     internal func fetchProvisioningProfile(for appID: ALTAppID, app: ALTApplication, team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTProvisioningProfile {
-        debugLog(app.dumpMachOInfo())
+        verboseLog(app.dumpMachOInfo())
         debugLog("[FetchProvisioningProfiles] Fetching existing provisioning profile to get its identifier for App ID \(appID.bundleIdentifier).")
         let profile = try await ALTAppleAPI.shared.fetchProvisioningProfile(for: appID, deviceType: .iphone, team: team, session: session)
-        
-        do {
-            // Delete existing profile
-            debugLog("[FetchProvisioningProfiles] Deleting existing provisioning profile \(profile.identifier ?? "unknown") (\(profile.name)) from Apple's servers.")
-            try await ALTAppleAPI.shared.deleteProvisioningProfile(profile, for: team, session: session)
-            
-            debugLog("[FetchProvisioningProfiles] Generating new free provisioning profile for App ID \(appID.bundleIdentifier) by fetching again.")
-            
-            // Fetch new provisioning profile
-            return try await ALTAppleAPI.shared.fetchProvisioningProfile(for: appID, deviceType: .iphone, team: team, session: session)
-        } catch {
-            // As of March 20, 2023, the free provisioning profile is re-generated each fetch, and you can no longer delete it.
-            // So instead, we just return the fetched profile from above.
-            if team.type == .free {
-                debugLog("[FetchProvisioningProfiles] Delete failed as expected for free provisioning account (deletion is blocked post-March 2023). Returning the freshly generated profile from the first fetch.")
-            } else {
-                debugLog("[FetchProvisioningProfiles] Delete failed for paid developer account: \(error.localizedDescription). Returning the profile fetched initially.")
-            }
-            return profile
-        }
+        return profile
     }
     
     private func fetchPreferredBundleID(for app: ALTApplication, team: ALTTeam) async throws -> String? {
@@ -189,9 +170,17 @@ class FetchProvisioningProfilesOperation: BaseOperation<AppOperationContext, [St
                                bundleIdentifier: String,
                                team: ALTTeam,
                                session: ALTAppleAPISession) async throws -> ALTAppID {
-        self.debugLog("[FetchProvisioningProfiles] Fetching existing App IDs from Apple for team \(team.identifier)...")
-        let appIDs = try await ALTAppleAPI.shared.fetchAppIDs(for: team, session: session)
-        self.verboseLog("[FetchProvisioningProfiles] Found \(appIDs.count) existing App IDs on portal for team \(team.identifier): \(appIDs.map { $0.bundleIdentifier })")
+        let appIDs: [ALTAppID]
+        if let cachedAppIDs = self.context.authenticatedContext.appIDs {
+            self.debugLog("[FetchProvisioningProfiles] Using cached App IDs from shared context.")
+            appIDs = cachedAppIDs
+        } else {
+            self.debugLog("[FetchProvisioningProfiles] Fetching existing App IDs from Apple for team \(team.identifier)...")
+            let fetchedAppIDs = try await ALTAppleAPI.shared.fetchAppIDs(for: team, session: session)
+            self.context.authenticatedContext.appIDs = fetchedAppIDs
+            appIDs = fetchedAppIDs
+            self.verboseLog("[FetchProvisioningProfiles] Found \(appIDs.count) existing App IDs on portal for team \(team.identifier): \(appIDs.map { $0.bundleIdentifier })")
+        }
         
         if let appID = appIDs.first(where: { $0.bundleIdentifier.lowercased() == bundleIdentifier.lowercased() }) {
             self.debugLog("[FetchProvisioningProfiles] Found existing App ID on portal: \(appID.bundleIdentifier)")
@@ -216,6 +205,7 @@ class FetchProvisioningProfilesOperation: BaseOperation<AppOperationContext, [St
             do {
                 self.debugLog("[FetchProvisioningProfiles] Calling ALTAppleAPI.shared.addAppID with name '\(appIDName)' and identifier '\(bundleIdentifier)'...")
                 let appID = try await ALTAppleAPI.shared.addAppID(withName: appIDName, bundleIdentifier: bundleIdentifier, team: team, session: session)
+                self.context.authenticatedContext.appendAppID(appID)
                 self.debugLog("[FetchProvisioningProfiles] Successfully registered new App ID '\(appID.bundleIdentifier)' on Apple portal.")
                 return appID
             } catch ALTAppleAPIError.maximumAppIDLimitReached {
@@ -228,6 +218,7 @@ class FetchProvisioningProfilesOperation: BaseOperation<AppOperationContext, [St
             } catch ALTAppleAPIError.bundleIdentifierUnavailable {
                 self.debugLog("[FetchProvisioningProfiles] addAppID failed: bundleIdentifierUnavailable for '\(bundleIdentifier)'. Re-checking portal...")
                 let appIDs = try await ALTAppleAPI.shared.fetchAppIDs(for: team, session: session)
+                self.context.authenticatedContext.appIDs = appIDs
                 if let appID = appIDs.first(where: { $0.bundleIdentifier == bundleIdentifier }) {
                     self.debugLog("[FetchProvisioningProfiles] Found App ID on secondary fetch after bundleIdentifierUnavailable: \(appID.bundleIdentifier)")
                     return appID
@@ -363,43 +354,49 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
         }
         verboseLog("[FetchProvisioningProfiles] Application groups: \(applicationGroups)")
         
-        return try await TaskChainSerializer.shared.serialize {
-            // Ensure we're not concurrently fetching and updating app groups,
-            // which can lead to race conditions such as adding an app group twice.
-            do {
-                let fetchedGroups = try await ALTAppleAPI.shared.fetchAppGroups(for: team, session: session)
+        do {
+            let fetchedGroups: [ALTAppGroup]
+            if let cachedGroups = self.context.authenticatedContext.appGroups {
+                self.debugLog("[FetchProvisioningProfiles] Using cached App Groups from shared context.")
+                fetchedGroups = cachedGroups
+            } else {
+                self.debugLog("[FetchProvisioningProfiles] Fetching existing App Groups from Apple for team \(team.identifier)...")
+                let groups = try await ALTAppleAPI.shared.fetchAppGroups(for: team, session: session)
+                self.context.authenticatedContext.appGroups = groups
+                fetchedGroups = groups
+            }
+            
+            var groups = [ALTAppGroup]()
+            
+            for groupIdentifier in applicationGroups {
+                let adjustedGroupIdentifier = groupIdentifier + "." + team.identifier
                 
-                var groups = [ALTAppGroup]()
-                
-                for groupIdentifier in applicationGroups {
-                    let adjustedGroupIdentifier = groupIdentifier + "." + team.identifier
-                    
-                    if let group = fetchedGroups.first(where: { $0.groupIdentifier == adjustedGroupIdentifier }) {
+                if let group = fetchedGroups.first(where: { $0.groupIdentifier == adjustedGroupIdentifier }) {
+                    groups.append(group)
+                } else {
+                    // Not all characters are allowed in group names, so we replace periods with spaces (like Apple does).
+                    let name = "AltStore " + groupIdentifier.replacingOccurrences(of: ".", with: " ")
+                    do {
+                        let group = try await ALTAppleAPI.shared.addAppGroup(withName: name, groupIdentifier: adjustedGroupIdentifier, team: team, session: session)
+                        self.context.authenticatedContext.appendAppGroup(group)
+                        self.verboseLog("[FetchProvisioningProfiles] Created new App Group \(group.groupIdentifier).")
                         groups.append(group)
-                    } else {
-                        // Not all characters are allowed in group names, so we replace periods with spaces (like Apple does).
-                        let name = "AltStore " + groupIdentifier.replacingOccurrences(of: ".", with: " ")
-                        do {
-                            let group = try await ALTAppleAPI.shared.addAppGroup(withName: name, groupIdentifier: adjustedGroupIdentifier, team: team, session: session)
-                            self.verboseLog("[FetchProvisioningProfiles] Created new App Group \(group.groupIdentifier).")
-                            groups.append(group)
-                        } catch {
-                            self.debugLog("[FetchProvisioningProfiles] Failed to create new App Group \(adjustedGroupIdentifier). \(error.localizedDescription)")
-                            throw error
-                        }
+                    } catch {
+                        self.debugLog("[FetchProvisioningProfiles] Failed to create new App Group \(adjustedGroupIdentifier). \(error.localizedDescription)")
+                        throw error
                     }
                 }
-                
-                try await ALTAppleAPI.shared.assign(appID, to: Array(groups), team: team, session: session)
-                let groupIDs = groups.map { $0.groupIdentifier }
-                self.verboseLog("[FetchProvisioningProfiles] Assigned App ID \(appID.bundleIdentifier) to App Groups \(groupIDs.description).")
-                
-                return appID
-            } catch {
-                let groupIDs = applicationGroups.map { $0 + "." + team.identifier }
-                self.debugLog("[FetchProvisioningProfiles] Failed to assign/create App Groups for App ID \(appID.bundleIdentifier): \(error.localizedDescription)")
-                throw error
             }
+            
+            try await ALTAppleAPI.shared.assign(appID, to: Array(groups), team: team, session: session)
+            let groupIDs = groups.map { $0.groupIdentifier }
+            self.verboseLog("[FetchProvisioningProfiles] Assigned App ID \(appID.bundleIdentifier) to App Groups \(groupIDs.description).")
+            
+            return appID
+        } catch {
+            let groupIDs = applicationGroups.map { $0 + "." + team.identifier }
+            self.debugLog("[FetchProvisioningProfiles] Failed to assign/create App Groups for App ID \(appID.bundleIdentifier): \(error.localizedDescription)")
+            throw error
         }
     }
 }

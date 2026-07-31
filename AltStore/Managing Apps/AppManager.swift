@@ -788,6 +788,11 @@ extension AppManager
         self.performSingleOperation(.deactivate(installedApp), presentingViewController: presentingViewController, completionHandler: completionHandler)
     }
     
+    func deleteApp(_ installedApp: InstalledApp, presentingViewController: UIViewController?, completionHandler: @escaping (Result<InstalledApp, Error>) -> Void)
+    {
+        self.performSingleOperation(.deleteApp(installedApp), presentingViewController: presentingViewController, completionHandler: completionHandler)
+    }
+    
     @discardableResult
     func resign(_ installedApp: InstalledApp, alternateIconMode: AlternateIconMode = .preserve, presentingViewController: UIViewController?, completionHandler: @escaping (Result<InstalledApp, Error>) -> Void) -> RefreshGroup
     {
@@ -1140,6 +1145,7 @@ private extension AppManager
                 case .update:     localizedTitle = String(format: NSLocalizedString("Failed to Update %@",         comment: ""), appName)
                 case .activate:   localizedTitle = String(format: NSLocalizedString("Failed to Activate %@",       comment: ""), appName)
                 case .deactivate: localizedTitle = String(format: NSLocalizedString("Failed to Deactivate %@",     comment: ""), appName)
+                case .deleteApp:  localizedTitle = String(format: NSLocalizedString("Failed to Deactivate %@",     comment: ""), appName)
                 case .backup:     localizedTitle = String(format: NSLocalizedString("Failed to Backup %@",         comment: ""), appName)
                 case .restore:    localizedTitle = String(format: NSLocalizedString("Failed to Restore %@ Backup", comment: ""), appName)
                 case .resign:     localizedTitle = String(format: NSLocalizedString("Failed to Resign %@",         comment: ""), appName)
@@ -1166,6 +1172,7 @@ private extension AppManager
             context.app = ALTApplication(fileURL: app.fileURL)
             context.useMainProfile = app.useMainProfile
             context.customBundleIdentifier = app.customBundleIdentifier
+            context.installedApp = app
         }
         
         context.beginInstallationHandler = { (installedApp) in
@@ -1273,7 +1280,7 @@ private extension AppManager
                 context.provisioningProfiles = profiles
                 return nil
                 
-            case .patchAppIcon:
+            case .prepareAppExtensionBundleIDs:
                 if context.useMainProfile {
                     if let app = context.app, let profile = context.provisioningProfiles?[context.bundleIdentifier] {
                         var appexBundleIds: [String: String] = [:]
@@ -1283,6 +1290,9 @@ private extension AppManager
                         context.appexBundleIds = appexBundleIds
                     }
                 }
+                return nil
+                
+            case .patchAppIcon:
                 try await PatchAppIconOperation(context: context)
                     .execute(parentProgress: progress, weights: weights)
                 return nil
@@ -1316,7 +1326,9 @@ private extension AppManager
             case .installBackupApp:
                 if let installedApp = appOperation.app as? InstalledApp {
                     let op = try InstallBackupAppOperation(app: installedApp, context: context)
-                    try await op.execute(parentProgress: progress, weights: weights)
+                    let resultApp = try await op.execute(parentProgress: progress, weights: weights)
+                    context.installedApp = resultApp
+                    return resultApp
                 }
                 return nil
 
@@ -1328,29 +1340,35 @@ private extension AppManager
             case .backupApp:
                 let backupOp = try BackupAppOperation(action: .backup, context: context)
                 try await backupOp.execute(parentProgress: progress, weights: weights)
-                return nil
+                return context.installedApp
+                
+            case .restoreApp:
+                let restoreOp = try BackupAppOperation(action: .restore, context: context)
+                try await restoreOp.execute(parentProgress: progress, weights: weights)
+                return context.installedApp
                 
             case .removeAppBackup:
                 let removeBackupOp = try RemoveAppBackupOperation(context: context)
                 try await removeBackupOp.execute(parentProgress: progress, weights: weights)
-                return nil
+                return context.installedApp
                 
             case .removeApp:
                 let removeOp = try RemoveAppOperation(context: context)
-                try await removeOp.execute(parentProgress: progress, weights: weights)
-                return nil
+                let installedApp = try await removeOp.execute(parentProgress: progress, weights: weights)
+                return installedApp
                 
             case .deactivateApp:
                 if let app = appOperation.app as? InstalledApp {
                     let deactivateOp = try DeactivateAppOperation(app: app, context: context)
-                    try await deactivateOp.execute(parentProgress: progress, weights: weights)
+                    let installedApp = try await deactivateOp.execute(parentProgress: progress, weights: weights)
+                    return installedApp
                 }
                 return nil
                 
             case .enableJIT:
                 let enableJITOp = try EnableJITOperation(context: context)
                 try await enableJITOp.execute(parentProgress: progress, weights: weights)
-                return nil
+                return context.installedApp
 
             case .preflightChecks:
                 let validateOp = try PreflightChecksOperation(operations: [appOperation], presentingViewController: group.context.presentingViewController, context: group.context)
@@ -1407,7 +1425,7 @@ private extension AppManager
             {
             case .install, .update: 
                 return self.installationProgress[bundleID]
-            case .refresh, .activate, .deactivate, .backup, .restore, .resign, .remove, .enableJIT: 
+            case .refresh, .activate, .deactivate, .deleteApp, .backup, .restore, .resign, .remove, .enableJIT: 
                 return self.refreshProgress[bundleID]
             }
         }
@@ -1423,7 +1441,7 @@ private extension AppManager
             {
             case .install, .update: 
                 self.installationProgress[bundleID] = progress
-            case .refresh, .activate, .deactivate, .backup, .restore, .resign, .remove, .enableJIT: 
+            case .refresh, .activate, .deactivate, .deleteApp, .backup, .restore, .resign, .remove, .enableJIT: 
                 self.refreshProgress[bundleID] = progress
             }
         }

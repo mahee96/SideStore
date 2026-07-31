@@ -519,6 +519,23 @@ struct AnisetteServersView: View {
                         }
                     }
 
+                    // Section: Customization
+                    Section {
+                        NavigationLink(destination: AnisetteDataView()) {
+                            Label("Anisette Client Configuration", systemImage: "macbook.and.iphone")
+                        }
+                        Toggle(isOn: Binding(
+                            get: { UserDefaults.standard.disableAnisetteRotation },
+                            set: { UserDefaults.standard.disableAnisetteRotation = $0 }
+                        )) {
+                            Label("Disable Auto Rotation", systemImage: "arrow.triangle.2.circlepath")
+                        }
+                    } header: {
+                        Text("Customization")
+                    } footer: {
+                        Text("View, edit, or offline the header properties sent to Apple during provisioning, and control if SideStore automatically rotates/retries servers upon failure.")
+                    }
+
                     // Section 3: Troubleshooting
                     Section {
                         SwiftUI.Button(role: .destructive) {
