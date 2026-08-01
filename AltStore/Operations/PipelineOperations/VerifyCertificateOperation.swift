@@ -8,6 +8,7 @@
 
 @preconcurrency import UIKit
 import Foundation
+import CoreData
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
@@ -33,56 +34,59 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
         } else {
             self.debugLog("[VerifyCertificateOperation] Active certificates not found in Auth context. Fetching live from Apple Developer Portal...")
             activeCertificates = try await ALTAppleAPI.shared.fetchCertificates(for: team, session: session)
-            self.context.activeCertificates = activeCertificates
+            self.context.authenticatedContext.activeCertificates = activeCertificates
         }
         
-        self.setProgress(50)
+        self.setProgress(40)
         
-        // 2. Identify target certificate serial numbers (from newly fetched provisioning profiles or context certificate)
-        var targetSerialNumbers: Set<String> = []
+        let bundleID = self.context.targetBundleIdentifier
+        let activeKeychainCert = self.context.certificate ?? Keychain.shared.certificate
+        let activeKeychainSerial = activeKeychainCert?.serialNumber
         
+        // 2. Fetch InstalledApp details from CoreData
+        let (appName, installedAppSerial) = await DatabaseManager.shared.persistentContainer.performBackgroundTask { (context) -> (String, String?) in
+            let predicate = NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), bundleID)
+            if let installedApp = InstalledApp.first(satisfying: predicate, in: context) {
+                return (installedApp.name, installedApp.certificateSerialNumber)
+            }
+            return (bundleID, nil)
+        }
+        
+        let targetSerial = installedAppSerial ?? activeKeychainSerial
+        
+        if let serial = targetSerial, !serial.isEmpty {
+            let activeSerials = Set(activeCertificates.compactMap { $0.serialNumber })
+            
+            // Check 1: Was the certificate used to install this app REVOKED on Apple Developer Portal?
+            if !activeSerials.contains(serial) {
+                debugLog("[VerifyCertificateOperation] Certificate used for '\(appName)' (serial: \(serial)) was REVOKED on Apple Developer Portal!")
+                throw OperationError.certificateRevoked(appName: appName)
+            }
+            
+            // Check 2: Does the certificate used to install this app DIFFER from the current active signing certificate?
+            if let currentSerial = activeKeychainSerial, !currentSerial.isEmpty, serial != currentSerial {
+                debugLog("[VerifyCertificateOperation] Certificate used for '\(appName)' (serial: \(serial)) DIFFERS from current active certificate (serial: \(currentSerial)).")
+                throw OperationError.certificateChanged(appName: appName)
+            }
+        }
+        
+        self.setProgress(80)
+        
+        // 3. Verify newly fetched provisioning profile certificates if present
         if let profiles = self.context.provisioningProfiles {
+            let activeSerials = Set(activeCertificates.compactMap { $0.serialNumber })
             for profile in profiles.values {
                 for cert in profile.certificates {
-                    if let serial = cert.serialNumber, !serial.isEmpty {
-                        targetSerialNumbers.insert(serial)
+                    let serial = cert.serialNumber
+                    if !serial.isEmpty && !activeSerials.contains(serial) {
+                        debugLog("[VerifyCertificateOperation] Provisioning profile certificate for '\(appName)' (serial: \(serial)) was REVOKED on Apple Developer Portal!")
+                        throw OperationError.certificateRevoked(appName: appName)
                     }
                 }
             }
         }
         
-        if targetSerialNumbers.isEmpty, let appProfile = self.context.app?.provisioningProfile {
-            for cert in appProfile.certificates {
-                if let serial = cert.serialNumber, !serial.isEmpty {
-                    targetSerialNumbers.insert(serial)
-                }
-            }
-        }
-        
-        if targetSerialNumbers.isEmpty {
-            if let cert = self.context.certificate ?? Keychain.shared.certificate, let serial = cert.serialNumber, !serial.isEmpty {
-                targetSerialNumbers.insert(serial)
-            }
-        }
-        
-        guard !targetSerialNumbers.isEmpty else {
-            debugLog("[VerifyCertificateOperation] No signing certificate serial numbers found to verify. Skipping.")
-            self.setProgress(100)
-            return
-        }
-        
-        self.setProgress(80)
-        
-        let activeSerials = Set(activeCertificates.compactMap { $0.serialNumber })
-        let revokedSerials = targetSerialNumbers.subtracting(activeSerials)
-        
-        if !revokedSerials.isEmpty {
-            let revokedList = Array(revokedSerials).joined(separator: ", ")
-            debugLog("[VerifyCertificateOperation] Signing Certificate (serial: \(revokedList)) is REVOKED or no longer active on Apple Developer Portal!")
-            throw OperationError.invalidCertificate(revokedList)
-        }
-        
-        debugLog("[VerifyCertificateOperation] All profile signing certificates (serials: \(Array(targetSerialNumbers).joined(separator: ", "))) are VALID and active on Apple Developer Portal.")
+        debugLog("[VerifyCertificateOperation] Certificate verification PASSED for '\(appName)'.")
         self.setProgress(100)
     }
 }

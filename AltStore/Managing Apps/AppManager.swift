@@ -1455,6 +1455,7 @@ private extension AppManager
             }
         } catch {
             result = error
+            throw error
         }
         
         return nil
