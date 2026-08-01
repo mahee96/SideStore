@@ -11,7 +11,7 @@ import CoreData
 @preconcurrency import AltStoreCore
 import SemanticVersion
 
-final class FetchSourceOperation: BaseOperation<OperationContext, Source>, @unchecked Sendable {
+final class FetchSourceOperation: BasePipelineOperation<StandaloneOperationContext, Source>, @unchecked Sendable {
     let sourceURL: URL
     
     // Non-nil when updating an existing source.
@@ -27,13 +27,13 @@ final class FetchSourceOperation: BaseOperation<OperationContext, Source>, @unch
         return dateFormatter
     }()
     
-    init(sourceURL: URL, context: OperationContext) throws {
+    init(sourceURL: URL, context: StandaloneOperationContext) throws {
         self.sourceURL = sourceURL
         self.session = URLSession.shared
         try super.init(context: context)
     }
     
-    init(source: Source, context: OperationContext) throws {
+    init(source: Source, context: StandaloneOperationContext) throws {
         self.sourceURL = source.sourceURL
         self.session = URLSession.shared
         try super.init(context: context)

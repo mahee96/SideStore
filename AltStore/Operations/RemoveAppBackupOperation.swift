@@ -9,7 +9,7 @@
 import Foundation
 @preconcurrency import AltStoreCore
 
-final class RemoveAppBackupOperation: BaseOperation<InstallAppOperationContext, Bool>
+final class RemoveAppBackupOperation: BasePipelineOperation<InstallAppOperationContext, Bool>
 {
     private let coordinator = NSFileCoordinator()
     private let coordinatorQueue = OperationQueue()

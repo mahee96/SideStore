@@ -10,7 +10,7 @@
 import Foundation
 @preconcurrency import AltStoreCore
 
-final class CleanStagedAppOperation: BaseOperation<InstallAppOperationContext, Void>, @unchecked Sendable {
+final class CleanStagedAppOperation: BasePipelineOperation<InstallAppOperationContext, Void>, @unchecked Sendable {
     
     override func execute(parentProgress: Progress?) async throws {
         debugLog("[CleanStagedAppOperation] execute() started")

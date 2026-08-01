@@ -12,7 +12,7 @@ import Network
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class SendAppOperation: BaseOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
+final class SendAppOperation: BasePipelineOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
     
     override func execute(parentProgress: Progress?) async throws -> ALTApplication {
         debugLog("[SendAppOperation] execute() started")

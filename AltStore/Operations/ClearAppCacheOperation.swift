@@ -38,11 +38,11 @@ struct BatchError: ALTLocalizedError {
     }
 }
 
-class ClearAppCacheOperation: BaseOperation<OperationContext, Bool>, @unchecked Sendable {
+class ClearAppCacheOperation: BasePipelineOperation<StandaloneOperationContext, Bool>, @unchecked Sendable {
     private let coordinator = NSFileCoordinator()
     private let coordinatorQueue = OperationQueue()
     
-    override init(context: OperationContext) throws {
+    override init(context: StandaloneOperationContext) throws {
         self.coordinatorQueue.name = "AltStore - ClearAppCacheOperation Queue"
         try super.init(context: context)
     }

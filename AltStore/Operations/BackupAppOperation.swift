@@ -18,7 +18,7 @@ extension BackupAppOperation {
     }
 }
 
-final class BackupAppOperation: BaseOperation<InstallAppOperationContext, URL>, @unchecked Sendable {
+final class BackupAppOperation: BasePipelineOperation<InstallAppOperationContext, URL>, @unchecked Sendable {
     let action: Action
     
     private var appName: String?

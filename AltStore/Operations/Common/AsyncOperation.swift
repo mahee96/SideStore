@@ -2,8 +2,8 @@
 //  AsyncOperation.swift
 //  AltStore
 //
-//  Created by Riley Testut on 6/7/19.
-//  Copyright © 2019 Riley Testut. All rights reserved.
+//  Created by Magesh K on 30/07/26.
+//  Copyright © 2026 AltStore. All rights reserved.
 //
 
 @preconcurrency import UIKit
@@ -13,7 +13,6 @@ protocol AsyncOperation<T>: AnyObject, ProgressReporting, OperationLogging {
     associatedtype T
     
     var isCancelled: Bool { get }
-    var stepType: OperationStep { get }
 
     @discardableResult
     func execute(parentProgress: Progress?) async throws -> T
@@ -33,10 +32,7 @@ class BaseOperation<Context: OperationContext, Result>: NSObject, AsyncOperation
     private(set) var isCancelled = false
     private let lock = NSLock()
     
-    var stepType: OperationStep {
-        OperationStep.step(for: type(of: self))
-    }
-    
+
     var totalUnitCount: Int64 { 100 }
     
     init(context: Context) throws {
@@ -62,13 +58,12 @@ class BaseOperation<Context: OperationContext, Result>: NSObject, AsyncOperation
         
         let unitCount: Int64
         if let parentProgress = parentProgress {
-            let steps = self.context.steps.isEmpty ? [ExecutionStep(self.stepType, 100)] : self.context.steps
-            if let match = steps.first(where: { $0.step == self.stepType }) {
-                unitCount = match.weight
-            } else {
-                throw OperationError.invalidParameters("Missing progress weight for operation step: \(self.stepType) in steps list")
+            let className = String(describing: type(of: self))
+            guard let weightedContext = self.context as? WeightedOperationContext,
+                  let weight = weightedContext.weight(for: type(of: self)) else {
+                throw OperationError.invalidParameters("Missing progress weight for \(className) in steps list")
             }
-            
+            unitCount = weight
             if unitCount > 0 {
                 verboseLog("[\(className)] Adding child progress to parent with weight: \(unitCount) (parent total: \(parentProgress.totalUnitCount))")
                 parentProgress.addChild(self.progress, withPendingUnitCount: unitCount)
@@ -99,3 +94,6 @@ class BaseOperation<Context: OperationContext, Result>: NSObject, AsyncOperation
         self.isCancelled = true
     }
 }
+
+class BasePipelineOperation<Context: OperationContext, Result>: BaseOperation<Context, Result>, @unchecked Sendable {}
+class BaseStandaloneOperation<Context: OperationContext, Result>: BaseOperation<Context, Result>, @unchecked Sendable {}

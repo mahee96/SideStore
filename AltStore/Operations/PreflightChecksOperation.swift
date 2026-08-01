@@ -11,7 +11,7 @@ import Foundation
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class PreflightChecksOperation: BaseOperation<AuthenticatedOperationContext, Bool>, @unchecked Sendable {
+final class PreflightChecksOperation: BasePipelineOperation<AuthenticatedOperationContext, Bool>, @unchecked Sendable {
     let operations: [AppOperation]
     let presentingViewController: UIViewController?
 

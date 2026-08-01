@@ -29,6 +29,7 @@ class AppCardCollectionViewCell: UICollectionViewCell
     
     private var screenshots: [AppScreenshot] = [] {
         didSet {
+            guard self.screenshots != oldValue else { return }
             self.dataSource.items = self.screenshots
             
             if self.screenshots.isEmpty

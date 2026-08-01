@@ -158,8 +158,8 @@ extension AppManager
                 }
             
                 if let objectID = altstoreAppObjectID {
-                    let context = OperationContext(steps: .scheduleExpirationWarningNotification, dbBackgroundContext: dbBackgroundContext)
-                    let app = try await dbBackgroundContext.perform {
+                    let context = StandaloneOperationContext(steps: .scheduleExpirationWarningNotification, dbBackgroundContext: dbBackgroundContext)
+                    let app = await dbBackgroundContext.perform {
                         dbBackgroundContext.object(with: objectID) as! InstalledApp
                     }
                     let scheduleNotifOp = try ScheduleExpirationWarningNotificationOperation(
@@ -177,7 +177,7 @@ extension AppManager
         
             do
             {
-                let installedAppBundleIDs = try await dbBackgroundContext.perform {
+                let installedAppBundleIDs = await dbBackgroundContext.perform {
                     InstalledApp.all(in: dbBackgroundContext).map { $0.bundleIdentifier }
                 }
                             
@@ -318,7 +318,7 @@ extension AppManager
     {
         Task.detached {
             do {
-                let context = OperationContext(steps: .clearAppCache)
+                let context = StandaloneOperationContext(steps: .clearAppCache)
                 try await ClearAppCacheOperation(context: context).execute()
                 completion(.success(()))
             } catch {
@@ -514,7 +514,7 @@ extension AppManager
                      managedObjectContext: NSManagedObjectContext,
                      completionHandler: @escaping (Result<Source, Error>) -> Void) throws -> FetchSourceOperation
     {
-        let context = OperationContext(dbBackgroundContext: managedObjectContext)
+        let context = StandaloneOperationContext(steps: [], dbBackgroundContext: managedObjectContext)
         let fetchSourceOperation = try FetchSourceOperation(sourceURL: sourceURL, context: context)
         Task {
             do {
@@ -553,7 +553,7 @@ extension AppManager
                             let taskContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
                             do {
                                 let source = taskContext.performAndWait { taskContext.object(with: data.objectID) as! Source }
-                                let context = OperationContext(dbBackgroundContext: taskContext)
+                                let context = StandaloneOperationContext(steps: [], dbBackgroundContext: taskContext)
                                 let fetchSourceOperation = try FetchSourceOperation(source: source, context: context)
                                 try await fetchSourceOperation.execute()
                                 try taskContext.performAndWait {
@@ -855,7 +855,9 @@ extension AppManager
                            presentsNotifications: Bool = false,
                            completionHandler: @escaping (Result<[String: Result<InstalledApp, Error>], Error>) -> Void) throws -> BackgroundRefreshAppsOperation
     {
-        let backgroundRefreshAppsOperation = try BackgroundRefreshAppsOperation(installedApps: installedApps)
+        let dbBackgroundContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
+        let context = StandaloneOperationContext(steps: .backgroundRefreshApps, dbBackgroundContext: dbBackgroundContext)
+        let backgroundRefreshAppsOperation = try BackgroundRefreshAppsOperation(installedApps: installedApps, context: context)
         Task.detached {
             do {
                 backgroundRefreshAppsOperation.presentsFinishedNotification = presentsNotifications
@@ -1139,7 +1141,7 @@ private extension AppManager
             group.set(.success(result), forAppWithBundleIdentifier: result.bundleIdentifier)
             
             if result.bundleIdentifier == StoreApp.altstoreAppID {
-                let context = OperationContext(steps: .scheduleExpirationWarningNotification, dbBackgroundContext: group.context.dbBackgroundContext)
+                let context = StandaloneOperationContext(steps: .scheduleExpirationWarningNotification, dbBackgroundContext: group.context.dbBackgroundContext)
                 let scheduleNotifOp = try ScheduleExpirationWarningNotificationOperation(
                     installedApp: result,
                     context: context
@@ -1195,9 +1197,9 @@ private extension AppManager
     
     private func performPipeline(for operation: AppOperation, group: RefreshGroup) async throws -> InstalledApp
     {
-        let pipeline = OperationStepsDefinition.pipeline(for: operation)
+        let pipelineSteps = PipelineDefinition.steps(for: operation)
         let context = InstallAppOperationContext(
-            steps: pipeline,
+            pipelineSteps: pipelineSteps,
             bundleIdentifier: operation.bundleIdentifier,
             authenticatedContext: group.context
         )
@@ -1237,7 +1239,7 @@ private extension AppManager
         var finalApp: InstalledApp?
         
         let operationProgress = self.progress(for: operation)
-        for pipelineStep in pipeline {
+        for pipelineStep in pipelineSteps {
             if let result = try await executeStep(
                 pipelineStep.step,
                 context: context,
@@ -1258,205 +1260,221 @@ private extension AppManager
         return resultApp
     }
     
-    private func executeStep(
-        _ step: OperationStep,
-        context: InstallAppOperationContext,
-        appOperation: AppOperation,
-        group: RefreshGroup,
-        downloadingApp: AppProtocol,
-        additionalEntitlements: [ALTEntitlement: Any]?,
-        permissionsMode: VerifyAppOperation.PermissionReviewMode,
-        progress: Progress?
-    ) async throws -> InstalledApp? {
-        switch step {
-            
-            case .userCustomization:
-                try await UserCustomizationOperation(context: context)
-                    .execute(parentProgress: progress)
-                return nil
+    private func executeStep(_ step: PipelineStep,
+                             context: InstallAppOperationContext,
+                             appOperation: AppOperation,
+                             group: RefreshGroup,
+                             downloadingApp: AppProtocol,
+                             additionalEntitlements: [ALTEntitlement: Any]?,
+                             permissionsMode: VerifyAppOperation.PermissionReviewMode,
+                             progress: Progress?) async throws -> InstalledApp?
+    {
+        var result: Any? = "()"
+        var loggerType: any OperationLogging.Type
+        
+        defer {
+            logOperationResult(result: result, loggerType: loggerType, operation: step)
+        }
 
-            case .downloadApp:
-                let downloadedAppURL = context.temporaryDirectory.appendingPathComponent("App.app")
-                let downloadedApp = try await DownloadAppOperation(app: downloadingApp, destinationURL: downloadedAppURL, context: context)
-                    .execute(parentProgress: progress)
-                context.app = downloadedApp
+        do {
+            switch step {
+            case .preflightChecks:
+                loggerType = PreflightChecksOperation.self
+                let presentingViewController = group.context.presentingViewController
+                let step = try PreflightChecksOperation(operations: [appOperation],
+                                                        presentingViewController: presentingViewController,
+                                                        context: group.context)
+                result = try await step.execute(parentProgress: progress)
                 return nil
-            
+                
+            case .userCustomization:
+                loggerType = UserCustomizationOperation.self
+                let step = try UserCustomizationOperation(context: context)
+                result = try await step.execute(parentProgress: progress)
+                return nil
+                
+            case .downloadApp:
+                loggerType = DownloadAppOperation.self
+                let downloadedAppURL = context.temporaryDirectory.appendingPathComponent("App.app")
+                let step = try DownloadAppOperation(app: downloadingApp,
+                                                    destinationURL: downloadedAppURL,
+                                                    context: context)
+                let downloadedApp = try await step.execute(parentProgress: progress)
+                context.app = downloadedApp
+                result = downloadedApp
+                return nil
+                
             case .verifyApp:
-                try await VerifyAppOperation(permissionsMode: permissionsMode, context: context)
-                    .execute(parentProgress: progress)
+                loggerType = VerifyAppOperation.self
+                let step = try VerifyAppOperation(permissionsMode: permissionsMode, context: context)
+                result = try await step.execute(parentProgress: progress)
                 return nil
                 
             case .cacheApp:
-                try await CacheAppOperation(context: context)
-                    .execute(parentProgress: progress)
+                loggerType = CacheAppOperation.self
+                let step = try CacheAppOperation(context: context)
+                result = try await step.execute(parentProgress: progress)
                 return nil
-            
+                
             case .stageApp:
-                try await StageAppOperation(context: context)
-                    .execute(parentProgress: progress)
+                loggerType = StageAppOperation.self
+                let step = try StageAppOperation(context: context)
+                result = try await step.execute(parentProgress: progress)
                 return nil
                 
             case .removeAppExtensions:
+                loggerType = RemoveAppExtensionsOperation.self
                 let localAppExtensions = (appOperation.app as? ALTApplication)?.appExtensions
-                try await RemoveAppExtensionsOperation(context: context, localAppExtensions: localAppExtensions)
-                    .execute(parentProgress: progress)
+                let step = try RemoveAppExtensionsOperation(context: context, localAppExtensions: localAppExtensions)
+                result = try await step.execute(parentProgress: progress)
                 return nil
                 
             case .fetchAnisetteData:
-                try await FetchAnisetteDataOperation(context: group.context)
-                    .execute(parentProgress: progress)
+                loggerType = FetchAnisetteDataOperation.self
+                let step = try FetchAnisetteDataOperation(context: group.context)
+                result = try await step.execute(parentProgress: progress)
                 return nil
                 
             case .fetchProvisioningProfilesInstall:
-                let installOp = try FetchProvisioningProfilesInstallOperation(context: context)
-                installOp.additionalEntitlements = additionalEntitlements
-                let profiles = try await installOp.execute(parentProgress: progress)
+                loggerType = FetchProvisioningProfilesInstallOperation.self
+                let step = try FetchProvisioningProfilesInstallOperation(context: context)
+                step.additionalEntitlements = additionalEntitlements
+                let profiles = try await step.execute(parentProgress: progress)
                 context.provisioningProfiles = profiles
+                result = profiles
                 return nil
                 
             case .fetchProvisioningProfilesRefresh:
-                let refreshOp = try FetchProvisioningProfilesRefreshOperation(context: context)
-                let profiles = try await refreshOp.execute(parentProgress: progress)
+                loggerType = FetchProvisioningProfilesRefreshOperation.self
+                let step = try FetchProvisioningProfilesRefreshOperation(context: context)
+                let profiles = try await step.execute(parentProgress: progress)
                 context.provisioningProfiles = profiles
+                result = profiles
                 return nil
                 
             case .prepareAppExtensionBundleIDs:
-                if context.useMainProfile {
-                    if let app = context.app, let profile = context.provisioningProfiles?[context.bundleIdentifier] {
-                        var appexBundleIds: [String: String] = [:]
-                        for appex in app.appExtensions {
-                            appexBundleIds[appex.bundleIdentifier] = appex.bundleIdentifier.replacingOccurrences(of: app.bundleIdentifier, with: profile.bundleIdentifier)
-                        }
-                        context.appexBundleIds = appexBundleIds
-                    }
-                }
+                loggerType = PrepareAppExtensionBundleIDsOperation.self
+                let step = try PrepareAppExtensionBundleIDsOperation(context: context)
+                try await step.execute(parentProgress: progress)
                 return nil
                 
             case .patchAppIcon:
-                try await PatchAppIconOperation(context: context)
-                    .execute(parentProgress: progress)
+                loggerType = PatchAppIconOperation.self
+                let step = try PatchAppIconOperation(context: context)
+                result = try await step.execute(parentProgress: progress)
                 return nil
                 
             case .resignApp:
-                let resignedApp = try await ResignAppOperation(context: context)
-                    .execute(parentProgress: progress)
+                loggerType = ResignAppOperation.self
+                let step = try ResignAppOperation(context: context)
+                let resignedApp = try await step.execute(parentProgress: progress)
                 context.resignedApp = resignedApp
+                result = resignedApp
                 return nil
                 
             case .exportResignedApp:
-                try await ExportResignedAppOperation(context: context)
-                    .execute(parentProgress: progress)
+                loggerType = ExportResignedAppOperation.self
+                let step = try ExportResignedAppOperation(context: context)
+                result = try await step.execute(parentProgress: progress)
                 return nil
                 
             case .sendApp:
-                try await SendAppOperation(context: context)
-                    .execute(parentProgress: progress)
+                loggerType = SendAppOperation.self
+                let step = try SendAppOperation(context: context)
+                result = try await step.execute(parentProgress: progress)
                 return nil
                 
             case .installApp:
-                let installedApp = try await InstallAppOperation(context: context, app: appOperation.app)
-                    .execute(parentProgress: progress)
-                let bundleID = installedApp.bundleIdentifier
+                loggerType = InstallAppOperation.self
+                let step = try InstallAppOperation(context: context, app: appOperation.app)
+                let installedApp = try await step.execute(parentProgress: progress)
                 context.installedApp = installedApp
-                if let index = UserDefaults.standard.legacySideloadedApps?.firstIndex(of: bundleID) {
+                result = installedApp
+                if let index = UserDefaults.standard.legacySideloadedApps?.firstIndex(of: installedApp.bundleIdentifier) {
                     UserDefaults.standard.legacySideloadedApps?.remove(at: index)
                 }
                 return installedApp
                 
             case .installBackupApp:
-                if let installedApp = appOperation.app as? InstalledApp {
-                    let op = try InstallBackupAppOperation(app: installedApp, context: context)
-                    let resultApp = try await op.execute(parentProgress: progress)
-                    context.installedApp = resultApp
-                    return resultApp
-                }
-                return nil
-
+                loggerType = InstallBackupAppOperation.self
+                let installedApp = appOperation.app as? InstalledApp
+                let step = try InstallBackupAppOperation(app: installedApp, context: context)
+                let resultApp = try await step.execute(parentProgress: progress)
+                context.installedApp = resultApp
+                result = resultApp
+                return resultApp
+                
             case .refreshApp:
-                let installedApp = try await RefreshAppOperation(context: context)
-                    .execute(parentProgress: progress)
-                return installedApp
+                loggerType = RefreshAppOperation.self
+                let step = try RefreshAppOperation(context: context)
+                let installedApp = try await step.execute(parentProgress: progress)
+                result = installedApp
+                return nil
                 
             case .backupApp:
-                let backupOp = try BackupAppOperation(action: .backup, context: context)
-                try await backupOp.execute(parentProgress: progress)
-                return context.installedApp
+                loggerType = BackupAppOperation.self
+                let step = try BackupAppOperation(action: .backup, context: context)
+                result = try await step.execute(parentProgress: progress)
+                return nil
                 
             case .restoreApp:
-                let restoreOp = try BackupAppOperation(action: .restore, context: context)
-                try await restoreOp.execute(parentProgress: progress)
-                return context.installedApp
+                loggerType = BackupAppOperation.self
+                let step = try BackupAppOperation(action: .restore, context: context)
+                result = try await step.execute(parentProgress: progress)
+                return nil
                 
             case .removeAppBackup:
-                let removeBackupOp = try RemoveAppBackupOperation(context: context)
-                try await removeBackupOp.execute(parentProgress: progress)
-                return context.installedApp
+                loggerType = RemoveAppBackupOperation.self
+                let step = try RemoveAppBackupOperation(context: context)
+                result = try await step.execute(parentProgress: progress)
+                return nil
                 
             case .removeApp:
-                let removeOp = try RemoveAppOperation(context: context)
-                let installedApp = try await removeOp.execute(parentProgress: progress)
-                return installedApp
+                loggerType = RemoveAppOperation.self
+                let step = try RemoveAppOperation(context: context)
+                let installedApp = try await step.execute(parentProgress: progress)
+                result = installedApp
+                return nil
                 
             case .deactivateApp:
-                if let app = appOperation.app as? InstalledApp {
-                    let deactivateOp = try DeactivateAppOperation(app: app, context: context)
-                    let installedApp = try await deactivateOp.execute(parentProgress: progress)
-                    return installedApp
-                }
+                loggerType = DeactivateAppOperation.self
+                let app = appOperation.app as? InstalledApp
+                let step = try DeactivateAppOperation(app: app, context: context)
+                let installedApp = try await step.execute(parentProgress: progress)
+                result = installedApp
                 return nil
                 
             case .enableJIT:
-                let enableJITOp = try EnableJITOperation(context: context)
-                try await enableJITOp.execute(parentProgress: progress)
-                return context.installedApp
-
-            case .preflightChecks:
-                let validateOp = try PreflightChecksOperation(operations: [appOperation], presentingViewController: group.context.presentingViewController, context: group.context)
-                try await validateOp.execute(parentProgress: progress)
-                return nil
-                
-            case .scheduleExpirationWarningNotification:
-                if let installedApp = context.installedApp {
-                    let notifOp = try ScheduleExpirationWarningNotificationOperation(installedApp: installedApp, context: context)
-                    try await notifOp.execute(parentProgress: progress)
-                }
-                return nil
-            case .authentication:
-                try await AuthenticationOperation(context: group.context, presentingViewController: group.context.presentingViewController)
-                    .execute(parentProgress: progress)
-                return nil
-                
-            case .backgroundRefreshApps:
-                let apps = context.installedApp.map { [$0] } ?? []
-                try await BackgroundRefreshAppsOperation(installedApps: apps)
-                    .execute(parentProgress: progress)
-                return nil
-                
-            case .clearAppCache:
-                try await ClearAppCacheOperation(context: context)
-                    .execute(parentProgress: progress)
+                loggerType = EnableJITOperation.self
+                let step = try EnableJITOperation(context: context)
+                result = try await step.execute(parentProgress: progress)
                 return nil
                 
             case .cleanStagedApp:
-                try await CleanStagedAppOperation(context: context)
-                    .execute(parentProgress: progress)
+                loggerType = CleanStagedAppOperation.self
+                let step = try CleanStagedAppOperation(context: context)
+                result = try await step.execute(parentProgress: progress)
                 return nil
-                
-            case .fetchAppIDs:
-                try await SyncAppIDsOperation(context: group.context)
-                    .execute(parentProgress: progress)
-                return nil
-                
-            case .fetchSource:
-                if let sourceURL = (downloadingApp as? StoreApp)?.source?.sourceURL {
-                    try await FetchSourceOperation(sourceURL: sourceURL, context: context)
-                        .execute(parentProgress: progress)
-                }
-                return nil
-                
-            case .unknown:
-                return nil
+            }
+        } catch {
+            result = error
+        }
+        
+        return nil
+    }
+    
+    private func logOperationResult(result: Any?, loggerType: any OperationLogging.Type, operation: any OperationStep){
+        if UserDefaults.standard.isVerboseOperationsLoggingEnabled &&
+           OperationsLoggingControl.isLoggingEnabled(for: loggerType.self)
+        {
+            let resultStatus = String(describing: result).prefix("success".count).uppercased()
+            debugLog(
+            """
+            [AppManager] ====> OPERATION: `.\(operation)` completed with: \(resultStatus) <====
+                • Component: '\(loggerType)'
+                • Result: \(result ?? "nil")
+            """
+            )
         }
     }
 

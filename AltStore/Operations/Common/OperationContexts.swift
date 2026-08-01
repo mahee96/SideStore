@@ -13,98 +13,6 @@ import Network
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-class OperationContext
-{
-    var error: Error?
-    var presentingViewController: UIViewController?
-    var dbBackgroundContext: NSManagedObjectContext?
-    let steps: [ExecutionStep]
-    
-    init(steps: [ExecutionStep], error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
-    {
-        self.steps = steps
-        self.error = error
-        self.presentingViewController = presentingViewController
-        self.dbBackgroundContext = dbBackgroundContext
-    }
-    
-    init(context: OperationContext)
-    {
-        self.steps = context.steps
-        self.error = context.error
-        self.presentingViewController = context.presentingViewController
-        self.dbBackgroundContext = context.dbBackgroundContext
-    }
-}
-
-class CachedOperationContext: OperationContext
-{
-    private let appIDsLock = NSLock()
-    private var _appIDs: [ALTAppID]?
-    var appIDs: [ALTAppID]? {
-        get {
-            appIDsLock.withLock { _appIDs }
-        }
-        set {
-            appIDsLock.withLock { _appIDs = newValue }
-        }
-    }
-    
-    func appendAppID(_ appID: ALTAppID) {
-        appIDsLock.withLock {
-            _appIDs?.append(appID)
-        }
-    }
-    
-    private let appGroupsLock = NSLock()
-    private var _appGroups: [ALTAppGroup]?
-    var appGroups: [ALTAppGroup]? {
-        get {
-            appGroupsLock.withLock { _appGroups }
-        }
-        set {
-            appGroupsLock.withLock { _appGroups = newValue }
-        }
-    }
-    
-    func appendAppGroup(_ appGroup: ALTAppGroup) {
-        appGroupsLock.withLock {
-            _appGroups?.append(appGroup)
-        }
-    }
-    
-    override init(steps: [ExecutionStep], error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
-    {
-        super.init(steps: steps, error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
-    }
-    
-    init(context: CachedOperationContext) {
-        super.init(context: context)
-        self.appIDs = context.appIDs
-        self.appGroups = context.appGroups
-    }
-}
-
-final class AuthenticatedOperationContext: CachedOperationContext
-{
-    var session: ALTAppleAPISession?
-    var team: ALTTeam?
-    var certificate: ALTCertificate?
-    var isSideStoreResignDismissed: Bool = false
-    
-    override init(error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
-    {
-        super.init(steps: .authenticate, error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
-    }
-    
-    init(context: AuthenticatedOperationContext) {
-        super.init(context: context)
-        self.session = context.session
-        self.team = context.team
-        self.certificate = context.certificate
-        self.isSideStoreResignDismissed = context.isSideStoreResignDismissed
-    }
-}
 
 enum AlternateIconMode {
     case preserve
@@ -112,48 +20,168 @@ enum AlternateIconMode {
     case remove
 }
 
+protocol WeightedOperationContext: AnyObject {
+    func weight(for operationType: Any.Type) -> Int64?
+}
+
+class OperationContext
+{
+    var error: Error?
+    var presentingViewController: UIViewController?
+    var dbBackgroundContext: NSManagedObjectContext?
+
+    fileprivate init(error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
+    {
+        self.error = error
+        self.presentingViewController = presentingViewController
+        self.dbBackgroundContext = dbBackgroundContext
+    }
+
+    fileprivate init(context: OperationContext)
+    {
+        self.error = context.error
+        self.presentingViewController = context.presentingViewController
+        self.dbBackgroundContext = context.dbBackgroundContext
+    }
+}
+
+class StandaloneOperationContext: OperationContext, WeightedOperationContext
+{
+    let steps: [StandaloneExecutionStep]
+
+    init(steps: [StandaloneExecutionStep], error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
+    {
+        self.steps = steps
+        super.init(error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
+    }
+
+    init(context: StandaloneOperationContext)
+    {
+        self.steps = context.steps
+        super.init(context: context)
+    }
+
+    func weight(for operationType: Any.Type) -> Int64? {
+        guard let step = StandaloneStep.step(for: operationType), step != .unknown else { return nil }
+        return steps.first(where: { $0.step == step })?.weight
+    }
+}
+
+class CachedOperationContext: OperationContext
+{
+    var appIDs: [ALTAppID]?
+    var appGroups: [ALTAppGroup]?
+
+    override init(error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
+    {
+        super.init(error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
+    }
+
+    override init(context: OperationContext)
+    {
+        super.init(context: context)
+    }
+
+    init(context: CachedOperationContext) {
+        super.init(context: context)
+        self.appIDs = context.appIDs
+        self.appGroups = context.appGroups
+    }
+}
+
+final class AuthenticatedOperationContext: CachedOperationContext, WeightedOperationContext
+{
+    var session: ALTAppleAPISession?
+    var team: ALTTeam?
+    var certificate: ALTCertificate?
+    
+    var isSideStoreResignDismissed: Bool = false
+
+    let steps: [StandaloneExecutionStep]
+
+    override init(error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
+    {
+        self.steps = .authenticate
+        super.init(error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
+    }
+
+    init(context: AuthenticatedOperationContext) {
+        self.steps = context.steps
+        super.init(context: context)
+        self.session = context.session
+        self.team = context.team
+        self.certificate = context.certificate
+        self.isSideStoreResignDismissed = context.isSideStoreResignDismissed
+    }
+
+    func weight(for operationType: Any.Type) -> Int64? {
+        guard let step = StandaloneStep.step(for: operationType), step != .unknown else { return nil }
+        return steps.first(where: { $0.step == step })?.weight
+    }
+}
+
+class PipelineOperationContext: OperationContext, WeightedOperationContext
+{
+    let pipelineSteps: [PipelineExecutionStep]
+
+    init(pipelineSteps: [PipelineExecutionStep], error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
+    {
+        self.pipelineSteps = pipelineSteps
+        super.init(error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
+    }
+
+    init(context: PipelineOperationContext)
+    {
+        self.pipelineSteps = context.pipelineSteps
+        super.init(context: context)
+    }
+
+    func weight(for operationType: Any.Type) -> Int64? {
+        guard let step = PipelineStep.step(for: operationType) else { return nil }
+        return pipelineSteps.first(where: { $0.step == step })?.weight
+    }
+}
+
 @dynamicMemberLookup
-class AppOperationContext: OperationContext
+class AppOperationContext: PipelineOperationContext
 {
     let bundleIdentifier: String
     var customBundleIdentifier: String?
-    let authenticatedContext: AuthenticatedOperationContext
-    
-    var targetBundleIdentifier: String {
-        return self.customBundleIdentifier ?? self.bundleIdentifier
-    }
-    
     var app: ALTApplication?
     var provisioningProfiles: [String: ALTProvisioningProfile]?
     var appexBundleIds: [String: String]?
     var useMainProfile = false
-    
     var isFinished = false
-    
+
+    let authenticatedContext: AuthenticatedOperationContext
+
+    var targetBundleIdentifier: String { customBundleIdentifier ?? bundleIdentifier }
+
     override var error: Error? {
-        get {
-            return _error ?? self.authenticatedContext.error
-        }
-        set {
-            _error = newValue
-            
-            if self.authenticatedContext.error == nil
+        get { _error ?? authenticatedContext.error }
+        set { _error = newValue
+            if authenticatedContext.error == nil
             {
                 // Assign newValue to authenticatedContext.error if the latter is nil.
                 // This fixes some operations continuing even after an error has occured.
-                self.authenticatedContext.error = newValue
+                authenticatedContext.error = newValue
             }
         }
     }
     private var _error: Error?
-    
-    init(steps: [ExecutionStep], bundleIdentifier: String, authenticatedContext: AuthenticatedOperationContext)
+
+    init(pipelineSteps: [PipelineExecutionStep], bundleIdentifier: String, authenticatedContext: AuthenticatedOperationContext)
     {
         self.bundleIdentifier = bundleIdentifier
         self.authenticatedContext = authenticatedContext
-        super.init(steps: steps, error: nil, presentingViewController: authenticatedContext.presentingViewController, dbBackgroundContext: authenticatedContext.dbBackgroundContext)
+        super.init(
+            pipelineSteps: pipelineSteps,
+            error: nil,
+            presentingViewController: authenticatedContext.presentingViewController,
+            dbBackgroundContext: authenticatedContext.dbBackgroundContext
+        )
     }
-    
+
     subscript<T>(dynamicMember keyPath: WritableKeyPath<AuthenticatedOperationContext, T>) -> T
     {
         return self.authenticatedContext[keyPath: keyPath]
@@ -164,25 +192,23 @@ class InstallAppOperationContext: AppOperationContext
 {
     lazy var temporaryDirectory: URL = {
         let temporaryDirectory = FileManager.default.uniqueTemporaryURL()
-        
-        do { try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true, attributes: nil) }
+        do {
+            try FileManager.default.createDirectory(at: temporaryDirectory,
+                                                    withIntermediateDirectories: true,
+                                                    attributes: nil)
+        }
         catch { self.error = error }
-        
         return temporaryDirectory
     }()
-    
+
     var ipaURL: URL?
     var resignedApp: ALTApplication?
-    var installedApp: InstalledApp? {
-        didSet {
-            self.installedAppContext = self.installedApp?.managedObjectContext
-        }
-    }
-    private var installedAppContext: NSManagedObjectContext?
+    var installedApp: InstalledApp?
+    
     var beginInstallationHandler: ((InstalledApp) -> Void)?
-    
+
     var alternateIconMode: AlternateIconMode = .preserve
-    
+
     var alternateIconURL: URL? {
         switch self.alternateIconMode {
         case .set(let url):
@@ -196,9 +222,9 @@ class InstallAppOperationContext: AppOperationContext
             return nil
         }
     }
-    
+
     var shouldTurnOffData: Bool = false
-    
+
     // Non-nil when installing from a source.
     @AsyncManaged
     var appVersion: AppVersion?

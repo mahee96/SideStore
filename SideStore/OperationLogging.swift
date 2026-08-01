@@ -23,7 +23,7 @@ internal extension OperationLogging {
     }
 
     func verboseLog(_ text: @autoclosure () -> String) {
-        guard OperationsLoggingControl.getFromDatabase(for: type(of: self)) else { return }
+        guard OperationsLoggingControl.isLoggingEnabled(for: type(of: self)) else { return }
         let message = text()
         if !message.isEmpty && message.allSatisfy({ $0 == "\n" || $0 == "\r" }) {
             print(message, terminator: "")

@@ -59,7 +59,7 @@ private struct SessionCache {
     }
 }
 
-final class AuthenticationOperation: BaseOperation<AuthenticatedOperationContext, AuthenticationResult>, @unchecked Sendable {
+final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperationContext, AuthenticationResult>, @unchecked Sendable {
     private weak var presentingViewController: UIViewController?
     
     private lazy var navigationController: UINavigationController = {

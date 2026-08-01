@@ -19,7 +19,7 @@ enum SideJITServerErrorType: Error {
  }
 
 @available(iOS 14, *)
-final class EnableJITOperation: BaseOperation<InstallAppOperationContext, Bool>, @unchecked Sendable
+final class EnableJITOperation: BasePipelineOperation<InstallAppOperationContext, Bool>, @unchecked Sendable
 {
     private var cancellable: AnyCancellable?
     

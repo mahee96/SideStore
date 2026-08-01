@@ -11,7 +11,7 @@ import Foundation
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class ResignAppOperation: BaseOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
+final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
     
     override func execute(parentProgress: Progress?) async throws -> ALTApplication {
         debugLog("[ResignAppOperation] execute() started")

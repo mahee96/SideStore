@@ -10,10 +10,10 @@ import Foundation
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class InstallBackupAppOperation: BaseOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
-    let app: InstalledApp
+final class InstallBackupAppOperation: BasePipelineOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
+    let app: InstalledApp?
 
-    init(app: InstalledApp, context: InstallAppOperationContext) throws {
+    init(app: InstalledApp?, context: InstallAppOperationContext) throws {
         self.app = app
         try super.init(context: context)
     }
@@ -23,7 +23,11 @@ final class InstallBackupAppOperation: BaseOperation<InstallAppOperationContext,
         defer { debugLog("[InstallBackupAppOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
-
+        
+        guard let app = self.app else {
+            throw OperationError.invalidParameters("InstallBackupAppOperation: target app is nil")
+        }
+        
         guard ALTApplication(fileURL: app.fileURL) != nil else {
             throw OperationError.appNotFound(name: app.name)
         }

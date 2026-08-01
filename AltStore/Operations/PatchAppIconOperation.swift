@@ -9,7 +9,7 @@
 @preconcurrency import UIKit
 @preconcurrency import AltStoreCore
 
-final class PatchAppIconOperation: BaseOperation<InstallAppOperationContext, URL>, @unchecked Sendable {
+final class PatchAppIconOperation: BasePipelineOperation<InstallAppOperationContext, URL>, @unchecked Sendable {
     
     override func execute(parentProgress: Progress?) async throws -> URL {
         debugLog("[PatchAppIconOperation] execute() started")

@@ -10,10 +10,10 @@ import UserNotifications
 import Foundation
 @preconcurrency import AltStoreCore
 
-final class ScheduleExpirationWarningNotificationOperation: BaseOperation<OperationContext, Bool>, @unchecked Sendable {
+final class ScheduleExpirationWarningNotificationOperation: BasePipelineOperation<StandaloneOperationContext, Bool>, @unchecked Sendable {
     let installedApp: InstalledApp
 
-    init(installedApp: InstalledApp, context: OperationContext) throws {
+    init(installedApp: InstalledApp, context: StandaloneOperationContext) throws {
         self.installedApp = installedApp
         try super.init(context: context)
     }

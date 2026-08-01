@@ -9,7 +9,7 @@
 @preconcurrency import UIKit
 import Foundation
 @preconcurrency import AltStoreCore
-final class UserCustomizationOperation: BaseOperation<InstallAppOperationContext, String?>, @unchecked Sendable {
+final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperationContext, String?>, @unchecked Sendable {
 
     override func execute(parentProgress: Progress?) async throws -> String? {
         debugLog("[UserCustomizationOperation] execute() started")

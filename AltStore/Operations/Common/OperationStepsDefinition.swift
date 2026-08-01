@@ -8,205 +8,213 @@
 
 import Foundation
 
-struct ExecutionStep: Hashable {
-    let step: OperationStep
+struct PipelineExecutionStep: Hashable {
+    let step: PipelineStep
     let weight: Int64
 
-    init(_ step: OperationStep, _ weight: Int64) {
+    init(_ step: PipelineStep, _ weight: Int64) {
         self.step = step
         self.weight = weight
     }
 }
 
-struct OperationStepsDefinition {
-    static let install: [ExecutionStep] = [
-        ExecutionStep(.userCustomization, 2),
-        ExecutionStep(.downloadApp, 20),
-        ExecutionStep(.verifyApp, 1),
-        ExecutionStep(.cacheApp, 1),
-        ExecutionStep(.stageApp, 1),
-        ExecutionStep(.patchAppIcon, 1),
-        ExecutionStep(.removeAppExtensions, 1),
-        ExecutionStep(.fetchAnisetteData, 5),
-        ExecutionStep(.fetchProvisioningProfilesInstall, 5),
-        ExecutionStep(.prepareAppExtensionBundleIDs, 1),
-        ExecutionStep(.resignApp, 25),
-        ExecutionStep(.exportResignedApp, 1),
-        ExecutionStep(.sendApp, 20),
-        ExecutionStep(.installApp, 15),
-        ExecutionStep(.cleanStagedApp, 1)
+struct StandaloneExecutionStep: Hashable {
+    let step: StandaloneStep
+    let weight: Int64
+
+    init(_ step: StandaloneStep, _ weight: Int64) {
+        self.step = step
+        self.weight = weight
+    }
+}
+
+struct PipelineDefinition {
+    static let install: [PipelineExecutionStep] = [
+        PipelineExecutionStep(.userCustomization,                2),
+        PipelineExecutionStep(.downloadApp,                     20),
+        PipelineExecutionStep(.verifyApp,                       1),
+        PipelineExecutionStep(.cacheApp,                        1),
+        PipelineExecutionStep(.stageApp,                        1),
+        PipelineExecutionStep(.patchAppIcon,                    1),
+        PipelineExecutionStep(.removeAppExtensions,             1),
+        PipelineExecutionStep(.fetchAnisetteData,               5),
+        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 5),
+        PipelineExecutionStep(.prepareAppExtensionBundleIDs,    1),
+        PipelineExecutionStep(.resignApp,                       25),
+        PipelineExecutionStep(.exportResignedApp,               1),
+        PipelineExecutionStep(.sendApp,                         20),
+        PipelineExecutionStep(.installApp,                      15),
+        PipelineExecutionStep(.cleanStagedApp,                  1)
     ]
 
-    static let resign: [ExecutionStep] = [
-        ExecutionStep(.stageApp, 2),
-        ExecutionStep(.patchAppIcon, 2),
-        ExecutionStep(.removeAppExtensions, 2),
-        ExecutionStep(.fetchAnisetteData, 5),
-        ExecutionStep(.fetchProvisioningProfilesInstall, 10),
-        ExecutionStep(.prepareAppExtensionBundleIDs, 2),
-        ExecutionStep(.resignApp, 30),
-        ExecutionStep(.exportResignedApp, 2),
-        ExecutionStep(.sendApp, 20),
-        ExecutionStep(.installApp, 23),
-        ExecutionStep(.cleanStagedApp, 2)
+    static let resign: [PipelineExecutionStep] = [
+        PipelineExecutionStep(.stageApp,                        2),
+        PipelineExecutionStep(.patchAppIcon,                    2),
+        PipelineExecutionStep(.removeAppExtensions,             2),
+        PipelineExecutionStep(.fetchAnisetteData,               5),
+        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 10),
+        PipelineExecutionStep(.prepareAppExtensionBundleIDs,    2),
+        PipelineExecutionStep(.resignApp,                       30),
+        PipelineExecutionStep(.exportResignedApp,               2),
+        PipelineExecutionStep(.sendApp,                         20),
+        PipelineExecutionStep(.installApp,                      23),
+        PipelineExecutionStep(.cleanStagedApp,                  2)
     ]
 
-    static let refresh: [ExecutionStep] = [
-        ExecutionStep(.fetchAnisetteData, 5),
-        ExecutionStep(.fetchProvisioningProfilesRefresh, 55),
-        ExecutionStep(.refreshApp, 40)
+    static let refresh: [PipelineExecutionStep] = [
+        PipelineExecutionStep(.fetchAnisetteData,                5),
+        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 55),
+        PipelineExecutionStep(.refreshApp,                       40)
     ]
 
-    static let activateLegacy: [ExecutionStep] = [
-        ExecutionStep(.fetchAnisetteData, 5),
-        ExecutionStep(.fetchProvisioningProfilesRefresh, 55),
-        ExecutionStep(.refreshApp, 40)
+    static let activateLegacy: [PipelineExecutionStep] = [
+        PipelineExecutionStep(.fetchAnisetteData,                5),
+        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 55),
+        PipelineExecutionStep(.refreshApp,                       40)
     ]
 
-    static let activate: [ExecutionStep] = [
-        ExecutionStep(.installBackupApp, 5),
-        ExecutionStep(.restoreApp, 10),
-        ExecutionStep(.stageApp, 2),
-        ExecutionStep(.patchAppIcon, 2),
-        ExecutionStep(.removeAppExtensions, 2),
-        ExecutionStep(.fetchAnisetteData, 5),
-        ExecutionStep(.fetchProvisioningProfilesInstall, 5),
-        ExecutionStep(.prepareAppExtensionBundleIDs, 1),
-        ExecutionStep(.resignApp, 20),
-        ExecutionStep(.exportResignedApp, 1),
-        ExecutionStep(.sendApp, 15),
-        ExecutionStep(.installApp, 25),
-        ExecutionStep(.removeAppBackup, 5),
-        ExecutionStep(.cleanStagedApp, 2)
+    static let activate: [PipelineExecutionStep] = [
+        PipelineExecutionStep(.installBackupApp,                 5),
+        PipelineExecutionStep(.restoreApp,                       10),
+        PipelineExecutionStep(.stageApp,                         2),
+        PipelineExecutionStep(.patchAppIcon,                     2),
+        PipelineExecutionStep(.removeAppExtensions,              2),
+        PipelineExecutionStep(.fetchAnisetteData,                5),
+        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 5),
+        PipelineExecutionStep(.prepareAppExtensionBundleIDs,     1),
+        PipelineExecutionStep(.resignApp,                        20),
+        PipelineExecutionStep(.exportResignedApp,                1),
+        PipelineExecutionStep(.sendApp,                          15),
+        PipelineExecutionStep(.installApp,                       25),
+        PipelineExecutionStep(.removeAppBackup,                  5),
+        PipelineExecutionStep(.cleanStagedApp,                   2)
     ]
 
-    static let deactivateLegacy: [ExecutionStep] = [
-        ExecutionStep(.deactivateApp, 100)
+    static let deactivateLegacy: [PipelineExecutionStep] = [
+        PipelineExecutionStep(.deactivateApp, 100)
     ]
 
-    static let deactivate: [ExecutionStep] = [
-        ExecutionStep(.installBackupApp, 10),
-        ExecutionStep(.backupApp, 60),
-        ExecutionStep(.removeApp, 30)
+    static let deactivate: [PipelineExecutionStep] = [
+        PipelineExecutionStep(.installBackupApp, 10),
+        PipelineExecutionStep(.backupApp,        60),
+        PipelineExecutionStep(.removeApp,        30)
     ]
 
-    static let backup: [ExecutionStep] = [
-        ExecutionStep(.installBackupApp, 10),
-        ExecutionStep(.fetchAnisetteData, 5),
-        ExecutionStep(.fetchProvisioningProfilesInstall, 5),
-        ExecutionStep(.prepareAppExtensionBundleIDs, 5),
-        ExecutionStep(.resignApp, 15),
-        ExecutionStep(.exportResignedApp, 5),
-        ExecutionStep(.sendApp, 10),
-        ExecutionStep(.installApp, 15),
-        ExecutionStep(.backupApp, 15),
-        ExecutionStep(.stageApp, 2),
-        ExecutionStep(.patchAppIcon, 2),
-        ExecutionStep(.removeAppExtensions, 2),
-        ExecutionStep(.removeAppBackup, 5),
-        ExecutionStep(.cleanStagedApp, 4)
+    static let backup: [PipelineExecutionStep] = [
+        PipelineExecutionStep(.installBackupApp,                 10),
+        PipelineExecutionStep(.fetchAnisetteData,                5),
+        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 5),
+        PipelineExecutionStep(.prepareAppExtensionBundleIDs,     5),
+        PipelineExecutionStep(.resignApp,                        15),
+        PipelineExecutionStep(.exportResignedApp,                5),
+        PipelineExecutionStep(.sendApp,                          10),
+        PipelineExecutionStep(.installApp,                       15),
+        PipelineExecutionStep(.backupApp,                        15),
+        PipelineExecutionStep(.stageApp,                         2),
+        PipelineExecutionStep(.patchAppIcon,                     2),
+        PipelineExecutionStep(.removeAppExtensions,              2),
+        PipelineExecutionStep(.removeAppBackup,                  5),
+        PipelineExecutionStep(.cleanStagedApp,                   4)
     ]
 
-    static let restoreLegacy: [ExecutionStep] = [
-        ExecutionStep(.fetchAnisetteData, 5),
-        ExecutionStep(.fetchProvisioningProfilesRefresh, 55),
-        ExecutionStep(.refreshApp, 40)
+    static let restoreLegacy: [PipelineExecutionStep] = [
+        PipelineExecutionStep(.fetchAnisetteData,                5),
+        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 55),
+        PipelineExecutionStep(.refreshApp,                       40)
     ]
 
-    static let restore: [ExecutionStep] = [
-        ExecutionStep(.installBackupApp, 5),
-        ExecutionStep(.restoreApp, 10),
-        ExecutionStep(.stageApp, 2),
-        ExecutionStep(.patchAppIcon, 2),
-        ExecutionStep(.removeAppExtensions, 2),
-        ExecutionStep(.fetchAnisetteData, 5),
-        ExecutionStep(.fetchProvisioningProfilesInstall, 5),
-        ExecutionStep(.prepareAppExtensionBundleIDs, 1),
-        ExecutionStep(.resignApp, 20),
-        ExecutionStep(.exportResignedApp, 1),
-        ExecutionStep(.sendApp, 15),
-        ExecutionStep(.installApp, 25),
-        ExecutionStep(.removeAppBackup, 5),
-        ExecutionStep(.cleanStagedApp, 2)
+    static let restore: [PipelineExecutionStep] = [
+        PipelineExecutionStep(.installBackupApp,                 5),
+        PipelineExecutionStep(.restoreApp,                       10),
+        PipelineExecutionStep(.stageApp,                         2),
+        PipelineExecutionStep(.patchAppIcon,                     2),
+        PipelineExecutionStep(.removeAppExtensions,              2),
+        PipelineExecutionStep(.fetchAnisetteData,                5),
+        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 5),
+        PipelineExecutionStep(.prepareAppExtensionBundleIDs,     1),
+        PipelineExecutionStep(.resignApp,                        20),
+        PipelineExecutionStep(.exportResignedApp,                1),
+        PipelineExecutionStep(.sendApp,                          15),
+        PipelineExecutionStep(.installApp,                       25),
+        PipelineExecutionStep(.removeAppBackup,                  5),
+        PipelineExecutionStep(.cleanStagedApp,                   2)
     ]
 
-    static let remove: [ExecutionStep] = [
-        ExecutionStep(.removeAppBackup, 30),
-        ExecutionStep(.removeApp, 70)
+    static let remove: [PipelineExecutionStep] = [
+        PipelineExecutionStep(.removeAppBackup, 30),
+        PipelineExecutionStep(.removeApp,       70)
     ]
 
-    static let deleteApp: [ExecutionStep] = [
-        ExecutionStep(.removeApp, 100)
+    static let deleteApp: [PipelineExecutionStep] = [
+        PipelineExecutionStep(.removeApp, 100)
     ]
 
-    static let enableJIT: [ExecutionStep] = [
-        ExecutionStep(.enableJIT, 100)
+    static let enableJIT: [PipelineExecutionStep] = [
+        PipelineExecutionStep(.enableJIT, 100)
     ]
 
-    static let authenticate: [ExecutionStep] = [
-        ExecutionStep(.fetchAnisetteData, 10),
-        ExecutionStep(.authentication, 80),
-        ExecutionStep(.fetchAppIDs, 10)
-    ]
-
-    static let clearAppCache: [ExecutionStep] = [
-        ExecutionStep(.clearAppCache, 100)
-    ]
-
-    static let scheduleExpirationWarningNotification: [ExecutionStep] = [
-        ExecutionStep(.scheduleExpirationWarningNotification, 100)
-    ]
-
-    static func pipeline(for operation: AppOperation) -> [ExecutionStep] {
+    static func steps(for operation: AppOperation) -> [PipelineExecutionStep] {
         switch operation {
-            case .install, .update:
-                return install
-            case .resign:
-                return resign
-            case .refresh:
-                return refresh
-            case .activate:
-                if UserDefaults.standard.isLegacyDeactivationSupported {
-                    return activateLegacy
-                } else {
-                    return activate
-                }
-            case .deactivate:
-                if UserDefaults.standard.isLegacyDeactivationSupported {
-                    return deactivateLegacy
-                } else {
-                    return deactivate
-                }
-            case .backup:
-                return backup
-            case .restore:
-                if UserDefaults.standard.isLegacyDeactivationSupported {
-                    return restoreLegacy
-                } else {
-                    return restore
-                }
-            case .remove:
-                return remove
-            case .deleteApp:
-                return deleteApp
-            case .enableJIT:
-                return enableJIT
+        case .install, .update:
+            return install
+        case .resign:
+            return resign
+        case .refresh:
+            return refresh
+        case .activate:
+            return UserDefaults.standard.isLegacyDeactivationSupported ? activateLegacy : activate
+        case .deactivate:
+            return UserDefaults.standard.isLegacyDeactivationSupported ? deactivateLegacy : deactivate
+        case .backup:
+            return backup
+        case .restore:
+            return UserDefaults.standard.isLegacyDeactivationSupported ? restoreLegacy : restore
+        case .remove:
+            return remove
+        case .deleteApp:
+            return deleteApp
+        case .enableJIT:
+            return enableJIT
         }
     }
 }
 
-extension Array where Element == ExecutionStep {
-    static var authenticate:                        [ExecutionStep] { OperationStepsDefinition.authenticate                        }
-    static var install:                             [ExecutionStep] { OperationStepsDefinition.install                             }
-    static var resign:                              [ExecutionStep] { OperationStepsDefinition.resign                              }
-    static var refresh:                             [ExecutionStep] { OperationStepsDefinition.refresh                             }
-    static var activate:                            [ExecutionStep] { OperationStepsDefinition.activate                            }
-    static var deactivate:                          [ExecutionStep] { OperationStepsDefinition.deactivate                          }
-    static var backup:                              [ExecutionStep] { OperationStepsDefinition.backup                              }
-    static var restore:                             [ExecutionStep] { OperationStepsDefinition.restore                             }
-    static var remove:                              [ExecutionStep] { OperationStepsDefinition.remove                              }
-    static var deleteApp:                           [ExecutionStep] { OperationStepsDefinition.deleteApp                           }
-    static var enableJIT:                           [ExecutionStep] { OperationStepsDefinition.enableJIT                           }
-    static var clearAppCache:                       [ExecutionStep] { OperationStepsDefinition.clearAppCache                       }
-    static var scheduleExpirationWarningNotification: [ExecutionStep] { OperationStepsDefinition.scheduleExpirationWarningNotification }
+struct StandaloneDefinition {
+    static let authenticate: [StandaloneExecutionStep] = [
+        StandaloneExecutionStep(.fetchAnisetteData, 10),
+        StandaloneExecutionStep(.authentication,    80),
+        StandaloneExecutionStep(.fetchAppIDs,       10)
+    ]
+
+    static let backgroundRefreshApps: [StandaloneExecutionStep] = [
+        StandaloneExecutionStep(.backgroundRefreshApps, 100)
+    ]
+
+    static let clearAppCache: [StandaloneExecutionStep] = [
+        StandaloneExecutionStep(.clearAppCache, 100)
+    ]
+
+    static let scheduleExpirationWarningNotification: [StandaloneExecutionStep] = [
+        StandaloneExecutionStep(.scheduleExpirationWarningNotification, 100)
+    ]
+}
+
+extension Array where Element == PipelineExecutionStep {
+    static var install:          [PipelineExecutionStep] { PipelineDefinition.install          }
+    static var resign:           [PipelineExecutionStep] { PipelineDefinition.resign           }
+    static var refresh:          [PipelineExecutionStep] { PipelineDefinition.refresh          }
+    static var activate:         [PipelineExecutionStep] { PipelineDefinition.activate         }
+    static var deactivate:       [PipelineExecutionStep] { PipelineDefinition.deactivate       }
+    static var backup:           [PipelineExecutionStep] { PipelineDefinition.backup           }
+    static var restore:          [PipelineExecutionStep] { PipelineDefinition.restore          }
+    static var remove:           [PipelineExecutionStep] { PipelineDefinition.remove           }
+    static var deleteApp:        [PipelineExecutionStep] { PipelineDefinition.deleteApp        }
+    static var enableJIT:        [PipelineExecutionStep] { PipelineDefinition.enableJIT        }
+}
+
+extension Array where Element == StandaloneExecutionStep {
+    static var authenticate:                          [StandaloneExecutionStep] { StandaloneDefinition.authenticate                          }
+    static var backgroundRefreshApps:                 [StandaloneExecutionStep] { StandaloneDefinition.backgroundRefreshApps                 }
+    static var clearAppCache:                         [StandaloneExecutionStep] { StandaloneDefinition.clearAppCache                         }
+    static var scheduleExpirationWarningNotification: [StandaloneExecutionStep] { StandaloneDefinition.scheduleExpirationWarningNotification }
 }

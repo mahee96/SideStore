@@ -29,7 +29,7 @@ extension VerifyAppOperation {
     }
 }
 
-final class VerifyAppOperation: BaseOperation<InstallAppOperationContext, Bool>, @unchecked Sendable {
+final class VerifyAppOperation: BasePipelineOperation<InstallAppOperationContext, Bool>, @unchecked Sendable {
     let permissionsMode: PermissionReviewMode
     init(permissionsMode: PermissionReviewMode, context: InstallAppOperationContext) throws {
         self.permissionsMode = permissionsMode

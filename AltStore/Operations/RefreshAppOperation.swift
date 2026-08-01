@@ -11,7 +11,7 @@ import CoreData
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class RefreshAppOperation: BaseOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
+final class RefreshAppOperation: BasePipelineOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
     
     override func execute(parentProgress: Progress?) async throws -> InstalledApp {
         debugLog("[RefreshAppOperation] execute() started")

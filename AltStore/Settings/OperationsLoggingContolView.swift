@@ -28,63 +28,63 @@ struct OperationsLoggingControlView: View {
                         CustomSection(header: Text("Install Operations"))
                         {
                             CustomToggle("1. Authentication", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: AuthenticationOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: AuthenticationOperation.self) },
                                 set: { value in
                                     self.viewModel.updateDatabase(for: AuthenticationOperation.self, value: value)
                                 }
                             ))
                             
                             CustomToggle("2. DownloadApp", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: DownloadAppOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: DownloadAppOperation.self) },
                                 set: { value in
                                     self.viewModel.updateDatabase(for: DownloadAppOperation.self, value: value)
                                 }
                             ))
                             
                             CustomToggle("3. VerifyApp", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: VerifyAppOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: VerifyAppOperation.self) },
                                 set: { value in
                                     self.viewModel.updateDatabase(for: VerifyAppOperation.self, value: value)
                                 }
                             ))
                             
                             CustomToggle("4. RemoveAppExtensions", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: RemoveAppExtensionsOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: RemoveAppExtensionsOperation.self) },
                                 set: { value in
                                     self.viewModel.updateDatabase(for: RemoveAppExtensionsOperation.self, value: value)
                                 }
                             ))
                             
                             CustomToggle("5. FetchAnisetteData", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: FetchAnisetteDataOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: FetchAnisetteDataOperation.self) },
                                 set: { value in
                                     self.viewModel.updateDatabase(for: FetchAnisetteDataOperation.self, value: value)
                                 }
                             ))
                             
                             CustomToggle("6. FetchProvisioningProfiles(I)", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: FetchProvisioningProfilesInstallOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: FetchProvisioningProfilesInstallOperation.self) },
                                 set: { value in
                                     self.viewModel.updateDatabase(for: FetchProvisioningProfilesInstallOperation.self, value: value)
                                 }
                             ))
                             
                             CustomToggle("7. ResignApp", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: ResignAppOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: ResignAppOperation.self) },
                                 set: { value in
                                     self.viewModel.updateDatabase(for: ResignAppOperation.self, value: value)
                                 }
                             ))
                             
                             CustomToggle("8. SendApp", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: SendAppOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: SendAppOperation.self) },
                                 set: { value in
                                     self.viewModel.updateDatabase(for: SendAppOperation.self, value: value)
                                 }
                             ))
                             
                             CustomToggle("9. InstallApp", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: InstallAppOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: InstallAppOperation.self) },
                                 set: { value in
                                     self.viewModel.updateDatabase(for: InstallAppOperation.self, value: value)
                                 }
@@ -94,14 +94,14 @@ struct OperationsLoggingControlView: View {
                         CustomSection(header: Text("Refresh Operations"))
                         {
                             CustomToggle("1. FetchProvisioningProfiles(R)", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: FetchProvisioningProfilesRefreshOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: FetchProvisioningProfilesRefreshOperation.self) },
                                 set: { value in
                                     self.viewModel.updateDatabase(for: FetchProvisioningProfilesRefreshOperation.self, value: value)
                                 }
                             ))
 
                             CustomToggle("2. RefreshApp", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: RefreshAppOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: RefreshAppOperation.self) },
                                 set: { value in
                                     self.viewModel.updateDatabase(for: RefreshAppOperation.self, value: value)
                                 }
@@ -111,7 +111,7 @@ struct OperationsLoggingControlView: View {
                         CustomSection(header: Text("AppIDs related Operations"))
                         {
                              CustomToggle("1. SyncAppIDs", isOn: Binding(
-                                 get: { self.viewModel.getFromDatabase(for: SyncAppIDsOperation.self) },
+                                 get: { self.viewModel.isLoggingEnabled(for: SyncAppIDsOperation.self) },
                                  set: { value in
                                      self.viewModel.updateDatabase(for: SyncAppIDsOperation.self, value: value)
                                  }
@@ -121,14 +121,14 @@ struct OperationsLoggingControlView: View {
                         CustomSection(header: Text("Sources related Operations"))
                         {
                             CustomToggle("1. FetchSource", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: FetchSourceOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: FetchSourceOperation.self) },
                                 set: { value in
                                     self.viewModel.updateDatabase(for: FetchSourceOperation.self, value: value)
                                 }
                             ))
                             
                             CustomToggle("2. UpdateKnownSources", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: UpdateKnownSourcesOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: UpdateKnownSourcesOperation.self) },
                                 set: { value in
                                     self.viewModel.updateDatabase(for: UpdateKnownSourcesOperation.self, value: value)
                                 }
@@ -138,14 +138,14 @@ struct OperationsLoggingControlView: View {
                         CustomSection(header: Text("Backup Operations"))
                         {
                             CustomToggle("1. BackupApp", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: BackupAppOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: BackupAppOperation.self) },
                                 set: { value in
                                     self.viewModel.updateDatabase(for: BackupAppOperation.self, value: value)
                                 }
                             ))
                             
                             CustomToggle("2. RemoveAppBackup", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: RemoveAppBackupOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: RemoveAppBackupOperation.self) },
                                 set: { value in
                                     self.viewModel.updateDatabase(for: RemoveAppBackupOperation.self, value: value)
                                 }
@@ -155,13 +155,13 @@ struct OperationsLoggingControlView: View {
                         CustomSection(header: Text("Activate/Deactive Operations"))
                         {
                             CustomToggle("1. RemoveApp", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: RemoveAppOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: RemoveAppOperation.self) },
                                 set: { value in
                                     self.viewModel.updateDatabase(for: RemoveAppOperation.self, value: value)
                                 }
                             ))
                             CustomToggle("2. DeactivateApp", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: DeactivateAppOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: DeactivateAppOperation.self) },
                                 set: { value in
                                     self.viewModel.updateDatabase(for: DeactivateAppOperation.self, value: value)
                                 }
@@ -171,7 +171,7 @@ struct OperationsLoggingControlView: View {
                         CustomSection(header: Text("Background refresh Operations"))
                         {
                             CustomToggle("1. BackgroundRefreshApps", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: BackgroundRefreshAppsOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: BackgroundRefreshAppsOperation.self) },
                                 set: { value in
                                     self.viewModel.updateDatabase(for: BackgroundRefreshAppsOperation.self, value: value)
                                 }
@@ -181,7 +181,7 @@ struct OperationsLoggingControlView: View {
                         CustomSection(header: Text("Enable JIT Operations"))
                         {
                             CustomToggle("1. EnableJIT", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: EnableJITOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: EnableJITOperation.self) },
                                 set: { value in
                                     self.viewModel.updateDatabase(for: EnableJITOperation.self, value: value)
                                 }
@@ -191,7 +191,7 @@ struct OperationsLoggingControlView: View {
                         CustomSection(header: Text("Cache Operations"))
                         {
                             CustomToggle("1. ClearAppCache", isOn: Binding(
-                                get: { self.viewModel.getFromDatabase(for: ClearAppCacheOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: ClearAppCacheOperation.self) },
                                 set: { value in
                                     self.viewModel.updateDatabase(for: ClearAppCacheOperation.self, value: value)
                                 }

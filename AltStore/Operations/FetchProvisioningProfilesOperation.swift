@@ -11,7 +11,7 @@ import Foundation
 @preconcurrency import AltSign
 import CoreData
 
-class FetchProvisioningProfilesOperation: BaseOperation<AppOperationContext, [String: ALTProvisioningProfile]>, @unchecked Sendable {
+class FetchProvisioningProfilesOperation: BasePipelineOperation<AppOperationContext, [String: ALTProvisioningProfile]>, @unchecked Sendable {
     var additionalEntitlements: [ALTEntitlement: Any]?
     
     // this class is abstract or shouldn't be instantiated outside, use the subclasses
@@ -219,7 +219,7 @@ class FetchProvisioningProfilesOperation: BaseOperation<AppOperationContext, [St
             do {
                 self.debugLog("[FetchProvisioningProfiles] Calling ALTAppleAPI.shared.addAppID with name '\(appIDName)' and identifier '\(bundleIdentifier)'...")
                 let appID = try await ALTAppleAPI.shared.addAppID(withName: appIDName, bundleIdentifier: bundleIdentifier, team: team, session: session)
-                self.context.authenticatedContext.appendAppID(appID)
+                self.context.authenticatedContext.appIDs?.append(appID)
                 self.debugLog("[FetchProvisioningProfiles] Successfully registered new App ID '\(appID.bundleIdentifier)' on Apple portal.")
                 return appID
             } catch ALTAppleAPIError.maximumAppIDLimitReached {
@@ -260,7 +260,7 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
             stepAdditionalEntitlements[.appGroups] = appGroups
             self.additionalEntitlements = stepAdditionalEntitlements
         }
-        return try await super.execute(parentProgress: parentProgress, pendingUnitCount: pendingUnitCount, weights: weights)
+        return try await super.execute(parentProgress: parentProgress)
     }
     
     // modify Operations are allowed for the app groups and other stuffs
@@ -405,7 +405,7 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
                     let name = "AltStore " + groupIdentifier.replacingOccurrences(of: ".", with: " ")
                     do {
                         let group = try await ALTAppleAPI.shared.addAppGroup(withName: name, groupIdentifier: adjustedGroupIdentifier, team: team, session: session)
-                        self.context.authenticatedContext.appendAppGroup(group)
+                        self.context.authenticatedContext.appGroups?.append(group)
                         self.verboseLog("[FetchProvisioningProfiles] Created new App Group \(group.groupIdentifier).")
                         groups.append(group)
                     } catch {

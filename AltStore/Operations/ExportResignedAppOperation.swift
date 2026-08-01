@@ -10,7 +10,7 @@ import Foundation
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class ExportResignedAppOperation: BaseOperation<InstallAppOperationContext, URL>, @unchecked Sendable {
+final class ExportResignedAppOperation: BasePipelineOperation<InstallAppOperationContext, URL>, @unchecked Sendable {
 
     override func execute(parentProgress: Progress?) async throws -> URL {
         debugLog("[ExportResignedAppOperation] execute() started")

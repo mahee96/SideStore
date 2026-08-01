@@ -43,7 +43,7 @@ private let ReceivedApplicationState: @convention(c) (CFNotificationCenter?, Uns
     operation.receivedApplicationState(notification: name)
 }
 
-final class BackgroundRefreshAppsOperation: BaseOperation<OperationContext, [String: Result<InstalledApp, Error>]> {
+final class BackgroundRefreshAppsOperation: BasePipelineOperation<OperationContext, [String: Result<InstalledApp, Error>]>, @unchecked Sendable {
     let installedApps: [InstalledApp]
     
     var presentsFinishedNotification: Bool = true
@@ -52,10 +52,9 @@ final class BackgroundRefreshAppsOperation: BaseOperation<OperationContext, [Str
     private let refreshIdentifier: String = UUID().uuidString
     private var runningApplications: Set<String> = []
     
-    init(installedApps: [InstalledApp]) throws {
+    init(installedApps: [InstalledApp], context: OperationContext) throws {
         self.installedApps = installedApps
-        let dbContext = installedApps.compactMap({ $0.managedObjectContext }).first
-        try super.init(context: OperationContext(dbBackgroundContext: dbContext))
+        try super.init(context: context)
     }
     
     override func execute(parentProgress: Progress?) async throws -> [String: Result<InstalledApp, Error>] {

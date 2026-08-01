@@ -9,7 +9,7 @@
 import Foundation
 @preconcurrency import AltStoreCore
 
-final class CacheAppOperation: BaseOperation<InstallAppOperationContext, URL?>, @unchecked Sendable {
+final class CacheAppOperation: BasePipelineOperation<InstallAppOperationContext, URL?>, @unchecked Sendable {
 
     override func execute(parentProgress: Progress?) async throws -> URL? {
         debugLog("[CacheAppOperation] execute() started")

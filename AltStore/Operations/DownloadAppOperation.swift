@@ -12,7 +12,7 @@ import UniformTypeIdentifiers
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class DownloadAppOperation: BaseOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
+final class DownloadAppOperation: BasePipelineOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
     private(set) var app: AppProtocol
 
     private let appName: String

@@ -36,8 +36,8 @@ class OperationsLoggingControl {
         return "\(processedOperation)LoggingEnabled"
     }
     
-    func getFromDatabase(for operation: any OperationLogging.Type)  -> Bool{
-        return Self.getFromDatabase(for: operation)
+    func isLoggingEnabled(for operation: any OperationLogging.Type)  -> Bool{
+        return Self.isLoggingEnabled(for: operation)
     }
 
     static func getUpdatedFromDatabase(for operation: any OperationLogging.Type, defaultVal: Bool)  -> Bool{
@@ -50,7 +50,7 @@ class OperationsLoggingControl {
         return valueInDb ?? defaultVal
     }
 
-    public static func getFromDatabase(for operation: any OperationLogging.Type) -> Bool {
+    public static func isLoggingEnabled(for operation: any OperationLogging.Type) -> Bool {
         let key = Self.getKey(operation)
         return UserDefaults.standard.bool(forKey: key)
     }

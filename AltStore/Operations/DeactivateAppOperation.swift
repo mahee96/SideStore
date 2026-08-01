@@ -11,11 +11,11 @@ import Foundation
 @preconcurrency import AltSign
 import CoreData
 
-final class DeactivateAppOperation: BaseOperation<OperationContext, InstalledApp>, @unchecked Sendable
+final class DeactivateAppOperation: BasePipelineOperation<PipelineOperationContext, InstalledApp>, @unchecked Sendable
 {
-    let app: InstalledApp
+    let app: InstalledApp?
     
-    init(app: InstalledApp, context: OperationContext) throws {
+    init(app: InstalledApp?, context: PipelineOperationContext) throws {
         self.app = app
         try super.init(context: context)
     }
@@ -29,14 +29,20 @@ final class DeactivateAppOperation: BaseOperation<OperationContext, InstalledApp
         guard let backgroundContext = self.context.dbBackgroundContext else {
             throw OperationError.invalidParameters("DeactivateAppOperation: context.dbBackgroundContext is nil")
         }
+        
+        guard let app = self.app else {
+            throw OperationError.invalidParameters("DeactivateAppOperation: target app is nil")
+        }
+        
+        
         let installedApp = await backgroundContext.perform {
-            backgroundContext.object(with: self.app.objectID) as! InstalledApp
+            backgroundContext.object(with: app.objectID) as! InstalledApp
         }
 
         try await self.performDeactivate(for: installedApp)
         
         let result = await backgroundContext.perform {
-            backgroundContext.object(with: self.app.objectID) as! InstalledApp
+            backgroundContext.object(with: app.objectID) as! InstalledApp
         }
         self.setProgress(100)
         return result

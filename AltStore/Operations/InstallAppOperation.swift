@@ -15,7 +15,7 @@ import CoreData
 
 let shortcutURLonDelay = URL(string: "shortcuts://run-shortcut?name=TurnOnDataDelay")!
 
-final class InstallAppOperation: BaseOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
+final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
     private static let selfInstallSuspendDelayNs: UInt64 = 2_000_000_000
 
     let storeApp: StoreApp?

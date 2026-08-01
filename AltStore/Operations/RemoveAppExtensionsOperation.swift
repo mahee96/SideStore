@@ -11,7 +11,7 @@ import Foundation
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class RemoveAppExtensionsOperation: BaseOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
+final class RemoveAppExtensionsOperation: BasePipelineOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
     let localAppExtensions: Set<ALTApplication>?
     
     init(context: InstallAppOperationContext, localAppExtensions: Set<ALTApplication>?) throws {
@@ -130,7 +130,7 @@ final class RemoveAppExtensionsOperation: BaseOperation<InstallAppOperationConte
     }
     
     private func removeExtensions(from extensions: Set<ALTApplication>, endPercent: Int64) throws {
-        let isLoggingEnabled = OperationsLoggingControl.getFromDatabase(for: RemoveAppExtensionsOperation.self)
+        let isLoggingEnabled = OperationsLoggingControl.isLoggingEnabled(for: RemoveAppExtensionsOperation.self)
         let startProgress = self.progress.completedUnitCount
         let range = endPercent - startProgress
         guard !extensions.isEmpty else {
