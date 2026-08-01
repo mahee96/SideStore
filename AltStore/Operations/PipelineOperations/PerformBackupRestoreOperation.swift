@@ -158,7 +158,7 @@ final class PerformBackupRestoreOperation: BasePipelineOperation<InstallAppOpera
                         self.debugLog("[BackupRestoreAppOperation] 5-second timer expired without receiving backup completion response. Timing out.")
                         hasResumed = true
                         removeObservers()
-                        AppDelegate.dumpSideBackupLogsIfNeeded()
+                        await AppDelegate.dumpSideBackupLogsIfNeeded()
                         continuation.resume(throwing: OperationError.timedOut)
                     }
                 }
@@ -176,15 +176,18 @@ final class PerformBackupRestoreOperation: BasePipelineOperation<InstallAppOpera
                 }
                 hasResumed = true
                 removeObservers()
-                AppDelegate.dumpSideBackupLogsIfNeeded()
-                
-                let result = notification.userInfo?[AppDelegate.appBackupResultKey] as? Result<Void, Error> ?? .failure(OperationError.unknownResult)
-                let mappedResult = result.mapError { self.mapBackupError($0) }
-                self.debugLog("[BackupRestoreAppOperation] Resuming continuation with mapped result: \(mappedResult)")
-                if case .success = mappedResult {
-                    self.setProgress(self.progress.completedUnitCount + 1)
+
+                Task {
+                    await AppDelegate.dumpSideBackupLogsIfNeeded()
+                    
+                    let result = await notification.userInfo?[AppDelegate.appBackupResultKey] as? Result<Void, Error> ?? .failure(OperationError.unknownResult)
+                    let mappedResult = result.mapError { self.mapBackupError($0) }
+                    self.debugLog("[BackupRestoreAppOperation] Resuming continuation with mapped result: \(mappedResult)")
+                    if case .success = mappedResult {
+                        self.setProgress(self.progress.completedUnitCount + 1)
+                    }
+                    continuation.resume(with: mappedResult)
                 }
-                continuation.resume(with: mappedResult)
             }
 
             Task { @MainActor in

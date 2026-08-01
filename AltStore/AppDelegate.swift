@@ -33,26 +33,35 @@ extension AppDelegate
     static let addSourceDeepLinkURLKey = "sourceURL"
     static let exportCertificateCallbackTemplateKey = "callback"
     
-    static func dumpSideBackupLogsIfNeeded() {
-        for appGroup in Bundle.main.appGroups {
-            guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup) else { continue }
-            let logFileURL = containerURL.appendingPathComponent("Logs", isDirectory: true).appendingPathComponent("SideBackup.log")
-            debugLog("[AppDelegate] Checking for SideBackup log in group '\(appGroup)' at: \(logFileURL.path)")
-            if FileManager.default.fileExists(atPath: logFileURL.path) {
-                debugLog("[AppDelegate] Found SideBackup log file in group '\(appGroup)'.")
-                do {
-                    let logContents = try String(contentsOf: logFileURL, encoding: .utf8)
-                    if logContents.isEmpty {
-                        debugLog("[AppDelegate] SideBackup log file in group '\(appGroup)' is empty.")
-                    } else {
-                        debugLog("\n[SideBackup Logs (\(appGroup))]\n\n\(logContents.trimmingCharacters(in: .whitespacesAndNewlines))\n\n[SideBackup Logs End]\n\n")
+    static func dumpSideBackupLogsIfNeeded() async {
+        await Task.detached {
+            for appGroup in Bundle.main.appGroups {
+                guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup) else { continue }
+                let logFileURL = containerURL.appendingPathComponent("Logs", isDirectory: true).appendingPathComponent("SideBackup.log")
+                debugLog("[AppDelegate] Checking for SideBackup log in group '\(appGroup)' at: \(logFileURL.path)")
+                if FileManager.default.fileExists(atPath: logFileURL.path) {
+                    debugLog("[AppDelegate] Found SideBackup log file in group '\(appGroup)'.")
+                    do {
+                        let logContents = try String(contentsOf: logFileURL, encoding: .utf8)
+                        if logContents.isEmpty {
+                            debugLog("[AppDelegate] SideBackup log file in group '\(appGroup)' is empty.")
+                        } else {
+                            debugLog("""
+                            [SideBackup Logs (\(appGroup))]
+                            
+                            \(logContents.trimmingCharacters(in: .whitespacesAndNewlines))
+                            
+                            [SideBackup Logs End]
+                            """)
+                        }
+                        try FileManager.default.removeItem(at: logFileURL)
+                    } catch {
+                        debugLog("[AppDelegate] Failed to read or delete SideBackup log file in group '\(appGroup)': \(error)")
                     }
-                    try FileManager.default.removeItem(at: logFileURL)
-                } catch {
-                    debugLog("[AppDelegate] Failed to read or delete SideBackup log file in group '\(appGroup)': \(error)")
                 }
             }
-        }
+
+        }.value
     }
 }
 
