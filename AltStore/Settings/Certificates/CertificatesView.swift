@@ -57,7 +57,7 @@ struct CertificatesView: View {
                 CertificatesListView(
                     viewModel: viewModel,
                     onRowTap:     { pushDetailView(for: $0) },
-                    onRevoke:     { certificateToRevoke = $0; showRevokeConfirmation = true },
+                    onRevoke:     { presentRevokeAlert(for: $0) },
                     onExportP12:  { cert in
                         certificateToExport = cert
                         exportPasswordInput = ""
@@ -134,17 +134,6 @@ struct CertificatesView: View {
             SwiftUI.Button("Cancel", role: .cancel) {}
         } message: {
             Text("Enter a name for the new certificate. This will create a new certificate on Apple's servers and store the private key locally.")
-        }
-        .alert("Revoke Certificate", isPresented: $showRevokeConfirmation) {
-            Toggle("Delete local", isOn: $deleteLocalOnRevoke)
-            SwiftUI.Button("Revoke", role: .destructive) {
-                if let cert = certificateToRevoke {
-                    viewModel.revokeCertificate(cert, deleteLocal: deleteLocalOnRevoke)
-                }
-            }
-            SwiftUI.Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Are you sure you want to revoke this certificate on Apple's servers?")
         }
         .alert("Deactivate Certificate", isPresented: $showDeactivateConfirmation) {
             SwiftUI.Button("Deactivate", role: .destructive) { viewModel.deactivateActiveCertificate() }
@@ -288,6 +277,29 @@ struct CertificatesView: View {
         detailVC.navigationItem.scrollEdgeAppearance = appearance
         detailVC.navigationItem.standardAppearance   = appearance
         presentingViewController?.navigationController?.pushViewController(detailVC, animated: true)
+    }
+    
+    private func presentRevokeAlert(for cert: ALTCertificate) {
+        let contentVC = RevokeAlertViewController()
+        
+        let alertController = UIAlertController(
+            title: NSLocalizedString("Revoke Certificate", comment: ""),
+            message: NSLocalizedString("Are you sure you want to revoke this certificate? This will permanently delete the certificate on Apple's servers.", comment: ""),
+            preferredStyle: .alert
+        )
+        
+        alertController.setValue(contentVC, forKey: "contentViewController")
+        
+        let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel, handler: nil)
+        let revokeAction = UIAlertAction(title: NSLocalizedString("Revoke", comment: ""), style: .destructive) { _ in
+            let keepLocal = contentVC.isKeepLocalChecked
+            viewModel.revokeCertificate(cert, keepLocal: keepLocal, presentingViewController: presentingViewController)
+        }
+        
+        alertController.addAction(cancelAction)
+        alertController.addAction(revokeAction)
+        
+        presentingViewController?.present(alertController, animated: true)
     }
 }
 

@@ -438,7 +438,7 @@ class CertificatesViewModel: ObservableObject {
         }
     }
     
-    func revokeCertificate(_ certificate: ALTCertificate, deleteLocal: Bool = true, presentingViewController: UIViewController? = nil) {
+    func revokeCertificate(_ certificate: ALTCertificate, keepLocal: Bool = false, presentingViewController: UIViewController? = nil) {
         self.isLoading = true; self.errorMessage = nil
         Task { @MainActor in
             defer { self.isLoading = false }
@@ -449,7 +449,7 @@ class CertificatesViewModel: ObservableObject {
                 
                 let success = try await DeveloperPortalService.shared.revokeCertificate(certificate, team: team, session: session)
                 if success {
-                    if deleteLocal {
+                    if !keepLocal {
                         self.deleteLocalCertificate(serialNumber: certificate.serialNumber)
                         self.certificates.removeAll { $0.serialNumber == certificate.serialNumber }
                         if self.activeSerialNumber == certificate.serialNumber {

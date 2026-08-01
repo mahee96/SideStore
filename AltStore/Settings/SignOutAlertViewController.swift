@@ -38,6 +38,13 @@ class SignOutAlertViewController: UIViewController {
         isKeepAnisetteChecked = UserDefaults.standard.keepAnisetteDataAfterLogout
         
         certCheckboxButton.tintColor = .systemBlue
+        certCheckboxButton.imageView?.contentMode = .scaleAspectFit
+        certCheckboxButton.setContentHuggingPriority(.required, for: .horizontal)
+        certCheckboxButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        NSLayoutConstraint.activate([
+            certCheckboxButton.widthAnchor.constraint(equalToConstant: 24),
+            certCheckboxButton.heightAnchor.constraint(equalToConstant: 24)
+        ])
         certCheckboxButton.addTarget(self, action: #selector(toggleCertCheckbox), for: .touchUpInside)
         
         let certLabel = UILabel()
@@ -53,6 +60,13 @@ class SignOutAlertViewController: UIViewController {
         certStack.alignment = .center
         
         anisetteCheckboxButton.tintColor = .systemBlue
+        anisetteCheckboxButton.imageView?.contentMode = .scaleAspectFit
+        anisetteCheckboxButton.setContentHuggingPriority(.required, for: .horizontal)
+        anisetteCheckboxButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        NSLayoutConstraint.activate([
+            anisetteCheckboxButton.widthAnchor.constraint(equalToConstant: 24),
+            anisetteCheckboxButton.heightAnchor.constraint(equalToConstant: 24)
+        ])
         anisetteCheckboxButton.addTarget(self, action: #selector(toggleAnisetteCheckbox), for: .touchUpInside)
         
         let anisetteLabel = UILabel()
