@@ -66,6 +66,9 @@ public class InstalledApp: BaseEntity, InstalledAppProtocol
     @NSManaged public var certificateSerialNumber: String?
     @NSManaged public var storeBuildVersion: String?
     
+    @NSManaged public var isRevoked: Bool
+    @NSManaged public var isCrossSigned: Bool
+    
     /* Transient */
     @NSManaged public var isRefreshing: Bool
     
@@ -191,6 +194,8 @@ public extension InstalledApp
         self.storeBuildVersion = storeBuildVersion
         
         self.certificateSerialNumber = certificateSerialNumber
+        self.isRevoked = false
+        self.isCrossSigned = false
         
         if let provisioningProfile = resignedApp.provisioningProfile
         {

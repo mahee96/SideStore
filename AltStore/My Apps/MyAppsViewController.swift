@@ -414,12 +414,27 @@ private extension MyAppsViewController
             // Make sure refresh button is correct size.
             cell.layoutIfNeeded()
             
-            switch numberOfDays
-            {
-            case 2...3: cell.bannerView.button.tintColor = .refreshOrange
-            case 4...5: cell.bannerView.button.tintColor = .refreshYellow
-            case 6...: cell.bannerView.button.tintColor = .refreshGreen
-            default: cell.bannerView.button.tintColor = .refreshRed
+            if installedApp.isRevoked {
+                cell.bannerView.button.countdownDate = nil
+                cell.bannerView.button.tintColor = .refreshRed
+                cell.bannerView.button.borderColor = nil
+                cell.bannerView.button.borderWidth = 0
+                cell.bannerView.button.setTitle(NSLocalizedString("REVOKED", comment: ""), for: .normal)
+            } else {
+                switch numberOfDays {
+                case 2...3: cell.bannerView.button.tintColor = .refreshOrange
+                case 4...5: cell.bannerView.button.tintColor = .refreshYellow
+                case 6...: cell.bannerView.button.tintColor = .refreshGreen
+                default: cell.bannerView.button.tintColor = .refreshRed
+                }
+                
+                if installedApp.isCrossSigned {
+                    cell.bannerView.button.borderColor = .refreshRed
+                    cell.bannerView.button.borderWidth = 2.0
+                } else {
+                    cell.bannerView.button.borderColor = nil
+                    cell.bannerView.button.borderWidth = 0
+                }
             }
             
             if let progress = AppManager.shared.refreshProgress(for: installedApp), progress.fractionCompleted < 1.0

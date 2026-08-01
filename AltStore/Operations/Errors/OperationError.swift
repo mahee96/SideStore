@@ -263,7 +263,9 @@ struct OperationError: ALTLocalizedError {
         case .provisioningError:
             let result = self._failureReason ?? ""
             let message = self.errorTitle ?? ""
-            return String(format: NSLocalizedString("An error occurred while provisioning: %@ %@. Please try again. If the issue persists, report it on GitHub Issues!", comment: ""), result, message)
+            let combined = message.isEmpty ? result : "\(result) \(message)"
+            let trimmed = combined.trimmingCharacters(in: CharacterSet(charactersIn: " ."))
+            return String(format: NSLocalizedString("An error occurred while provisioning: %@. Please try again. If the issue persists, report it on GitHub Issues!", comment: ""), trimmed)
         case .anisetteV3Error:
             let message = self._failureReason ?? ""
             return String(format: NSLocalizedString("An error occurred while getting anisette data from a V3 server: %@. Please try again. If the issue persists, report it on GitHub Issues!", comment: ""), message)

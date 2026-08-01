@@ -60,12 +60,34 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
             // Check 1: Was the certificate used to install this app REVOKED on Apple Developer Portal?
             if !activeSerials.contains(serial) {
                 debugLog("[VerifyCertificateOperation] Certificate used for '\(appName)' (serial: \(serial)) was REVOKED on Apple Developer Portal!")
+                
+                await MainActor.run {
+                    let predicate = NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), bundleID)
+                    if let app = InstalledApp.first(satisfying: predicate, in: DatabaseManager.shared.viewContext) {
+                        app.isRevoked = true
+                        app.isCrossSigned = false
+                        try? DatabaseManager.shared.viewContext.save()
+                        DatabaseManager.shared.viewContext.processPendingChanges()
+                    }
+                }
+                
                 throw OperationError.certificateRevoked(appName: appName)
             }
             
             // Check 2: Does the certificate used to install this app DIFFER from the current active signing certificate?
             if let currentSerial = activeKeychainSerial, !currentSerial.isEmpty, serial != currentSerial {
                 debugLog("[VerifyCertificateOperation] Certificate used for '\(appName)' (serial: \(serial)) DIFFERS from current active certificate (serial: \(currentSerial)).")
+                
+                await MainActor.run {
+                    let predicate = NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), bundleID)
+                    if let app = InstalledApp.first(satisfying: predicate, in: DatabaseManager.shared.viewContext) {
+                        app.isRevoked = false
+                        app.isCrossSigned = true
+                        try? DatabaseManager.shared.viewContext.save()
+                        DatabaseManager.shared.viewContext.processPendingChanges()
+                    }
+                }
+                
                 throw OperationError.certificateChanged(appName: appName)
             }
         }
@@ -80,9 +102,31 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
                     let serial = cert.serialNumber
                     if !serial.isEmpty && !activeSerials.contains(serial) {
                         debugLog("[VerifyCertificateOperation] Provisioning profile certificate for '\(appName)' (serial: \(serial)) was REVOKED on Apple Developer Portal!")
+                        
+                        await MainActor.run {
+                            let predicate = NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), bundleID)
+                            if let app = InstalledApp.first(satisfying: predicate, in: DatabaseManager.shared.viewContext) {
+                                app.isRevoked = true
+                                app.isCrossSigned = false
+                                try? DatabaseManager.shared.viewContext.save()
+                                DatabaseManager.shared.viewContext.processPendingChanges()
+                            }
+                        }
+                        
                         throw OperationError.certificateRevoked(appName: appName)
                     }
                 }
+            }
+        }
+        
+        // Success case: clear flags
+        await MainActor.run {
+            let predicate = NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), bundleID)
+            if let app = InstalledApp.first(satisfying: predicate, in: DatabaseManager.shared.viewContext) {
+                app.isRevoked = false
+                app.isCrossSigned = false
+                try? DatabaseManager.shared.viewContext.save()
+                DatabaseManager.shared.viewContext.processPendingChanges()
             }
         }
         

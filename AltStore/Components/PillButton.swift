@@ -55,6 +55,18 @@ class PillButton: UIButton
         }
     }
     
+    var borderColor: UIColor? {
+        didSet {
+            self.update()
+        }
+    }
+    
+    var borderWidth: CGFloat = 0 {
+        didSet {
+            self.update()
+        }
+    }
+    
     var countdownDate: Date? {
         didSet {
             self.isEnabled = (self.countdownDate == nil)
@@ -207,6 +219,8 @@ private extension PillButton
         }
         
         self.progressView.progressTintColor = self.progressTintColor ?? self.tintColor
+        self.layer.borderColor = self.borderColor?.cgColor
+        self.layer.borderWidth = self.borderWidth
         
         // Update font after init because the original titleLabel is replaced.
         let size = self.fontSize ?? self.storyboardFontSize ?? 14
@@ -218,9 +232,11 @@ private extension PillButton
         case .custom: break // Don't update insets in case client has updated them.
         case .pill:
             self.contentEdgeInsets = UIEdgeInsets(top: Self.contentInsets.top, left: Self.contentInsets.leading, bottom: Self.contentInsets.bottom, right: Self.contentInsets.trailing)
+            self.layer.cornerRadius = self.bounds.height / 2
         }
     }
     
+
     @objc func updateCountdown()
     {
         guard let endDate = self.countdownDate else { return }
