@@ -81,9 +81,18 @@ public class Keychain
     @KeychainItem(key: "adiPb")
     public var adiPb: String?
     
-    // for some reason authenticated cert/session/team is completely not cached, which result in logging in for every request
-    // we save it here so when user logs out we can clear cached account/session/team
-    public var certificate: ALTCertificate? = nil
+    // decode from one and only single source of truth: 'signingCertificate' field
+    public var certificate: ALTCertificate? {
+        get {
+            guard let data = self.signingCertificate else { return nil }
+            let password = self.signingCertificatePassword ?? ""
+            return (try? ALTCertificate(p12Data: data, password: password)) ?? (try? ALTCertificate(p12Data: data, password: nil))
+        }
+        set {
+            self.signingCertificate = newValue?.p12Data()
+            self.signingCertificatePassword = newValue?.machineIdentifier ?? ""
+        }
+    }
     public var session: ALTAppleAPISession? = nil
     public var team: ALTTeam? = nil
     

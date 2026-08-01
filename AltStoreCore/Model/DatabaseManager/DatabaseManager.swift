@@ -394,7 +394,7 @@ private extension DatabaseManager
                     storeApp.source = altStoreSource
                 }
                             
-                let serialNumber = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String
+                let serialNumber = (Bundle.main.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String) ?? localApp.provisioningProfile?.certificates.first?.serialNumber
                 let installedApp: InstalledApp
                 
                 if let app = storeApp.installedApp
@@ -529,7 +529,7 @@ private extension DatabaseManager
                 let cachedExpirationDate = installedApp.expirationDate
                             
                 // Must go after comparing versions to see if we need to update our cached AltStore app bundle.
-                installedApp.update(resignedApp: localApp, certificateSerialNumber: serialNumber, storeBuildVersion: nil)
+                self.reconcileSelfFromSelfBinary(installedApp: installedApp, localApp: localApp, serialNumber: serialNumber)
                 
                 if installedApp.refreshedDate < cachedRefreshedDate
                 {
@@ -552,6 +552,44 @@ private extension DatabaseManager
             {
                 completionHandler(.failure(error))
             }
+        }
+    }
+    
+    private func reconcileSelfFromSelfBinary(installedApp: InstalledApp, localApp: ALTApplication, serialNumber: String?) {
+        debugLog("[DatabaseManager] reconcileSelfFromSelfBinary: Started for '\(localApp.name)' (\(localApp.bundleIdentifier)).")
+        defer {
+            debugLog("""
+            [DatabaseManager] reconcileSelfFromSelfBinary: Completed
+              • name: '\(installedApp.name)'
+              • bundleID: '\(installedApp.bundleIdentifier)'
+              • version: '\(installedApp.version)'
+              • buildVersion: '\(installedApp.buildVersion)'
+              • certSerial: '\(installedApp.certificateSerialNumber ?? "nil")'
+              • refreshedDate: \(installedApp.refreshedDate)
+              • expirationDate: \(installedApp.expirationDate)
+              • isRevoked: \(installedApp.isRevoked)
+              • isCrossSigned: \(installedApp.isCrossSigned)
+            
+            """)
+        }
+        
+        installedApp.name = localApp.name
+        installedApp.resignedBundleIdentifier = localApp.bundleIdentifier
+        installedApp.version = localApp.version
+        installedApp.buildVersion = localApp.buildVersion
+        installedApp.certificateSerialNumber = serialNumber
+        installedApp.isRevoked = false
+        
+        if let activeKeychainSerial = Keychain.shared.certificate?.serialNumber,
+           let serialNumber = serialNumber, !serialNumber.isEmpty {
+            installedApp.isCrossSigned = (serialNumber != activeKeychainSerial)
+        } else {
+            installedApp.isCrossSigned = false
+        }
+        
+        if let provisioningProfile = localApp.provisioningProfile {
+            installedApp.refreshedDate = provisioningProfile.creationDate
+            installedApp.expirationDate = provisioningProfile.expirationDate
         }
     }
     

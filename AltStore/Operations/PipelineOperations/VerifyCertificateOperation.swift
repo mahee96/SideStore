@@ -40,7 +40,7 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
         self.setProgress(40)
         
         let bundleID = self.context.targetBundleIdentifier
-        let activeKeychainCert = self.context.certificate ?? Keychain.shared.certificate
+        let activeKeychainCert = Keychain.shared.certificate ?? self.context.certificate
         let activeKeychainSerial = activeKeychainCert?.serialNumber
         
         // 2. Fetch InstalledApp details from CoreData
@@ -52,11 +52,18 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
             return (bundleID, nil)
         }
         
+        let activeSerials = Set(activeCertificates.compactMap { $0.serialNumber })
+        debugLog("""
+        [VerifyCertificateOperation] Verifying App: '\(appName)' (\(bundleID))
+          • Installed App Serial : \(installedAppSerial ?? "nil")
+          • Active Keychain Serial: \(activeKeychainSerial ?? "nil")
+          • Portal Active Serials : \(Array(activeSerials))
+        
+        """)
+        
         let targetSerial = installedAppSerial ?? activeKeychainSerial
         
         if let serial = targetSerial, !serial.isEmpty {
-            let activeSerials = Set(activeCertificates.compactMap { $0.serialNumber })
-            
             // Check 1: Was the certificate used to install this app REVOKED on Apple Developer Portal?
             if !activeSerials.contains(serial) {
                 debugLog("[VerifyCertificateOperation] Certificate used for '\(appName)' (serial: \(serial)) was REVOKED on Apple Developer Portal!")
@@ -96,7 +103,6 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
         
         // 3. Verify newly fetched provisioning profile certificates if present
         if let profiles = self.context.provisioningProfiles {
-            let activeSerials = Set(activeCertificates.compactMap { $0.serialNumber })
             for profile in profiles.values {
                 for cert in profile.certificates {
                     let serial = cert.serialNumber
@@ -130,7 +136,7 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
             }
         }
         
-        debugLog("[VerifyCertificateOperation] Certificate verification PASSED for '\(appName)'.")
+        debugLog("[VerifyCertificateOperation] Certificate verification PASSED for '\(appName)' (serial: \(installedAppSerial ?? "nil")).")
         self.setProgress(100)
     }
 }
