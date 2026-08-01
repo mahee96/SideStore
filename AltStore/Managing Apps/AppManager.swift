@@ -1446,6 +1446,12 @@ private extension AppManager
                 let step = try CleanStagedAppOperation(context: context)
                 result = try await step.execute(parentProgress: progress)
                 return nil
+                
+            case .verifyCertificate:
+                loggerType = VerifyCertificateOperation.self
+                let step = try VerifyCertificateOperation(context: context)
+                result = try await step.execute(parentProgress: progress)
+                return nil
             }
         } catch {
             result = error

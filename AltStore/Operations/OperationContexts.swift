@@ -94,6 +94,7 @@ final class AuthenticatedOperationContext: CachedOperationContext, WeightedOpera
     var session: ALTAppleAPISession?
     var team: ALTTeam?
     var certificate: ALTCertificate?
+    var activeCertificates: [ALTCertificate]?
     
     var isSideStoreResignDismissed: Bool = false
 
@@ -111,6 +112,7 @@ final class AuthenticatedOperationContext: CachedOperationContext, WeightedOpera
         self.session = context.session
         self.team = context.team
         self.certificate = context.certificate
+        self.activeCertificates = context.activeCertificates
         self.isSideStoreResignDismissed = context.isSideStoreResignDismissed
     }
 

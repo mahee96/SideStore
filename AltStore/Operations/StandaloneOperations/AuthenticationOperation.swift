@@ -142,6 +142,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         do {
             let certificates = try await ALTAppleAPI.shared.fetchCertificates(for: cache.team, session: cache.session)
             self.activeCertificates = certificates
+            self.context.activeCertificates = certificates
             
             if self.skipCertificateProvisioning || certificates.contains(where: { $0.serialNumber == cache.certificate?.serialNumber }) {
                 self.debugLog("[Authentication] SessionCache is valid.")
@@ -620,6 +621,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     private func fetchCertificate(for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTCertificate {
         let certificates = try await ALTAppleAPI.shared.fetchCertificates(for: team, session: session)
         self.activeCertificates = certificates
+        self.context.activeCertificates = certificates
         
         if let data = Keychain.shared.signingCertificate {
             let localWithNil = try? ALTCertificate(p12Data: data, password: nil)

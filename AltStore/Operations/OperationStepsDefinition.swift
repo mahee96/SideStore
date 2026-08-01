@@ -37,7 +37,8 @@ struct PipelineDefinition {
         PipelineExecutionStep(.stageApp,                        1),
         PipelineExecutionStep(.changeAppIcon,                    1),
         PipelineExecutionStep(.removeAppExtensions,              6),
-        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 15),
+        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 14),
+        PipelineExecutionStep(.verifyCertificate,                1),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,    1),
         PipelineExecutionStep(.resignApp,                       15),
         PipelineExecutionStep(.exportResignedApp,               1),
@@ -50,7 +51,8 @@ struct PipelineDefinition {
         PipelineExecutionStep(.stageApp,                        2),
         PipelineExecutionStep(.changeAppIcon,                    2),
         PipelineExecutionStep(.removeAppExtensions,             7),
-        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 20),
+        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 19),
+        PipelineExecutionStep(.verifyCertificate,                1),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,    2),
         PipelineExecutionStep(.resignApp,                       20),
         PipelineExecutionStep(.exportResignedApp,               2),
@@ -60,12 +62,14 @@ struct PipelineDefinition {
     ]
 
     static let refresh: [PipelineExecutionStep] = [
-        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 60),
+        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 55),
+        PipelineExecutionStep(.verifyCertificate,                5),
         PipelineExecutionStep(.refreshApp,                       40)
     ]
 
     static let activateLegacy: [PipelineExecutionStep] = [
-        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 60),
+        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 55),
+        PipelineExecutionStep(.verifyCertificate,                5),
         PipelineExecutionStep(.refreshApp,                       40)
     ]
 
@@ -75,7 +79,8 @@ struct PipelineDefinition {
         PipelineExecutionStep(.stageApp,                         2),
         PipelineExecutionStep(.changeAppIcon,                     2),
         PipelineExecutionStep(.removeAppExtensions,              2),
-        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 10),
+        PipelineExecutionStep(.fetchProvisioningProfilesInstall,  9),
+        PipelineExecutionStep(.verifyCertificate,                 1),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,     1),
         PipelineExecutionStep(.resignApp,                        20),
         PipelineExecutionStep(.exportResignedApp,                1),
@@ -97,7 +102,8 @@ struct PipelineDefinition {
 
     static let backup: [PipelineExecutionStep] = [
         PipelineExecutionStep(.stageBackupApp,                 10),
-        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 10),
+        PipelineExecutionStep(.fetchProvisioningProfilesInstall,  9),
+        PipelineExecutionStep(.verifyCertificate,                 1),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,     5),
         PipelineExecutionStep(.resignApp,                        10),
         PipelineExecutionStep(.exportResignedApp,                5),
@@ -111,7 +117,8 @@ struct PipelineDefinition {
     ]
 
     static let restoreLegacy: [PipelineExecutionStep] = [
-        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 60),
+        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 55),
+        PipelineExecutionStep(.verifyCertificate,                5),
         PipelineExecutionStep(.refreshApp,                       40)
     ]
 
@@ -121,7 +128,8 @@ struct PipelineDefinition {
         PipelineExecutionStep(.stageApp,                         2),
         PipelineExecutionStep(.changeAppIcon,                     2),
         PipelineExecutionStep(.removeAppExtensions,              2),
-        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 10),
+        PipelineExecutionStep(.fetchProvisioningProfilesInstall,  9),
+        PipelineExecutionStep(.verifyCertificate,                 1),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,     1),
         PipelineExecutionStep(.resignApp,                        20),
         PipelineExecutionStep(.exportResignedApp,                1),
