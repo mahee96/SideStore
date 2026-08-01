@@ -362,22 +362,9 @@ private extension MyAppsViewController
             let formatter = DateComponentsFormatter()
             formatter.unitsStyle = .full
             formatter.includesApproximationPhrase = false
-            formatter.includesTimeRemainingPhrase = false
-            
-            formatter.allowedUnits = [.day, .hour, .minute]
-            
-            formatter.maximumUnitCount = 1
-            
-            var timeInterval: String? = "expired"
-            let expirationDate = installedApp.expirationDate
-            let isExpired = currentDate > expirationDate
-            if(!isExpired) {
-                timeInterval = formatter.string(from: currentDate, to: expirationDate)
-            }
-            cell.bannerView.button.setTitle(timeInterval?.uppercased(), for: .normal)
-            
+            cell.bannerView.button.configure(for: installedApp)
             cell.bannerView.button.isIndicatingActivity = false
-            cell.bannerView.configure(for: installedApp, action: .custom((timeInterval?.uppercased())!))
+            cell.bannerView.configure(for: installedApp, action: .custom(cell.bannerView.button.title(for: .normal) ?? ""))
             
             if cell.bundleIdentifier != installedApp.bundleIdentifier
             {
@@ -386,6 +373,7 @@ private extension MyAppsViewController
                 cell.bannerView.iconImageView.isIndicatingActivity = true
             }
             
+            let isExpired = currentDate > installedApp.expirationDate
             cell.bannerView.buttonLabel.isHidden = isExpired
             cell.bannerView.buttonLabel.text = NSLocalizedString("Expires in", comment: "")
             
@@ -393,10 +381,6 @@ private extension MyAppsViewController
             cell.bannerView.button.addTarget(self, action: #selector(MyAppsViewController.refreshApp(_:)), for: .primaryActionTriggered)
             
             cell.bannerView.button.accessibilityLabel = String(format: NSLocalizedString("Refresh %@", comment: ""), installedApp.name)
-
-            // formatter.includesTimeRemainingPhrase = true
-
-            // cell.bannerView.accessibilityLabel? += ". " + (formatter.string(from: currentDate, to: installedApp.expirationDate) ?? NSLocalizedString("Unknown", comment: "")) + " "
             
             if let storeApp = installedApp.storeApp, storeApp.isPledgeRequired, !storeApp.isPledged
             {
@@ -409,33 +393,7 @@ private extension MyAppsViewController
                 cell.bannerView.button.alpha = 1.0
             }
             
-            cell.bannerView.accessibilityLabel? += ". " + String(format: NSLocalizedString("Expires in %@", comment: ""), timeInterval!)
-            
-            // Make sure refresh button is correct size.
             cell.layoutIfNeeded()
-            
-            if installedApp.isRevoked {
-                cell.bannerView.button.countdownDate = nil
-                cell.bannerView.button.tintColor = .refreshRed
-                cell.bannerView.button.borderColor = nil
-                cell.bannerView.button.borderWidth = 0
-                cell.bannerView.button.setTitle(NSLocalizedString("REVOKED", comment: ""), for: .normal)
-            } else {
-                switch numberOfDays {
-                case 2...3: cell.bannerView.button.tintColor = .refreshOrange
-                case 4...5: cell.bannerView.button.tintColor = .refreshYellow
-                case 6...: cell.bannerView.button.tintColor = .refreshGreen
-                default: cell.bannerView.button.tintColor = .refreshRed
-                }
-                
-                if installedApp.isCrossSigned {
-                    cell.bannerView.button.borderColor = .refreshRed
-                    cell.bannerView.button.borderWidth = 2.0
-                } else {
-                    cell.bannerView.button.borderColor = nil
-                    cell.bannerView.button.borderWidth = 0
-                }
-            }
             
             if let progress = AppManager.shared.refreshProgress(for: installedApp), progress.fractionCompleted < 1.0
             {
@@ -2643,5 +2601,32 @@ extension MyAppsViewController: UIImagePickerControllerDelegate, UINavigationCon
     {
         picker.dismiss(animated: true, completion: nil)
         self._imagePickerInstalledApp = nil
+    }
+}
+
+extension PillButton {
+    func configure(for installedApp: InstalledApp) {
+        let currentDate = Date()
+        let expirationDate = installedApp.expirationDate
+        let isExpired = currentDate > expirationDate
+        
+        if installedApp.isRevoked {
+            self.setDisplayState(.revoked)
+        } else if isExpired {
+            self.setDisplayState(.expired)
+        } else {
+            let formatter = DateComponentsFormatter()
+            formatter.unitsStyle = .full
+            formatter.allowedUnits = [.day, .hour, .minute]
+            formatter.maximumUnitCount = 1
+            let title = formatter.string(from: currentDate, to: expirationDate) ?? ""
+            let days = Calendar.current.dateComponents([.day], from: currentDate, to: expirationDate).day ?? 0
+            
+            if installedApp.isCrossSigned {
+                self.setDisplayState(.crossSigned(title: title, daysRemaining: days))
+            } else {
+                self.setDisplayState(.active(title: title, daysRemaining: days))
+            }
+        }
     }
 }

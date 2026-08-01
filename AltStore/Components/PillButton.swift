@@ -21,6 +21,14 @@ extension PillButton
         case pill
         case custom
     }
+
+    enum DisplayState
+    {
+        case active(title: String, daysRemaining: Int)
+        case crossSigned(title: String, daysRemaining: Int)
+        case expired
+        case revoked
+    }
 }
 
 class PillButton: UIButton
@@ -203,6 +211,50 @@ class PillButton: UIButton
     }
 }
 
+extension PillButton {
+    func setDisplayState(_ state: DisplayState) {
+        switch state {
+        case .revoked:
+            self.countdownDate = nil
+            self.tintColor = .refreshRed
+            self.borderColor = nil
+            self.borderWidth = 0
+            self.setTitle(NSLocalizedString("REVOKED", comment: ""), for: .normal)
+            
+        case .expired:
+            self.countdownDate = nil
+            self.tintColor = .refreshRed
+            self.borderColor = nil
+            self.borderWidth = 0
+            self.setTitle(NSLocalizedString("EXPIRED", comment: ""), for: .normal)
+            
+        case .active(let title, let daysRemaining):
+            self.setTitle(title.uppercased(), for: .normal)
+            self.borderColor = nil
+            self.borderWidth = 0
+            
+            switch daysRemaining {
+            case 2...3: self.tintColor = .refreshOrange
+            case 4...5: self.tintColor = .refreshYellow
+            case 6...: self.tintColor = .refreshGreen
+            default: self.tintColor = .refreshRed
+            }
+            
+        case .crossSigned(let title, let daysRemaining):
+            self.setTitle(title.uppercased(), for: .normal)
+            self.borderColor = .refreshRed
+            self.borderWidth = 2.0
+            
+            switch daysRemaining {
+            case 2...3: self.tintColor = .refreshOrange
+            case 4...5: self.tintColor = .refreshYellow
+            case 6...: self.tintColor = .refreshGreen
+            default: self.tintColor = .refreshRed
+            }
+        }
+    }
+}
+
 private extension PillButton
 {
     func update()
@@ -211,16 +263,20 @@ private extension PillButton
         {
             self.setTitleColor(.white, for: .normal)
             self.backgroundColor = self.tintColor
+            self.progressView.progressTintColor = self.progressTintColor ?? self.tintColor
+            self.layer.borderColor = self.borderColor?.cgColor
+            self.layer.borderWidth = self.borderWidth
         }
         else
         {
-            self.setTitleColor(self.tintColor, for: .normal)
-            self.backgroundColor = self.tintColor.withAlphaComponent(0.15)
+            // Active progress: reset red tint to green while progress is running
+            let activeTint: UIColor = (self.tintColor == .refreshRed) ? .refreshGreen : self.tintColor
+            self.setTitleColor(activeTint, for: .normal)
+            self.backgroundColor = activeTint.withAlphaComponent(0.15)
+            self.progressView.progressTintColor = self.progressTintColor ?? activeTint
+            self.layer.borderColor = nil
+            self.layer.borderWidth = 0
         }
-        
-        self.progressView.progressTintColor = self.progressTintColor ?? self.tintColor
-        self.layer.borderColor = self.borderColor?.cgColor
-        self.layer.borderWidth = self.borderWidth
         
         // Update font after init because the original titleLabel is replaced.
         let size = self.fontSize ?? self.storyboardFontSize ?? 14
