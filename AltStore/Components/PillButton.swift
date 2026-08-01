@@ -269,11 +269,9 @@ private extension PillButton
         }
         else
         {
-            // Active progress: reset red tint to green while progress is running
-            let activeTint: UIColor = (self.tintColor == .refreshRed) ? .refreshGreen : self.tintColor
-            self.setTitleColor(activeTint, for: .normal)
-            self.backgroundColor = activeTint.withAlphaComponent(0.15)
-            self.progressView.progressTintColor = self.progressTintColor ?? activeTint
+            self.setTitleColor(self.tintColor, for: .normal)
+            self.backgroundColor = self.tintColor.withAlphaComponent(0.15)
+            self.progressView.progressTintColor = self.progressTintColor ?? self.tintColor
             self.layer.borderColor = nil
             self.layer.borderWidth = 0
         }
