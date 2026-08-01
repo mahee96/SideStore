@@ -15,13 +15,39 @@ import Combine
 public final class StorageExplorerClipboard: ObservableObject {
     public static let shared = StorageExplorerClipboard()
     
-    @Published public var copiedURL: URL? = nil
+    @Published public var copiedURLs: [URL] = []
     
     private init() {}
     
-    public func clear() {
-        self.copiedURL = nil
+    public var hasCopiedItems: Bool {
+        !copiedURLs.isEmpty
     }
+    
+    public var pasteLabelText: String {
+        if copiedURLs.count == 1, let first = copiedURLs.first {
+            return "Paste “\(first.lastPathComponent)”"
+        } else if copiedURLs.count > 1 {
+            return "Paste \(copiedURLs.count) Items"
+        }
+        return "Paste"
+    }
+    
+    public func setCopied(urls: [URL]) {
+        self.copiedURLs = urls
+    }
+    
+    public func clear() {
+        self.copiedURLs.removeAll()
+    }
+}
+
+// MARK: - Paste Conflict Model
+
+public struct PasteConflict: Identifiable {
+    public var id: String { sourceURL.path }
+    public let sourceURL: URL
+    public let destinationDirectory: URL
+    public let existingName: String
 }
 
 // MARK: - Storage Location Model
@@ -79,6 +105,7 @@ public final class StorageExplorerViewModel: ObservableObject {
     @Published public var sortOption: StorageSortOption = .name
     @Published public var sortAscending: Bool = true
     @Published public var groupFoldersFirst: Bool = true
+    @Published public var isTextWrapEnabled: Bool = false
     @Published public var isLoading: Bool = false
     
     @Published public var isSelectionMode: Bool = false
@@ -92,10 +119,16 @@ public final class StorageExplorerViewModel: ObservableObject {
     @Published public var renameInput: String = ""
     @Published public var shareURL: URL? = nil
     
+    @Published public var pendingConflicts: [PasteConflict] = []
+    @Published public var currentConflict: PasteConflict? = nil
+    @Published public var conflictNewNameInput: String = ""
+    
     public enum ActiveAlert: Identifiable {
         case confirmSingleDelete(StorageExplorerItem)
         case confirmBulkDelete
         case rename(StorageExplorerItem)
+        case bulkRename
+        case pasteConflict(PasteConflict)
         case error(String)
         
         public var id: String {
@@ -103,6 +136,8 @@ public final class StorageExplorerViewModel: ObservableObject {
             case .confirmSingleDelete(let item): return "singleDelete-\(item.url.path)"
             case .confirmBulkDelete: return "bulkDelete"
             case .rename(let item): return "rename-\(item.url.path)"
+            case .bulkRename: return "bulkRename"
+            case .pasteConflict(let c): return "conflict-\(c.sourceURL.path)"
             case .error(let msg): return "error-\(msg)"
             }
         }
@@ -135,6 +170,19 @@ public final class StorageExplorerViewModel: ObservableObject {
         return "Unknown"
     }
     
+    public static func calculateDirectorySize(url: URL) -> Int64 {
+        let fileManager = FileManager.default
+        var total: Int64 = 0
+        if let enumerator = fileManager.enumerator(at: url, includingPropertiesForKeys: [.fileSizeKey], options: [.skipsHiddenFiles]) {
+            for case let fileURL as URL in enumerator {
+                if let vals = try? fileURL.resourceValues(forKeys: [.fileSizeKey]), let size = vals.fileSize {
+                    total += Int64(size)
+                }
+            }
+        }
+        return total
+    }
+    
     public func loadContents() {
         self.isLoading = true
         let targetURL = self.currentURL
@@ -155,15 +203,9 @@ public final class StorageExplorerViewModel: ObservableObject {
                     var itemCount: Int = 0
                     
                     if isDir {
-                        if let subContents = try? fileManager.contentsOfDirectory(at: itemURL, includingPropertiesForKeys: [.fileSizeKey], options: [.skipsHiddenFiles]) {
+                        size = await Self.calculateDirectorySize(url: itemURL)
+                        if let subContents = try? fileManager.contentsOfDirectory(at: itemURL, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) {
                             itemCount = subContents.count
-                            var dirSize: Int64 = 0
-                            for sub in subContents {
-                                if let subVal = try? sub.resourceValues(forKeys: [.fileSizeKey]), let fSize = subVal.fileSize {
-                                    dirSize += Int64(fSize)
-                                }
-                            }
-                            size = dirSize
                         }
                     }
                     
@@ -267,32 +309,133 @@ public final class StorageExplorerViewModel: ObservableObject {
         }
     }
     
-    public func copyToClipboard(item: StorageExplorerItem) {
-        StorageExplorerClipboard.shared.copiedURL = item.url
-    }
-    
-    public func pasteCopiedItem() {
-        guard let sourceURL = StorageExplorerClipboard.shared.copiedURL else { return }
-        guard FileManager.default.fileExists(atPath: sourceURL.path) else {
-            self.activeAlert = .error("Source item no longer exists.")
-            StorageExplorerClipboard.shared.clear()
+    public func bulkRenameSelected(to newBaseName: String) {
+        let trimmed = newBaseName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        
+        let targets = items.filter { selectedURLs.contains($0.url) }
+        guard !targets.isEmpty else { return }
+        
+        if targets.count == 1, let item = targets.first {
+            rename(item: item, to: trimmed)
+            self.selectedURLs.removeAll()
+            self.isSelectionMode = false
             return
         }
         
-        var destinationURL = self.currentURL.appendingPathComponent(sourceURL.lastPathComponent)
-        if FileManager.default.fileExists(atPath: destinationURL.path) {
-            let nameWithoutExt = sourceURL.deletingPathExtension().lastPathComponent
-            let ext = sourceURL.pathExtension
-            let newName = ext.isEmpty ? "\(nameWithoutExt) copy" : "\(nameWithoutExt) copy.\(ext)"
-            destinationURL = self.currentURL.appendingPathComponent(newName)
+        var errors: [String] = []
+        var index = 1
+        
+        for item in targets {
+            let ext = item.url.pathExtension
+            let nameWithoutExt = ext.isEmpty ? "\(trimmed)_\(index)" : "\(trimmed)_\(index).\(ext)"
+            let destinationURL = item.url.deletingLastPathComponent().appendingPathComponent(nameWithoutExt)
+            
+            do {
+                try FileManager.default.moveItem(at: item.url, to: destinationURL)
+            } catch {
+                errors.append("\(item.name): \(error.localizedDescription)")
+            }
+            index += 1
+        }
+        
+        self.selectedURLs.removeAll()
+        self.isSelectionMode = false
+        self.loadContents()
+        
+        if !errors.isEmpty {
+            self.activeAlert = .error("Errors renaming items:\n" + errors.joined(separator: "\n"))
+        }
+    }
+    
+    public func copyToClipboard(item: StorageExplorerItem) {
+        StorageExplorerClipboard.shared.setCopied(urls: [item.url])
+    }
+    
+    public func copySelectedToClipboard() {
+        let selected = items.filter { selectedURLs.contains($0.url) }.map { $0.url }
+        if !selected.isEmpty {
+            StorageExplorerClipboard.shared.setCopied(urls: selected)
+            self.isSelectionMode = false
+            self.selectedURLs.removeAll()
+        }
+    }
+    
+    public func pasteCopiedItems() {
+        let sources = StorageExplorerClipboard.shared.copiedURLs
+        guard !sources.isEmpty else { return }
+        
+        var conflicts: [PasteConflict] = []
+        var copyErrors: [String] = []
+        let fileManager = FileManager.default
+        
+        // Phase 1: Complete all non-conflicting items immediately (including recursive directories)
+        for sourceURL in sources {
+            guard fileManager.fileExists(atPath: sourceURL.path) else { continue }
+            let destURL = self.currentURL.appendingPathComponent(sourceURL.lastPathComponent)
+            
+            if fileManager.fileExists(atPath: destURL.path) {
+                conflicts.append(PasteConflict(sourceURL: sourceURL, destinationDirectory: self.currentURL, existingName: sourceURL.lastPathComponent))
+            } else {
+                do {
+                    try fileManager.copyItem(at: sourceURL, to: destURL)
+                } catch {
+                    copyErrors.append("\(sourceURL.lastPathComponent): \(error.localizedDescription)")
+                }
+            }
+        }
+        
+        self.loadContents()
+        
+        // Phase 2: Process conflicts sequentially
+        if !conflicts.isEmpty {
+            self.pendingConflicts = conflicts
+            self.presentNextConflict()
+        } else if !copyErrors.isEmpty {
+            self.activeAlert = .error("Errors copying items:\n" + copyErrors.joined(separator: "\n"))
+        }
+    }
+    
+    private func presentNextConflict() {
+        guard let next = pendingConflicts.first else {
+            self.currentConflict = nil
+            self.loadContents()
+            return
+        }
+        self.currentConflict = next
+        self.conflictNewNameInput = next.existingName
+        self.activeAlert = .pasteConflict(next)
+    }
+    
+    public func resolveConflictWithNewName() {
+        guard let conflict = currentConflict else { return }
+        let trimmed = conflictNewNameInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard !trimmed.isEmpty else { return }
+        
+        let destURL = conflict.destinationDirectory.appendingPathComponent(trimmed)
+        if FileManager.default.fileExists(atPath: destURL.path) {
+            // Name still conflicts!
+            self.activeAlert = .error("A file named “\(trimmed)” already exists in this folder. Please choose a different name.")
+            return
         }
         
         do {
-            try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
-            self.loadContents()
+            try FileManager.default.copyItem(at: conflict.sourceURL, to: destURL)
         } catch {
-            self.activeAlert = .error("Failed to paste item: \(error.localizedDescription)")
+            debugLog("Error copying conflict item: \(error)")
         }
+        
+        if !pendingConflicts.isEmpty {
+            pendingConflicts.removeFirst()
+        }
+        self.presentNextConflict()
+    }
+    
+    public func cancelRemainingConflicts() {
+        self.pendingConflicts.removeAll()
+        self.currentConflict = nil
+        self.loadContents()
     }
 }
 
@@ -311,53 +454,275 @@ public struct DirectoryExplorerView: View {
         return "\(viewModel.items.count) items (\(sizeStr))"
     }
     
-    @ViewBuilder
-    private func itemContextMenu(for item: StorageExplorerItem) -> some View {
-        if !viewModel.isSelectionMode {
-            SwiftUI.Button {
-                viewModel.copyToClipboard(item: item)
-            } label: {
-                Label("Copy", systemImage: "doc.on.doc")
+    public var body: some View {
+        VStack(spacing: 0) {
+            List {
+                DirectoryItemListSectionView(viewModel: viewModel, clipboard: clipboard)
+                EmptyPasteAreaSectionView(viewModel: viewModel, clipboard: clipboard)
             }
+            .listStyle(.insetGrouped)
+            .searchable(text: $viewModel.searchText, prompt: "Search files & folders")
             
-            SwiftUI.Button {
-                viewModel.renameInput = item.name
-                viewModel.itemToRename = item
-                viewModel.activeAlert = .rename(item)
-            } label: {
-                Label("Rename", systemImage: "pencil")
-            }
-            
-            if !item.isDirectory {
-                SwiftUI.Button {
-                    viewModel.shareURL = item.url
-                } label: {
-                    Label("Share", systemImage: "square.and.arrow.up")
+            // Bottom Status & Storage Information Bar + Selection Actions Bar
+            VStack(spacing: 0) {
+                Divider()
+                
+                if viewModel.isSelectionMode {
+                    SelectionActionBarView(viewModel: viewModel)
+                    Divider()
                 }
+                
+                BottomInformationBarView(viewModel: viewModel, clipboard: clipboard, folderSummaryString: folderSummaryString)
             }
+        }
+        .navigationTitle(viewModel.currentURL.lastPathComponent)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                TrailingToolbarMenuView(viewModel: viewModel)
+            }
+        }
+        .sheet(item: Binding(get: {
+            viewModel.shareURL.map { ShareItem(url: $0) }
+        }, set: { newValue in
+            viewModel.shareURL = newValue?.url
+        })) { shareItem in
+            ActivityViewController(activityItems: [shareItem.url])
+        }
+        .alert(item: $viewModel.activeAlert, content: makeAlert)
+    }
+    
+    private func makeAlert(for alertType: StorageExplorerViewModel.ActiveAlert) -> Alert {
+        let vm = self.viewModel
+        switch alertType {
+        case .confirmSingleDelete(let item):
+            return Alert(
+                title: Text("Delete “\(item.name)”?"),
+                message: Text("This item will be permanently removed."),
+                primaryButton: .destructive(Text("Delete")) {
+                    vm.delete(item: item)
+                },
+                secondaryButton: .cancel()
+            )
+        case .confirmBulkDelete:
+            let count = vm.selectedURLs.count
+            return Alert(
+                title: Text("Delete \(count) Selected Items?"),
+                message: Text("Are you sure you want to permanently delete these \(count) items?"),
+                primaryButton: .destructive(Text("Delete All")) {
+                    vm.bulkDeleteSelected()
+                },
+                secondaryButton: .cancel()
+            )
+        case .rename(let item):
+            return Alert(
+                title: Text("Rename “\(item.name)”"),
+                message: Text("Enter a new name for this item:"),
+                primaryButton: .default(Text("Rename")) {
+                    vm.rename(item: item, to: vm.renameInput)
+                },
+                secondaryButton: .cancel()
+            )
+        case .bulkRename:
+            let count = vm.selectedURLs.count
+            let input = vm.renameInput
+            return Alert(
+                title: Text(count == 1 ? "Rename Item" : "Bulk Rename \(count) Items"),
+                message: Text(count == 1 ? "Enter a new name:" : "Enter a base name (items will be renamed Name_1, Name_2...):"),
+                primaryButton: .default(Text("Rename")) {
+                    vm.bulkRenameSelected(to: input)
+                },
+                secondaryButton: .cancel()
+            )
+        case .pasteConflict(let conflict):
+            return Alert(
+                title: Text("File Already Exists"),
+                message: Text("An item named “\(conflict.existingName)” already exists in this folder. Enter a new name to copy:"),
+                primaryButton: .default(Text("Copy as New Name")) {
+                    vm.resolveConflictWithNewName()
+                },
+                secondaryButton: .cancel(Text("Cancel All")) {
+                    vm.cancelRemainingConflicts()
+                }
+            )
+        case .error(let message):
+            return Alert(
+                title: Text("Storage Explorer Error"),
+                message: Text(message),
+                dismissButton: .default(Text("OK"))
+            )
+        }
+    }
+}
+
+// MARK: - Subview Components
+
+private struct DirectoryItemListSectionView: View {
+    @ObservedObject var viewModel: StorageExplorerViewModel
+    @ObservedObject var clipboard: StorageExplorerClipboard
+    
+    var body: some View {
+        ForEach(viewModel.filteredAndSortedItems) { item in
+            if viewModel.isSelectionMode {
+                ItemRow(item: item, isSelected: viewModel.selectedURLs.contains(item.url), isSelectionMode: true, isTextWrapEnabled: viewModel.isTextWrapEnabled)
+                    .onTapGesture {
+                        if viewModel.selectedURLs.contains(item.url) {
+                            viewModel.selectedURLs.remove(item.url)
+                        } else {
+                            viewModel.selectedURLs.insert(item.url)
+                        }
+                    }
+            } else if item.isDirectory {
+                NavigationLink(destination: DirectoryExplorerView(url: item.url)) {
+                    ItemRow(item: item, isSelected: false, isSelectionMode: false, isTextWrapEnabled: viewModel.isTextWrapEnabled)
+                }
+                .contextMenu {
+                    ItemContextMenuView(viewModel: viewModel, item: item)
+                }
+            } else {
+                ItemRow(item: item, isSelected: false, isSelectionMode: false, isTextWrapEnabled: viewModel.isTextWrapEnabled)
+                    .contextMenu {
+                        ItemContextMenuView(viewModel: viewModel, item: item)
+                    }
+            }
+        }
+    }
+}
+
+private struct EmptyPasteAreaSectionView: View {
+    @ObservedObject var viewModel: StorageExplorerViewModel
+    @ObservedObject var clipboard: StorageExplorerClipboard
+    
+    var body: some View {
+        Section {
+            Color.clear
+                .frame(height: 100)
+                .listRowBackground(Color.clear)
+                .contextMenu {
+                    EmptyAreaContextMenuView(viewModel: viewModel, clipboard: clipboard)
+                }
+        }
+    }
+}
+
+private struct SelectionActionBarView: View {
+    @ObservedObject var viewModel: StorageExplorerViewModel
+    
+    var body: some View {
+        let count = viewModel.selectedURLs.count
+        let copyTitle = count > 0 ? "Copy (\(count))" : "Copy"
+        let renameTitle = count > 0 ? "Rename (\(count))" : "Rename"
+        let deleteTitle = count > 0 ? "Delete (\(count))" : "Delete"
+        let isAllSelected = count > 0 && count == viewModel.filteredAndSortedItems.count
+        let selectTitle = isAllSelected ? "Deselect All" : "Select All"
+        
+        HStack(spacing: 6) {
+            SwiftUI.Button {
+                if isAllSelected {
+                    viewModel.selectedURLs.removeAll()
+                } else {
+                    viewModel.selectedURLs = Set(viewModel.filteredAndSortedItems.map { $0.url })
+                }
+            } label: {
+                Text(selectTitle)
+                    .font(.caption.bold())
+                    .lineLimit(1)
+            }
+            
+            Spacer(minLength: 2)
+            
+            SwiftUI.Button {
+                if !viewModel.selectedURLs.isEmpty {
+                    viewModel.copySelectedToClipboard()
+                }
+            } label: {
+                Label(copyTitle, systemImage: "doc.on.doc")
+                    .font(.caption.bold())
+                    .lineLimit(1)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .fixedSize(horizontal: true, vertical: false)
+            .disabled(viewModel.selectedURLs.isEmpty)
+            
+            SwiftUI.Button {
+                if !viewModel.selectedURLs.isEmpty {
+                    if count == 1, let firstURL = viewModel.selectedURLs.first, let item = viewModel.items.first(where: { $0.url == firstURL }) {
+                        viewModel.renameInput = item.name
+                    } else {
+                        viewModel.renameInput = ""
+                    }
+                    viewModel.activeAlert = .bulkRename
+                }
+            } label: {
+                Label(renameTitle, systemImage: "pencil")
+                    .font(.caption.bold())
+                    .lineLimit(1)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .fixedSize(horizontal: true, vertical: false)
+            .disabled(viewModel.selectedURLs.isEmpty)
             
             SwiftUI.Button(role: .destructive) {
-                viewModel.activeAlert = .confirmSingleDelete(item)
+                if !viewModel.selectedURLs.isEmpty {
+                    viewModel.activeAlert = .confirmBulkDelete
+                }
             } label: {
-                Label("Delete", systemImage: "trash")
+                Label(deleteTitle, systemImage: "trash")
+                    .font(.caption.bold())
+                    .lineLimit(1)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.red)
+            .controlSize(.small)
+            .fixedSize(horizontal: true, vertical: false)
+            .disabled(viewModel.selectedURLs.isEmpty)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(Color(UIColor.tertiarySystemBackground))
+    }
+}
+
+private struct BottomInformationBarView: View {
+    @ObservedObject var viewModel: StorageExplorerViewModel
+    @ObservedObject var clipboard: StorageExplorerClipboard
+    let folderSummaryString: String
+    
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(folderSummaryString)
+                    .font(.caption)
+                    .foregroundColor(.primary)
+                Text("Available Space: \(viewModel.freeDiskSpaceString)")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
+            
+            if clipboard.hasCopiedItems && !viewModel.isSelectionMode {
+                SwiftUI.Button {
+                    viewModel.pasteCopiedItems()
+                } label: {
+                    Label(clipboard.pasteLabelText, systemImage: "doc.on.clipboard")
+                        .font(.caption.bold())
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
             }
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(Color(UIColor.secondarySystemBackground))
     }
+}
+
+private struct TrailingToolbarMenuView: View {
+    @ObservedObject var viewModel: StorageExplorerViewModel
     
-    @ViewBuilder
-    private var emptyAreaContextMenu: some View {
-        if let copiedURL = clipboard.copiedURL {
-            let labelText = "Paste “" + copiedURL.lastPathComponent + "”"
-            SwiftUI.Button {
-                viewModel.pasteCopiedItem()
-            } label: {
-                Label(labelText, systemImage: "doc.on.clipboard")
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private var trailingToolbarMenu: some View {
+    var body: some View {
         Menu {
             SwiftUI.Button {
                 viewModel.isSelectionMode.toggle()
@@ -389,151 +754,111 @@ public struct DirectoryExplorerView: View {
             }
             
             Toggle(isOn: $viewModel.groupFoldersFirst) {
-                Label("Group Folders First", systemImage: "folder")
+                Label("Folders First", systemImage: "folder")
+            }
+            
+            Toggle(isOn: $viewModel.isTextWrapEnabled) {
+                Label("Wrap File Names", systemImage: "text.wrap")
             }
         } label: {
             Image(systemName: "ellipsis.circle")
         }
     }
+}
+
+private struct ItemContextMenuView: View {
+    @ObservedObject var viewModel: StorageExplorerViewModel
+    let item: StorageExplorerItem
     
-    @ViewBuilder
-    private var bottomSelectionToolbar: some View {
-        let count = viewModel.selectedURLs.count
-        HStack {
-            SwiftUI.Button(role: .destructive) {
-                if !viewModel.selectedURLs.isEmpty {
-                    viewModel.activeAlert = .confirmBulkDelete
-                }
+    var body: some View {
+        if !viewModel.isSelectionMode {
+            SwiftUI.Button {
+                viewModel.copyToClipboard(item: item)
             } label: {
-                Label("Delete (\(count))", systemImage: "trash")
+                Label("Copy", systemImage: "doc.on.doc")
             }
-            .disabled(viewModel.selectedURLs.isEmpty)
             
-            Spacer()
+            SwiftUI.Button {
+                viewModel.renameInput = item.name
+                viewModel.itemToRename = item
+                viewModel.activeAlert = .rename(item)
+            } label: {
+                Label("Rename", systemImage: "pencil")
+            }
+            
+            if !item.isDirectory {
+                SwiftUI.Button {
+                    viewModel.shareURL = item.url
+                } label: {
+                    Label("Share", systemImage: "square.and.arrow.up")
+                }
+            }
+            
+            SwiftUI.Button(role: .destructive) {
+                viewModel.activeAlert = .confirmSingleDelete(item)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
         }
     }
+}
+
+private struct EmptyAreaContextMenuView: View {
+    @ObservedObject var viewModel: StorageExplorerViewModel
+    @ObservedObject var clipboard: StorageExplorerClipboard
     
-    public var body: some View {
-        VStack(spacing: 0) {
-            List {
-                ForEach(viewModel.filteredAndSortedItems) { item in
-                    ItemRow(item: item, isSelected: viewModel.selectedURLs.contains(item.url), isSelectionMode: viewModel.isSelectionMode) {
-                        if viewModel.isSelectionMode {
-                            if viewModel.selectedURLs.contains(item.url) {
-                                viewModel.selectedURLs.remove(item.url)
-                            } else {
-                                viewModel.selectedURLs.insert(item.url)
-                            }
-                        }
-                    }
-                    .contextMenu {
-                        itemContextMenu(for: item)
-                    }
-                }
-                
-                // Empty area row at bottom to allow long-press paste
-                Section {
-                    Color.clear
-                        .frame(height: 100)
-                        .listRowBackground(Color.clear)
-                        .contextMenu {
-                            emptyAreaContextMenu
-                        }
-                }
-            }
-            .listStyle(.insetGrouped)
-            .searchable(text: $viewModel.searchText, prompt: "Search files & folders")
-            
-            // Bottom Status & Storage Information Bar
-            VStack(spacing: 4) {
-                Divider()
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(folderSummaryString)
-                            .font(.caption)
-                            .foregroundColor(.primary)
-                        Text("Available Space: \(viewModel.freeDiskSpaceString)")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
-                    Spacer()
-                    
-                    if clipboard.copiedURL != nil {
-                        SwiftUI.Button {
-                            viewModel.pasteCopiedItem()
-                        } label: {
-                            Label("Paste", systemImage: "doc.on.clipboard")
-                                .font(.caption.bold())
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(Color(UIColor.secondarySystemBackground))
+    var body: some View {
+        if clipboard.hasCopiedItems {
+            SwiftUI.Button {
+                viewModel.pasteCopiedItems()
+            } label: {
+                Label(clipboard.pasteLabelText, systemImage: "doc.on.clipboard")
             }
         }
-        .navigationTitle(viewModel.currentURL.lastPathComponent)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                trailingToolbarMenu
+    }
+}
+
+private struct StorageExplorerFooterView: View {
+    let appStorageUsedString: String
+    let freeHardwareSpaceString: String
+    let totalHardwareSpaceString: String
+    
+    var body: some View {
+        VStack(alignment: .center, spacing: 5) {
+            if !appStorageUsedString.isEmpty {
+                HStack(spacing: 4) {
+                    Text("App Storage Used:")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundColor(.secondary)
+                    Text(appStorageUsedString)
+                        .font(.footnote.weight(.medium))
+                        .foregroundColor(.secondary)
+                }
             }
-            
-            ToolbarItem(placement: .bottomBar) {
-                Group {
-                    if viewModel.isSelectionMode {
-                        bottomSelectionToolbar
-                    }
+            if !freeHardwareSpaceString.isEmpty {
+                HStack(spacing: 4) {
+                    Text("Available Space:")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundColor(.secondary)
+                    Text(freeHardwareSpaceString)
+                        .font(.footnote.weight(.medium))
+                        .foregroundColor(.secondary)
+                }
+            }
+            if !totalHardwareSpaceString.isEmpty {
+                HStack(spacing: 4) {
+                    Text("Total Space:")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundColor(.secondary)
+                    Text(totalHardwareSpaceString)
+                        .font(.footnote.weight(.medium))
+                        .foregroundColor(.secondary)
                 }
             }
         }
-        .sheet(item: Binding(get: {
-            viewModel.shareURL.map { ShareItem(url: $0) }
-        }, set: { newValue in
-            viewModel.shareURL = newValue?.url
-        })) { shareItem in
-            ActivityViewController(activityItems: [shareItem.url])
-        }
-        .alert(item: $viewModel.activeAlert) { alertType in
-            switch alertType {
-            case .confirmSingleDelete(let item):
-                return Alert(
-                    title: Text("Delete “\(item.name)”?"),
-                    message: Text("This item will be permanently removed."),
-                    primaryButton: .destructive(Text("Delete")) {
-                        viewModel.delete(item: item)
-                    },
-                    secondaryButton: .cancel()
-                )
-            case .confirmBulkDelete:
-                let count = viewModel.selectedURLs.count
-                return Alert(
-                    title: Text("Delete \(count) Selected Items?"),
-                    message: Text("Are you sure you want to permanently delete these \(count) items?"),
-                    primaryButton: .destructive(Text("Delete All")) {
-                        viewModel.bulkDeleteSelected()
-                    },
-                    secondaryButton: .cancel()
-                )
-            case .rename(let item):
-                return Alert(
-                    title: Text("Rename “\(item.name)”"),
-                    message: Text("Enter a new name for this item:"),
-                    primaryButton: .default(Text("Rename")) {
-                        viewModel.rename(item: item, to: viewModel.renameInput)
-                    },
-                    secondaryButton: .cancel()
-                )
-            case .error(let message):
-                return Alert(
-                    title: Text("Storage Explorer Error"),
-                    message: Text(message),
-                    dismissButton: .default(Text("OK"))
-                )
-            }
-        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
     }
 }
 
@@ -543,7 +868,7 @@ private struct ItemRow: View {
     let item: StorageExplorerItem
     let isSelected: Bool
     let isSelectionMode: Bool
-    let onTap: () -> Void
+    let isTextWrapEnabled: Bool
     
     var body: some View {
         HStack(spacing: 12) {
@@ -558,9 +883,16 @@ private struct ItemRow: View {
                 .foregroundColor(item.isDirectory ? .blue : .secondary)
             
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.name)
-                    .font(.body)
-                    .lineLimit(1)
+                if isTextWrapEnabled {
+                    Text(item.name)
+                        .font(.body)
+                        .lineLimit(nil)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    Text(item.name)
+                        .font(.body)
+                        .lineLimit(1)
+                }
                 
                 HStack(spacing: 6) {
                     if item.isDirectory {
@@ -578,19 +910,8 @@ private struct ItemRow: View {
             }
             
             Spacer()
-            
-            if item.isDirectory && !isSelectionMode {
-                NavigationLink(destination: DirectoryExplorerView(url: item.url)) {
-                    EmptyView()
-                }
-                .frame(width: 0)
-                .opacity(0)
-            }
         }
         .contentShape(Rectangle())
-        .onTapGesture {
-            onTap()
-        }
     }
     
     private func fileIcon(for url: URL) -> String {
@@ -615,38 +936,48 @@ private struct ItemRow: View {
 
 public struct StorageExplorerView: View {
     @State private var locations: [StorageLocation] = []
+    @State private var totalHardwareSpaceString: String = ""
+    @State private var freeHardwareSpaceString: String = ""
+    @State private var appStorageUsedString: String = ""
     
     public init() {}
     
     public var body: some View {
-        NavigationView {
-            List {
-                Section(header: Text("App Storage Containers")) {
-                    ForEach(locations) { location in
-                        NavigationLink(destination: DirectoryExplorerView(url: location.url)) {
-                            HStack(spacing: 12) {
-                                Image(systemName: location.iconName)
-                                    .font(.title2)
-                                    .foregroundColor(.accentColor)
-                                
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(location.name)
-                                        .font(.headline)
-                                    Text(location.subtitle)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
+        List {
+            Section(
+                header: Text("App Storage Containers"),
+                footer: StorageExplorerFooterView(
+                    appStorageUsedString: appStorageUsedString,
+                    freeHardwareSpaceString: freeHardwareSpaceString,
+                    totalHardwareSpaceString: totalHardwareSpaceString
+                )
+            ) {
+                ForEach(locations) { location in
+                    NavigationLink(destination: DirectoryExplorerView(url: location.url)) {
+                        HStack(spacing: 12) {
+                            Image(systemName: location.iconName)
+                                .font(.title2)
+                                .foregroundColor(.accentColor)
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(location.name)
+                                    .font(.headline)
+                                Text(location.subtitle)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
                             }
-                            .padding(.vertical, 4)
                         }
+                        .padding(.vertical, 4)
                     }
                 }
             }
-            .listStyle(.insetGrouped)
-            .navigationTitle("Storage Explorer")
-            .onAppear {
-                self.loadLocations()
-            }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle("Storage Explorer")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            self.loadLocations()
+            self.loadStorageStats()
         }
     }
     
@@ -699,6 +1030,57 @@ public struct StorageExplorerView: View {
         ))
         
         self.locations = locs
+    }
+    
+    private func loadStorageStats() {
+        Task.detached {
+            let fileManager = FileManager.default
+            var totalAppSize: Int64 = 0
+            
+            var containerURLs: [URL] = []
+            if let docsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first {
+                containerURLs.append(docsURL)
+            }
+            for groupID in Bundle.main.appGroups {
+                if let groupURL = fileManager.containerURL(forSecurityApplicationGroupIdentifier: groupID) {
+                    containerURLs.append(groupURL)
+                }
+            }
+            if let backupsURL = fileManager.appBackupsDirectory {
+                containerURLs.append(backupsURL)
+            }
+            containerURLs.append(fileManager.temporaryDirectory)
+            
+            var seenPaths = Set<String>()
+            for containerURL in containerURLs {
+                if !seenPaths.contains(containerURL.path) {
+                    seenPaths.insert(containerURL.path)
+                    totalAppSize += StorageExplorerViewModel.calculateDirectorySize(url: containerURL)
+                }
+            }
+            
+            var hwTotalStr = "Unknown"
+            var hwFreeStr = "Unknown"
+            do {
+                let values = try fileManager.temporaryDirectory.resourceValues(forKeys: [.volumeTotalCapacityKey, .volumeAvailableCapacityForImportantUsageKey, .volumeAvailableCapacityKey])
+                if let total = values.volumeTotalCapacity {
+                    hwTotalStr = ByteCountFormatter.string(fromByteCount: Int64(total), countStyle: .file)
+                }
+                if let free = values.volumeAvailableCapacityForImportantUsage {
+                    hwFreeStr = ByteCountFormatter.string(fromByteCount: free, countStyle: .file)
+                } else if let free = values.volumeAvailableCapacity {
+                    hwFreeStr = ByteCountFormatter.string(fromByteCount: Int64(free), countStyle: .file)
+                }
+            } catch {}
+            
+            let appSizeStr = ByteCountFormatter.string(fromByteCount: totalAppSize, countStyle: .file)
+            
+            await MainActor.run {
+                self.totalHardwareSpaceString = hwTotalStr
+                self.freeHardwareSpaceString = hwFreeStr
+                self.appStorageUsedString = appSizeStr
+            }
+        }
     }
 }
 
