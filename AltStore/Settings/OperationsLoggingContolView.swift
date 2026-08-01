@@ -138,9 +138,9 @@ struct OperationsLoggingControlView: View {
                         CustomSection(header: Text("Backup Operations"))
                         {
                             CustomToggle("1. BackupApp", isOn: Binding(
-                                get: { self.viewModel.isLoggingEnabled(for: BackupAppOperation.self) },
+                                get: { self.viewModel.isLoggingEnabled(for: PerformBackupRestoreOperation.self) },
                                 set: { value in
-                                    self.viewModel.setLoggingEnabled(for: BackupAppOperation.self, value: value)
+                                    self.viewModel.setLoggingEnabled(for: PerformBackupRestoreOperation.self, value: value)
                                 }
                             ))
                             

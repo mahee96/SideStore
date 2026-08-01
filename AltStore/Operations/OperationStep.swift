@@ -21,7 +21,7 @@ enum PipelineStep: OperationStep {
     case fetchProvisioningProfilesInstall
     case fetchProvisioningProfilesRefresh
     case installApp
-    case installBackupApp
+    case stageBackupApp
     case changeAppIcon
     case prepareAppExtensionBundleIDs
     case preflightChecks
@@ -37,7 +37,7 @@ enum PipelineStep: OperationStep {
     case verifyApp
 
     private static let stepMap: [ObjectIdentifier: PipelineStep] = [
-        ObjectIdentifier(BackupAppOperation.self):                        .backupAppData,
+        ObjectIdentifier(PerformBackupRestoreOperation.self):             .backupAppData,
         ObjectIdentifier(CacheAppOperation.self):                         .cacheApp,
         ObjectIdentifier(CleanStagedAppOperation.self):                   .cleanStagedApp,
         ObjectIdentifier(DeactivateAppOperation.self):                    .deactivateApp,
@@ -47,7 +47,7 @@ enum PipelineStep: OperationStep {
         ObjectIdentifier(FetchProvisioningProfilesInstallOperation.self): .fetchProvisioningProfilesInstall,
         ObjectIdentifier(FetchProvisioningProfilesRefreshOperation.self): .fetchProvisioningProfilesRefresh,
         ObjectIdentifier(InstallAppOperation.self):                       .installApp,
-        ObjectIdentifier(InstallBackupAppOperation.self):                 .installBackupApp,
+        ObjectIdentifier(StageBackupAppOperation.self):                   .stageBackupApp,
         ObjectIdentifier(ChangeAppIconOperation.self):                    .changeAppIcon,
         ObjectIdentifier(PrepareAppExtensionBundleIDsOperation.self):     .prepareAppExtensionBundleIDs,
         ObjectIdentifier(PreflightChecksOperation.self):                  .preflightChecks,

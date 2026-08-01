@@ -1,5 +1,5 @@
 //
-//  RemoveAppBackupOperation.swift
+//  RemoveBackupDataOperation.swift
 //  AltStore
 //
 //  Created by Riley Testut on 5/13/20.

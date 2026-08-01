@@ -34,30 +34,24 @@ extension AppDelegate
     static let exportCertificateCallbackTemplateKey = "callback"
     
     static func dumpSideBackupLogsIfNeeded() {
-        guard let altstoreAppGroup = Bundle.main.altstoreAppGroup else {
-            debugLog("[AppDelegate] dumpSideBackupLogsIfNeeded: altstoreAppGroup is nil")
-            return
-        }
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: altstoreAppGroup) else {
-            debugLog("[AppDelegate] dumpSideBackupLogsIfNeeded: Failed to get container URL for \(altstoreAppGroup)")
-            return
-        }
-        let logFileURL = containerURL.appendingPathComponent("Logs", isDirectory: true).appendingPathComponent("SideBackup.log")
-        debugLog("[AppDelegate] Checking for SideBackup log at: \(logFileURL.path)")
-        if FileManager.default.fileExists(atPath: logFileURL.path) {
-            do {
-                let logContents = try String(contentsOf: logFileURL, encoding: .utf8)
-                if logContents.isEmpty {
-                    debugLog("[AppDelegate] SideBackup log file is empty.")
-                } else {
-                    debugLog("\n[SideBackup Logs]\n\n\(logContents.trimmingCharacters(in: .whitespacesAndNewlines))\n\n[SideBackup Logs End]\n\n")
+        for appGroup in Bundle.main.appGroups {
+            guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup) else { continue }
+            let logFileURL = containerURL.appendingPathComponent("Logs", isDirectory: true).appendingPathComponent("SideBackup.log")
+            debugLog("[AppDelegate] Checking for SideBackup log in group '\(appGroup)' at: \(logFileURL.path)")
+            if FileManager.default.fileExists(atPath: logFileURL.path) {
+                debugLog("[AppDelegate] Found SideBackup log file in group '\(appGroup)'.")
+                do {
+                    let logContents = try String(contentsOf: logFileURL, encoding: .utf8)
+                    if logContents.isEmpty {
+                        debugLog("[AppDelegate] SideBackup log file in group '\(appGroup)' is empty.")
+                    } else {
+                        debugLog("\n[SideBackup Logs (\(appGroup))]\n\n\(logContents.trimmingCharacters(in: .whitespacesAndNewlines))\n\n[SideBackup Logs End]\n\n")
+                    }
+                    try FileManager.default.removeItem(at: logFileURL)
+                } catch {
+                    debugLog("[AppDelegate] Failed to read or delete SideBackup log file in group '\(appGroup)': \(error)")
                 }
-                try FileManager.default.removeItem(at: logFileURL)
-            } catch {
-                debugLog("[AppDelegate] Failed to read or delete SideBackup log file: \(error)")
             }
-        } else {
-            debugLog("[AppDelegate] SideBackup log file does not exist on disk.")
         }
     }
 }
@@ -566,8 +560,9 @@ private extension AppDelegate {
             \n===================================================
             |                UNCAUGHT CRASH                   |
             ===================================================
-            Name: \(exception.name.rawValue)
-            Reason: \(exception.reason ?? "Unknown")
+              • Name: \(exception.name.rawValue)
+              • Reason: \(exception.reason ?? "Unknown")
+            
             Call Stack:
             \(stackTrace)
             ===================================================\n

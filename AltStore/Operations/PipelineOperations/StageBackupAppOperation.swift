@@ -1,5 +1,5 @@
 //
-//  InstallBackupAppOperation.swift
+//  StageBackupAppOperation.swift
 //  AltStore
 //
 //  Created by Magesh K on 30/07/26.
@@ -10,7 +10,7 @@ import Foundation
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class InstallBackupAppOperation: BasePipelineOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
+final class StageBackupAppOperation: BasePipelineOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
     let app: InstalledApp?
 
     init(app: InstalledApp?, context: InstallAppOperationContext) throws {
@@ -19,35 +19,47 @@ final class InstallBackupAppOperation: BasePipelineOperation<InstallAppOperation
     }
 
     override func execute(parentProgress: Progress?) async throws -> InstalledApp {
-        debugLog("[InstallBackupAppOperation] execute() started")
-        defer { debugLog("[InstallBackupAppOperation] execute() completed") }
+        debugLog("[StageBackupAppOperation] execute() started")
+        defer { debugLog("[StageBackupAppOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
         
         guard let app = self.app else {
-            throw OperationError.invalidParameters("InstallBackupAppOperation: target app is nil")
+            debugLog("[StageBackupAppOperation] Error: target app is nil")
+            throw OperationError.invalidParameters("StageBackupAppOperation: target app is nil")
         }
         
+        debugLog("[StageBackupAppOperation] Preparing backup app stage for '\(app.name)' (\(app.bundleIdentifier)), target bundleID: '\(context.targetBundleIdentifier)'")
+        
         guard ALTApplication(fileURL: app.fileURL) != nil else {
+            debugLog("[StageBackupAppOperation] Error: ALTApplication invalid/not found at \(app.fileURL.path)")
             throw OperationError.appNotFound(name: app.name)
         }
 
         self.setProgress(20)
         let temporaryDirectoryURL = context.temporaryDirectory.appendingPathComponent("SideBackup-" + UUID().uuidString)
+        debugLog("[StageBackupAppOperation] Creating temp directory at \(temporaryDirectoryURL.path)")
         try FileManager.default.createDirectory(at: temporaryDirectoryURL, withIntermediateDirectories: true, attributes: nil)
 
         guard let sidebackupFileURL = Bundle.main.url(forResource: "SideBackup", withExtension: "ipa") else {
+            debugLog("[StageBackupAppOperation] Error: SideBackup.ipa resource not found in main bundle")
             throw OperationError.appNotFound(name: "SideBackup")
         }
+        debugLog("[StageBackupAppOperation] Found SideBackup.ipa at \(sidebackupFileURL.path)")
 
         self.setProgress(40)
+        debugLog("[StageBackupAppOperation] Unzipping SideBackup.ipa...")
         let unzippedAppBundleURL = try FileManager.default.unzipAppBundle(at: sidebackupFileURL, toDirectory: temporaryDirectoryURL)
+        debugLog("[StageBackupAppOperation] Unzipped SideBackup app bundle to \(unzippedAppBundleURL.path)")
+        
         guard let unzippedAppBundle = Bundle(url: unzippedAppBundleURL) else {
+            debugLog("[StageBackupAppOperation] Error: Failed to instantiate Bundle at \(unzippedAppBundleURL.path)")
             throw OperationError.invalidApp
         }
 
         self.setProgress(70)
         if var infoDictionary = unzippedAppBundle.infoDictionary {
+            debugLog("[StageBackupAppOperation] Updating Info.plist: CFBundleDisplayName='\(app.name)', CFBundleIdentifier='\(context.targetBundleIdentifier)'")
             infoDictionary["CFBundleDisplayName"] = app.name
             infoDictionary[kCFBundleIdentifierKey as String] = context.targetBundleIdentifier
 
@@ -69,17 +81,21 @@ final class InstallBackupAppOperation: BasePipelineOperation<InstallAppOperation
                     try? iconData.write(to: iconFileURL, options: .atomic)
                     let bundleIcons = ["CFBundlePrimaryIcon": ["CFBundleIconFiles": [iconFileURL.lastPathComponent]]]
                     infoDictionary["CFBundleIcons"] = bundleIcons
+                    debugLog("[StageBackupAppOperation] Saved resized app icon to \(iconFileURL.path)")
                 }
             }
 
             try (infoDictionary as NSDictionary).write(to: unzippedAppBundle.infoPlistURL)
+            debugLog("[StageBackupAppOperation] Updated Info.plist written to \(unzippedAppBundle.infoPlistURL.path)")
         }
 
         self.setProgress(90)
         guard let backupApp = ALTApplication(fileURL: unzippedAppBundleURL) else {
+            debugLog("[StageBackupAppOperation] Error: Failed to create ALTApplication for staged backup app at \(unzippedAppBundleURL.path)")
             throw OperationError.invalidApp
         }
         context.app = backupApp
+        debugLog("[StageBackupAppOperation] Successfully set context.app to staged SideBackup app ('\(backupApp.bundleIdentifier)')")
         self.setProgress(100)
         return app
     }

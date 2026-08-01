@@ -1383,10 +1383,10 @@ private extension AppManager
                 }
                 return installedApp
                 
-            case .installBackupApp:
-                loggerType = InstallBackupAppOperation.self
+            case .stageBackupApp:
+                loggerType = StageBackupAppOperation.self
                 let installedApp = appOperation.app as? InstalledApp
-                let step = try InstallBackupAppOperation(app: installedApp, context: context)
+                let step = try StageBackupAppOperation(app: installedApp, context: context)
                 let resultApp = try await step.execute(parentProgress: progress)
                 context.installedApp = resultApp
                 result = resultApp
@@ -1400,14 +1400,14 @@ private extension AppManager
                 return nil
                 
             case .backupAppData:
-                loggerType = BackupAppOperation.self
-                let step = try BackupAppOperation(action: .backup, context: context)
+                loggerType = PerformBackupRestoreOperation.self
+                let step = try PerformBackupRestoreOperation(action: .backup, context: context)
                 result = try await step.execute(parentProgress: progress)
                 return nil
                 
             case .restoreAppData:
-                loggerType = BackupAppOperation.self
-                let step = try BackupAppOperation(action: .restore, context: context)
+                loggerType = PerformBackupRestoreOperation.self
+                let step = try PerformBackupRestoreOperation(action: .restore, context: context)
                 result = try await step.execute(parentProgress: progress)
                 return nil
                 
@@ -1497,7 +1497,7 @@ private extension AppManager
                 self.refreshProgress[bundleID] = progress
             }
             let operationName = String(describing: operation).components(separatedBy: "(").first ?? ""
-            debugLog("[AppManager] setProgress: \(String(describing: progress)) for operation: .\(operationName), totalUnitCount: \(progress?.totalUnitCount ?? 0)")
+            debugLog("[AppManager] setProgress: \(progress.map { "\($0)" } ?? "nil") for operation: .\(operationName), totalUnitCount: \(progress?.totalUnitCount ?? 0)")
         }
     }
 }

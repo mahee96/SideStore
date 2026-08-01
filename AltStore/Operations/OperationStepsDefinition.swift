@@ -70,7 +70,7 @@ struct PipelineDefinition {
     ]
 
     static let activate: [PipelineExecutionStep] = [
-        PipelineExecutionStep(.installBackupApp,                 5),
+        PipelineExecutionStep(.stageBackupApp,                 5),
         PipelineExecutionStep(.restoreAppData,                       10),
         PipelineExecutionStep(.stageApp,                         2),
         PipelineExecutionStep(.changeAppIcon,                     2),
@@ -90,20 +90,20 @@ struct PipelineDefinition {
     ]
 
     static let deactivate: [PipelineExecutionStep] = [
-        PipelineExecutionStep(.installBackupApp, 10),
+        PipelineExecutionStep(.stageBackupApp, 10),
         PipelineExecutionStep(.backupAppData,        60),
         PipelineExecutionStep(.removeApp,        30)
     ]
 
     static let backup: [PipelineExecutionStep] = [
-        PipelineExecutionStep(.installBackupApp,                 10),
+        PipelineExecutionStep(.stageBackupApp,                 10),
         PipelineExecutionStep(.fetchProvisioningProfilesInstall, 10),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,     5),
         PipelineExecutionStep(.resignApp,                        10),
         PipelineExecutionStep(.exportResignedApp,                5),
         PipelineExecutionStep(.sendApp,                          10),
         PipelineExecutionStep(.installApp,                       10),
-        PipelineExecutionStep(.backupAppData,                        30),
+        PipelineExecutionStep(.backupAppData,                    30),  // must run BEFORE installApp wipes the container
         PipelineExecutionStep(.stageApp,                         2),
         PipelineExecutionStep(.changeAppIcon,                     2),
         PipelineExecutionStep(.removeAppExtensions,              2),
@@ -116,7 +116,7 @@ struct PipelineDefinition {
     ]
 
     static let restore: [PipelineExecutionStep] = [
-        PipelineExecutionStep(.installBackupApp,                 5),
+        PipelineExecutionStep(.stageBackupApp,                 5),
         PipelineExecutionStep(.restoreAppData,                       10),
         PipelineExecutionStep(.stageApp,                         2),
         PipelineExecutionStep(.changeAppIcon,                     2),
