@@ -1469,6 +1469,30 @@ private extension MyAppsViewController
         self.present(documentPicker, animated: true, completion: nil)
     }
     
+    func deleteBackup(for installedApp: InstalledApp)
+    {
+        let alertController = UIAlertController(
+            title: String(format: NSLocalizedString("Delete Backup for “%@”?", comment: ""), installedApp.name),
+            message: NSLocalizedString("Are you sure you want to delete the backup for this app? This action cannot be undone.", comment: ""),
+            preferredStyle: .alert
+        )
+        alertController.addAction(UIAlertAction(title: UIAlertAction.cancel.title, style: UIAlertAction.cancel.style))
+        alertController.addAction(UIAlertAction(title: NSLocalizedString("Delete Backup", comment: ""), style: .destructive) { [weak self] _ in
+            guard let self = self else { return }
+            do
+            {
+                try FileManager.default.deleteBackup(for: installedApp)
+                self.collectionView.reloadData()
+            }
+            catch
+            {
+                debugLog("Failed to delete backup for \(installedApp.bundleIdentifier): \(error)")
+                ToastView(error: error, opensLog: true).show(in: self)
+            }
+        })
+        self.present(alertController, animated: true)
+    }
+    
     func showAppInfo(_ installedApp: InstalledApp)
     {
         let appInfoView = AppInfoView(installedApp: installedApp)
@@ -1876,6 +1900,10 @@ extension MyAppsViewController
             self.restorePreviousBackup(for: installedApp)
         }
         
+        let deleteBackupAction = UIAction(title: NSLocalizedString("Delete Backup", comment: ""), image: UIImage(systemName: "trash"), attributes: .destructive) { (action) in
+            self.deleteBackup(for: installedApp)
+        }
+        
         let chooseIconAction = UIAction(title: NSLocalizedString("Photos", comment: ""), image: UIImage(systemName: "photo")) { (action) in
             self.chooseIcon(for: installedApp)
         }
@@ -1895,6 +1923,65 @@ extension MyAppsViewController
         }
         
         let changeIconMenu = UIMenu(title: NSLocalizedString("Change Icon", comment: ""), image: UIImage(systemName: "photo"), children: changeIconActions)
+        
+        var backupSubmenuActions = [UIMenuElement]()
+        
+        if installedApp.isActive
+        {
+            backupSubmenuActions.append(backupAction)
+        }
+        else if let _ = UTTypeCopyDeclaration(installedApp.installedAppUTI as CFString)?.takeRetainedValue() as NSDictionary?, !UserDefaults.standard.isLegacyDeactivationSupported
+        {
+            // Allow backing up inactive apps if they are still installed,
+            // but on an iOS version that no longer supports legacy deactivation.
+            // This handles edge case where you can't install more apps until you
+            // delete some, but can't activate inactive apps again to back them up first.
+            backupSubmenuActions.append(backupAction)
+        }
+                
+        if let backupDirectoryURL = FileManager.default.backupDirectoryURL(for: installedApp)
+        {
+            var backupExists = false
+            var outError: NSError? = nil
+            
+            self.coordinator.coordinate(readingItemAt: backupDirectoryURL, options: [.withoutChanges], error: &outError) { (backupDirectoryURL) in
+
+                #if DEBUG && targetEnvironment(simulator)
+                backupExists = true
+                #else
+                backupExists = FileManager.default.fileExists(atPath: backupDirectoryURL.path)
+                #endif
+            }
+            
+            if backupExists
+            {
+                backupSubmenuActions.append(exportBackupAction)
+                
+                if installedApp.isActive
+                {
+                    backupSubmenuActions.append(restoreBackupAction)
+                }
+                
+                backupSubmenuActions.append(deleteBackupAction)
+            }
+            else if let error = outError
+            {
+                debugLog("Unable to check if backup exists: \(error)")
+            }
+        }
+        
+        if installedApp.isActive
+        {
+            // import backup into shared backups dir is allowed
+            backupSubmenuActions.append(importBackupAction)
+        }
+        
+        // have an option to restore the n-1 backup
+        if FileManager.default.fileExists(atPath: getPreviousBackupURL(installedApp).path){
+            backupSubmenuActions.append(restorePreviousBackupAction)
+        }
+        
+        let backupMenu = UIMenu(title: NSLocalizedString("Backup", comment: ""), image: UIImage(systemName: "archivebox"), children: backupSubmenuActions)
         
         if installedApp.resignedBundleIdentifier == Bundle.main.bundleIdentifier
         {
@@ -1927,46 +2014,9 @@ extension MyAppsViewController
             actions.append(changeIconMenu)
             #endif
             
-            if installedApp.isActive
+            if !backupSubmenuActions.isEmpty
             {
-                actions.append(backupAction)
-            }
-            else if let _ = UTTypeCopyDeclaration(installedApp.installedAppUTI as CFString)?.takeRetainedValue() as NSDictionary?, !UserDefaults.standard.isLegacyDeactivationSupported
-            {
-                // Allow backing up inactive apps if they are still installed,
-                // but on an iOS version that no longer supports legacy deactivation.
-                // This handles edge case where you can't install more apps until you
-                // delete some, but can't activate inactive apps again to back them up first.
-                actions.append(backupAction)
-            }
-                    
-            if let backupDirectoryURL = FileManager.default.backupDirectoryURL(for: installedApp)
-            {
-                var backupExists = false
-                var outError: NSError? = nil
-                
-                self.coordinator.coordinate(readingItemAt: backupDirectoryURL, options: [.withoutChanges], error: &outError) { (backupDirectoryURL) in
-
-                    #if DEBUG && targetEnvironment(simulator)
-                    backupExists = true
-                    #else
-                    backupExists = FileManager.default.fileExists(atPath: backupDirectoryURL.path)
-                    #endif
-                }
-                
-                if backupExists
-                {
-                    actions.append(exportBackupAction)
-                    
-                    if installedApp.isActive
-                    {
-                        actions.append(restoreBackupAction)
-                    }
-                }
-                else if let error = outError
-                {
-                    debugLog("Unable to check if backup exists: \(error)")
-                }
+                actions.append(backupMenu)
             }
             
             if installedApp.isActive
@@ -1976,15 +2026,7 @@ extension MyAppsViewController
                     actions.append(deactivateAction)
                     actions.append(deleteAppAction)
                 }
-                // import backup into shared backups dir is allowed
-                actions.append(importBackupAction)
             }
-            
-            // have an option to restore the n-1 backup
-            if FileManager.default.fileExists(atPath: getPreviousBackupURL(installedApp).path){
-                actions.append(restorePreviousBackupAction)
-            }
-            
             
             #if DEBUG && targetEnvironment(simulator)
             if installedApp.bundleIdentifier != StoreApp.altstoreAppID
@@ -2018,11 +2060,7 @@ extension MyAppsViewController
             activateAction,
             jitAction,
             changeIconMenu,
-            backupAction,
-            exportBackupAction,
-            importBackupAction,
-            restoreBackupAction,
-            restorePreviousBackupAction,
+            backupMenu,
             infoAction,
             deactivateAction,
             deleteAppAction,
@@ -2044,8 +2082,7 @@ extension MyAppsViewController
                 openMenu,
                 deactivateAction,
                 removeAction,
-                backupAction,
-                exportBackupAction,
+                backupMenu,
                 infoAction
             ]
             
