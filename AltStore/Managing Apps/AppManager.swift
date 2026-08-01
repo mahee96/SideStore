@@ -1107,13 +1107,6 @@ private extension AppManager
                            operation.bundleIdentifier.contains(ALTApplication.altstoreBundleID) ||
                            operation.bundleIdentifier == StoreApp.altstoreAppID
         
-        if isSideStore && group.context.isSideStoreResignDismissed
-        {
-            debugLog("[AppManager] performOperation: SideStore resign dismissed, cancelling app: \(operation.bundleIdentifier)")
-            group.set(.failure(OperationError.cancelled), forAppWithBundleIdentifier: operation.bundleIdentifier)
-            return
-        }
-        
         do {
             let result = try await self.performPipeline(for: operation, group: group)
             // persist the result
