@@ -60,15 +60,15 @@ struct PipelineDefinition {
     ]
 
     static let refresh: [PipelineExecutionStep] = [
-        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 55),
-        PipelineExecutionStep(.verifyCertificate,                5),
-        PipelineExecutionStep(.refreshApp,                       40)
+        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 50),
+        PipelineExecutionStep(.verifyCertificate,               10),
+        PipelineExecutionStep(.refreshApp,                      40)
     ]
 
     static let activateLegacy: [PipelineExecutionStep] = [
-        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 55),
-        PipelineExecutionStep(.verifyCertificate,                5),
-        PipelineExecutionStep(.refreshApp,                       40)
+        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 50),
+        PipelineExecutionStep(.verifyCertificate,               10),
+        PipelineExecutionStep(.refreshApp,                      40)
     ]
 
     static let activate: [PipelineExecutionStep] = [
@@ -113,9 +113,9 @@ struct PipelineDefinition {
     ]
 
     static let restoreLegacy: [PipelineExecutionStep] = [
-        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 55),
-        PipelineExecutionStep(.verifyCertificate,                5),
-        PipelineExecutionStep(.refreshApp,                       40)
+        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 50),
+        PipelineExecutionStep(.verifyCertificate,               10),
+        PipelineExecutionStep(.refreshApp,                      40)
     ]
 
     static let restore: [PipelineExecutionStep] = [

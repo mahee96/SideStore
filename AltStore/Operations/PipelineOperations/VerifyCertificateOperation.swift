@@ -9,11 +9,50 @@
 @preconcurrency import UIKit
 import Foundation
 import CoreData
+import Security
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
 final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContext, Void>, @unchecked Sendable {
     
+    private func checkRevocationWithOCSP(certificate: ALTCertificate) -> Bool {
+        guard let secCert = SecCertificateCreateWithData(nil, certificate.data as CFData) else {
+            return false
+        }
+        
+        let policy = SecPolicyCreateBasicX509()
+        var optionalTrust: SecTrust?
+        let status = SecTrustCreateWithCertificates(secCert, policy, &optionalTrust)
+        guard status == errSecSuccess, let trust = optionalTrust else {
+            return false
+        }
+        
+        SecTrustSetPolicies(trust, SecPolicyCreateRevocation(kSecRevocationOCSPMethod | kSecRevocationCRLMethod))
+        
+        var error: CFError?
+        let isValid = SecTrustEvaluateWithError(trust, &error)
+        
+        if !isValid, let error = error as Error? as NSError? {
+            if error.code == -67820 || error.domain == (kSecErrorDomain as String) {
+                return true
+            }
+        }
+        
+        return false
+    }
+    
+    private func updateAppState(bundleID: String, isRevoked: Bool, isCrossSigned: Bool) async {
+        await MainActor.run {
+            let predicate = NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), bundleID)
+            if let app = InstalledApp.first(satisfying: predicate, in: DatabaseManager.shared.viewContext) {
+                app.isRevoked = isRevoked
+                app.isCrossSigned = isCrossSigned
+                try? DatabaseManager.shared.viewContext.save()
+                DatabaseManager.shared.viewContext.processPendingChanges()
+            }
+        }
+    }
+
     override func execute(parentProgress: Progress?) async throws {
         debugLog("[VerifyCertificateOperation] execute() started")
         defer { debugLog("[VerifyCertificateOperation] execute() completed") }
@@ -37,7 +76,7 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
             self.context.authenticatedContext.activeCertificates = activeCertificates
         }
         
-        self.setProgress(40)
+        self.setProgress(30)
         
         let bundleID = self.context.targetBundleIdentifier
         let activeKeychainCert = Keychain.shared.certificate ?? self.context.certificate
@@ -52,6 +91,8 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
             return (bundleID, nil)
         }
         
+        self.setProgress(50)
+        
         let activeSerials = Set(activeCertificates.compactMap { $0.serialNumber })
         debugLog("""
         [VerifyCertificateOperation] Verifying App: '\(appName)' (\(bundleID))
@@ -64,79 +105,37 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
         let targetSerial = installedAppSerial ?? activeKeychainSerial
         
         if let serial = targetSerial, !serial.isEmpty {
-            // Check 1: Was the certificate used to install this app REVOKED on Apple Developer Portal?
-            if !activeSerials.contains(serial) {
-                debugLog("[VerifyCertificateOperation] Certificate used for '\(appName)' (serial: \(serial)) was REVOKED on Apple Developer Portal!")
+            if activeSerials.contains(serial) {
+                // Tier 1: Confirmed ACTIVE on logged-in Developer Portal!
+                let isCrossSigned = (activeKeychainSerial != nil && !activeKeychainSerial!.isEmpty && serial != activeKeychainSerial)
+                debugLog("[VerifyCertificateOperation] Certificate serial '\(serial)' is ACTIVE on Apple Developer Portal. (isCrossSigned: \(isCrossSigned))")
                 
-                await MainActor.run {
-                    let predicate = NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), bundleID)
-                    if let app = InstalledApp.first(satisfying: predicate, in: DatabaseManager.shared.viewContext) {
-                        app.isRevoked = true
-                        app.isCrossSigned = false
-                        try? DatabaseManager.shared.viewContext.save()
-                        DatabaseManager.shared.viewContext.processPendingChanges()
-                    }
+                await self.updateAppState(bundleID: bundleID, isRevoked: false, isCrossSigned: isCrossSigned)
+                self.setProgress(90)
+            } else {
+                // Tier 2: Not in logged-in portal list (e.g. 3rd-party / borrowed cert or revoked cert).
+                // Query Apple OCSP responder (ocsp.apple.com) directly!
+                self.setProgress(70)
+                debugLog("[VerifyCertificateOperation] Certificate serial '\(serial)' NOT found in logged-in portal list. Contacting Apple OCSP responder (ocsp.apple.com)...")
+                
+                let certToTest = (installedAppSerial == Keychain.shared.certificate?.serialNumber) ? Keychain.shared.certificate : self.context.certificate
+                var isConfirmedRevoked = false
+                
+                if let cert = certToTest {
+                    isConfirmedRevoked = checkRevocationWithOCSP(certificate: cert)
                 }
                 
-                throw OperationError.certificateRevoked(appName: appName)
-            }
-            
-            // Check 2: Does the certificate used to install this app DIFFER from the current active signing certificate?
-            if let currentSerial = activeKeychainSerial, !currentSerial.isEmpty, serial != currentSerial {
-                debugLog("[VerifyCertificateOperation] Certificate used for '\(appName)' (serial: \(serial)) DIFFERS from current active certificate (serial: \(currentSerial)).")
-                
-                await MainActor.run {
-                    let predicate = NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), bundleID)
-                    if let app = InstalledApp.first(satisfying: predicate, in: DatabaseManager.shared.viewContext) {
-                        app.isRevoked = false
-                        app.isCrossSigned = true
-                        try? DatabaseManager.shared.viewContext.save()
-                        DatabaseManager.shared.viewContext.processPendingChanges()
-                    }
-                }
-                
-                throw OperationError.certificateChanged(appName: appName)
-            }
-        }
-        
-        self.setProgress(80)
-        
-        // 3. Verify newly fetched provisioning profile certificates if present
-        if let profiles = self.context.provisioningProfiles {
-            for profile in profiles.values {
-                for cert in profile.certificates {
-                    let serial = cert.serialNumber
-                    if !serial.isEmpty && !activeSerials.contains(serial) {
-                        debugLog("[VerifyCertificateOperation] Provisioning profile certificate for '\(appName)' (serial: \(serial)) was REVOKED on Apple Developer Portal!")
-                        
-                        await MainActor.run {
-                            let predicate = NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), bundleID)
-                            if let app = InstalledApp.first(satisfying: predicate, in: DatabaseManager.shared.viewContext) {
-                                app.isRevoked = true
-                                app.isCrossSigned = false
-                                try? DatabaseManager.shared.viewContext.save()
-                                DatabaseManager.shared.viewContext.processPendingChanges()
-                            }
-                        }
-                        
-                        throw OperationError.certificateRevoked(appName: appName)
-                    }
+                if isConfirmedRevoked {
+                    debugLog("[VerifyCertificateOperation] Apple OCSP confirmed certificate serial '\(serial)' is REVOKED!")
+                    await self.updateAppState(bundleID: bundleID, isRevoked: true, isCrossSigned: false)
+                    throw OperationError.certificateRevoked(appName: appName)
+                } else {
+                    debugLog("[VerifyCertificateOperation] Apple OCSP check for serial '\(serial)' completed (Valid 3rd-party / borrowed cert). Marking as Cross-Signed.")
+                    await self.updateAppState(bundleID: bundleID, isRevoked: false, isCrossSigned: true)
                 }
             }
         }
         
-        // Success case: clear flags
-        await MainActor.run {
-            let predicate = NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), bundleID)
-            if let app = InstalledApp.first(satisfying: predicate, in: DatabaseManager.shared.viewContext) {
-                app.isRevoked = false
-                app.isCrossSigned = false
-                try? DatabaseManager.shared.viewContext.save()
-                DatabaseManager.shared.viewContext.processPendingChanges()
-            }
-        }
-        
-        debugLog("[VerifyCertificateOperation] Certificate verification PASSED for '\(appName)' (serial: \(installedAppSerial ?? "nil")).")
         self.setProgress(100)
     }
 }
