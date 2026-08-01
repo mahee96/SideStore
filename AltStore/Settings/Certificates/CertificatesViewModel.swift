@@ -414,11 +414,14 @@ class CertificatesViewModel: ObservableObject {
     }
     
     func createCertificate(machineName: String, presentingViewController: UIViewController?) {
-        guard let team = self.team, let session = self.session else { self.errorMessage = "Not authenticated"; return }
         self.isLoading = true; self.errorMessage = nil
         Task { @MainActor in
             defer { self.isLoading = false }
             do {
+                let (team, session) = try await DeveloperPortalService.shared.authenticate(presentingViewController: presentingViewController)
+                self.team    = team
+                self.session = session
+                
                 let newCert = try await DeveloperPortalService.shared.createCertificate(machineName: machineName, team: team, session: session)
                 guard let privateKey = newCert.privateKey else { self.errorMessage = "Missing private key from newly created certificate."; return }
                 let remoteCerts = try await DeveloperPortalService.shared.fetchCertificates(team: team, session: session)
@@ -427,7 +430,7 @@ class CertificatesViewModel: ObservableObject {
                     self.saveLocalCertificate(certificate)
                     self.alertMessage = "Certificate created successfully."
                     self.showAlert    = true
-                    self.loadCertificates(presentingViewController: nil)
+                    self.loadCertificates(presentingViewController: presentingViewController)
                 }
             } catch {
                 if !(error is CancellationError) { self.errorMessage = error.localizedDescription }
@@ -435,12 +438,15 @@ class CertificatesViewModel: ObservableObject {
         }
     }
     
-    func revokeCertificate(_ certificate: ALTCertificate, deleteLocal: Bool = true) {
-        guard let team = self.team, let session = self.session else { self.errorMessage = "Not authenticated"; return }
+    func revokeCertificate(_ certificate: ALTCertificate, deleteLocal: Bool = true, presentingViewController: UIViewController? = nil) {
         self.isLoading = true; self.errorMessage = nil
         Task { @MainActor in
             defer { self.isLoading = false }
             do {
+                let (team, session) = try await DeveloperPortalService.shared.authenticate(presentingViewController: presentingViewController)
+                self.team    = team
+                self.session = session
+                
                 let success = try await DeveloperPortalService.shared.revokeCertificate(certificate, team: team, session: session)
                 if success {
                     if deleteLocal {

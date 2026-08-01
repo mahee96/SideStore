@@ -597,13 +597,21 @@ extension AppManager
         }
     }
     
-    func syncAppIDs(completionHandler: @escaping (Result<Void, Error>) -> Void)
+    func syncAppIDs(presentingViewController: UIViewController? = nil, completionHandler: @escaping (Result<Void, Error>) -> Void)
     {
         Task.detached {
             do {
                 let managedObjectContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
-                let context = AuthenticatedOperationContext(dbBackgroundContext: managedObjectContext)
-                let authOperation = try AuthenticationOperation(context: context, presentingViewController: nil)
+                let context = AuthenticatedOperationContext(
+                    presentingViewController: presentingViewController,
+                    dbBackgroundContext: managedObjectContext
+                )
+                let authOperation = try AuthenticationOperation(
+                    context: context,
+                    presentingViewController: presentingViewController,
+                    skipDeviceRegistration: true,
+                    skipCertificateProvisioning: true
+                )
                 try await authOperation.execute()
                 
                 let syncAppIDsOperation = try SyncAppIDsOperation(context: context)
