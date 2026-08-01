@@ -439,6 +439,11 @@ class CertificatesViewModel: ObservableObject {
     }
     
     func revokeCertificate(_ certificate: ALTCertificate, keepLocal: Bool = false, presentingViewController: UIViewController? = nil) {
+        guard self.remoteSerials.contains(certificate.serialNumber) else {
+            self.errorMessage = "This certificate is already revoked on Apple's servers."
+            return
+        }
+        
         self.isLoading = true; self.errorMessage = nil
         Task { @MainActor in
             defer { self.isLoading = false }
@@ -449,6 +454,7 @@ class CertificatesViewModel: ObservableObject {
                 
                 let success = try await DeveloperPortalService.shared.revokeCertificate(certificate, team: team, session: session)
                 if success {
+                    self.remoteSerials.remove(certificate.serialNumber)
                     if !keepLocal {
                         self.deleteLocalCertificate(serialNumber: certificate.serialNumber)
                         self.certificates.removeAll { $0.serialNumber == certificate.serialNumber }
@@ -462,6 +468,7 @@ class CertificatesViewModel: ObservableObject {
                         self.alertMessage = "Certificate revoked on Apple's servers. Local copy preserved."
                     }
                     self.showAlert    = true
+                    self.loadCertificates(presentingViewController: presentingViewController)
                 } else {
                     self.errorMessage = "Failed to revoke certificate."
                 }
