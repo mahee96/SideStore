@@ -9,51 +9,89 @@
 import Foundation
 
 class SignOutAlertViewController: UIViewController {
-    let checkboxButton = UIButton(type: .system)
+    let certCheckboxButton = UIButton(type: .system)
+    let anisetteCheckboxButton = UIButton(type: .system)
+    
     var isChecked: Bool = true {
         didSet {
-            let configuration = UIImage.SymbolConfiguration(pointSize: 16, weight: .regular)
-            let imageName = isChecked ? "checkmark.square.fill" : "square"
-            let image = UIImage(systemName: imageName, withConfiguration: configuration)
-            checkboxButton.setImage(image, for: .normal)
+            updateButtonImage(certCheckboxButton, isChecked: isChecked)
         }
+    }
+    
+    var isKeepAnisetteChecked: Bool = true {
+        didSet {
+            updateButtonImage(anisetteCheckboxButton, isChecked: isKeepAnisetteChecked)
+        }
+    }
+    
+    private func updateButtonImage(_ button: UIButton, isChecked: Bool) {
+        let configuration = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
+        let imageName = isChecked ? "checkmark.circle.fill" : "circle"
+        let image = UIImage(systemName: imageName, withConfiguration: configuration)
+        button.setImage(image, for: .normal)
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         isChecked = UserDefaults.standard.keepSigningCertsAfterLogout
+        isKeepAnisetteChecked = UserDefaults.standard.keepAnisetteDataAfterLogout
         
-        checkboxButton.tintColor = .systemBlue
-        checkboxButton.addTarget(self, action: #selector(toggleCheckbox), for: .touchUpInside)
+        certCheckboxButton.tintColor = .systemBlue
+        certCheckboxButton.addTarget(self, action: #selector(toggleCertCheckbox), for: .touchUpInside)
         
-        let label = UILabel()
-        label.text = NSLocalizedString("Keep signing certificate", comment: "")
-        label.font = .systemFont(ofSize: 15)
-        label.isUserInteractionEnabled = true
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(toggleCheckbox))
-        label.addGestureRecognizer(tapGesture)
+        let certLabel = UILabel()
+        certLabel.text = NSLocalizedString("Keep signing certificate", comment: "")
+        certLabel.font = .systemFont(ofSize: 14)
+        certLabel.isUserInteractionEnabled = true
+        let certTap = UITapGestureRecognizer(target: self, action: #selector(toggleCertCheckbox))
+        certLabel.addGestureRecognizer(certTap)
         
-        let stackView = UIStackView(arrangedSubviews: [checkboxButton, label])
-        stackView.axis = .horizontal
-        stackView.spacing = 8
-        stackView.alignment = .center
-        stackView.translatesAutoresizingMaskIntoConstraints = false
+        let certStack = UIStackView(arrangedSubviews: [certCheckboxButton, certLabel])
+        certStack.axis = .horizontal
+        certStack.spacing = 8
+        certStack.alignment = .center
         
-        view.addSubview(stackView)
+        anisetteCheckboxButton.tintColor = .systemBlue
+        anisetteCheckboxButton.addTarget(self, action: #selector(toggleAnisetteCheckbox), for: .touchUpInside)
+        
+        let anisetteLabel = UILabel()
+        anisetteLabel.text = NSLocalizedString("Keep Anisette data", comment: "")
+        anisetteLabel.font = .systemFont(ofSize: 14)
+        anisetteLabel.isUserInteractionEnabled = true
+        let anisetteTap = UITapGestureRecognizer(target: self, action: #selector(toggleAnisetteCheckbox))
+        anisetteLabel.addGestureRecognizer(anisetteTap)
+        
+        let anisetteStack = UIStackView(arrangedSubviews: [anisetteCheckboxButton, anisetteLabel])
+        anisetteStack.axis = .horizontal
+        anisetteStack.spacing = 8
+        anisetteStack.alignment = .center
+        
+        let mainStackView = UIStackView(arrangedSubviews: [certStack, anisetteStack])
+        mainStackView.axis = .vertical
+        mainStackView.spacing = 8
+        mainStackView.alignment = .leading
+        mainStackView.translatesAutoresizingMaskIntoConstraints = false
+        
+        view.addSubview(mainStackView)
         
         NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: view.topAnchor, constant: 4),
-            stackView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -4),
-            stackView.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+            mainStackView.topAnchor.constraint(equalTo: view.topAnchor, constant: 4),
+            mainStackView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -4),
+            mainStackView.centerXAnchor.constraint(equalTo: view.centerXAnchor)
         ])
         
-        self.preferredContentSize = CGSize(width: 270, height: 40)
+        self.preferredContentSize = CGSize(width: 270, height: 68)
     }
     
-    @objc func toggleCheckbox() {
+    @objc func toggleCertCheckbox() {
         isChecked.toggle()
         UserDefaults.standard.keepSigningCertsAfterLogout = isChecked
+    }
+    
+    @objc func toggleAnisetteCheckbox() {
+        isKeepAnisetteChecked.toggle()
+        UserDefaults.standard.keepAnisetteDataAfterLogout = isKeepAnisetteChecked
     }
 }
 

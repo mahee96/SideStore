@@ -123,12 +123,15 @@ public class Keychain
         }
     }
     
-    public func reset(keepCertificate: Bool = false)
+    public func reset(keepCertificate: Bool = false, keepAnisetteData: Bool = true)
     {
+        debugLog("[Keychain] Resetting Keychain items (keepCertificate: \(keepCertificate), keepAnisetteData: \(keepAnisetteData))...")
+        
         self.appleIDEmailAddress = nil
         self.appleIDPassword = nil
         self.appleIDAdsid = nil
         self.appleIDXcodeToken = nil
+        debugLog("[Keychain] Cleared Apple ID credentials & tokens (email, password, adsid, xcodeToken).")
         
         if !keepCertificate {
             // Legacy
@@ -137,10 +140,21 @@ public class Keychain
 
             self.signingCertificate = nil
             self.signingCertificatePassword = nil
+            debugLog("[Keychain] Cleared signing certificate & private key.")
+        } else {
+            debugLog("[Keychain] Preserved signing certificate.")
+        }
+        
+        if !keepAnisetteData {
+            self.adiPb = nil
+            debugLog("[Keychain] Cleared Anisette ADI data (adiPb).")
+        } else {
+            debugLog("[Keychain] Preserved Anisette ADI data (adiPb).")
         }
         
         self.certificate = nil
         self.session = nil
         self.team = nil
+        debugLog("[Keychain] Cleared in-memory session, certificate, and team instances.")
     }
 }

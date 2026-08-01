@@ -730,7 +730,8 @@ private extension SettingsViewController
         
         let signOutAction = UIAlertAction(title: NSLocalizedString("Sign Out", comment: ""), style: .destructive) { _ in
             let keepCert = contentVC.isChecked
-            DatabaseManager.shared.signOut(keepCertificate: keepCert) { (error) in
+            let keepAnisette = contentVC.isKeepAnisetteChecked
+            DatabaseManager.shared.signOut(keepCertificate: keepCert, keepAnisetteData: keepAnisette) { (error) in
                 DispatchQueue.main.async {
                     if let error = error
                     {

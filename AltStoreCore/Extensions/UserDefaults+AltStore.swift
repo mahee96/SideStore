@@ -135,6 +135,10 @@ public extension UserDefaults
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
     }
+    @objc var keepAnisetteDataAfterLogout: Bool {
+        get { self.bool(forKey: #function) }
+        set { self.set(newValue, forKey: #function) }
+    }
 
     @objc var isAnisetteOfflineMode: Bool {
         get { self.bool(forKey: #function) }
@@ -313,6 +317,7 @@ public extension UserDefaults
             #keyPath(UserDefaults._preferredAppSorting): preferredAppSorting.rawValue,
             #keyPath(UserDefaults.betaUdpatesTrack): defaultBetaUpdatesTrack,
             #keyPath(UserDefaults.keepSigningCertsAfterLogout): true,
+            #keyPath(UserDefaults.keepAnisetteDataAfterLogout): true,
             #keyPath(UserDefaults.isAnisetteOfflineMode): false,
             #keyPath(UserDefaults.disableAnisetteRotation): false,
         ] as [String: Any]
