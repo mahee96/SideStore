@@ -141,7 +141,7 @@ final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
             debugLog("[LaunchViewController] Successfully copied and saved pairing file to: \(documentsPath.path)")
             UserDefaults.standard.isPairingReset = false
             
-            Task {
+            Task.detached {
                 do {
                     try await AppBootManager.shared.startMinimuxer(pairingFile: pairingString)
                 } catch {

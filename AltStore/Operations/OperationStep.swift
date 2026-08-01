@@ -11,54 +11,51 @@ import Foundation
 protocol OperationStep: Hashable {}
 
 enum PipelineStep: OperationStep {
-    case backupApp
+    case backupAppData
     case cacheApp
     case cleanStagedApp
     case deactivateApp
     case downloadApp
     case enableJIT
     case exportResignedApp
-    case fetchAnisetteData
     case fetchProvisioningProfilesInstall
     case fetchProvisioningProfilesRefresh
     case installApp
     case installBackupApp
-    case patchAppIcon
+    case changeAppIcon
     case prepareAppExtensionBundleIDs
     case preflightChecks
     case refreshApp
     case removeApp
-    case removeAppBackup
+    case removeBackupData
     case removeAppExtensions
     case resignApp
-    case restoreApp
+    case restoreAppData
     case sendApp
     case stageApp
     case userCustomization
     case verifyApp
 
     private static let stepMap: [ObjectIdentifier: PipelineStep] = [
-        ObjectIdentifier(BackupAppOperation.self):                        .backupApp,
+        ObjectIdentifier(BackupAppOperation.self):                        .backupAppData,
         ObjectIdentifier(CacheAppOperation.self):                         .cacheApp,
         ObjectIdentifier(CleanStagedAppOperation.self):                   .cleanStagedApp,
         ObjectIdentifier(DeactivateAppOperation.self):                    .deactivateApp,
         ObjectIdentifier(DownloadAppOperation.self):                      .downloadApp,
         ObjectIdentifier(EnableJITOperation.self):                        .enableJIT,
         ObjectIdentifier(ExportResignedAppOperation.self):                .exportResignedApp,
-        ObjectIdentifier(FetchAnisetteDataOperation.self):                .fetchAnisetteData,
         ObjectIdentifier(FetchProvisioningProfilesInstallOperation.self): .fetchProvisioningProfilesInstall,
         ObjectIdentifier(FetchProvisioningProfilesRefreshOperation.self): .fetchProvisioningProfilesRefresh,
         ObjectIdentifier(InstallAppOperation.self):                       .installApp,
         ObjectIdentifier(InstallBackupAppOperation.self):                 .installBackupApp,
-        ObjectIdentifier(PatchAppIconOperation.self):                     .patchAppIcon,
+        ObjectIdentifier(ChangeAppIconOperation.self):                    .changeAppIcon,
         ObjectIdentifier(PrepareAppExtensionBundleIDsOperation.self):     .prepareAppExtensionBundleIDs,
         ObjectIdentifier(PreflightChecksOperation.self):                  .preflightChecks,
         ObjectIdentifier(RefreshAppOperation.self):                       .refreshApp,
-        ObjectIdentifier(RemoveAppBackupOperation.self):                  .removeAppBackup,
+        ObjectIdentifier(RemoveBackupDataOperation.self):                 .removeBackupData,
         ObjectIdentifier(RemoveAppExtensionsOperation.self):              .removeAppExtensions,
         ObjectIdentifier(RemoveAppOperation.self):                        .removeApp,
         ObjectIdentifier(ResignAppOperation.self):                        .resignApp,
-//        ObjectIdentifier(RestoreAppOperation.self):                       .restoreApp,
         ObjectIdentifier(SendAppOperation.self):                          .sendApp,
         ObjectIdentifier(StageAppOperation.self):                         .stageApp,
         ObjectIdentifier(UserCustomizationOperation.self):                .userCustomization,

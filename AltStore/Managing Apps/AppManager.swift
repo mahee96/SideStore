@@ -1030,7 +1030,6 @@ private extension AppManager
             {
                 let progress = Progress.discreteProgress(totalUnitCount: 100)
                 self.set(progress, for: operation)
-                
                 group.progress.addChild(progress, withPendingUnitCount: 100 / Int64(operations.count))
             }
             
@@ -1130,13 +1129,6 @@ private extension AppManager
             // request update view context's in-mem coredata caches (coz we worked so far on bg context)
             DatabaseManager.shared.viewContext.performAndWait {
                 DatabaseManager.shared.viewContext.processPendingChanges()
-                if let managedObject = operation.app as? NSManagedObject {
-                    if managedObject.managedObjectContext === DatabaseManager.shared.viewContext {
-                        DatabaseManager.shared.viewContext.refresh(managedObject, mergeChanges: true)
-                    } else if let viewObject = try? DatabaseManager.shared.viewContext.existingObject(with: managedObject.objectID) {
-                        DatabaseManager.shared.viewContext.refresh(viewObject, mergeChanges: true)
-                    }
-                }
             }
             
             group.set(.success(result), forAppWithBundleIdentifier: result.bundleIdentifier)
@@ -1329,12 +1321,7 @@ private extension AppManager
                 let step = try RemoveAppExtensionsOperation(context: context, localAppExtensions: localAppExtensions)
                 result = try await step.execute(parentProgress: progress)
                 return nil
-                
-            case .fetchAnisetteData:
-                loggerType = FetchAnisetteDataOperation.self
-                let step = try FetchAnisetteDataOperation(context: group.context)
-                result = try await step.execute(parentProgress: progress)
-                return nil
+
                 
             case .fetchProvisioningProfilesInstall:
                 loggerType = FetchProvisioningProfilesInstallOperation.self
@@ -1359,9 +1346,9 @@ private extension AppManager
                 try await step.execute(parentProgress: progress)
                 return nil
                 
-            case .patchAppIcon:
-                loggerType = PatchAppIconOperation.self
-                let step = try PatchAppIconOperation(context: context)
+            case .changeAppIcon:
+                loggerType = ChangeAppIconOperation.self
+                let step = try ChangeAppIconOperation(context: context)
                 result = try await step.execute(parentProgress: progress)
                 return nil
                 
@@ -1412,21 +1399,21 @@ private extension AppManager
                 result = installedApp
                 return nil
                 
-            case .backupApp:
+            case .backupAppData:
                 loggerType = BackupAppOperation.self
                 let step = try BackupAppOperation(action: .backup, context: context)
                 result = try await step.execute(parentProgress: progress)
                 return nil
                 
-            case .restoreApp:
+            case .restoreAppData:
                 loggerType = BackupAppOperation.self
                 let step = try BackupAppOperation(action: .restore, context: context)
                 result = try await step.execute(parentProgress: progress)
                 return nil
                 
-            case .removeAppBackup:
-                loggerType = RemoveAppBackupOperation.self
-                let step = try RemoveAppBackupOperation(context: context)
+            case .removeBackupData:
+                loggerType = RemoveBackupDataOperation.self
+                let step = try RemoveBackupDataOperation(context: context)
                 result = try await step.execute(parentProgress: progress)
                 return nil
                 
@@ -1468,10 +1455,10 @@ private extension AppManager
         if UserDefaults.standard.isVerboseOperationsLoggingEnabled &&
            OperationsLoggingControl.isLoggingEnabled(for: loggerType.self)
         {
-            let resultStatus = String(describing: result).prefix("success".count).uppercased()
+            let resultStatus = (result is Error) ? "FAILURE" : "SUCCESS"
             debugLog(
             """
-            [AppManager] ====> OPERATION: `.\(operation)` completed with: \(resultStatus) <====
+            [AppManager] ====> OPERATION: .\(operation) completed with: \(resultStatus) <====
                 • Component: '\(loggerType)'
                 • Result: \(result ?? "nil")
             """
@@ -1509,7 +1496,8 @@ private extension AppManager
             case .refresh, .activate, .deactivate, .deleteApp, .backup, .restore, .resign, .remove, .enableJIT: 
                 self.refreshProgress[bundleID] = progress
             }
-            debugLog("[AppManager] setProgress: \(String(describing: progress)) for operation: \(operation), totalUnitCount: \(progress?.totalUnitCount ?? 0)")
+            let operationName = String(describing: operation).components(separatedBy: "(").first ?? ""
+            debugLog("[AppManager] setProgress: \(String(describing: progress)) for operation: .\(operationName), totalUnitCount: \(progress?.totalUnitCount ?? 0)")
         }
     }
 }

@@ -23,6 +23,7 @@ final class RefreshAppOperation: BasePipelineOperation<InstallAppOperationContex
         }
         
         guard let app = self.context.app else { throw OperationError(.appNotFound(name: nil)) }
+        self.setProgress(10)
         for p in profiles {
             do {
                 try await installProvisioningProfiles(p.value.data)
@@ -31,6 +32,7 @@ final class RefreshAppOperation: BasePipelineOperation<InstallAppOperationContex
             }
         }
         
+        self.setProgress(80)
         guard let dbContext = self.context.dbBackgroundContext else {
             throw OperationError.invalidParameters("RefreshAppOperation: context.dbBackgroundContext is nil")
         }
@@ -39,6 +41,7 @@ final class RefreshAppOperation: BasePipelineOperation<InstallAppOperationContex
             try self.updateInstalledApp(for: app, profiles: profiles, in: dbContext)
         }
         
+        self.setProgress(100)
         return installedApp
     }
     

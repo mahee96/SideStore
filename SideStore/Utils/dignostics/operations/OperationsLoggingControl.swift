@@ -10,11 +10,11 @@ import Foundation
 
 class OperationsLoggingControl {
 
-    func updateDatabase(for operation: any OperationLogging.Type, value: Bool) {
-        Self.updateDatabase(for: operation, value: value)
+    func setLoggingEnabled(for operation: any OperationLogging.Type, value: Bool) {
+        Self.setLoggingEnabled(for: operation, value: value)
     }
    
-    private static func updateDatabase(for operation: any OperationLogging.Type, value: Bool) {
+    private static func setLoggingEnabled(for operation: any OperationLogging.Type, value: Bool) {
         // This method should handle the database update logic based on the operation and value
         let key = Self.getKey(operation)
         debugLog("Updating database for key: \(key), value: \(value)")
@@ -45,7 +45,7 @@ class OperationsLoggingControl {
         let valueInDb = UserDefaults.standard.value(forKey: key) as? Bool
         if valueInDb == nil {
             // put the value if not already present
-            updateDatabase(for: operation, value: defaultVal)
+            setLoggingEnabled(for: operation, value: defaultVal)
         }
         return valueInDb ?? defaultVal
     }

@@ -138,7 +138,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         }
         
         
-        Task {
+        Task.detached {
             debugLog("[AppDelegate] Boot sequence starting...")
             await AppBootManager.shared.performBootSequence()
             debugLog("[AppDelegate] Boot sequence completed.")
@@ -210,7 +210,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         if UserDefaults.standard.enableEMPforWireguard {
             startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
         }
-        Task {
+        Task.detached {
             await AppManager.shared.reconcileInstalledApps()
         }
     }

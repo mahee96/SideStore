@@ -41,9 +41,11 @@ final class RemoveAppOperation: BasePipelineOperation<InstallAppOperationContext
             _ = self.markInactive(installedApp, in: backgroundContext)
         }
         
-        return try await backgroundContext.perform {
+        let result = try await backgroundContext.perform {
             return backgroundContext.object(with: installedApp.objectID) as! InstalledApp
         }
+        self.setProgress(100)
+        return result
     }
     
     private func resignedBundleIdentifier(for installedApp: InstalledApp) -> String {

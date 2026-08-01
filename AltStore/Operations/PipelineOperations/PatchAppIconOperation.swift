@@ -9,16 +9,16 @@
 @preconcurrency import UIKit
 @preconcurrency import AltStoreCore
 
-final class PatchAppIconOperation: BasePipelineOperation<InstallAppOperationContext, URL>, @unchecked Sendable {
+final class ChangeAppIconOperation: BasePipelineOperation<InstallAppOperationContext, URL>, @unchecked Sendable {
     
     override func execute(parentProgress: Progress?) async throws -> URL {
-        debugLog("[PatchAppIconOperation] execute() started")
-        defer { debugLog("[PatchAppIconOperation] execute() completed") }
+        debugLog("[ChangeAppIconOperation] execute() started")
+        defer { debugLog("[ChangeAppIconOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
         
         guard let app = self.context.app else {
-            throw OperationError.invalidParameters("PatchAppIconOperation.execute: self.context.app is nil")
+            throw OperationError.invalidParameters("ChangeAppIconOperation.execute: self.context.app is nil")
         }
         
         guard let alternateIconURL = self.context.alternateIconURL,

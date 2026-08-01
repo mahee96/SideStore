@@ -35,12 +35,11 @@ struct PipelineDefinition {
         PipelineExecutionStep(.verifyApp,                       1),
         PipelineExecutionStep(.cacheApp,                        1),
         PipelineExecutionStep(.stageApp,                        1),
-        PipelineExecutionStep(.patchAppIcon,                    1),
-        PipelineExecutionStep(.removeAppExtensions,             1),
-        PipelineExecutionStep(.fetchAnisetteData,               5),
-        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 5),
+        PipelineExecutionStep(.changeAppIcon,                    1),
+        PipelineExecutionStep(.removeAppExtensions,              6),
+        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 15),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,    1),
-        PipelineExecutionStep(.resignApp,                       25),
+        PipelineExecutionStep(.resignApp,                       15),
         PipelineExecutionStep(.exportResignedApp,               1),
         PipelineExecutionStep(.sendApp,                         20),
         PipelineExecutionStep(.installApp,                      15),
@@ -49,12 +48,11 @@ struct PipelineDefinition {
 
     static let resign: [PipelineExecutionStep] = [
         PipelineExecutionStep(.stageApp,                        2),
-        PipelineExecutionStep(.patchAppIcon,                    2),
-        PipelineExecutionStep(.removeAppExtensions,             2),
-        PipelineExecutionStep(.fetchAnisetteData,               5),
-        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 10),
+        PipelineExecutionStep(.changeAppIcon,                    2),
+        PipelineExecutionStep(.removeAppExtensions,             7),
+        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 20),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,    2),
-        PipelineExecutionStep(.resignApp,                       30),
+        PipelineExecutionStep(.resignApp,                       20),
         PipelineExecutionStep(.exportResignedApp,               2),
         PipelineExecutionStep(.sendApp,                         20),
         PipelineExecutionStep(.installApp,                      23),
@@ -62,31 +60,28 @@ struct PipelineDefinition {
     ]
 
     static let refresh: [PipelineExecutionStep] = [
-        PipelineExecutionStep(.fetchAnisetteData,                5),
-        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 55),
+        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 60),
         PipelineExecutionStep(.refreshApp,                       40)
     ]
 
     static let activateLegacy: [PipelineExecutionStep] = [
-        PipelineExecutionStep(.fetchAnisetteData,                5),
-        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 55),
+        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 60),
         PipelineExecutionStep(.refreshApp,                       40)
     ]
 
     static let activate: [PipelineExecutionStep] = [
         PipelineExecutionStep(.installBackupApp,                 5),
-        PipelineExecutionStep(.restoreApp,                       10),
+        PipelineExecutionStep(.restoreAppData,                       10),
         PipelineExecutionStep(.stageApp,                         2),
-        PipelineExecutionStep(.patchAppIcon,                     2),
+        PipelineExecutionStep(.changeAppIcon,                     2),
         PipelineExecutionStep(.removeAppExtensions,              2),
-        PipelineExecutionStep(.fetchAnisetteData,                5),
-        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 5),
+        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 10),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,     1),
         PipelineExecutionStep(.resignApp,                        20),
         PipelineExecutionStep(.exportResignedApp,                1),
         PipelineExecutionStep(.sendApp,                          15),
         PipelineExecutionStep(.installApp,                       25),
-        PipelineExecutionStep(.removeAppBackup,                  5),
+        PipelineExecutionStep(.removeBackupData,                  5),
         PipelineExecutionStep(.cleanStagedApp,                   2)
     ]
 
@@ -96,52 +91,48 @@ struct PipelineDefinition {
 
     static let deactivate: [PipelineExecutionStep] = [
         PipelineExecutionStep(.installBackupApp, 10),
-        PipelineExecutionStep(.backupApp,        60),
+        PipelineExecutionStep(.backupAppData,        60),
         PipelineExecutionStep(.removeApp,        30)
     ]
 
     static let backup: [PipelineExecutionStep] = [
         PipelineExecutionStep(.installBackupApp,                 10),
-        PipelineExecutionStep(.fetchAnisetteData,                5),
-        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 5),
+        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 10),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,     5),
-        PipelineExecutionStep(.resignApp,                        15),
+        PipelineExecutionStep(.resignApp,                        10),
         PipelineExecutionStep(.exportResignedApp,                5),
         PipelineExecutionStep(.sendApp,                          10),
-        PipelineExecutionStep(.installApp,                       15),
-        PipelineExecutionStep(.backupApp,                        15),
+        PipelineExecutionStep(.installApp,                       10),
+        PipelineExecutionStep(.backupAppData,                        30),
         PipelineExecutionStep(.stageApp,                         2),
-        PipelineExecutionStep(.patchAppIcon,                     2),
+        PipelineExecutionStep(.changeAppIcon,                     2),
         PipelineExecutionStep(.removeAppExtensions,              2),
-        PipelineExecutionStep(.removeAppBackup,                  5),
         PipelineExecutionStep(.cleanStagedApp,                   4)
     ]
 
     static let restoreLegacy: [PipelineExecutionStep] = [
-        PipelineExecutionStep(.fetchAnisetteData,                5),
-        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 55),
+        PipelineExecutionStep(.fetchProvisioningProfilesRefresh, 60),
         PipelineExecutionStep(.refreshApp,                       40)
     ]
 
     static let restore: [PipelineExecutionStep] = [
         PipelineExecutionStep(.installBackupApp,                 5),
-        PipelineExecutionStep(.restoreApp,                       10),
+        PipelineExecutionStep(.restoreAppData,                       10),
         PipelineExecutionStep(.stageApp,                         2),
-        PipelineExecutionStep(.patchAppIcon,                     2),
+        PipelineExecutionStep(.changeAppIcon,                     2),
         PipelineExecutionStep(.removeAppExtensions,              2),
-        PipelineExecutionStep(.fetchAnisetteData,                5),
-        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 5),
+        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 10),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,     1),
         PipelineExecutionStep(.resignApp,                        20),
         PipelineExecutionStep(.exportResignedApp,                1),
         PipelineExecutionStep(.sendApp,                          15),
         PipelineExecutionStep(.installApp,                       25),
-        PipelineExecutionStep(.removeAppBackup,                  5),
+        PipelineExecutionStep(.removeBackupData,                  5),
         PipelineExecutionStep(.cleanStagedApp,                   2)
     ]
 
     static let remove: [PipelineExecutionStep] = [
-        PipelineExecutionStep(.removeAppBackup, 30),
+        PipelineExecutionStep(.removeBackupData, 30),
         PipelineExecutionStep(.removeApp,       70)
     ]
 

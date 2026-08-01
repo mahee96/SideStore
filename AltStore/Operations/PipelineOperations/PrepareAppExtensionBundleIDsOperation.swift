@@ -25,5 +25,6 @@ final class PrepareAppExtensionBundleIDsOperation: BasePipelineOperation<AppOper
                 self.context.appexBundleIds = appexBundleIds
             }
         }
+        self.setProgress(100)
     }
 }

@@ -9,19 +9,19 @@
 import Foundation
 @preconcurrency import AltStoreCore
 
-final class RemoveAppBackupOperation: BasePipelineOperation<InstallAppOperationContext, Bool>
+final class RemoveBackupDataOperation: BasePipelineOperation<InstallAppOperationContext, Bool>
 {
     private let coordinator = NSFileCoordinator()
     private let coordinatorQueue = OperationQueue()
     
     override func execute(parentProgress: Progress?) async throws -> Bool {
-        debugLog("[RemoveAppBackupOperation] execute() started")
-        defer { debugLog("[RemoveAppBackupOperation] execute() completed") }
+        debugLog("[RemoveBackupDataOperation] execute() started")
+        defer { debugLog("[RemoveBackupDataOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
         
         guard let installedApp = self.context.installedApp else {
-            throw OperationError.invalidParameters("RemoveAppBackupOperation.main: self.context.installedApp is nil")
+            throw OperationError.invalidParameters("RemoveBackupDataOperation.main: self.context.installedApp is nil")
         }
         
         self.setProgress(30)
@@ -52,7 +52,7 @@ final class RemoveAppBackupOperation: BasePipelineOperation<InstallAppOperationC
         do {
             try FileManager.default.removeItem(at: url)
         } catch {
-            debugLog("[RemoveAppBackupOperation] Failed to remove app backup directory \(backupDirectoryURL.lastPathComponent). \(error.localizedDescription)")
+            debugLog("[RemoveBackupDataOperation] Failed to remove app backup directory \(backupDirectoryURL.lastPathComponent). \(error.localizedDescription)")
             throw error
         }
     }
