@@ -1099,6 +1099,9 @@ private extension AppManager
     }
     
     private func performOperation(for operation: AppOperation, group: RefreshGroup) async throws {
+        defer {
+            self.set(nil, for: operation)
+        }
         debugLog("[AppManager] performOperation: Starting execution for app: \(operation.bundleIdentifier)")
         let isSideStore = (operation.app as? ALTApplication)?.isAltStoreApp == true             ||
                            operation.bundleIdentifier.contains(ALTApplication.altstoreBundleID) ||
