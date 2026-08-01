@@ -222,7 +222,7 @@ extension AppManager
             dbBackgroundContext: dbBackgroundContext
         )
         
-        Task {
+        Task.detached {
             do {
                 let authenticationOperation = try AuthenticationOperation(
                     context: context,
@@ -516,7 +516,7 @@ extension AppManager
     {
         let context = StandaloneOperationContext(steps: [], dbBackgroundContext: managedObjectContext)
         let fetchSourceOperation = try FetchSourceOperation(sourceURL: sourceURL, context: context)
-        Task {
+        Task.detached {
             do {
                 let source = try await fetchSourceOperation.execute()
                 completionHandler(.success(source))
@@ -529,7 +529,7 @@ extension AppManager
     
     func fetchSources(completionHandler: @escaping (Result<(Set<Source>, NSManagedObjectContext), FetchSourcesError>) -> Void)
     {
-        Task {
+        Task.detached {
             let managedObjectContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
             var sourceData = [(objectID: NSManagedObjectID, sourceURL: URL)]()
             
@@ -599,7 +599,7 @@ extension AppManager
     
     func syncAppIDs(completionHandler: @escaping (Result<Void, Error>) -> Void)
     {
-        Task {
+        Task.detached {
             do {
                 let managedObjectContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
                 let context = AuthenticatedOperationContext(dbBackgroundContext: managedObjectContext)
@@ -619,7 +619,7 @@ extension AppManager
     func updateKnownSources(completionHandler: @escaping (Result<([KnownSource], [KnownSource]), Error>) -> Void) -> UpdateKnownSourcesOperation
     {
         let updateKnownSourcesOperation = UpdateKnownSourcesOperation()
-        Task {
+        Task.detached {
             do {
                 let result = try await updateKnownSourcesOperation.execute()
                 completionHandler(.success(result))
@@ -715,7 +715,7 @@ extension AppManager
         }
         
         
-        Task {
+        group.activeTask = Task.detached {
             do {
                 try await self.perform([.install(app)], presentingViewController: presentingViewController, group: group)
             } catch {
@@ -772,7 +772,7 @@ extension AppManager
         
         assert(appVersion as AnyObject !== installedApp) // Make sure we never accidentally "update" to already installed app.
         
-        Task{
+        group.activeTask = Task.detached {
             do {
                 try await self.perform([.update(appVersion, customBundleIdentifier: installedApp.customBundleIdentifier)], presentingViewController: presentingViewController, group: group)
             } catch {
@@ -789,7 +789,7 @@ extension AppManager
         debugLog("[AppManager] refresh() called for apps: \(installedApps.map { $0.bundleIdentifier })")
         let group = group ?? RefreshGroup()
         
-        group.activeTask = Task {
+        group.activeTask = Task.detached {
             do {
                 try await self.perform(installedApps.map { .refresh($0) }, presentingViewController: presentingViewController, group: group)
             } catch {
@@ -936,7 +936,7 @@ extension AppManager
             }
         }
         debugLog("[AppManager] performSingleOperation started for: \(operation.bundleIdentifier)")
-        group.activeTask = Task {
+        group.activeTask = Task.detached {
             do {
                 debugLog("[AppManager] performSingleOperation executing task for: \(operation.bundleIdentifier)")
                 try await self.perform([operation], presentingViewController: presentingViewController, group: group)

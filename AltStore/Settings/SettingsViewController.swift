@@ -68,6 +68,7 @@ extension SettingsViewController
     {
         case healthCheck
         case errorLog
+        case storageExplorer
         case clearCache
     }
     private enum AdvancedSettingsRow: Int, CaseIterable
@@ -1272,6 +1273,17 @@ extension SettingsViewController
                 navigationController?.pushViewController(vc, animated: true)
                 
             case .errorLog: break
+            case .storageExplorer:
+                let storageExplorerView = StorageExplorerView()
+                let vc = UIHostingController(rootView: storageExplorerView)
+                
+                let appearance = UINavigationBarAppearance()
+                appearance.configureWithDefaultBackground()
+                vc.navigationItem.scrollEdgeAppearance = appearance
+                vc.navigationItem.standardAppearance = appearance
+                
+                navigationController?.pushViewController(vc, animated: true)
+                
             case .clearCache: self.clearCache()
             }
             

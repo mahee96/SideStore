@@ -563,6 +563,40 @@
                                             <segue destination="g8a-Rf-zWa" kind="show" identifier="showErrorLog" id="z7r-Rq-qJY"/>
                                         </connections>
                                     </tableViewCell>
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" rowHeight="51" id="stg-Ex-kvc" customClass="InsetGroupTableViewCell" customModule="SideStore" customModuleProvider="target">
+                                         <rect key="frame" x="0.0" y="844.66666412353516" width="402" height="51"/>
+                                         <autoresizingMask key="autoresizingMask"/>
+                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="stg-Ex-kvc" id="stg-Ex-cv">
+                                             <rect key="frame" x="0.0" y="0.0" width="402" height="51"/>
+                                             <autoresizingMask key="autoresizingMask"/>
+                                             <subviews>
+                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" text="Storage Explorer" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-Ex-lbl">
+                                                     <rect key="frame" x="30" y="15.333333333333334" width="135" height="20.333333333333329"/>
+                                                     <fontDescription key="fontDescription" type="boldSystem" pointSize="17"/>
+                                                     <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                     <nil key="highlightedColor"/>
+                                                 </label>
+                                                 <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="stg-Ex-img">
+                                                     <rect key="frame" x="356.33333333333331" y="14.333333333333334" width="15.666666666666686" height="22.333333333333329"/>
+                                                     <imageReference key="image" image="chevron.right" catalog="system" symbolScale="large"/>
+                                                 </imageView>
+                                             </subviews>
+                                             <constraints>
+                                                 <constraint firstItem="stg-Ex-lbl" firstAttribute="centerY" secondItem="stg-Ex-cv" secondAttribute="centerY" id="stg-Ex-ctr1"/>
+                                                 <constraint firstAttribute="trailingMargin" secondItem="stg-Ex-img" secondAttribute="trailing" id="stg-Ex-ctr2"/>
+                                                 <constraint firstItem="stg-Ex-img" firstAttribute="centerY" secondItem="stg-Ex-cv" secondAttribute="centerY" id="stg-Ex-ctr3"/>
+                                                 <constraint firstItem="stg-Ex-lbl" firstAttribute="leading" secondItem="stg-Ex-cv" secondAttribute="leadingMargin" id="stg-Ex-ctr4"/>
+                                             </constraints>
+                                         </tableViewCellContentView>
+                                         <color key="backgroundColor" white="1" alpha="0.14999999999999999" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                         <edgeInsets key="layoutMargins" top="8" left="30" bottom="8" right="30"/>
+                                         <userDefinedRuntimeAttributes>
+                                             <userDefinedRuntimeAttribute type="number" keyPath="style">
+                                                 <integer key="value" value="2"/>
+                                             </userDefinedRuntimeAttribute>
+                                             <userDefinedRuntimeAttribute type="boolean" keyPath="isSelectable" value="YES"/>
+                                         </userDefinedRuntimeAttributes>
+                                     </tableViewCell>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" rowHeight="51" id="hFh-X1-ZAi" customClass="InsetGroupTableViewCell" customModule="SideStore" customModuleProvider="target">
                                         <rect key="frame" x="0.0" y="844.66666412353516" width="402" height="51"/>
                                         <autoresizingMask key="autoresizingMask"/>
