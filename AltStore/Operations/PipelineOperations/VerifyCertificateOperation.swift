@@ -16,7 +16,11 @@ import Security
 final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContext, Void>, @unchecked Sendable {
     
     private func checkRevocationWithOCSP(certificate: ALTCertificate) -> Bool {
-        guard let secCert = SecCertificateCreateWithData(nil, certificate.data as CFData) else {
+        verboseLog("[VerifyCertificateOperation] checkRevocationWithOCSP started for cert serial: \(certificate.serialNumber)")
+        
+        guard let data = certificate.data,
+              let secCert = SecCertificateCreateWithData(nil, data as CFData) else {
+            verboseLog("[VerifyCertificateOperation] checkRevocationWithOCSP: Failed to parse SecCertificate from certificate data.")
             return false
         }
         
@@ -24,24 +28,33 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
         var optionalTrust: SecTrust?
         let status = SecTrustCreateWithCertificates(secCert, policy, &optionalTrust)
         guard status == errSecSuccess, let trust = optionalTrust else {
+            verboseLog("[VerifyCertificateOperation] checkRevocationWithOCSP: SecTrustCreateWithCertificates failed with status: \(status)")
             return false
         }
         
-        SecTrustSetPolicies(trust, SecPolicyCreateRevocation(kSecRevocationOCSPMethod | kSecRevocationCRLMethod))
+        if let revocationPolicy = SecPolicyCreateRevocation(CFOptionFlags(kSecRevocationOCSPMethod | kSecRevocationCRLMethod)) {
+            SecTrustSetPolicies(trust, revocationPolicy)
+            verboseLog("[VerifyCertificateOperation] checkRevocationWithOCSP: Configured SecTrust with OCSP & CRL revocation policies.")
+        }
         
         var error: CFError?
         let isValid = SecTrustEvaluateWithError(trust, &error)
+        verboseLog("[VerifyCertificateOperation] checkRevocationWithOCSP: SecTrustEvaluateWithError returned isValid: \(isValid)")
         
-        if !isValid, let error = error as Error? as NSError? {
-            if error.code == -67820 || error.domain == (kSecErrorDomain as String) {
+        if !isValid, let err = error as Error? as NSError? {
+            verboseLog("[VerifyCertificateOperation] checkRevocationWithOCSP error: code \(err.code), domain: \(err.domain), description: '\(err.localizedDescription)'")
+            if err.code == -67820 || err.localizedDescription.lowercased().contains("revoked") {
+                debugLog("[VerifyCertificateOperation] checkRevocationWithOCSP: Certificate serial \(certificate.serialNumber) is CONFIRMED REVOKED by Apple OCSP!")
                 return true
             }
         }
         
+        verboseLog("[VerifyCertificateOperation] checkRevocationWithOCSP: Certificate serial \(certificate.serialNumber) is valid or unconfirmed.")
         return false
     }
     
     private func updateAppState(bundleID: String, isRevoked: Bool, isCrossSigned: Bool) async {
+        verboseLog("[VerifyCertificateOperation] updateAppState called for bundleID: \(bundleID), isRevoked: \(isRevoked), isCrossSigned: \(isCrossSigned)")
         await MainActor.run {
             let predicate = NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), bundleID)
             if let app = InstalledApp.first(satisfying: predicate, in: DatabaseManager.shared.viewContext) {
@@ -49,6 +62,9 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
                 app.isCrossSigned = isCrossSigned
                 try? DatabaseManager.shared.viewContext.save()
                 DatabaseManager.shared.viewContext.processPendingChanges()
+                verboseLog("[VerifyCertificateOperation] updateAppState: CoreData updated successfully for app '\(app.name)' (\(bundleID)).")
+            } else {
+                verboseLog("[VerifyCertificateOperation] updateAppState: App with bundleID '\(bundleID)' not found in CoreData viewContext.")
             }
         }
     }

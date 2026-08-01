@@ -38,6 +38,8 @@ struct CertificatesView: View {
     @State private var keyTextImportItem: KeyTextImportItem? = nil
     @State private var privateKeyTextInput   = ""
     
+    @State private var deleteLocalOnRevoke: Bool = true
+    
     @State private var certificateToRevoke:      ALTCertificate? = nil
     @State private var certificateToDelete:      ALTCertificate? = nil
     @State private var certificateToExport:      ALTCertificate? = nil
@@ -134,12 +136,15 @@ struct CertificatesView: View {
             Text("Enter a name for the new certificate. This will create a new certificate on Apple's servers and store the private key locally.")
         }
         .alert("Revoke Certificate", isPresented: $showRevokeConfirmation) {
+            Toggle("Delete local", isOn: $deleteLocalOnRevoke)
             SwiftUI.Button("Revoke", role: .destructive) {
-                if let cert = certificateToRevoke { viewModel.revokeCertificate(cert) }
+                if let cert = certificateToRevoke {
+                    viewModel.revokeCertificate(cert, deleteLocal: deleteLocalOnRevoke)
+                }
             }
             SwiftUI.Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Are you sure you want to revoke this certificate? This will permanently delete the certificate on Apple's servers and delete it locally.")
+            Text("Are you sure you want to revoke this certificate on Apple's servers?")
         }
         .alert("Deactivate Certificate", isPresented: $showDeactivateConfirmation) {
             SwiftUI.Button("Deactivate", role: .destructive) { viewModel.deactivateActiveCertificate() }

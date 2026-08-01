@@ -435,7 +435,7 @@ class CertificatesViewModel: ObservableObject {
         }
     }
     
-    func revokeCertificate(_ certificate: ALTCertificate) {
+    func revokeCertificate(_ certificate: ALTCertificate, deleteLocal: Bool = true) {
         guard let team = self.team, let session = self.session else { self.errorMessage = "Not authenticated"; return }
         self.isLoading = true; self.errorMessage = nil
         Task { @MainActor in
@@ -443,14 +443,18 @@ class CertificatesViewModel: ObservableObject {
             do {
                 let success = try await DeveloperPortalService.shared.revokeCertificate(certificate, team: team, session: session)
                 if success {
-                    self.deleteLocalCertificate(serialNumber: certificate.serialNumber)
-                    self.certificates.removeAll { $0.serialNumber == certificate.serialNumber }
-                    if self.activeSerialNumber == certificate.serialNumber {
-                        Keychain.shared.signingCertificate         = nil
-                        Keychain.shared.signingCertificatePassword = nil
-                        self.activeSerialNumber = nil
+                    if deleteLocal {
+                        self.deleteLocalCertificate(serialNumber: certificate.serialNumber)
+                        self.certificates.removeAll { $0.serialNumber == certificate.serialNumber }
+                        if self.activeSerialNumber == certificate.serialNumber {
+                            Keychain.shared.signingCertificate         = nil
+                            Keychain.shared.signingCertificatePassword = nil
+                            self.activeSerialNumber = nil
+                        }
+                        self.alertMessage = "Certificate revoked successfully."
+                    } else {
+                        self.alertMessage = "Certificate revoked on Apple's servers. Local copy preserved."
                     }
-                    self.alertMessage = "Certificate revoked successfully."
                     self.showAlert    = true
                 } else {
                     self.errorMessage = "Failed to revoke certificate."
