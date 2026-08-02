@@ -1,12 +1,5 @@
-//
-//  BackupAndRestoreView.swift
-//  SideStore
-//
-//  Created by Magesh K on 8/2/26.
-//  Copyright © 2026 SideStore. All rights reserved.
-//
-
 import SwiftUI
+import UniformTypeIdentifiers
 import AltStoreCore
 
 private extension Color {
@@ -15,6 +8,23 @@ private extension Color {
 }
 
 struct BackupAndRestoreView: View {
+    @State private var showingExportAlert = false
+    @State private var exportFilePassword = ""
+    @State private var includeApplePassword = false
+    
+    @State private var showingImportFilePicker = false
+    @State private var importedData: Data? = nil
+    @State private var showingImportPasswordAlert = false
+    @State private var importFilePassword = ""
+    
+    @State private var importedAccount: ImportedAccount? = nil
+    @State private var showingApplePasswordAlert = false
+    @State private var applePasswordInput = ""
+    
+    @State private var alertTitle = ""
+    @State private var alertMessage = ""
+    @State private var showingMessageAlert = false
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
@@ -27,7 +37,7 @@ struct BackupAndRestoreView: View {
                     
                     VStack(spacing: 0) {
                         SwiftUI.Button(action: {
-                            print("[BackupAndRestoreView] Import Account tapped")
+                            showingImportFilePicker = true
                         }) {
                             HStack(spacing: 12) {
                                 Image(systemName: "square.and.arrow.down")
@@ -45,7 +55,9 @@ struct BackupAndRestoreView: View {
                         divider
                         
                         SwiftUI.Button(action: {
-                            print("[BackupAndRestoreView] Export Account tapped")
+                            exportFilePassword = ""
+                            includeApplePassword = false
+                            showingExportAlert = true
                         }) {
                             HStack(spacing: 12) {
                                 Image(systemName: "square.and.arrow.up")
@@ -117,6 +129,58 @@ struct BackupAndRestoreView: View {
         .background(Color(uiColor: .settingsBackground).ignoresSafeArea())
         .navigationTitle("Backup & Restore")
         .navigationBarTitleDisplayMode(.large)
+        .sheet(isPresented: $showingImportFilePicker) {
+            DocumentPickerView(contentTypes: [UTType(filenameExtension: "sideconf") ?? .data]) { url in
+                guard let url = url else { return }
+                do {
+                    _ = url.startAccessingSecurityScopedResource()
+                    defer { url.stopAccessingSecurityScopedResource() }
+                    let data = try Data(contentsOf: url)
+                    self.importedData = data
+                    self.importFilePassword = ""
+                    self.showingImportPasswordAlert = true
+                } catch {
+                    showAlert(title: "Import Error", message: error.localizedDescription)
+                }
+            }
+        }
+        .alert("Export Account", isPresented: $showingExportAlert) {
+            SecureField("File Password", text: $exportFilePassword)
+            Toggle("Include Apple ID Password", isOn: $includeApplePassword)
+            SwiftUI.Button("Export") {
+                performExport()
+            }
+            SwiftUI.Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Enter a password to encrypt your backup file.")
+        }
+        .alert("Decrypt Backup", isPresented: $showingImportPasswordAlert) {
+            SecureField("File Password", text: $importFilePassword)
+            SwiftUI.Button("Decrypt") {
+                performImportDecrypt()
+            }
+            SwiftUI.Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Enter the password used to encrypt this backup file.")
+        }
+        .alert("Apple ID Password", isPresented: $showingApplePasswordAlert) {
+            SecureField("Password", text: $applePasswordInput)
+            SwiftUI.Button("Sign In") {
+                performAppleSignIn()
+            }
+            SwiftUI.Button("Cancel", role: .cancel) {}
+        } message: {
+            if let email = importedAccount?.email {
+                Text("Please enter Apple ID password for \(email) to complete sign-in.")
+            } else {
+                Text("Please enter your Apple ID password to complete sign-in.")
+            }
+        }
+        .alert(alertTitle, isPresented: $showingMessageAlert) {
+            SwiftUI.Button("OK", role: .cancel) {}
+        } message: {
+            Text(alertMessage)
+        }
     }
     
     private var divider: some View {
@@ -124,5 +188,88 @@ struct BackupAndRestoreView: View {
             .fill(Color.settingsDivider)
             .frame(height: 0.5)
             .padding(.horizontal, 16)
+    }
+
+    private func performExport() {
+        guard !exportFilePassword.isEmpty else {
+            showAlert(title: "Export Error", message: "File password cannot be empty.")
+            return
+        }
+        
+        do {
+            let encryptedData = try ImportExport.exportAccount(password: exportFilePassword, includeApplePassword: includeApplePassword)
+            guard let email = AuthManager.shared.currentAppleID else { return }
+            
+            let tempDir = FileManager.default.temporaryDirectory
+            let fileURL = tempDir.appendingPathComponent("\(email).sideconf")
+            try encryptedData.write(to: fileURL)
+            
+            let activityVC = UIActivityViewController(activityItems: [fileURL], applicationActivities: nil)
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let rootVC = windowScene.windows.first?.rootViewController {
+                rootVC.present(activityVC, animated: true)
+            }
+        } catch {
+            showAlert(title: "Export Error", message: error.localizedDescription)
+        }
+    }
+    
+    private func performImportDecrypt() {
+        guard let data = importedData, !importFilePassword.isEmpty else { return }
+        do {
+            let account = try ImportExport.importAccountData(data, filePassword: importFilePassword)
+            self.importedAccount = account
+            
+            if let pass = account.password, !pass.isEmpty {
+                showAlert(title: "Account Imported", message: "Account \(account.email) imported successfully!")
+            } else {
+                self.applePasswordInput = ""
+                self.showingApplePasswordAlert = true
+            }
+        } catch {
+            showAlert(title: "Import Error", message: error.localizedDescription)
+        }
+    }
+    
+    private func performAppleSignIn() {
+        guard let account = importedAccount, !applePasswordInput.isEmpty else { return }
+        AuthManager.shared.password = applePasswordInput
+        showAlert(title: "Account Imported", message: "Account \(account.email) imported successfully!")
+    }
+
+    private func showAlert(title: String, message: String) {
+        self.alertTitle = title
+        self.alertMessage = message
+        self.showingMessageAlert = true
+    }
+}
+
+struct DocumentPickerView: UIViewControllerRepresentable {
+    let contentTypes: [UTType]
+    let onPick: (URL?) -> Void
+    
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: contentTypes, asCopy: false)
+        picker.delegate = context.coordinator
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onPick: onPick)
+    }
+    
+    class Coordinator: NSObject, UIDocumentPickerDelegate {
+        let onPick: (URL?) -> Void
+        init(onPick: @escaping (URL?) -> Void) {
+            self.onPick = onPick
+        }
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            onPick(urls.first)
+        }
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+            onPick(nil)
+        }
     }
 }

@@ -10,12 +10,31 @@
 @preconcurrency import UIKit
 @preconcurrency import AltSign
 @preconcurrency import AltStoreCore
+import CryptoKit
+import CommonCrypto
+
+enum BackupEncryptionError: Error, LocalizedError {
+    case invalidPassword
+    case decryptionFailed
+    case exportPasswordMatchesApplePassword
+    
+    var errorDescription: String? {
+        switch self {
+        case .invalidPassword:
+            return "Invalid password."
+        case .decryptionFailed:
+            return "Incorrect password or corrupted backup file."
+        case .exportPasswordMatchesApplePassword:
+            return "File password cannot be the same as Apple ID password stored in secure keychain."
+        }
+    }
+}
 
 class ImportExport {
     
     public static var documentPickerHandler: DocumentPickerHandler?
 
-    public static func exportAccount(password: String) -> ImportedAccount? {
+    public static func exportAccountJSON(password: String) -> ImportedAccount? {
         guard let email = AuthManager.shared.currentAppleID,
               let passwordStr = AuthManager.shared.password,
               let cert = CertificateManager.shared.activeSigningCertificateData,
@@ -23,7 +42,7 @@ class ImportExport {
               let adiPB = Keychain.shared.adiPb else {
             return nil
         }
-        return ImportedAccount(email: email, password: passwordStr, cert: cert, certpass: password, local_user: identifier, adiPB: adiPB)
+        return ImportedAccount(email: email, password: passwordStr, certificateData: cert, certificatePassword: password, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
     }
 
     public static func importAccountJSON(from file: URL) throws {
@@ -36,11 +55,102 @@ class ImportExport {
         Keychain.shared.reset()
         AuthManager.shared.currentAppleID = account.email
         AuthManager.shared.password = account.password
-        Keychain.shared.adiPb = account.adiPB
-        Keychain.shared.identifier = account.local_user
+        Keychain.shared.adiPb = account.anisetteAdiBlob
+        Keychain.shared.identifier = account.anisetteIdentifier
         
-        let altCert = try ALTCertificate(p12Data: account.cert, password: account.certpass)
+        let altCert = try ALTCertificate(p12Data: account.certificateData, password: account.certificatePassword)
         CertificateManager.shared.activeCertificate = altCert
+    }
+
+    private static func deriveKey(password: String, salt: Data) -> SymmetricKey {
+        let passwordData = Data(password.utf8)
+        var derivedKeyData = Data(count: 32)
+        
+        _ = derivedKeyData.withUnsafeMutableBytes { derivedKeyBytes in
+            salt.withUnsafeBytes { saltBytes in
+                passwordData.withUnsafeBytes { passwordBytes in
+                    CCKeyDerivationPBKDF(
+                        CCPBKDFAlgorithm(kCCPBKDF2),
+                        passwordBytes.baseAddress?.assumingMemoryBound(to: Int8.self),
+                        passwordData.count,
+                        saltBytes.baseAddress?.assumingMemoryBound(to: UInt8.self),
+                        salt.count,
+                        CCPseudoRandomAlgorithm(kCCPRFHmacAlgSHA256),
+                        10000,
+                        derivedKeyBytes.baseAddress?.assumingMemoryBound(to: UInt8.self),
+                        32
+                    )
+                }
+            }
+        }
+        return SymmetricKey(data: derivedKeyData)
+    }
+
+    public static func exportAccount(password: String, includeApplePassword: Bool) throws -> Data {
+        guard let email = AuthManager.shared.currentAppleID,
+              let cert = CertificateManager.shared.activeSigningCertificateData,
+              let identifier = Keychain.shared.identifier,
+              let adiPB = Keychain.shared.adiPb else {
+            throw OperationError.invalidParameters("Account or signing data is missing.")
+        }
+        
+        if let applePass = AuthManager.shared.password, password == applePass {
+            throw BackupEncryptionError.exportPasswordMatchesApplePassword
+        }
+
+        let applePasswordToInclude = includeApplePassword ? AuthManager.shared.password : nil
+        let account = ImportedAccount(email: email, password: applePasswordToInclude, certificateData: cert, certificatePassword: password, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
+
+        let jsonData = try Foundation.JSONEncoder().encode(account)
+        
+        var salt = Data(count: 16)
+        let result = salt.withUnsafeMutableBytes { SecRandomCopyBytes(kSecRandomDefault, 16, $0.baseAddress!) }
+        guard result == errSecSuccess else {
+            throw OperationError.invalidParameters("Failed to generate random salt.")
+        }
+        
+        let key = deriveKey(password: password, salt: salt)
+        let sealedBox = try AES.GCM.seal(jsonData, using: key)
+        guard let combined = sealedBox.combined else {
+            throw OperationError.invalidParameters("Encryption failed.")
+        }
+        
+        var finalData = Data()
+        finalData.append(salt)
+        finalData.append(combined)
+        return finalData
+    }
+
+    public static func importAccountData(_ encryptedData: Data, filePassword: String) throws -> ImportedAccount {
+        guard encryptedData.count > 16 else {
+            throw BackupEncryptionError.decryptionFailed
+        }
+        
+        let salt = encryptedData.prefix(16)
+        let gcmData = encryptedData.dropFirst(16)
+        
+        let key = deriveKey(password: filePassword, salt: salt)
+        
+        do {
+            let sealedBox = try AES.GCM.SealedBox(combined: gcmData)
+            let decryptedData = try AES.GCM.open(sealedBox, using: key)
+            let account = try Foundation.JSONDecoder().decode(ImportedAccount.self, from: decryptedData)
+            
+            Keychain.shared.reset()
+            AuthManager.shared.currentAppleID = account.email
+            if let pass = account.password, !pass.isEmpty {
+                AuthManager.shared.password = pass
+            }
+            Keychain.shared.adiPb = account.anisetteAdiBlob
+            Keychain.shared.identifier = account.anisetteIdentifier
+            
+            let altCert = try ALTCertificate(p12Data: account.certificateData, password: account.certificatePassword)
+            CertificateManager.shared.activeCertificate = altCert
+            
+            return account
+        } catch {
+            throw BackupEncryptionError.decryptionFailed
+        }
     }
     
     public static func getPreviousBackupURL(_ backupURL: URL) -> URL {

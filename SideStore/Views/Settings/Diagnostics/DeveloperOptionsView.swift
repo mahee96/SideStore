@@ -315,7 +315,7 @@ struct DeveloperOptionsView: View {
     
     private func exportAccountJSON(password: String) {
         guard let top = topViewController() else { return }
-        guard let account = ImportExport.exportAccount(password: password) else {
+        guard let account = ImportExport.exportAccountJSON(password: password) else {
             let toastView = ToastView(text: NSLocalizedString("Failed to export account!", comment: ""), detailText: "Account not found or missing credentials.")
             toastView.show(in: top)
             return
