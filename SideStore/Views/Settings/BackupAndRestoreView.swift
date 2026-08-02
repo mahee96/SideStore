@@ -8,10 +8,6 @@ private extension Color {
 }
 
 struct BackupAndRestoreView: View {
-    @State private var showingExportAlert = false
-    @State private var exportFilePassword = ""
-    @State private var includeApplePassword = false
-    
     @State private var showingImportFilePicker = false
     @State private var importedData: Data? = nil
     @State private var showingImportPasswordAlert = false
@@ -55,9 +51,7 @@ struct BackupAndRestoreView: View {
                         divider
                         
                         SwiftUI.Button(action: {
-                            exportFilePassword = ""
-                            includeApplePassword = false
-                            showingExportAlert = true
+                            presentExportAlert()
                         }) {
                             HStack(spacing: 12) {
                                 Image(systemName: "square.and.arrow.up")
@@ -144,16 +138,6 @@ struct BackupAndRestoreView: View {
                 }
             }
         }
-        .alert("Export Account", isPresented: $showingExportAlert) {
-            SecureField("File Password", text: $exportFilePassword)
-            Toggle("Include Apple ID Password", isOn: $includeApplePassword)
-            SwiftUI.Button("Export") {
-                performExport()
-            }
-            SwiftUI.Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Enter a password to encrypt your backup file.")
-        }
         .alert("Decrypt Backup", isPresented: $showingImportPasswordAlert) {
             SecureField("File Password", text: $importFilePassword)
             SwiftUI.Button("Decrypt") {
@@ -190,28 +174,48 @@ struct BackupAndRestoreView: View {
             .padding(.horizontal, 16)
     }
 
-    private func performExport() {
-        guard !exportFilePassword.isEmpty else {
-            showAlert(title: "Export Error", message: "File password cannot be empty.")
-            return
+    private func presentExportAlert() {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first(where: { $0.isKeyWindow }),
+              var top = window.rootViewController else { return }
+        while let presented = top.presentedViewController {
+            top = presented
         }
         
-        do {
-            let encryptedData = try ImportExport.exportAccount(password: exportFilePassword, includeApplePassword: includeApplePassword)
-            guard let email = AuthManager.shared.currentAppleID else { return }
+        let alert = UIAlertController(title: NSLocalizedString("Export Account", comment: ""), message: nil, preferredStyle: .alert)
+        let alertVC = ExportAccountAlertViewController()
+        alert.setValue(alertVC, forKey: "contentViewController")
+        
+        let exportAction = UIAlertAction(title: NSLocalizedString("Export", comment: ""), style: .default) { _ in
+            let filePassword = alertVC.passwordTextField.text ?? ""
+            let includeApplePassword = alertVC.isIncludePasswordChecked
             
-            let tempDir = FileManager.default.temporaryDirectory
-            let fileURL = tempDir.appendingPathComponent("\(email).sideconf")
-            try encryptedData.write(to: fileURL)
-            
-            let activityVC = UIActivityViewController(activityItems: [fileURL], applicationActivities: nil)
-            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-               let rootVC = windowScene.windows.first?.rootViewController {
-                rootVC.present(activityVC, animated: true)
+            guard !filePassword.isEmpty else {
+                showAlert(title: "Export Error", message: "File password cannot be empty.")
+                return
             }
-        } catch {
-            showAlert(title: "Export Error", message: error.localizedDescription)
+            
+            do {
+                let encryptedData = try ImportExport.exportAccount(password: filePassword, includeApplePassword: includeApplePassword)
+                guard let email = AuthManager.shared.currentAppleID else { return }
+                
+                let tempDir = FileManager.default.temporaryDirectory
+                let fileURL = tempDir.appendingPathComponent("\(email).sideconf")
+                try encryptedData.write(to: fileURL)
+                
+                let activityVC = UIActivityViewController(activityItems: [fileURL], applicationActivities: nil)
+                top.present(activityVC, animated: true)
+            } catch {
+                showAlert(title: "Export Error", message: error.localizedDescription)
+            }
         }
+        
+        let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel)
+        
+        alert.addAction(exportAction)
+        alert.addAction(cancelAction)
+        
+        top.present(alert, animated: true)
     }
     
     private func performImportDecrypt() {
