@@ -24,8 +24,22 @@ enum SideBackupError: LocalizedError {
     }
 }
 
+
+// had to do this coz swift no longer considers global static for singleton storage as safe
+// so either we declare 'nonisolated (unsafe) static' or do this holder pattern using enum static field
+private enum SideBackupLogging {
+    private(set) static var isVerbose: Bool = false
+    
+    static func setVerbose(_ enabled: Bool) {
+        isVerbose = enabled
+    }
+}
+
 final class ConsoleLog: Sendable {
-    static nonisolated(unsafe) var isVerbose: Bool = false
+    static var isVerbose: Bool {
+        get { SideBackupLogging.isVerbose }
+        set { SideBackupLogging.setVerbose(newValue) }
+    }
 
     private static let sharedResult: Result<ConsoleLog, Error> = Result {
         try ConsoleLog()
