@@ -143,6 +143,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Core/Certificates/CertificateManager.swift,
+				Core/Certificates/CertificateStore.swift,
 				Core/Logging/SideStoreLogging.swift,
 			);
 			target = BF66EE7D2501AE50007EE018 /* AltStoreCore */;

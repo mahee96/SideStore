@@ -395,10 +395,14 @@ class CertificatesViewModel: ObservableObject {
     
     func makeCertificateActive(_ certificate: ALTCertificate) {
         guard certificate.privateKey != nil else { self.errorMessage = "Cannot activate certificate: private key missing."; return }
-        try? CertificateManager.shared.setActiveCertificate(certificate)
-        self.fetchActiveSerialNumber()
-        self.alertMessage = "Active signing certificate replaced successfully."
-        self.showAlert    = true
+        do {
+            try CertificateManager.shared.setActiveCertificate(certificate)
+            self.fetchActiveSerialNumber()
+            self.alertMessage = "Active signing certificate replaced successfully."
+            self.showAlert    = true
+        } catch {
+            self.errorMessage = "Failed to activate certificate: \(error.localizedDescription)"
+        }
     }
     
     func deactivateActiveCertificate() {

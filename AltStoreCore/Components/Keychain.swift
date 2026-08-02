@@ -80,6 +80,18 @@ public class Keychain
     @KeychainItem(key: "adiPb")
     public var adiPb: String?
 
+    // MARK: - Dynamic Imported Certificates Storage
+
+    public subscript(certificateSerial serial: String) -> Data? {
+        get { try? self.keychain.getData("importedCert_" + serial) }
+        set {
+            if let data = newValue {
+                try? self.keychain.set(data, key: "importedCert_" + serial)
+            } else {
+                try? self.keychain.remove("importedCert_" + serial)
+            }
+        }
+    }
 
     public var session: ALTAppleAPISession? = nil
     public var team: ALTTeam? = nil

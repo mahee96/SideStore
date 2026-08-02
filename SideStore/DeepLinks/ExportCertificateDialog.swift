@@ -30,7 +30,7 @@ public enum ExportCertificateDialog {
             }
             
             guard let encodedCert = CertificateManager.shared.activeSigningCertificateBase64Encoded,
-                  let password = CertificateManager.shared.activeSigningCertificatePassword else {
+                  let password = CertificateManager.shared.activeCertificate?.password else {
                 let toast = ToastView(text: NSLocalizedString("Failed to find certificate or password", comment: ""), detailText: nil)
                 toast.show(in: presentingVC)
                 return

@@ -29,13 +29,8 @@ public struct ActiveCertificate: Sendable {
 public final class CertificateManager: @unchecked Sendable {
     public static let shared = CertificateManager()
     
-    private let keychain = KeychainAccess.Keychain(service: Bundle.Info.appbundleIdentifier)
-        .accessibility(.afterFirstUnlock)
-        .synchronizable(true)
-        
     private let serialsKey = "importedCertificateSerials"
     private let metadataPrefix = "certMetadata_"
-    private let certKeyPrefix = "importedCert_"
     
     public private(set) var activeCertificate: ActiveCertificate?
     
@@ -91,15 +86,17 @@ public final class CertificateManager: @unchecked Sendable {
     }
 
     /// Clears active certificate in memory cache and Keychain.
-    public func clearActiveCertificate() throws {
+    public func clearActiveCertificate() {
         debugLog("[CertificateManager] clearActiveCertificate: Clearing active certificate.")
-        try setActiveCertificate(nil)
+        self.activeCertificate = nil
+        Keychain.shared.signingCertificate = nil
+        Keychain.shared.signingCertificatePassword = nil
     }
     
     // MARK: - Certificate Encoding Helpers
     
     public var activeSigningCertificateBase64Encoded: String? {
-        guard let data = activeSigningCertificateData else { return nil }
+        guard let data = activeCertificate?.p12Data else { return nil }
         let base64 = data.base64EncodedString()
         var allowed = CharacterSet.urlQueryAllowed
         allowed.remove(charactersIn: ";/?:@&=+$, ")
@@ -114,19 +111,15 @@ public final class CertificateManager: @unchecked Sendable {
             do {
                 let p12Data = try CertificateStore.export(cert, password: cert.machineIdentifier)
                 debugLog("[CertificateManager] p12Data generated, size: \(p12Data.count)")
-                try self.keychain.set(p12Data, key: certKeyPrefix + cert.serialNumber)
+                Keychain.shared[certificateSerial: cert.serialNumber] = p12Data
                 debugLog("[CertificateManager] Successfully saved p12 to keychain")
             } catch {
                 debugLog("[CertificateManager] Failed to export/save p12 to keychain: \(error)")
             }
         } else if let derData = cert.data {
             debugLog("[CertificateManager] derData exists, size: \(derData.count)")
-            do {
-                try self.keychain.set(derData, key: certKeyPrefix + cert.serialNumber)
-                debugLog("[CertificateManager] Successfully saved der to keychain")
-            } catch {
-                debugLog("[CertificateManager] Failed to save der to keychain: \(error)")
-            }
+            Keychain.shared[certificateSerial: cert.serialNumber] = derData
+            debugLog("[CertificateManager] Successfully saved der to keychain")
         }
         
         let serials = getImportedCertificateSerials()
@@ -152,34 +145,30 @@ public final class CertificateManager: @unchecked Sendable {
             debugLog("[CertificateManager] Found in active Keychain.shared.certificate")
             return activeCert.certificate
         }
-        do {
-            if let data = try self.keychain.getData(certKeyPrefix + serialNumber) {
-                debugLog("[CertificateManager] Retrieved data size: \(data.count) for \(serialNumber)")
-                var loadedCert: ALTCertificate?
-                let savedPassword = getCertificateMetadata(for: serialNumber)?["machineIdentifier"]
-                do {
-                    loadedCert = try CertificateStore.load(data, password: savedPassword)
-                    debugLog("[CertificateManager] Parsed as p12")
-                } catch {
-                    debugLog("[CertificateManager] Failed p12 parse: \(error)")
-                    if let cert = ALTCertificate(data: data) {
-                        loadedCert = cert
-                        debugLog("[CertificateManager] Parsed as raw cert")
-                    } else {
-                        debugLog("[CertificateManager] Failed raw cert parsing")
-                    }
-                }
-                if let cert = loadedCert {
-                    if let metadata = getCertificateMetadata(for: serialNumber) {
-                        cert.machineIdentifier = metadata["machineIdentifier"]
-                        cert.machineName = metadata["machineName"]
-                        cert.requesterEmail = metadata["requesterEmail"]
-                    }
-                    return cert
+        if let data = Keychain.shared[certificateSerial: serialNumber] {
+            debugLog("[CertificateManager] Retrieved data size: \(data.count) for \(serialNumber)")
+            var loadedCert: ALTCertificate?
+            let savedPassword = getCertificateMetadata(for: serialNumber)?["machineIdentifier"]
+            do {
+                loadedCert = try CertificateStore.load(data, password: savedPassword)
+                debugLog("[CertificateManager] Parsed as p12")
+            } catch {
+                debugLog("[CertificateManager] Failed p12 parse: \(error)")
+                if let cert = ALTCertificate(data: data) {
+                    loadedCert = cert
+                    debugLog("[CertificateManager] Parsed as raw cert")
+                } else {
+                    debugLog("[CertificateManager] Failed raw cert parsing")
                 }
             }
-        } catch {
-            debugLog("[CertificateManager] Error loading cert from keychain: \(error)")
+            if let cert = loadedCert {
+                if let metadata = getCertificateMetadata(for: serialNumber) {
+                    cert.machineIdentifier = metadata["machineIdentifier"]
+                    cert.machineName = metadata["machineName"]
+                    cert.requesterEmail = metadata["requesterEmail"]
+                }
+                return cert
+            }
         }
         return nil
     }
@@ -199,13 +188,31 @@ public final class CertificateManager: @unchecked Sendable {
     public func deleteLocalCertificate(serialNumber: String) {
         debugLog("[CertificateManager] deleteLocalCertificate: \(serialNumber)")
         if self.activeCertificate?.serialNumber == serialNumber {
-            try? clearActiveCertificate()
+            clearActiveCertificate()
         }
-        try? self.keychain.remove(certKeyPrefix + serialNumber)
+        Keychain.shared[certificateSerial: serialNumber] = nil
         setCertificateMetadata(nil, for: serialNumber)
         var serials = getImportedCertificateSerials()
         serials.removeAll { $0 == serialNumber }
         setImportedCertificateSerials(serials)
+    }
+    
+    // MARK: - Compatibility Helper Aliases
+    
+    public func loadCertificate(for serialNumber: String) -> ALTCertificate? {
+        return getLocalCertificate(serialNumber: serialNumber)
+    }
+
+    public func loadAllLocalCertificates() -> [ALTCertificate] {
+        return getAllLocalCertificates()
+    }
+
+    public func loadAllSignableLocalCertificates() -> [ALTCertificate] {
+        return getAllLocalCertificates().filter { $0.privateKey != nil }
+    }
+
+    public func deleteCertificate(serialNumber: String) {
+        deleteLocalCertificate(serialNumber: serialNumber)
     }
     
     public func isCertificateLocallyCached(serialNumber: String) -> Bool {

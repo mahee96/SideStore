@@ -17,6 +17,7 @@ enum BackupEncryptionError: Error, LocalizedError {
     case invalidPassword
     case decryptionFailed
     case exportPasswordMatchesApplePassword
+    case invalidDataFormat
     
     var errorDescription: String? {
         switch self {
@@ -26,6 +27,8 @@ enum BackupEncryptionError: Error, LocalizedError {
             return "Incorrect password or corrupted backup file."
         case .exportPasswordMatchesApplePassword:
             return "File password cannot be the same as Apple ID password stored in secure keychain."
+        case .invalidDataFormat:
+            return "The backup file format is invalid."
         }
     }
 }
@@ -37,15 +40,15 @@ class ImportExport {
     public static func exportAccountJSON(password: String) -> ImportedAccount? {
         guard let email = AuthManager.shared.currentAppleID,
               let passwordStr = AuthManager.shared.password,
-              let cert = CertificateManager.shared.activeSigningCertificateData,
+              let activeCert = CertificateManager.shared.activeCertificate,
               let identifier = AnisetteDataManager.shared.anisetteIdentifier,
               let adiPB = AnisetteDataManager.shared.anisetteAdiBlob else {
             return nil
         }
-        if let certPass = CertificateManager.shared.activeSigningCertificatePassword {
-            return ImportedAccount(version: ImportedAccount.currentVersion, email: email, password: passwordStr, certificateData: cert, certificatePassword: certPass, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
+        if let certPass = activeCert.password {
+            return ImportedAccount(version: ImportedAccount.currentVersion, email: email, password: passwordStr, certificateData: activeCert.p12Data, certificatePassword: certPass, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
         } else {
-            return ImportedAccount(version: ImportedAccount.currentVersion, email: email, password: passwordStr, certificateData: cert, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
+            return ImportedAccount(version: ImportedAccount.currentVersion, email: email, password: passwordStr, certificateData: activeCert.p12Data, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
         }
     }
 
