@@ -274,6 +274,7 @@
 				Settings/Diagnostics/OperationsLoggingContolView.swift,
 				Settings/TechyThings/ErrorLog/ConsoleLogView.swift,
 				Settings/TechyThings/HealthCheck/HealthCheckView.swift,
+				Settings/TechyThings/HealthCheck/HealthCheckViewModel.swift,
 				Settings/TechyThings/StorageExplorer/StorageExplorerView.swift,
 				URLHandler.swift,
 				Utils/common/BuildInfo.swift,

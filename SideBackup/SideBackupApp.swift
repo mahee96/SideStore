@@ -42,7 +42,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         guard let command = components.host?.lowercased() else { return false }
         
         if let verboseValue = components.queryItems?.first(where: { $0.name == "verbose" })?.value {
-            ConsoleLog.isVerbose = (verboseValue.lowercased() == "true" || verboseValue == "1")
+            let isVerbose = (verboseValue.lowercased() == "true" || verboseValue == "1")
+            ConsoleLog.setVerbose(isVerbose)
         }
         
         switch command {
