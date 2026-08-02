@@ -8,7 +8,6 @@
 
 import Foundation
 import KeychainAccess
-
 @preconcurrency import AltSign
 
 @propertyWrapper
@@ -80,17 +79,20 @@ public class Keychain
     
     @KeychainItem(key: "adiPb")
     public var adiPb: String?
-    
-    // decode from one and only single source of truth: 'signingCertificate' field
-    public var certificate: ALTCertificate? {
-        get {
-            guard let data = self.signingCertificate else { return nil }
-            let password = self.signingCertificatePassword ?? ""
-            return (try? ALTCertificate(p12Data: data, password: password)) ?? (try? ALTCertificate(p12Data: data, password: nil))
-        }
-        set {
-            self.signingCertificate = newValue?.p12Data()
-            self.signingCertificatePassword = newValue?.machineIdentifier ?? ""
+
+    // explicit throwing - coz we don't want to silently ignore errors using 'try?' when using variables
+    public func loadCertificate() throws -> ALTCertificate? {
+        guard let data = self.signingCertificate else { return nil }
+        return try CertificateStore.load(data, password: self.signingCertificatePassword)
+    }
+
+    public func storeCertificate(_ cert: ALTCertificate?) throws {
+        if let cert = cert {
+            self.signingCertificate = try CertificateStore.export(cert, password: cert.machineIdentifier)
+            self.signingCertificatePassword = cert.machineIdentifier
+        } else {
+            self.signingCertificate = nil
+            self.signingCertificatePassword = nil
         }
     }
     public var session: ALTAppleAPISession? = nil
@@ -118,7 +120,7 @@ public class Keychain
         cert.privateKey = privateKey
         
         // 4. Create PKCS12 data structure
-        if let p12Data = cert.p12Data()
+        if let p12Data = cert.unencryptedP12Data()
         {
             // 5. Store the new PKCS12 format in signingCertificate slot
             try? self.keychain.set(p12Data, key: signingCertificateKey)
