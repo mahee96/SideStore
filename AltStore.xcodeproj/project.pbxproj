@@ -200,6 +200,8 @@
 		A8EECF492F4B195000F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				AppBootManager.swift,
+				AppConstants.swift,
 				Components/Auth/AuthManager.swift,
 				Components/Certificates/CertificateManager.swift,
 				Components/Certificates/SigningCertificateValidator.swift,
