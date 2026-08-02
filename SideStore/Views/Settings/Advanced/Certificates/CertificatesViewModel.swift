@@ -235,7 +235,7 @@ class CertificatesViewModel: ObservableObject {
             }
             
             do {
-                let altCert = try ALTCertificate(p12Data: certData, password: "")
+                let altCert = try ALTCertificate(p12Data: certData)
                 if isDuplicate(cert: altCert, importedSerials: importedSerialsThisBatch) {
                     failedImportsList.append("\(pending.filename): Duplicate certificate (already imported).")
                     importFailedCount += 1
