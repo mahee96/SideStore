@@ -151,7 +151,6 @@ public class Keychain
             debugLog("[Keychain] Preserved Anisette ADI data (adiPb).")
         }
         
-        self.certificate = nil
         self.session = nil
         self.team = nil
         debugLog("[Keychain] Cleared in-memory session, certificate, and team instances.")
