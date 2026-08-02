@@ -643,10 +643,10 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         self.context.activeCertificates = certificates
         
         if let localCertificate = CertificateManager.shared.activeCertificate,
-           let certificate = certificates.first(where: { $0.serialNumber == localCertificate.serialNumber }) {
-                localCertificate.machineIdentifier = certificate.machineIdentifier
-                return localCertificate
-            }
+           let certificate = certificates.first(where: { $0.serialNumber == localCertificate.serialNumber })
+        {
+            localCertificate.machineIdentifier = certificate.machineIdentifier
+            return localCertificate
         }
         
         if let serialNumber = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String {
