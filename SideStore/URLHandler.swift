@@ -84,7 +84,7 @@ class URLHandler {
             guard let callbackTemplate = queryItems["callback_template"]?.removingPercentEncoding else { return false }
             
             Task {
-                NotificationCenter.default.post(name: AppDelegate.exportCertificateNotification, object: nil, userInfo: [AppDelegate.exportCertificateCallbackTemplateKey: callbackTemplate])
+                ExportCertificateDialog.present(callbackTemplate: callbackTemplate)
             }
             return true
             

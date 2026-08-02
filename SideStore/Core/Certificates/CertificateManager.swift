@@ -52,6 +52,16 @@ public final class CertificateManager: @unchecked Sendable {
         self.activeCertificate = nil
     }
     
+    // MARK: - Certificate Encoding Helpers
+    
+    public var activeSigningCertificateBase64Encoded: String? {
+        guard let data = activeSigningCertificateData else { return nil }
+        let base64 = data.base64EncodedString()
+        var allowed = CharacterSet.urlQueryAllowed
+        allowed.remove(charactersIn: ";/?:@&=+$, ")
+        return base64.addingPercentEncoding(withAllowedCharacters: allowed)
+    }
+    
     public func saveCertificate(_ cert: ALTCertificate) {
         debugLog("[CertificateManager] saveCertificate started for serial: \(cert.serialNumber)")
         defer { debugLog("[CertificateManager] saveCertificate completed for serial: \(cert.serialNumber)") }
