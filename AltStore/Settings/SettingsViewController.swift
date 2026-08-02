@@ -491,13 +491,14 @@ private extension SettingsViewController
     
     func update()
     {
-        DatabaseManager.shared.viewContext.processPendingChanges()
+        let currentActiveTeam = DatabaseManager.shared.activeTeam()
+        debugLog("[SettingsVC] update() called. activeTeam: \(currentActiveTeam?.name ?? "nil"), account: \(currentActiveTeam?.account.appleID ?? "nil")")
         
-        if let team = DatabaseManager.shared.activeTeam()
+        if let team = currentActiveTeam
         {
-            self.accountNameLabel?.text = team.name
-            self.accountEmailLabel?.text = team.account.appleID
-            self.accountTypeLabel?.text = team.type.localizedDescription
+            self.accountNameLabel.text = team.name
+            self.accountEmailLabel.text = team.account.appleID
+            self.accountTypeLabel.text = team.type.localizedDescription
             
             self.activeTeam = team
         }
@@ -687,21 +688,26 @@ private extension SettingsViewController
 {
     func signIn()
     {
-        AppManager.shared.authenticate(presentingViewController: self) { (result) in
+        debugLog("[SettingsVC] signIn() invoked by user action")
+        AppManager.shared.authenticate(presentingViewController: self) { [weak self] (result) in
             DispatchQueue.main.async {
+                guard let self = self else { return }
                 switch result
                 {
                 case .failure(let error) where error is CancellationError:
-                    // Ignore
+                    debugLog("[SettingsVC] signIn() authentication cancelled by user")
                     break
                     
                 case .failure(let error):
+                    debugLog("[SettingsVC] signIn() authentication failed with error: \(error)")
                     let toastView = ToastView(error: error)
-                    toastView.show(in: self)
+                    toastView.show(in: self.view)
                     
-                case .success: break
+                case .success(let (team, _, _)):
+                    debugLog("[SettingsVC] signIn() authentication succeeded for team: \(team.name) (\(team.identifier))")
                 }
                 
+                debugLog("[SettingsVC] signIn() calling update()...")
                 self.update()
             }
         }
@@ -709,6 +715,7 @@ private extension SettingsViewController
     
     @objc func signOut(_ sender: UIBarButtonItem)
     {
+        debugLog("[SettingsVC] signOut() invoked by user action")
         let contentVC = SignOutAlertViewController()
         
         let alertController = UIAlertController(
@@ -1194,6 +1201,7 @@ extension SettingsViewController
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath)
     {
         let section = Section.allCases[indexPath.section]
+        debugLog("[SettingsVC] didSelectRowAt: section \(section) (index \(indexPath.section)), row \(indexPath.row)")
         switch section
         {
         case .signIn: self.signIn()

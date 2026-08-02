@@ -57,7 +57,6 @@ public class DatabaseManager
     {
         self.persistentContainer = PersistentContainer(name: "AltStore", bundle: Bundle(for: DatabaseManager.self))
         self.persistentContainer.preferredMergePolicy = MergePolicy()
-        self.persistentContainer.viewContext.automaticallyMergesChangesFromParent = true
         
         let observer = Unmanaged.passUnretained(self).toOpaque()
         CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, ReceivedWillMigrateDatabaseNotification, CFNotificationName.willMigrateDatabase.rawValue, nil, .deliverImmediately)
