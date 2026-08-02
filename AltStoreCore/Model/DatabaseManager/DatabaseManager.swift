@@ -580,7 +580,7 @@ private extension DatabaseManager
         installedApp.certificateSerialNumber = serialNumber
         installedApp.isRevoked = false
         
-        if let activeKeychainSerial = Keychain.shared.certificate?.serialNumber,
+        if let activeKeychainSerial = CertificateManager.shared.activeCertificate?.serialNumber,
            let serialNumber = serialNumber, !serialNumber.isEmpty {
             installedApp.isCrossSigned = (serialNumber != activeKeychainSerial)
         } else {

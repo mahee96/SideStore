@@ -50,11 +50,11 @@ private struct SessionCache {
     let session: ALTAppleAPISession
     
     static func loadFromKeychain() -> SessionCache? {
-        guard let session = Keychain.shared.session,
-              let team = Keychain.shared.team else {
+        guard let session = AuthManager.shared.session,
+              let team = AuthManager.shared.team else {
             return nil
         }
-        let certificate = Keychain.shared.certificate
+        let certificate = CertificateManager.shared.activeCertificate
         return SessionCache(team: team, certificate: certificate, session: session)
     }
 }
@@ -99,12 +99,10 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
 
         // Reset Keychain if email address changed
         if let newEmail = self.appleIDEmailAddress,
-           let currentEmail = Keychain.shared.appleIDEmailAddress,
+           let currentEmail = AuthManager.shared.currentAppleID,
            newEmail.lowercased() != currentEmail.lowercased() {
             self.verboseLog("[Authentication] Email address changed. Clearing cached session.")
-            Keychain.shared.team = nil
-            Keychain.shared.session = nil
-            Keychain.shared.certificate = nil
+            AuthManager.shared.clearSession()
         }
 
         // PHASE 1: Resolve valid session (Coalesced)
@@ -144,14 +142,20 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             self.activeCertificates = certificates
             self.context.activeCertificates = certificates
             
-            if self.skipCertificateProvisioning || certificates.contains(where: { $0.serialNumber == cache.certificate?.serialNumber }) {
-                self.debugLog("[Authentication] SessionCache is valid.")
+            var certToUse = cache.certificate
+            if let keychainCert = CertificateManager.shared.activeCertificate,
+               certificates.contains(where: { $0.serialNumber == keychainCert.serialNumber }) {
+                certToUse = keychainCert
+            }
+            
+            if self.skipCertificateProvisioning || (certToUse != nil && certificates.contains(where: { $0.serialNumber == certToUse?.serialNumber })) {
+                self.debugLog("[Authentication] SessionCache is valid. (using certificate: \(certToUse?.serialNumber ?? "nil"))")
                 self.context.team = cache.team
                 self.context.session = cache.session
-                self.context.certificate = cache.certificate
-                return (cache.team, cache.certificate, cache.session)
+                self.context.certificate = certToUse
+                return (cache.team, certToUse, cache.session)
             } else {
-                self.debugLog("[Authentication] Cached certificate is no longer active on developer portal.")
+                self.debugLog("[Authentication] Cached/active certificate is no longer active on developer portal.")
             }
         } catch {
             self.debugLog("[Authentication] Failed to validate SessionCache: \(error)")
@@ -177,7 +181,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         let certificate: ALTCertificate?
         if self.skipCertificateProvisioning {
             self.verboseLog("[Authentication] execute: Skipping certificate provisioning.")
-            certificate = Keychain.shared.signingCertificate.flatMap { try? ALTCertificate(p12Data: $0, password: nil) }
+            certificate = CertificateManager.shared.activeCertificate
         } else {
             self.verboseLog("[Authentication] execute: Invoking fetchCertificate...")
             certificate = try await self.fetchCertificate(for: team, session: session)
@@ -185,9 +189,9 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             self.context.certificate = certificate
         }
         
-        Keychain.shared.team = team
-        Keychain.shared.certificate = certificate
-        Keychain.shared.session = session
+        AuthManager.shared.team = team
+        AuthManager.shared.session = session
+        CertificateManager.shared.activeCertificate = certificate
         
         return (team, certificate, session)
     }
@@ -315,8 +319,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                 let didShowResignAlert = await self.showResignScreenIfNecessary(signer: signer, session: session)
                 self.verboseLog("[Authentication] postAuthenticationCleanup: didShowResignAlert = \(didShowResignAlert)")
                 if !didShowResignAlert {
-                    Keychain.shared.signingCertificate = altCertificate.p12Data()
-                    Keychain.shared.signingCertificatePassword = altCertificate.machineIdentifier
+                    CertificateManager.shared.activeCertificate = altCertificate
                     self.verboseLog("[Authentication] postAuthenticationCleanup: Cached signing certificate in Keychain.")
                 }
             }
@@ -375,10 +378,10 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             }
         }
         
-        // Update keychain
-        Keychain.shared.appleIDEmailAddress = self.appleIDEmailAddress ?? altTeam.account.appleID // Prefer the user's provided email address over the one associated with their account (which may be outdated).
+        // Update keychain via AuthManager
+        AuthManager.shared.currentAppleID = self.appleIDEmailAddress ?? altTeam.account.appleID // Prefer the user's provided email address over the one associated with their account (which may be outdated).
         if let appleIDPassword = self.appleIDPassword {
-            Keychain.shared.appleIDPassword = appleIDPassword
+            AuthManager.shared.password = appleIDPassword
         }
         
         try context.save()
@@ -430,7 +433,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     }
     
     private func signIn() async throws -> (ALTAccount, ALTAppleAPISession) {
-        if let adsid = Keychain.shared.appleIDAdsid, let xcodeToken = Keychain.shared.appleIDXcodeToken {
+        if let adsid = AuthManager.shared.adsid, let xcodeToken = AuthManager.shared.xcodeToken {
             self.verboseLog("[AuthenticationOperation] Authenticating Apple ID with tokens...")
             do {
                 let (account, session) = try await self.authenticateWithToken(adsid: adsid, xcodeToken: xcodeToken)
@@ -440,7 +443,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             }
         }
         
-        if let appleID = Keychain.shared.appleIDEmailAddress, let password = Keychain.shared.appleIDPassword {
+        if let appleID = AuthManager.shared.currentAppleID, let password = AuthManager.shared.password {
             self.debugLog("Authenticating Apple ID...")
             
             do {
@@ -461,6 +464,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     private func presentSignInUI() async throws -> (ALTAccount, ALTAppleAPISession) {
         self.verboseLog("[Authentication] presentSignInUI: Preparing to present sign-in UI...")
         return try await withCheckedThrowingContinuation { continuation in
+            var activeContinuation: CheckedContinuation<(ALTAccount, ALTAppleAPISession), Error>? = continuation
             let authenticationViewController = self.storyboard.instantiateViewController(withIdentifier: "authenticationViewController") as! AuthenticationViewController
             authenticationViewController.authenticationHandler = { (appleID, password, completionHandler) in
                 self.verboseLog("[Authentication] presentSignInUI: authenticationHandler invoked for Apple ID \(appleID)...")
@@ -476,6 +480,16 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                 }
             }
             authenticationViewController.completionHandler = { (result) in
+                guard let continuationToResume = activeContinuation else {
+                    self.debugLog("[Authentication] presentSignInUI: completionHandler invoked but activeContinuation is NIL (already consumed).")
+                    return
+                }
+                activeContinuation = nil
+                
+                if authenticationViewController.presentingViewController != nil {
+                    authenticationViewController.dismiss(animated: true)
+                }
+                
                 self.debugLog("[Authentication] presentSignInUI: completionHandler invoked (result is \(result != nil ? "success" : "nil/cancelled"))")
                 if let (account, session, password) = result {
                     // We presented the Auth UI and the user signed in.
@@ -484,17 +498,22 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                     
                     self.appleIDPassword = password
                     self.verboseLog("[Authentication] presentSignInUI: Resuming continuation with account: \(account.appleID)")
-                    continuation.resume(returning: (account, session))
+                    continuationToResume.resume(returning: (account, session))
                 } else {
                     self.debugLog("[Authentication] presentSignInUI: Resuming continuation with cancelled error.")
-                    continuation.resume(throwing: OperationError.cancelled)
+                    continuationToResume.resume(throwing: OperationError.cancelled)
                 }
             }
             
             self.verboseLog("[Authentication] presentSignInUI: Presenting authenticationViewController...")
             if !self.present(authenticationViewController) {
+                guard let continuationToResume = activeContinuation else {
+                    self.debugLog("[Authentication] presentSignInUI: Failed to present, but activeContinuation is NIL (already consumed).")
+                    return
+                }
+                activeContinuation = nil
                 self.debugLog("[Authentication] presentSignInUI: Failed to present authenticationViewController!")
-                continuation.resume(throwing: OperationError.notAuthenticated)
+                continuationToResume.resume(throwing: OperationError.notAuthenticated)
             } else {
                 self.verboseLog("[Authentication] presentSignInUI: Presented successfully.")
             }
@@ -573,8 +592,8 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             verificationHandler: verificationHandler
         )
         
-        Keychain.shared.appleIDAdsid = session.dsid
-        Keychain.shared.appleIDXcodeToken = session.authToken
+        AuthManager.shared.adsid = session.dsid
+        AuthManager.shared.xcodeToken = session.authToken
         
         return (account, session)
     }
@@ -623,12 +642,8 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         self.activeCertificates = certificates
         self.context.activeCertificates = certificates
         
-        if let data = Keychain.shared.signingCertificate {
-            let localWithNil = try? ALTCertificate(p12Data: data, password: nil)
-            let localWithEmpty = try? ALTCertificate(p12Data: data, password: "")
-            
-            if let localCertificate = localWithNil ?? localWithEmpty,
-               let certificate = certificates.first(where: { $0.serialNumber == localCertificate.serialNumber }) {
+        if let localCertificate = CertificateManager.shared.activeCertificate,
+           let certificate = certificates.first(where: { $0.serialNumber == localCertificate.serialNumber }) {
                 localCertificate.machineIdentifier = certificate.machineIdentifier
                 return localCertificate
             }

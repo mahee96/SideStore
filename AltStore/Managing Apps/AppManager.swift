@@ -224,13 +224,12 @@ extension AppManager
         
         Task.detached {
             do {
-                let authenticationOperation = try AuthenticationOperation(
+                let result = try await AuthManager.shared.performAuthenticationOperation(
                     context: context,
                     presentingViewController: presentingViewController,
                     skipDeviceRegistration: skipDeviceRegistration,
                     skipCertificateProvisioning: skipCertificateProvisioning
                 )
-                let result = try await authenticationOperation.execute()
                 completionHandler(.success(result))
             } catch {
                 context.error = error
@@ -597,22 +596,29 @@ extension AppManager
         }
     }
     
-    func syncAppIDs(presentingViewController: UIViewController? = nil, completionHandler: @escaping (Result<Void, Error>) -> Void)
+    func syncAppIDs(presentingViewController: UIViewController? = nil, showAuthIfRequired: Bool = false, completionHandler: @escaping (Result<Void, Error>) -> Void)
     {
+        guard AuthManager.shared.isAuthenticated || showAuthIfRequired else {
+            debugLog("[AppManager] syncAppIDs: User is unauthenticated and showAuthIfRequired is false. Skipping syncAppIDs.")
+            completionHandler(.failure(OperationError.notAuthenticated))
+            return
+        }
+        
+        let effectivePresentingVC = showAuthIfRequired ? presentingViewController : nil
+        
         Task.detached {
             do {
                 let managedObjectContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
                 let context = AuthenticatedOperationContext(
-                    presentingViewController: presentingViewController,
+                    presentingViewController: effectivePresentingVC,
                     dbBackgroundContext: managedObjectContext
                 )
-                let authOperation = try AuthenticationOperation(
+                try await AuthManager.shared.performAuthenticationOperation(
                     context: context,
-                    presentingViewController: presentingViewController,
+                    presentingViewController: effectivePresentingVC,
                     skipDeviceRegistration: true,
                     skipCertificateProvisioning: true
                 )
-                try await authOperation.execute()
                 
                 let syncAppIDsOperation = try SyncAppIDsOperation(context: context)
                 try await syncAppIDsOperation.execute()
@@ -1048,13 +1054,11 @@ private extension AppManager
             if group.context.session == nil
             {
                 do {
-                    let authenticationOperation = try AuthenticationOperation(
+                    let (team, cert, session) = try await AuthManager.shared.performAuthenticationOperation(
                         context: group.context,
                         presentingViewController: presentingViewController,
                         skipDeviceRegistration: false
                     )
-                    
-                    let (team, cert, session) = try await authenticationOperation.execute()
                     group.context.team = team
                     group.context.certificate = cert
                     group.context.session = session
@@ -1451,6 +1455,12 @@ private extension AppManager
             case .verifyCertificate:
                 loggerType = VerifyCertificateOperation.self
                 let step = try VerifyCertificateOperation(context: context)
+                result = try await step.execute(parentProgress: progress)
+                return nil
+                
+            case .updateAppCertificate:
+                loggerType = UpdateAppCertificateOperation.self
+                let step = try UpdateAppCertificateOperation(context: context)
                 result = try await step.execute(parentProgress: progress)
                 return nil
             }

@@ -22,7 +22,7 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
             let app = self.context.app,
             let profiles = self.context.provisioningProfiles,
             let team = self.context.team,
-            let certificate = self.context.certificate
+            let certificate = self.context.overrideCertificate ?? self.context.certificate
         else {
             throw OperationError.invalidParameters("ResignAppOperation.main: " +
                                                    "self.context.team or " +
@@ -109,9 +109,8 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
             additionalValues[Bundle.Info.deviceID] = udid
             additionalValues[Bundle.Info.serverID] = UserDefaults.standard.preferredServerID
             
-            let data = Keychain.shared.signingCertificate
-            let signingCertificate = data.flatMap { (try? ALTCertificate(p12Data: $0, password: "")) ?? (try? ALTCertificate(p12Data: $0, password: nil)) }
-            let encryptingPassword = Keychain.shared.signingCertificatePassword
+            let signingCertificate = CertificateManager.shared.activeCertificate
+            let encryptingPassword = CertificateManager.shared.activeSigningCertificatePassword
             
             if
                 let signingCertificate = signingCertificate,

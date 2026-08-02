@@ -156,6 +156,7 @@ class AppOperationContext: PipelineOperationContext
     var isFinished = false
 
     let authenticatedContext: AuthenticatedOperationContext
+    var overrideCertificate: ALTCertificate?
 
     var targetBundleIdentifier: String { customBundleIdentifier ?? bundleIdentifier }
 

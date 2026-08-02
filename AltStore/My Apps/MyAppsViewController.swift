@@ -1956,13 +1956,23 @@ extension MyAppsViewController
         
         let backupMenu = UIMenu(title: NSLocalizedString("Backup", comment: ""), image: UIImage(systemName: "archivebox"), children: backupSubmenuActions)
         
+        let setCertAction = UIAction(title: NSLocalizedString("Set Certificate...", comment: ""), image: UIImage(systemName: "key.icloud")) { [weak self] _ in
+            self?.presentSetCertificateAlert(for: installedApp)
+        }
+        
+        let resetCertAction = UIAction(title: NSLocalizedString("Reset Certificate", comment: ""), image: UIImage(systemName: "arrow.counterclockwise")) { [weak self] _ in
+            self?.resetCertificate(for: installedApp)
+        }
+        
+        var certSubmenuActions: [UIMenuElement] = [setCertAction]
+        if installedApp.certificateSerialNumber != nil {
+            certSubmenuActions.append(resetCertAction)
+        }
+        let certificateMenu = UIMenu(title: NSLocalizedString("Certificate", comment: ""), image: UIImage(systemName: "key"), children: certSubmenuActions)
+        
         if installedApp.resignedBundleIdentifier == Bundle.main.bundleIdentifier
         {
-            #if BETA
-            actions = [refreshAction, resignAction, changeIconMenu]
-            #else
-            actions = [refreshAction, resignAction]
-            #endif
+            actions = [refreshAction, resignAction, certificateMenu, changeIconMenu]
         }
         else
         {
@@ -1971,11 +1981,13 @@ extension MyAppsViewController
                 actions.append(openMenu)
                 actions.append(refreshAction)
                 actions.append(resignAction)
+                actions.append(certificateMenu)
             }
             else
             {
                 actions.append(activateAction)
                 actions.append(resignAction)
+                actions.append(certificateMenu)
             }
             
             if installedApp.isActive
@@ -2030,6 +2042,7 @@ extension MyAppsViewController
             openMenu,
             refreshAction,
             resignAction,
+            certificateMenu,
             activateAction,
             jitAction,
             changeIconMenu,
@@ -2628,5 +2641,33 @@ extension PillButton {
                 self.setDisplayState(.active(title: title, daysRemaining: days))
             }
         }
+    }
+}
+
+extension MyAppsViewController {
+    private func presentSetCertificateAlert(for installedApp: InstalledApp) {
+        let picker = SignableCertificatesListViewController(installedApp: installedApp)
+        picker.onSelectCertificate = { [weak self] cert in
+            self?.setCertificate(cert, for: installedApp)
+        }
+        picker.present(from: self)
+    }
+    
+    private func setCertificate(_ cert: ALTCertificate, for installedApp: InstalledApp) {
+        let context = DatabaseManager.shared.viewContext
+        context.performAndWait {
+            installedApp.certificateSerialNumber = cert.serialNumber
+            try? context.save()
+        }
+        self.resign(installedApp)
+    }
+    
+    private func resetCertificate(for installedApp: InstalledApp) {
+        let context = DatabaseManager.shared.viewContext
+        context.performAndWait {
+            installedApp.certificateSerialNumber = nil
+            try? context.save()
+        }
+        self.resign(installedApp)
     }
 }

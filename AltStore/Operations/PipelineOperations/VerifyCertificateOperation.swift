@@ -95,8 +95,10 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
         self.setProgress(30)
         
         let bundleID = self.context.targetBundleIdentifier
-        let activeKeychainCert = Keychain.shared.certificate ?? self.context.certificate
+        let activeKeychainCert = CertificateManager.shared.activeCertificate
         let activeKeychainSerial = activeKeychainCert?.serialNumber
+        let authenticatedCertSerial = self.context.authenticatedContext.certificate?.serialNumber
+        let overrideCertSerial = self.context.overrideCertificate?.serialNumber
         
         // 2. Fetch InstalledApp details from CoreData
         let (appName, installedAppSerial) = await DatabaseManager.shared.persistentContainer.performBackgroundTask { (context) -> (String, String?) in
@@ -110,15 +112,36 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
         self.setProgress(50)
         
         let activeSerials = Set(activeCertificates.compactMap { $0.serialNumber })
-        debugLog("""
-        [VerifyCertificateOperation] Verifying App: '\(appName)' (\(bundleID))
-          • Installed App Serial : \(installedAppSerial ?? "nil")
-          • Active Keychain Serial: \(activeKeychainSerial ?? "nil")
-          • Portal Active Serials : \(Array(activeSerials))
         
+        debugLog("""
+        [VerifyCertificateOperation] Parameter Accountability for '\(appName)' (\(bundleID)):
+          • installedAppSerial           : \(installedAppSerial ?? "nil")
+          • overrideCertSerial           : \(overrideCertSerial ?? "nil")
+          • authenticatedCertSerial      : \(authenticatedCertSerial ?? "nil")
+          • activeKeychainSerial         : \(activeKeychainSerial ?? "nil")
+          • portalActiveSerials (\(activeSerials.count))  : \(Array(activeSerials))
         """)
         
-        let targetSerial = installedAppSerial ?? activeKeychainSerial
+        let targetSerial: String? = {
+            if let serial = installedAppSerial, !serial.isEmpty {
+                debugLog("[VerifyCertificateOperation] Resolution: Selected installedAppSerial '\(serial)'")
+                return serial
+            }
+            if let serial = overrideCertSerial, !serial.isEmpty {
+                debugLog("[VerifyCertificateOperation] Resolution: Selected overrideCertSerial '\(serial)'")
+                return serial
+            }
+            if let serial = authenticatedCertSerial, !serial.isEmpty {
+                debugLog("[VerifyCertificateOperation] Resolution: Selected authenticatedCertSerial '\(serial)'")
+                return serial
+            }
+            if let serial = activeKeychainSerial, !serial.isEmpty {
+                debugLog("[VerifyCertificateOperation] Resolution: Selected activeKeychainSerial '\(serial)'")
+                return serial
+            }
+            debugLog("[VerifyCertificateOperation] WARNING: All certificate serial sources (installedApp, context, keychain) are NIL!")
+            return nil
+        }()
         
         if let serial = targetSerial, !serial.isEmpty {
             if activeSerials.contains(serial) {
@@ -134,15 +157,18 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
                 self.setProgress(70)
                 debugLog("[VerifyCertificateOperation] Certificate serial '\(serial)' NOT found in logged-in portal list. Contacting Apple OCSP responder (ocsp.apple.com)...")
                 
-                let certToTest = (installedAppSerial == Keychain.shared.certificate?.serialNumber) ? Keychain.shared.certificate : self.context.certificate
-                var isConfirmedRevoked = false
+                let certToTest = CertificateManager.shared.loadCertificate(for: serial) ?? (self.context.overrideCertificate?.serialNumber == serial ? self.context.overrideCertificate : (self.context.authenticatedContext.certificate?.serialNumber == serial ? self.context.authenticatedContext.certificate : nil))
                 
+                var isConfirmedRevoked = false
                 if let cert = certToTest {
                     isConfirmedRevoked = checkRevocationWithOCSP(certificate: cert)
+                } else {
+                    // Not in active portal list and no valid certificate found -> Revoked!
+                    isConfirmedRevoked = true
                 }
                 
                 if isConfirmedRevoked {
-                    debugLog("[VerifyCertificateOperation] Apple OCSP confirmed certificate serial '\(serial)' is REVOKED!")
+                    debugLog("[VerifyCertificateOperation] Certificate serial '\(serial)' is REVOKED!")
                     await self.updateAppState(bundleID: bundleID, isRevoked: true, isCrossSigned: false)
                     throw OperationError.certificateRevoked(appName: appName)
                 } else {

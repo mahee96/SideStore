@@ -91,18 +91,11 @@ class CertificatesViewModel: ObservableObject {
         .accessibility(.afterFirstUnlock)
     
     func fetchActiveSerialNumber() {
-        if let data = Keychain.shared.signingCertificate {
-            let cert = (try? ALTCertificate(p12Data: data, password: ""))
-                    ?? (try? ALTCertificate(p12Data: data, password: nil))
-            if let cert = cert { self.activeSerialNumber = cert.serialNumber; return }
-        }
-        self.activeSerialNumber = nil
+        self.activeSerialNumber = CertificateManager.shared.activeCertificate?.serialNumber
     }
     
     private var activeLocalCert: ALTCertificate? {
-        guard let data = Keychain.shared.signingCertificate else { return nil }
-        let cert = (try? ALTCertificate(p12Data: data, password: ""))
-                ?? (try? ALTCertificate(p12Data: data, password: nil))
+        guard let cert = CertificateManager.shared.activeCertificate else { return nil }
         if let cert = cert {
             if let metadata = UserDefaults.standard.dictionary(forKey: "certMetadata_" + cert.serialNumber) as? [String: String] {
                 cert.machineName        = metadata["machineName"]
@@ -116,91 +109,15 @@ class CertificatesViewModel: ObservableObject {
     }
     
     func loadLocalCertificates() -> [ALTCertificate] {
-        var localCerts: [ALTCertificate] = []
-        let serials = UserDefaults.standard.stringArray(forKey: "importedCertificateSerials") ?? []
-        debugLog("[SideStore] loadLocalCertificates, serials: \(serials)")
-        for serial in serials {
-            do {
-                if let data = try self.certificateKeychain.getData("importedCert_" + serial) {
-                    debugLog("[SideStore]   Retrieved data size: \(data.count) for \(serial)")
-                    var loadedCert: ALTCertificate?
-                    do {
-                        loadedCert = try ALTCertificate(p12Data: data, password: "")
-                        debugLog("[SideStore]   Parsed as p12 empty pass")
-                    } catch {
-                        debugLog("[SideStore]   Failed p12 empty pass: \(error)")
-                        do {
-                            loadedCert = try ALTCertificate(p12Data: data, password: nil)
-                            debugLog("[SideStore]   Parsed as p12 nil pass")
-                        } catch {
-                            debugLog("[SideStore]   Failed p12 nil pass: \(error)")
-                            if let cert = ALTCertificate(data: data) {
-                                loadedCert = cert
-                                debugLog("[SideStore]   Parsed as raw cert")
-                            } else {
-                                debugLog("[SideStore]   Failed raw cert parsing")
-                            }
-                        }
-                    }
-                    if let cert = loadedCert {
-                        if let metadata = UserDefaults.standard.dictionary(forKey: "certMetadata_" + cert.serialNumber) as? [String: String] {
-                            cert.machineName        = metadata["machineName"]
-                            cert.identifier         = metadata["identifier"]
-                            cert.requesterEmail     = metadata["requesterEmail"]
-                            cert.machineIdentifier  = metadata["machineIdentifier"]
-                        }
-                        localCerts.append(cert)
-                    }
-                } else {
-                    debugLog("[SideStore]   No data found in keychain for importedCert_\(serial)")
-                }
-            } catch {
-                debugLog("[SideStore]   Keychain error for importedCert_\(serial): \(error)")
-            }
-        }
-        return localCerts
+        return CertificateManager.shared.loadAllLocalCertificates()
     }
     
     func saveLocalCertificate(_ cert: ALTCertificate) {
-        debugLog("[SideStore] saveLocalCertificate serial: \(cert.serialNumber)")
-        if cert.privateKey != nil, let p12Data = cert.p12Data() {
-            debugLog("[SideStore]   p12Data generated, size: \(p12Data.count)")
-            do {
-                try self.certificateKeychain.set(p12Data, key: "importedCert_" + cert.serialNumber)
-                debugLog("[SideStore]   Successfully saved p12 to keychain")
-            } catch {
-                debugLog("[SideStore]   Failed to save p12 to keychain: \(error)")
-            }
-        } else if let derData = cert.data {
-            debugLog("[SideStore]   derData exists, size: \(derData.count)")
-            do {
-                try self.certificateKeychain.set(derData, key: "importedCert_" + cert.serialNumber)
-                debugLog("[SideStore]   Successfully saved derData to keychain")
-            } catch {
-                debugLog("[SideStore]   Failed to save derData to keychain: \(error)")
-            }
-        } else {
-            debugLog("[SideStore]   No data available to save")
-            return
-        }
-        var serials = UserDefaults.standard.stringArray(forKey: "importedCertificateSerials") ?? []
-        if !serials.contains(cert.serialNumber) {
-            serials.append(cert.serialNumber)
-            UserDefaults.standard.set(serials, forKey: "importedCertificateSerials")
-        }
-        var metadataDict: [String: String] = [:]
-        if let v = cert.machineName       { metadataDict["machineName"]       = v }
-        if let v = cert.identifier        { metadataDict["identifier"]        = v }
-        if let v = cert.requesterEmail    { metadataDict["requesterEmail"]    = v }
-        if let v = cert.machineIdentifier { metadataDict["machineIdentifier"] = v }
-        UserDefaults.standard.set(metadataDict, forKey: "certMetadata_" + cert.serialNumber)
+        CertificateManager.shared.saveCertificate(cert)
     }
     
     func deleteLocalCertificate(serialNumber: String) {
-        try? self.certificateKeychain.remove("importedCert_" + serialNumber)
-        var serials = UserDefaults.standard.stringArray(forKey: "importedCertificateSerials") ?? []
-        serials.removeAll { $0 == serialNumber }
-        UserDefaults.standard.set(serials, forKey: "importedCertificateSerials")
+        CertificateManager.shared.deleteCertificate(serialNumber: serialNumber)
     }
     
     func loadCertificates(presentingViewController: UIViewController?, isPullToRefresh: Bool = false, completion: (() -> Void)? = nil) {
@@ -219,9 +136,7 @@ class CertificatesViewModel: ObservableObject {
         
         Task { @MainActor in
             defer { self.isLoading = false; completion?() }
-            let hasPassword = Keychain.shared.appleIDPassword != nil
-            let hasToken    = Keychain.shared.appleIDXcodeToken != nil
-            guard Keychain.shared.appleIDEmailAddress != nil && (hasPassword || hasToken) else {
+            guard AuthManager.shared.isAuthenticated else {
                 if isPullToRefresh { self.errorMessage = OperationError.notAuthenticated.localizedDescription }
                 return
             }
@@ -459,8 +374,7 @@ class CertificatesViewModel: ObservableObject {
                         self.deleteLocalCertificate(serialNumber: certificate.serialNumber)
                         self.certificates.removeAll { $0.serialNumber == certificate.serialNumber }
                         if self.activeSerialNumber == certificate.serialNumber {
-                            Keychain.shared.signingCertificate         = nil
-                            Keychain.shared.signingCertificatePassword = nil
+                            CertificateManager.shared.clearActiveCertificate()
                             self.activeSerialNumber = nil
                         }
                         self.alertMessage = "Certificate revoked successfully."
@@ -482,8 +396,7 @@ class CertificatesViewModel: ObservableObject {
         deleteLocalCertificate(serialNumber: certificate.serialNumber)
         self.certificates.removeAll { $0.serialNumber == certificate.serialNumber }
         if self.activeSerialNumber == certificate.serialNumber {
-            Keychain.shared.signingCertificate         = nil
-            Keychain.shared.signingCertificatePassword = nil
+            CertificateManager.shared.clearActiveCertificate()
             self.activeSerialNumber = nil
         }
         self.alertMessage = "Certificate deleted locally."
@@ -492,24 +405,21 @@ class CertificatesViewModel: ObservableObject {
     
     func makeCertificateActive(_ certificate: ALTCertificate) {
         guard certificate.privateKey != nil else { self.errorMessage = "Cannot activate certificate: private key missing."; return }
-        Keychain.shared.signingCertificate         = certificate.p12Data()
-        Keychain.shared.signingCertificatePassword = certificate.machineIdentifier ?? ""
+        CertificateManager.shared.activeCertificate = certificate
         self.fetchActiveSerialNumber()
         self.alertMessage = "Active signing certificate replaced successfully."
         self.showAlert    = true
     }
     
     func deactivateActiveCertificate() {
-        Keychain.shared.signingCertificate         = nil
-        Keychain.shared.signingCertificatePassword = nil
+        CertificateManager.shared.clearActiveCertificate()
         self.activeSerialNumber = nil
         self.alertMessage = "Local certificate deactivated."
         self.showAlert    = true
     }
     
     func isCertificateLocallyCached(_ certificate: ALTCertificate) -> Bool {
-        let serials = UserDefaults.standard.stringArray(forKey: "importedCertificateSerials") ?? []
-        return serials.contains(certificate.serialNumber) || certificate.serialNumber == self.activeSerialNumber
+        return CertificateManager.shared.isCertificateLocallyCached(cert: certificate)
     }
     
     func sortCertificates(_ certs: [ALTCertificate]) -> [ALTCertificate] {

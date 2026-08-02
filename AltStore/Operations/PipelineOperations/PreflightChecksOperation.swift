@@ -27,7 +27,7 @@ final class PreflightChecksOperation: BasePipelineOperation<AuthenticatedOperati
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
 
-        let currentTeam = self.context.team ?? Keychain.shared.team
+        let currentTeam = self.context.team ?? AuthManager.shared.team
         let currentTeamID = currentTeam?.identifier
 
         let startProgress = self.progress.completedUnitCount

@@ -295,16 +295,15 @@ final class SettingsViewController: UITableViewController
             try? FileManager.default.removeItem(at: file)
         }
         Keychain.shared.reset()
-        Keychain.shared.appleIDEmailAddress = account.email
-        Keychain.shared.appleIDPassword = account.password
+        AuthManager.shared.currentAppleID = account.email
+        AuthManager.shared.password = account.password
         Keychain.shared.adiPb = account.adiPB
         Keychain.shared.identifier = account.local_user
         signIn()
         update()
         do {
             let altCert = try ALTCertificate(p12Data: account.cert, password: account.certpass)
-            Keychain.shared.signingCertificate = altCert.encryptedP12Data(withPassword: "")!
-            Keychain.shared.signingCertificatePassword = account.certpass
+            CertificateManager.shared.activeCertificate = altCert
             let toastView = ToastView(text: NSLocalizedString("Successfully imported '\(account.email)'!", comment: ""), detailText: "SideStore should be fully operational!")
             return toastView.show(in: self)
         } catch {
@@ -323,15 +322,15 @@ final class SettingsViewController: UITableViewController
     }
     
     func exportAccount(_ certpass: String) -> ImportedAccount? {
-        guard let email = Keychain.shared.appleIDEmailAddress,
-              let password = Keychain.shared.appleIDPassword,
-              let cert = Keychain.shared.signingCertificate,
+        guard let email = AuthManager.shared.currentAppleID,
+              let password = AuthManager.shared.password,
+              let cert = CertificateManager.shared.activeSigningCertificateData,
               let identifier = Keychain.shared.identifier,
               let adiPB = Keychain.shared.adiPb else {
             #if DEBUG
-            debugLog("\(Keychain.shared.appleIDEmailAddress ?? "Empty email")")
-            debugLog("\(Keychain.shared.appleIDPassword ?? "Empty password")")
-            debugLog("\(Keychain.shared.signingCertificate?.description ?? "Empty cert")")
+            debugLog("\(AuthManager.shared.currentAppleID ?? "Empty email")")
+            debugLog("\(AuthManager.shared.password ?? "Empty password")")
+            debugLog("\(CertificateManager.shared.activeSigningCertificateData?.description ?? "Empty cert")")
             debugLog("\(Keychain.shared.identifier ?? "Empty identifier")")
             debugLog("\(Keychain.shared.adiPb ?? "Empty adiPb")")
             #endif
@@ -1035,8 +1034,8 @@ private extension SettingsViewController
                 toastView.show(in: self)
                 return
             }
-            guard let data = Keychain.shared.signingCertificate,
-            let password = Keychain.shared.signingCertificatePassword else {
+            guard let data = CertificateManager.shared.activeSigningCertificateData,
+            let password = CertificateManager.shared.activeSigningCertificatePassword else {
                 let toastView = ToastView(text: NSLocalizedString("Failed to find certificate or password", comment: ""), detailText: nil)
                 toastView.show(in: self)
                 return
@@ -1660,13 +1659,13 @@ extension SettingsViewController
 //                        return
 //                    }
 //                    
-//                    Keychain.shared.signingCertificate = altCert.encryptedP12Data(withPassword: "")!
+//                    CertificateManager.shared.activeCertificate = altCert
 //                    let toastView = ToastView(text: NSLocalizedString("Certificate imported successfully!", comment: ""), detailText: nil)
 //                    toastView.show(in: self)
 //                }
 //            case .exportCert:
 //                Task {
-//                    guard let certData = Keychain.shared.signingCertificate else {
+//                    guard let certData = CertificateManager.shared.activeSigningCertificateData else {
 //                        let toastView = ToastView(text: NSLocalizedString("Failed to export certificate!", comment: ""), detailText: "Certificate not found.")
 //                        toastView.show(in: self)
 //                        return
