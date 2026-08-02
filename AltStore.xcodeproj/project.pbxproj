@@ -292,6 +292,7 @@
 				Views/Settings/Advanced/WirelessPair/WirelessPairManager.swift,
 				Views/Settings/Advanced/WirelessPair/WirelessPairView.swift,
 				Views/Settings/Auth/SignOutAlertViewController.swift,
+				Views/Settings/BackupAndRestoreView.swift,
 				Views/Settings/Diagnostics/DeveloperOptionsView.swift,
 				Views/Settings/Diagnostics/ExperimentalFeaturesView.swift,
 				Views/Settings/Diagnostics/OperationsLoggingContolView.swift,

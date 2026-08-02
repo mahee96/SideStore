@@ -32,7 +32,6 @@ extension SettingsViewController
         case credits
         case betaTesting
         case advancedSettings
-        case signing
         case diagnostics    // diagnostics section, will be enabled on release builds only on swipe down with 3 fingers 3 times
         // case macDirtyCow
     }
@@ -80,12 +79,8 @@ extension SettingsViewController
         case anisetteServers        // row 4 - Anisette Servers
         case connectionConfig       // row 5 - Connection Configuration
         case certificateManagement  // row 6 - Certificate Management
-        case userCustomizations     // row 7 - User Customizations
-    }
-    
-    private enum SigningSettingsRow: Int, CaseIterable {
-        case importAccount
-        case exportAccount
+        case backupAndRestore       // row 7 - Backup & Restore
+        case userCustomizations     // row 8 - User Customizations
     }
 
     private enum BetaTestingRow: Int, CaseIterable {
@@ -593,17 +588,7 @@ private extension SettingsViewController
             
         case .advancedSettings:
             settingsHeaderFooterView.primaryLabel.text = NSLocalizedString("ADVANCED SETTINGS", comment: "")
-            
-        case .signing:
-            if isHeader
-            {
-                settingsHeaderFooterView.primaryLabel.text = NSLocalizedString("SIGNING", comment: "")
-            }
-            else
-            {
-                settingsHeaderFooterView.secondaryLabel.text = NSLocalizedString("", comment: "")
-            }
-        
+
         case .betaTesting:
             if isHeader
             {
@@ -1057,7 +1042,7 @@ extension SettingsViewController
         case _ where isSectionHidden(section): return nil
         case .signIn where self.activeTeam != nil: return nil
         case .account where self.activeTeam == nil: return nil
-        case .signIn, .account, .patreon, .display, .appRefresh, .techyThings, .credits, .advancedSettings, .signing, .betaTesting, .diagnostics /* ,.macDirtyCow */:
+        case .signIn, .account, .patreon, .display, .appRefresh, .techyThings, .credits, .advancedSettings, .betaTesting, .diagnostics /* ,.macDirtyCow */:
             let headerView = tableView.dequeueReusableHeaderFooterView(withIdentifier: "HeaderFooterView") as! SettingsHeaderFooterView
             self.prepare(headerView, for: section, isHeader: true)
             return headerView
@@ -1074,7 +1059,7 @@ extension SettingsViewController
         case _ where isSectionHidden(section): return nil
         case .signIn where self.activeTeam != nil: return nil
         // case .signIn, .patreon, .display, .appRefresh, .techyThings, .macDirtyCow:
-        case .signIn, .patreon, .display, .appRefresh, .techyThings, .signing, .betaTesting:
+        case .signIn, .patreon, .display, .appRefresh, .techyThings, .betaTesting:
             let footerView = tableView.dequeueReusableHeaderFooterView(withIdentifier: "HeaderFooterView") as! SettingsHeaderFooterView
             self.prepare(footerView, for: section, isHeader: false)
             return footerView
@@ -1091,7 +1076,7 @@ extension SettingsViewController
         case _ where isSectionHidden(section): return 1.0
         case .signIn where self.activeTeam != nil: return 1.0
         case .account where self.activeTeam == nil: return 1.0
-        case .signIn, .account, .patreon, .display, .appRefresh, .techyThings, .credits, .advancedSettings, .signing, .betaTesting, .diagnostics:
+        case .signIn, .account, .patreon, .display, .appRefresh, .techyThings, .credits, .advancedSettings, .betaTesting, .diagnostics:
             let height = self.preferredHeight(for: self.prototypeHeaderFooterView, in: section, isHeader: true)
             return height
             
@@ -1108,7 +1093,7 @@ extension SettingsViewController
         case .signIn where self.activeTeam != nil: return 1.0
         case .account where self.activeTeam == nil: return 1.0            
         // case .signIn, .patreon, .display, .appRefresh, .techyThings, .macDirtyCow:
-        case .signIn, .patreon, .display, .appRefresh, .techyThings, .signing, .diagnostics, .betaTesting:
+        case .signIn, .patreon, .display, .appRefresh, .techyThings, .diagnostics, .betaTesting:
             let height = self.preferredHeight(for: self.prototypeHeaderFooterView, in: section, isHeader: false)
             return height
             
@@ -1390,6 +1375,17 @@ extension SettingsViewController
                 let vc = UIHostingController(rootView: certificateManagementView)
                 self.prepare(for: UIStoryboardSegue(identifier: "certificateManagement", source: self, destination: vc), sender: nil)
                 
+            case .backupAndRestore:
+                let backupView = BackupAndRestoreView()
+                let vc = UIHostingController(rootView: backupView)
+                
+                let appearance = UINavigationBarAppearance()
+                appearance.configureWithDefaultBackground()
+                vc.navigationItem.scrollEdgeAppearance = appearance
+                vc.navigationItem.standardAppearance = appearance
+                
+                navigationController?.pushViewController(vc, animated: true)
+                
             case .userCustomizations:
                 let userCustomizationsView = UserCustomizationsView()
                 let vc = UIHostingController(rootView: userCustomizationsView)
@@ -1402,28 +1398,6 @@ extension SettingsViewController
                 navigationController?.pushViewController(vc, animated: true)
                 
             case .refreshAttempts: break
-            }
-        case .signing:
-            let row = SigningSettingsRow.allCases[indexPath.row]
-            switch row {
-            case .exportAccount: showExportAccount()
-            case .importAccount:
-                Task {
-                    let confUrl = await withUnsafeContinuation { c in
-                        let importVc = UIDocumentPickerViewController(forOpeningContentTypes: [UTType(filenameExtension: "sideconf")!], asCopy: false)
-                        ImportExport.documentPickerHandler = DocumentPickerHandler { url in
-                            c.resume(returning: url)
-                        }
-                        importVc.delegate = ImportExport.documentPickerHandler
-                        
-                        self.present(importVc, animated: true)
-                        
-                    }
-                    guard let confUrl else {
-                        return
-                    }
-                    importAccountAtFile(confUrl)
-                }
             }
         
         case .diagnostics:

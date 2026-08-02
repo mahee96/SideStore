@@ -8,11 +8,40 @@
 
 
 @preconcurrency import UIKit
+@preconcurrency import AltSign
 @preconcurrency import AltStoreCore
 
 class ImportExport {
     
     public static var documentPickerHandler: DocumentPickerHandler?
+
+    public static func exportAccount(password: String) -> ImportedAccount? {
+        guard let email = AuthManager.shared.currentAppleID,
+              let passwordStr = AuthManager.shared.password,
+              let cert = CertificateManager.shared.activeSigningCertificateData,
+              let identifier = Keychain.shared.identifier,
+              let adiPB = Keychain.shared.adiPb else {
+            return nil
+        }
+        return ImportedAccount(email: email, password: passwordStr, cert: cert, certpass: password, local_user: identifier, adiPB: adiPB)
+    }
+
+    public static func importAccountJSON(from file: URL) throws {
+        _ = file.startAccessingSecurityScopedResource()
+        defer { file.stopAccessingSecurityScopedResource() }
+        
+        let accountData = try Data(contentsOf: file)
+        let account = try Foundation.JSONDecoder().decode(ImportedAccount.self, from: accountData)
+        
+        Keychain.shared.reset()
+        AuthManager.shared.currentAppleID = account.email
+        AuthManager.shared.password = account.password
+        Keychain.shared.adiPb = account.adiPB
+        Keychain.shared.identifier = account.local_user
+        
+        let altCert = try ALTCertificate(p12Data: account.cert, password: account.certpass)
+        CertificateManager.shared.activeCertificate = altCert
+    }
     
     public static func getPreviousBackupURL(_ backupURL: URL) -> URL {
         let backupParentDirectory = backupURL.deletingLastPathComponent()

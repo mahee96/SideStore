@@ -7,6 +7,8 @@
 //
 
 import SwiftUI
+import CoreData
+import UniformTypeIdentifiers
 @preconcurrency import AltSign
 import AltStoreCore
 
@@ -25,6 +27,9 @@ struct DeveloperOptionsView: View {
     
     @State private var isExportingDB: Bool = false
     @State private var showDeleteConfirmation: Bool = false
+    @State private var showClearRefreshAttemptsConfirmation: Bool = false
+    @State private var showExportPasswordPrompt: Bool = false
+    @State private var exportCertPassword: String = ""
     
     var body: some View {
         ScrollView {
@@ -153,6 +158,22 @@ struct DeveloperOptionsView: View {
                         
                         divider
                         
+                        SwiftUI.Button(action: { showClearRefreshAttemptsConfirmation = true }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "clock.arrow.circlepath")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(Color(red: 1.0, green: 0.27, blue: 0.27))
+                                Text("Clear Refresh Attempts")
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(Color(red: 1.0, green: 0.27, blue: 0.27))
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .frame(height: 50)
+                        }
+                        
+                        divider
+                        
                         SwiftUI.Button(action: { showDeleteConfirmation = true }) {
                             HStack(spacing: 12) {
                                 Image(systemName: "trash")
@@ -180,6 +201,51 @@ struct DeveloperOptionsView: View {
                     .background(Color.settingsRowBackground)
                     .cornerRadius(14)
                 }
+                
+                // Section 3: Account Management
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("ACCOUNT MANAGEMENT")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.6))
+                        .padding(.horizontal, 16)
+                    
+                    VStack(spacing: 0) {
+                        SwiftUI.Button(action: { showImportAccountPicker() }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "square.and.arrow.down")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.white)
+                                Text("Import Account JSON")
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(.white)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .frame(height: 50)
+                        }
+                        
+                        divider
+                        
+                        SwiftUI.Button(action: {
+                            exportCertPassword = ""
+                            showExportPasswordPrompt = true
+                        }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.white)
+                                Text("Export Account JSON")
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(.white)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .frame(height: 50)
+                        }
+                    }
+                    .background(Color.settingsRowBackground)
+                    .cornerRadius(14)
+                }
             }
             .padding(.horizontal, 16)
             .padding(.top, 16)
@@ -195,13 +261,90 @@ struct DeveloperOptionsView: View {
             }
             SwiftUI.Button("Cancel", role: .cancel) {}
         } message: {
-            Text(
-            """
-            Deleting the database will remove all app entries and sources from SideStore.
-            • Your installed apps and account settings will not be affected. 
-            • SideStore will close immediately, and any ongoing installs or refreshes will be canceled.
-            """
-            )
+            Text("Deleting the database will remove all app entries and sources from SideStore.")
+        }
+        .alert("Clear Refresh Attempts", isPresented: $showClearRefreshAttemptsConfirmation) {
+            SwiftUI.Button("Clear", role: .destructive) {
+                clearRefreshAttempts()
+            }
+            SwiftUI.Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Are you sure you want to clear all existing refresh attempt entries?")
+        }
+        .alert("Export Account", isPresented: $showExportPasswordPrompt) {
+            SecureField("Certificate Password", text: $exportCertPassword)
+            SwiftUI.Button("Export") {
+                exportAccountJSON(password: exportCertPassword)
+            }
+            SwiftUI.Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Please enter a password for the certificate.")
+        }
+    }
+    
+    private func topViewController() -> UIViewController? {
+        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = scene.windows.first(where: { $0.isKeyWindow }),
+              var top = window.rootViewController else {
+            return nil
+        }
+        while let presented = top.presentedViewController {
+            top = presented
+        }
+        return top
+    }
+    
+    private func showImportAccountPicker() {
+        guard let top = topViewController() else { return }
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [UTType(filenameExtension: "sideconf")!, .json], asCopy: false)
+        ImportExport.documentPickerHandler = DocumentPickerHandler { selectedURL in
+            guard let url = selectedURL else { return }
+            do {
+                try ImportExport.importAccountJSON(from: url)
+                let email = AuthManager.shared.currentAppleID ?? ""
+                let toastView = ToastView(text: NSLocalizedString("Successfully imported '\(email)'!", comment: ""), detailText: "SideStore should be fully operational!")
+                toastView.show(in: top)
+            } catch {
+                let toastView = ToastView(text: NSLocalizedString("Failed to import account JSON!", comment: ""), detailText: error.localizedDescription)
+                toastView.show(in: top)
+            }
+        }
+        picker.delegate = ImportExport.documentPickerHandler
+        top.present(picker, animated: true)
+    }
+    
+    private func exportAccountJSON(password: String) {
+        guard let top = topViewController() else { return }
+        guard let account = ImportExport.exportAccount(password: password) else {
+            let toastView = ToastView(text: NSLocalizedString("Failed to export account!", comment: ""), detailText: "Account not found or missing credentials.")
+            toastView.show(in: top)
+            return
+        }
+        
+        guard let accountData = try? Foundation.JSONEncoder().encode(account) else {
+            let toastView = ToastView(text: NSLocalizedString("Failed to export account data!", comment: ""), detailText: "Account malformed.")
+            toastView.show(in: top)
+            return
+        }
+        
+        let tmpPath = FileManager.default.temporaryDirectory.appendingPathComponent("\(account.email).sideconf")
+        do {
+            try accountData.write(to: tmpPath)
+            let exportVC = UIDocumentPickerViewController(forExporting: [tmpPath], asCopy: false)
+            top.present(exportVC, animated: true)
+        } catch {
+            let toastView = ToastView(text: NSLocalizedString("Failed to export account!", comment: ""), detailText: error.localizedDescription)
+            toastView.show(in: top)
+        }
+    }
+    
+    private func clearRefreshAttempts() {
+        let context = DatabaseManager.shared.persistentContainer.newBackgroundContext()
+        context.perform {
+            let fetchRequest: NSFetchRequest<NSFetchRequestResult> = RefreshAttempt.fetchRequest()
+            let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+            _ = try? context.execute(deleteRequest)
+            try? context.save()
         }
     }
     
