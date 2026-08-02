@@ -147,8 +147,8 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext
         self.setProgress(60)
         self.verboseLog("[FetchAnisetteDataOperation] Anisette URL: \(self.url!.absoluteString)")
 
-        if let identifier = Keychain.shared.identifier,
-           let adiPb = Keychain.shared.adiPb {
+        if let identifier = AnisetteDataManager.shared.anisetteIdentifier,
+           let adiPb = AnisetteDataManager.shared.anisetteAdiBlob {
             return try await self.fetchAnisetteV3(identifier, adiPb)
         } else {
             return try await self.provision()
@@ -241,7 +241,7 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext
                     if let message = message,
                        message.contains("-45061") {
                         self.verboseLog("[FetchAnisetteDataOperation] Error message contains -45061 (not provisioned), resetting adi.pb and retrying")
-                        Keychain.shared.adiPb = nil
+                        AnisetteDataManager.shared.anisetteAdiBlob = nil
                         return try await self.provision()
                     } else { throw OperationError.anisetteV3Error(message: message ?? "Unknown error") }
                 }
@@ -427,7 +427,7 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext
            self.userAgent != nil &&
            self.mdLu != nil &&
            self.deviceId != nil &&
-           Keychain.shared.identifier != nil {
+           AnisetteDataManager.shared.anisetteIdentifier != nil {
             self.verboseLog("[FetchAnisetteDataOperation] Skipping client_info fetch since all the properties we need aren't nil")
             return
         }
@@ -452,7 +452,7 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext
                 let config = AnisetteConfig(clientInfo: self.clientInfo!, userAgent: self.userAgent!)
                 await AnisetteConfigManager.shared.saveConfig(config)
                 
-                if Keychain.shared.identifier == nil {
+                if AnisetteDataManager.shared.anisetteIdentifier == nil {
                     self.verboseLog("[FetchAnisetteDataOperation] Generating identifier")
                     var bytes = [Int8](repeating: 0, count: 16)
                     let status = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
@@ -462,10 +462,10 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext
                         throw OperationError.provisioningError(result: "Couldn't generate identifier", message: nil)
                     }
                     
-                    Keychain.shared.identifier = Data(bytes: &bytes, count: bytes.count).base64EncodedString()
+                    AnisetteDataManager.shared.anisetteIdentifier = Data(bytes: &bytes, count: bytes.count).base64EncodedString()
                 }
                 
-                let decoded = Data(base64Encoded: Keychain.shared.identifier!)!
+                let decoded = Data(base64Encoded: AnisetteDataManager.shared.anisetteIdentifier!)!
                 self.mdLu = decoded.sha256().hexEncodedString()
                 self.verboseLog("[FetchAnisetteDataOperation] X-Apple-I-MD-LU: \(self.mdLu!)")
                 let uuid: UUID = decoded.object()
@@ -566,7 +566,7 @@ private class AnisetteWebSocketSession: WebSocketDelegate {
                 switch result {
                 case "GiveIdentifier":
                     parentOperation.verboseLog("[FetchAnisetteDataOperation] Giving identifier")
-                    client.json(["identifier": Keychain.shared.identifier!])
+                    client.json(["identifier": AnisetteDataManager.shared.anisetteIdentifier!])
                     
                 case "GiveStartProvisioningData":
                     self.handleGiveStartProvisioningData(client: client)
@@ -663,10 +663,10 @@ private class AnisetteWebSocketSession: WebSocketDelegate {
             self.continuation?.resume(throwing: OperationError.provisioningError(result: "The server didn't give us an adi.pb file", message: nil))
             return
         }
-        Keychain.shared.adiPb = adiPb
+        AnisetteDataManager.shared.anisetteAdiBlob = adiPb
         Task {
             do {
-                let anisette = try await parentOperation.fetchAnisetteV3(Keychain.shared.identifier!, Keychain.shared.adiPb!)
+                let anisette = try await parentOperation.fetchAnisetteV3(AnisetteDataManager.shared.anisetteIdentifier!, AnisetteDataManager.shared.anisetteAdiBlob!)
                 self.continuation?.resume(returning: anisette)
             } catch {
                 self.continuation?.resume(throwing: error)

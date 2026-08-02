@@ -185,10 +185,10 @@ final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
         Keychain.shared.reset()
         AuthManager.shared.currentAppleID = account.email
         AuthManager.shared.password = account.password
-        Keychain.shared.adiPb = account.adiPB
-        Keychain.shared.identifier = account.local_user
+        AnisetteDataManager.shared.anisetteAdiBlob = account.anisetteAdiBlob
+        AnisetteDataManager.shared.anisetteIdentifier = account.anisetteIdentifier
         do {
-            let altCert = try ALTCertificate(p12Data: account.cert, password: account.certpass)
+            let altCert = try ALTCertificate(p12Data: account.certificateData, password: account.certificatePassword)
             CertificateManager.shared.activeCertificate = altCert
             let toastView = ToastView(text: NSLocalizedString("Successfully imported '\(account.email)'!", comment: ""), detailText: "SideStore should be fully operational!")
             return toastView.show(in: self)

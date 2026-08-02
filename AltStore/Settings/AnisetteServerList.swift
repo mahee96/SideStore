@@ -554,8 +554,8 @@ struct AnisetteServersView: View {
                                 message: Text("Are you sure you want to clear adi.pb from the Keychain? You will need to log back in to Apple ID in SideStore."),
                                 primaryButton: .destructive(Text("Reset")) {
                                     #if !DEBUG
-                                    if Keychain.shared.adiPb != nil {
-                                        Keychain.shared.adiPb = nil
+                                    if AnisetteDataManager.shared.anisetteAdiBlob != nil {
+                                        AnisetteDataManager.shared.anisetteAdiBlob = nil
                                     }
                                     #endif
                                     debugLog("Cleared adi.pb from keychain")

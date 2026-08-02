@@ -38,8 +38,8 @@ class ImportExport {
         guard let email = AuthManager.shared.currentAppleID,
               let passwordStr = AuthManager.shared.password,
               let cert = CertificateManager.shared.activeSigningCertificateData,
-              let identifier = Keychain.shared.identifier,
-              let adiPB = Keychain.shared.adiPb else {
+              let identifier = AnisetteDataManager.shared.anisetteIdentifier,
+              let adiPB = AnisetteDataManager.shared.anisetteAdiBlob else {
             return nil
         }
         return ImportedAccount(email: email, password: passwordStr, certificateData: cert, certificatePassword: password, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
@@ -55,8 +55,8 @@ class ImportExport {
         Keychain.shared.reset()
         AuthManager.shared.currentAppleID = account.email
         AuthManager.shared.password = account.password
-        Keychain.shared.adiPb = account.anisetteAdiBlob
-        Keychain.shared.identifier = account.anisetteIdentifier
+        AnisetteDataManager.shared.anisetteAdiBlob = account.anisetteAdiBlob
+        AnisetteDataManager.shared.anisetteIdentifier = account.anisetteIdentifier
         
         let altCert = try ALTCertificate(p12Data: account.certificateData, password: account.certificatePassword)
         CertificateManager.shared.activeCertificate = altCert
@@ -89,8 +89,8 @@ class ImportExport {
     public static func exportAccount(password: String, includeApplePassword: Bool) throws -> Data {
         guard let email = AuthManager.shared.currentAppleID,
               let cert = CertificateManager.shared.activeSigningCertificateData,
-              let identifier = Keychain.shared.identifier,
-              let adiPB = Keychain.shared.adiPb else {
+              let identifier = AnisetteDataManager.shared.anisetteIdentifier,
+              let adiPB = AnisetteDataManager.shared.anisetteAdiBlob else {
             throw OperationError.invalidParameters("Account or signing data is missing.")
         }
         
@@ -141,8 +141,8 @@ class ImportExport {
             if let pass = account.password, !pass.isEmpty {
                 AuthManager.shared.password = pass
             }
-            Keychain.shared.adiPb = account.anisetteAdiBlob
-            Keychain.shared.identifier = account.anisetteIdentifier
+            AnisetteDataManager.shared.anisetteAdiBlob = account.anisetteAdiBlob
+            AnisetteDataManager.shared.anisetteIdentifier = account.anisetteIdentifier
             
             let altCert = try ALTCertificate(p12Data: account.certificateData, password: account.certificatePassword)
             CertificateManager.shared.activeCertificate = altCert

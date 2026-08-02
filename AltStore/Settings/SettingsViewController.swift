@@ -270,12 +270,12 @@ final class SettingsViewController: UITableViewController
         Keychain.shared.reset()
         AuthManager.shared.currentAppleID = account.email
         AuthManager.shared.password = account.password
-        Keychain.shared.adiPb = account.adiPB
-        Keychain.shared.identifier = account.local_user
+        AnisetteDataManager.shared.anisetteAdiBlob = account.anisetteAdiBlob
+        AnisetteDataManager.shared.anisetteIdentifier = account.anisetteIdentifier
         signIn()
         update()
         do {
-            let altCert = try ALTCertificate(p12Data: account.cert, password: account.certpass)
+            let altCert = try ALTCertificate(p12Data: account.certificateData, password: account.certificatePassword)
             CertificateManager.shared.activeCertificate = altCert
             let toastView = ToastView(text: NSLocalizedString("Successfully imported '\(account.email)'!", comment: ""), detailText: "SideStore should be fully operational!")
             return toastView.show(in: self)
@@ -298,18 +298,18 @@ final class SettingsViewController: UITableViewController
         guard let email = AuthManager.shared.currentAppleID,
               let password = AuthManager.shared.password,
               let cert = CertificateManager.shared.activeSigningCertificateData,
-              let identifier = Keychain.shared.identifier,
-              let adiPB = Keychain.shared.adiPb else {
+              let identifier = AnisetteDataManager.shared.anisetteIdentifier,
+              let adiPB = AnisetteDataManager.shared.anisetteAdiBlob else {
             #if DEBUG
             debugLog("\(AuthManager.shared.currentAppleID ?? "Empty email")")
             debugLog("\(AuthManager.shared.password ?? "Empty password")")
             debugLog("\(CertificateManager.shared.activeSigningCertificateData?.description ?? "Empty cert")")
-            debugLog("\(Keychain.shared.identifier ?? "Empty identifier")")
-            debugLog("\(Keychain.shared.adiPb ?? "Empty adiPb")")
+            debugLog("\(AnisetteDataManager.shared.anisetteIdentifier ?? "Empty identifier")")
+            debugLog("\(AnisetteDataManager.shared.anisetteAdiBlob ?? "Empty adiPb")")
             #endif
             return nil
         }
-        return ImportedAccount(email: email, password: password, cert: cert, certpass: certpass, local_user: identifier, adiPB: adiPB)
+        return ImportedAccount(email: email, password: password, certificateData: cert, certificatePassword: certpass, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
     }
     
     func showExportAccount() {
