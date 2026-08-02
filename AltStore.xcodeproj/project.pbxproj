@@ -294,7 +294,7 @@
 				Views/Settings/TechyThings/HealthCheck/HealthCheckView.swift,
 				Views/Settings/TechyThings/HealthCheck/HealthCheckViewModel.swift,
 				Views/Settings/TechyThings/StorageExplorer/StorageExplorerView.swift,
-				Views/UrlCallbacks/ExportCertificateDialog.swift,
+				Views/DeepLinks/ExportCertificateDialog.swift,
 			);
 			target = BFD247692284B9A500981D42 /* SideStore */;
 		};
