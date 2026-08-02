@@ -14,6 +14,52 @@ public final class CacheManager {
     
     private init() {}
     
+    // MARK: - Directory Locations
+    
+    public var internalAppsDirectory: URL {
+        return InstalledApp.appsDirectoryURL
+    }
+    
+    public var resignedAppsDirectory: URL {
+        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        return documentsURL.appendingPathComponent("ResignedApps")
+    }
+    
+    // MARK: - App Fetching
+    
+    public func fetchInternalApps() -> [URL] {
+        let fileManager = FileManager.default
+        guard let urls = try? fileManager.contentsOfDirectory(at: internalAppsDirectory, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]) else {
+            return []
+        }
+        return urls.filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false }
+    }
+    
+    public func fetchResignedApps() -> [URL] {
+        let fileManager = FileManager.default
+        guard fileManager.fileExists(atPath: resignedAppsDirectory.path) else {
+            return []
+        }
+        guard let urls = try? fileManager.contentsOfDirectory(at: resignedAppsDirectory, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]) else {
+            return []
+        }
+        return urls
+    }
+    
+    // MARK: - Size Calculations & Formatting
+    
+    public func calculateSize(of url: URL) -> Int64 {
+        let fileManager = FileManager.default
+        var isDir: ObjCBool = false
+        guard fileManager.fileExists(atPath: url.path, isDirectory: &isDir) else { return 0 }
+        
+        if !isDir.boolValue {
+            return (try? fileManager.attributesOfItem(atPath: url.path)[.size] as? Int64) ?? 0
+        }
+        
+        return getDirectorySize(at: url)
+    }
+    
     public func calculateCacheSize() -> Int64 {
         var totalSize: Int64 = 0
         let fileManager = FileManager.default
@@ -72,6 +118,10 @@ public final class CacheManager {
             }
             completion(result)
         }
+    }
+    
+    public func delete(at url: URL) throws {
+        try FileManager.default.removeItem(at: url)
     }
     
     private func getDirectorySize(at url: URL) -> Int64 {

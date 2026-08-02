@@ -55,8 +55,8 @@ class CacheViewModel: ObservableObject {
     func loadCacheItems() {
         self.isLoading = true
         
-        let internalAppURLs = CacheService.shared.fetchInternalApps()
-        let resignedAppURLs = CacheService.shared.fetchResignedApps()
+        let internalAppURLs = CacheManager.shared.fetchInternalApps()
+        let resignedAppURLs = CacheManager.shared.fetchResignedApps()
         
         // Fetch all database apps to map display names & icons
         let context = DatabaseManager.shared.viewContext
@@ -82,7 +82,7 @@ class CacheViewModel: ObservableObject {
             // 1. Process Internal Cache Items
             for url in internalAppURLs {
                 let bundleID = url.lastPathComponent
-                let size = CacheService.shared.calculateSize(of: url)
+                let size = CacheManager.shared.calculateSize(of: url)
                 let sizeStr = self.byteFormatter.string(fromByteCount: size)
                 
                 var displayName = bundleID
@@ -115,7 +115,7 @@ class CacheViewModel: ObservableObject {
             // 2. Process Resigned App Items
             for url in resignedAppURLs {
                 let filename = url.lastPathComponent
-                let size = CacheService.shared.calculateSize(of: url)
+                let size = CacheManager.shared.calculateSize(of: url)
                 let sizeStr = self.byteFormatter.string(fromByteCount: size)
                 
                 let displayName = filename.replacingOccurrences(of: ".app", with: "")
@@ -156,7 +156,7 @@ class CacheViewModel: ObservableObject {
         
         DispatchQueue.global(qos: .userInitiated).async {
             do {
-                try CacheService.shared.delete(at: item.url)
+                try CacheManager.shared.delete(at: item.url)
                 DispatchQueue.main.async {
                     self.loadCacheItems()
                 }
