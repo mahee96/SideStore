@@ -491,11 +491,13 @@ private extension SettingsViewController
     
     func update()
     {
+        DatabaseManager.shared.viewContext.processPendingChanges()
+        
         if let team = DatabaseManager.shared.activeTeam()
         {
-            self.accountNameLabel.text = team.name
-            self.accountEmailLabel.text = team.account.appleID
-            self.accountTypeLabel.text = team.type.localizedDescription
+            self.accountNameLabel?.text = team.name
+            self.accountEmailLabel?.text = team.account.appleID
+            self.accountTypeLabel?.text = team.type.localizedDescription
             
             self.activeTeam = team
         }
