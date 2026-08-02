@@ -198,11 +198,9 @@ private extension AppIDsViewController
             self.collectionView.refreshControl?.endRefreshing()
             self.activityIndicatorBarButtonItem.isIndicatingActivity = false
             
-            #if DEBUG
-            let allowsEditMode = DatabaseManager.shared.activeTeam() != nil
-            #else
-            let allowsEditMode = DatabaseManager.shared.activeTeam()?.type != .free
-            #endif
+            let activeTeamType = DatabaseManager.shared.activeTeam()?.type
+            let allowsEditMode = (activeTeamType == .individual || activeTeamType == .organization) &&
+                                 (activeTeamType != .free || UserDefaults.standard.freeAcctAppIdDeletion)
             
             if allowsEditMode
             {

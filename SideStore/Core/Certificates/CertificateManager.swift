@@ -67,23 +67,23 @@ public final class CertificateManager: @unchecked Sendable {
         defer { debugLog("[CertificateManager] saveCertificate completed for serial: \(cert.serialNumber)") }
         
         if cert.privateKey != nil, let p12Data = cert.p12Data() {
-            debugLog("[CertificateManager]   p12Data generated, size: \(p12Data.count)")
+            debugLog("[CertificateManager] p12Data generated, size: \(p12Data.count)")
             do {
                 try self.keychain.set(p12Data, key: certKeyPrefix + cert.serialNumber)
-                debugLog("[CertificateManager]   Successfully saved p12 to keychain")
+                debugLog("[CertificateManager] Successfully saved p12 to keychain")
             } catch {
-                debugLog("[CertificateManager]   Failed to save p12 to keychain: \(error)")
+                debugLog("[CertificateManager] Failed to save p12 to keychain: \(error)")
             }
         } else if let derData = cert.data {
-            debugLog("[CertificateManager]   derData exists, size: \(derData.count)")
+            debugLog("[CertificateManager] derData exists, size: \(derData.count)")
             do {
                 try self.keychain.set(derData, key: certKeyPrefix + cert.serialNumber)
-                debugLog("[CertificateManager]   Successfully saved derData to keychain")
+                debugLog("[CertificateManager] Successfully saved derData to keychain")
             } catch {
-                debugLog("[CertificateManager]   Failed to save derData to keychain: \(error)")
+                debugLog("[CertificateManager] Failed to save derData to keychain: \(error)")
             }
         } else {
-            debugLog("[CertificateManager]   No data available to save")
+            debugLog("[CertificateManager] No data available to save")
             return
         }
         
@@ -119,28 +119,28 @@ public final class CertificateManager: @unchecked Sendable {
         defer { debugLog("[CertificateManager] loadCertificate completed for serial: \(serialNumber)") }
         
         if let activeCert = Keychain.shared.certificate, activeCert.serialNumber == serialNumber {
-            debugLog("[CertificateManager]   Found in active Keychain.shared.certificate")
+            debugLog("[CertificateManager] Found in active Keychain.shared.certificate")
             return activeCert
         }
         do {
             if let data = try self.keychain.getData(certKeyPrefix + serialNumber) {
-                debugLog("[CertificateManager]   Retrieved data size: \(data.count) for \(serialNumber)")
+                debugLog("[CertificateManager] Retrieved data size: \(data.count) for \(serialNumber)")
                 var loadedCert: ALTCertificate?
                 do {
                     loadedCert = try ALTCertificate(p12Data: data, password: "")
-                    debugLog("[CertificateManager]   Parsed as p12 empty pass")
+                    debugLog("[CertificateManager] Parsed as p12 empty pass")
                 } catch {
-                    debugLog("[CertificateManager]   Failed p12 empty pass: \(error)")
+                    debugLog("[CertificateManager] Failed p12 empty pass: \(error)")
                     do {
                         loadedCert = try ALTCertificate(p12Data: data, password: nil)
-                        debugLog("[CertificateManager]   Parsed as p12 nil pass")
+                        debugLog("[CertificateManager] Parsed as p12 nil pass")
                     } catch {
-                        debugLog("[CertificateManager]   Failed p12 nil pass: \(error)")
+                        debugLog("[CertificateManager] Failed p12 nil pass: \(error)")
                         if let cert = ALTCertificate(data: data) {
                             loadedCert = cert
-                            debugLog("[CertificateManager]   Parsed as raw cert")
+                            debugLog("[CertificateManager] Parsed as raw cert")
                         } else {
-                            debugLog("[CertificateManager]   Failed raw cert parsing")
+                            debugLog("[CertificateManager] Failed raw cert parsing")
                         }
                     }
                 }
@@ -155,10 +155,10 @@ public final class CertificateManager: @unchecked Sendable {
                     return cert
                 }
             } else {
-                debugLog("[CertificateManager]   No data found in keychain for \(certKeyPrefix)\(serialNumber)")
+                debugLog("[CertificateManager] No data found in keychain for \(certKeyPrefix)\(serialNumber)")
             }
         } catch {
-            debugLog("[CertificateManager]   Keychain error for \(certKeyPrefix)\(serialNumber): \(error)")
+            debugLog("[CertificateManager] Keychain error for \(certKeyPrefix)\(serialNumber): \(error)")
         }
         return nil
     }
@@ -168,7 +168,7 @@ public final class CertificateManager: @unchecked Sendable {
         defer { debugLog("[CertificateManager] loadAllLocalCertificates completed") }
         
         let serials = getImportedCertificateSerials()
-        debugLog("[CertificateManager]   Registered local serials: \(serials)")
+        debugLog("[CertificateManager] Registered local serials: \(serials)")
         var results: [ALTCertificate] = []
         for serial in serials {
             if let cert = loadCertificate(for: serial) {
@@ -184,7 +184,7 @@ public final class CertificateManager: @unchecked Sendable {
         
         let allCerts = self.loadAllLocalCertificates()
         let signable = allCerts.filter { $0.privateKey != nil }
-        debugLog("[CertificateManager]   Total signable certificates found: \(signable.count) of \(allCerts.count)")
+        debugLog("[CertificateManager] Total signable certificates found: \(signable.count) of \(allCerts.count)")
         return signable
     }
     

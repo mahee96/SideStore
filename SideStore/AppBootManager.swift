@@ -100,13 +100,13 @@ public final class AppBootManager {
                     try await self.isSideJITServerDetected()
                     self.needsSideJITPrompt = true
                 } catch {
-                    debugLog("Cannot find sideJITServer")
+                    debugLog("[AppBootManager] Cannot find sideJITServer")
                 }
             }
             
             if #available(iOS 17, *), UserDefaults.standard.sidejitenable {
                 await self.askForNetwork()
-                debugLog("SideJITServer Enabled")
+                debugLog("[AppBootManager] SideJITServer Enabled")
             }
         }()
         

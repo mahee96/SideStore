@@ -9,6 +9,11 @@
 import SwiftUI
 @preconcurrency import AltStoreCore
 
+private extension Color {
+    static let settingsRowBackground = Color.white.opacity(0.15)
+    static let settingsDivider = Color.white.opacity(0.15)
+}
+
 private let pipelineStepToggles: [(name: String, step: PipelineStep)] = [
     ("Backup App Data",                         .backupAppData),
     ("Cache App",                               .cacheApp),
@@ -49,47 +54,85 @@ private let standaloneStepToggles: [(name: String, step: StandaloneStep)] = [
 ]
 
 struct OperationsLoggingControlView: View {
-    let TITLE = "Operations Logging"
-
     @ObservedObject private var viewModel = OperationsLoggingViewModel()
 
     var body: some View {
-        NavigationView {
-            List {
-                Section(header: sectionHeader("Standalone Steps")) {
-                    ForEach(standaloneStepToggles, id: \.name) { entry in
-                        stepToggle(entry.name, step: entry.step)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                // Standalone Steps
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("STANDALONE STEPS")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.6))
+                        .padding(.horizontal, 16)
+                    
+                    VStack(spacing: 0) {
+                        ForEach(Array(standaloneStepToggles.enumerated()), id: \.element.name) { index, entry in
+                            if index > 0 {
+                                divider
+                            }
+                            stepToggle(entry.name, step: entry.step)
+                        }
                     }
+                    .background(Color.settingsRowBackground)
+                    .cornerRadius(14)
                 }
-
-                Section(header: sectionHeader("Pipeline Steps")) {
-                    ForEach(pipelineStepToggles, id: \.name) { entry in
-                        stepToggle(entry.name, step: entry.step)
+                
+                // Pipeline Steps
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("PIPELINE STEPS")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.6))
+                        .padding(.horizontal, 16)
+                    
+                    VStack(spacing: 0) {
+                        ForEach(Array(pipelineStepToggles.enumerated()), id: \.element.name) { index, entry in
+                            if index > 0 {
+                                divider
+                            }
+                            stepToggle(entry.name, step: entry.step)
+                        }
                     }
+                    .background(Color.settingsRowBackground)
+                    .cornerRadius(14)
                 }
             }
-            .listStyle(.insetGrouped)
-            .navigationTitle(TITLE)
-            .navigationBarTitleDisplayMode(.inline)
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 32)
         }
-    }
-
-    private func sectionHeader(_ title: String) -> some View {
-        Text(title)
-            .font(.subheadline)
-            .fontWeight(.bold)
-            .foregroundColor(.primary)
+        .background(Color(uiColor: .settingsBackground).ignoresSafeArea())
+        .navigationTitle("Operations Logging")
+        .navigationBarTitleDisplayMode(.large)
     }
 
     private func stepToggle(_ title: String, step: some OperationStep) -> some View {
-        Toggle(title, isOn: Binding(
-            get: { OperationsLoggingControl.isStepLoggingEnabled(for: step) },
-            set: { value in
-                OperationsLoggingControl.setStepLoggingEnabled(for: step, value: value)
-                viewModel.refresh()
-            }
-        ))
-        .padding(.vertical, 2)
+        HStack {
+            Text(title)
+                .font(.system(size: 17, weight: .bold))
+                .foregroundColor(.white)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer()
+            Toggle("", isOn: Binding(
+                get: { OperationsLoggingControl.isStepLoggingEnabled(for: step) },
+                set: { value in
+                    OperationsLoggingControl.setStepLoggingEnabled(for: step, value: value)
+                    viewModel.refresh()
+                }
+            ))
+            .labelsHidden()
+            .tint(.green)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .frame(minHeight: 50)
+    }
+    
+    private var divider: some View {
+        Rectangle()
+            .fill(Color.settingsDivider)
+            .frame(height: 0.5)
+            .padding(.horizontal, 16)
     }
 }
 

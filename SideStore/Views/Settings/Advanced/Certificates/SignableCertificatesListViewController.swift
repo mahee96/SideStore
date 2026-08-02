@@ -11,12 +11,45 @@ import Foundation
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class SignableCertificatesListViewController {
+final class SignableCertificatesListViewController: UITableViewController {
     let installedApp: InstalledApp
     var onSelectCertificate: ((ALTCertificate) -> Void)?
     
+    private var certificates: [ALTCertificate] = []
+    
     init(installedApp: InstalledApp) {
         self.installedApp = installedApp
+        super.init(style: .insetGrouped)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        self.title = NSLocalizedString("Set Certificate", comment: "")
+        self.certificates = CertificateManager.shared.loadAllSignableLocalCertificates()
+        
+        self.view.backgroundColor = .settingsBackground
+        self.tableView.backgroundColor = .settingsBackground
+        
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = .settingsBackground
+        appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
+        self.navigationItem.standardAppearance = appearance
+        self.navigationItem.scrollEdgeAppearance = appearance
+        
+        self.navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(cancelTapped))
+        self.navigationItem.leftBarButtonItem?.tintColor = .white
+        
+        self.tableView.register(UITableViewCell.self, forCellReuseIdentifier: "CertCell")
+    }
+    
+    @objc private func cancelTapped() {
+        self.dismiss(animated: true)
     }
     
     func present(from presentingViewController: UIViewController) {
@@ -33,51 +66,61 @@ final class SignableCertificatesListViewController {
             return
         }
         
-        let alert = UIAlertController(
-            title: NSLocalizedString("Set Certificate", comment: ""),
-            message: String(format: NSLocalizedString("Choose a signing certificate for %@:", comment: ""), installedApp.name),
-            preferredStyle: .actionSheet
+        let nav = UINavigationController(rootViewController: self)
+        nav.modalPresentationStyle = .pageSheet
+        if let sheet = nav.sheetPresentationController {
+            sheet.detents = [.medium(), .large()]
+            sheet.prefersGrabberVisible = true
+        }
+        presentingViewController.present(nav, animated: true)
+    }
+    
+    // MARK: - UITableViewDataSource & Delegate
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return certificates.count
+    }
+    
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "CertCell", for: indexPath)
+        let cert = certificates[indexPath.row]
+        
+        let certName = cert.name ?? "N/A"
+        let machineName = cert.machineName ?? "N/A"
+        let serialPrefix = String(cert.serialNumber.prefix(8))
+        let isCurrent = (cert.serialNumber == installedApp.certificateSerialNumber)
+        
+        cell.textLabel?.text = "\(certName) [Machine: \(machineName)] (\(serialPrefix)...)" + (isCurrent ? " (Current)" : "")
+        cell.textLabel?.textColor = .white
+        cell.textLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
+        cell.backgroundColor = UIColor.white.withAlphaComponent(0.15)
+        cell.accessoryType = isCurrent ? .checkmark : .none
+        cell.tintColor = .green
+        
+        return cell
+    }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        let cert = certificates[indexPath.row]
+        
+        let contentVC = SetCertificateAlertViewController(installedApp: self.installedApp, certificate: cert)
+        let confirmAlert = UIAlertController(
+            title: NSLocalizedString("Set Certificate Confirmation", comment: ""),
+            message: NSLocalizedString("Confirm applying this certificate:", comment: ""),
+            preferredStyle: .alert
         )
+        confirmAlert.setValue(contentVC, forKey: "contentViewController")
         
-        for cert in signableCerts {
-            let certName = cert.name ?? "N/A"
-            let machineName = cert.machineName ?? "N/A"
-            let serialPrefix = String(cert.serialNumber.prefix(8))
-            let isCurrent = (cert.serialNumber == installedApp.certificateSerialNumber)
-            let title = "\(certName) [Machine: \(machineName)] (\(serialPrefix)...)" + (isCurrent ? " (Current)" : "")
-            
-            let action = UIAlertAction(title: title, style: .default) { [weak presentingViewController, weak self] _ in
-                guard let presentingVC = presentingViewController, let self = self else { return }
-                
-                let contentVC = SetCertificateAlertViewController(installedApp: self.installedApp, certificate: cert)
-                let confirmAlert = UIAlertController(
-                    title: NSLocalizedString("Set Certificate Confirmation", comment: ""),
-                    message: NSLocalizedString("Confirm applying this certificate:", comment: ""),
-                    preferredStyle: .alert
-                )
-                confirmAlert.setValue(contentVC, forKey: "contentViewController")
-                
-                let setAction = UIAlertAction(title: NSLocalizedString("Set & Resign", comment: ""), style: .default) { [weak self] _ in
-                    self?.onSelectCertificate?(cert)
-                }
-                let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel)
-                
-                confirmAlert.addAction(cancelAction)
-                confirmAlert.addAction(setAction)
-                
-                presentingVC.present(confirmAlert, animated: true)
+        let setAction = UIAlertAction(title: NSLocalizedString("Set & Resign", comment: ""), style: .default) { [weak self] _ in
+            self?.dismiss(animated: true) {
+                self?.onSelectCertificate?(cert)
             }
-            alert.addAction(action)
         }
+        let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel)
         
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel))
+        confirmAlert.addAction(cancelAction)
+        confirmAlert.addAction(setAction)
         
-        if let popover = alert.popoverPresentationController {
-            popover.sourceView = presentingViewController.view
-            popover.sourceRect = CGRect(x: presentingViewController.view.bounds.midX, y: presentingViewController.view.bounds.midY, width: 0, height: 0)
-            popover.permittedArrowDirections = []
-        }
-        
-        presentingViewController.present(alert, animated: true)
+        self.present(confirmAlert, animated: true)
     }
 }

@@ -1118,8 +1118,6 @@ private extension MyAppsViewController
     
     func refresh(_ installedApp: InstalledApp)
     {
-        // we do need minimuxer, coz it needs to talk to misagent daemon which manages profiles 
-        // so basically loopback vpn is still required
         Task { @MainActor in
             let previousProgress = AppManager.shared.refreshProgress(for: installedApp)
             guard previousProgress == nil else { return }

@@ -78,7 +78,7 @@ extension SettingsViewController
         case refreshSideJITServer   // row 2 - SideJITServer
         case resetPairingFile       // row 3 - Reset Pairing File
         case anisetteServers        // row 4 - Anisette Servers
-        case vpnConfiguration       // row 5 - VPN Configuration
+        case connectionConfig       // row 5 - Connection Configuration
         case cacheManagement        // row 6 - Cache Management
         case certificateManagement  // row 7 - Certificate Management
         case wirelessPair           // row 8 - Wireless Pairing (only iOS 26+)
@@ -102,15 +102,8 @@ extension SettingsViewController
 
     private enum DiagnosticsRow: Int, CaseIterable
     {
-        case responseCaching            // row 0 - Disable Response Caching
-        case verboseOperationsLogging   // row 1 - Enable Verbose Ops Logging
-        case exportDatabase             // row 2 - Export Database
-        case deleteDatabase             // row 3 - Delete Database
-        case operationsLoggingControl   // row 4 - Operations Logging Control
-        case recreateDatabase           // row 5 - Recreate Database on Next Start
-        case altSignVerboseLogging      // row 6 - AltSign Verbose Logging
-        case minimuxerVerboseLogging    // row 7 - Minimuxer Verbose Logging
-        case rotateLogsOnStartup        // row 8 - Rotate Logs on Startup
+        case developerOptions            // row 0 - Developer Options
+        case experimentalFeatures        // row 1 - Experimental Features
     }
 }
 
@@ -399,18 +392,20 @@ final class SettingsViewController: UITableViewController
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "anisetteServers" || segue.identifier == "certificateManagement" || segue.identifier == "wirelessPairing" || segue.identifier == "networkDiscovery" {
+        if segue.identifier == "anisetteServers" || segue.identifier == "certificateManagement" || segue.identifier == "wirelessPairing" || segue.identifier == "networkDiscovery" || segue.identifier == "diagnostics" {
             let controller = segue.destination
             
             if segue.identifier == "anisetteServers"        || 
                 segue.identifier == "certificateManagement" || 
                 segue.identifier == "wirelessPairing"       || 
-                segue.identifier == "networkDiscovery" 
+                segue.identifier == "networkDiscovery"      ||
+                segue.identifier == "diagnostics"
             {
                 let appearance = UINavigationBarAppearance()
                 appearance.configureWithDefaultBackground()
-                appearance.titleTextAttributes = [.foregroundColor: UIColor.label]
-                appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.label]
+                appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
+                appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
+                controller.navigationItem.largeTitleDisplayMode = .always
                 controller.navigationItem.standardAppearance = appearance
                 controller.navigationItem.scrollEdgeAppearance = appearance
             }
@@ -525,14 +520,14 @@ private extension SettingsViewController
         self.betaTrackPopupButton.isEnabled = UserDefaults.standard.isBetaUpdatesEnabled
 
         // DiagnosticsRow
-        self.disableResponseCachingSwitch.isOn = UserDefaults.standard.responseCachingDisabled
-        self.exportResignedAppsSwitch.isOn = UserDefaults.standard.isExportResignedAppEnabled
-        self.verboseOperationsLoggingSwitch.isOn = UserDefaults.standard.isVerboseOperationsLoggingEnabled
-        self.altSignVerboseLoggingSwitch.isOn = UserDefaults.standard.isAltSignVerboseLoggingEnabled
-        self.minimuxerVerboseLoggingSwitch.isOn = UserDefaults.standard.isMinimuxerVerboseLoggingEnabled
-        self.rotateLogsOnStartupSwitch.isOn = UserDefaults.standard.isRotateLogsOnStartupEnabled
-
-        self.recreateDatabaseSwitch.isOn = UserDefaults.standard.recreateDatabaseOnNextStart
+        // DiagnosticsRow (managed via DeveloperOptionsView)
+        self.disableResponseCachingSwitch?.isOn = UserDefaults.standard.responseCachingDisabled
+        self.exportResignedAppsSwitch?.isOn = UserDefaults.standard.isExportResignedAppEnabled
+        self.verboseOperationsLoggingSwitch?.isOn = UserDefaults.standard.isVerboseOperationsLoggingEnabled
+        self.altSignVerboseLoggingSwitch?.isOn = UserDefaults.standard.isAltSignVerboseLoggingEnabled
+        self.minimuxerVerboseLoggingSwitch?.isOn = UserDefaults.standard.isMinimuxerVerboseLoggingEnabled
+        self.rotateLogsOnStartupSwitch?.isOn = UserDefaults.standard.isRotateLogsOnStartupEnabled
+        self.recreateDatabaseSwitch?.isOn = UserDefaults.standard.recreateDatabaseOnNextStart
 
         if self.isViewLoaded
         {
@@ -1448,7 +1443,7 @@ extension SettingsViewController
                 let vc = UIHostingController(rootView: anisetteServersView)
                 self.prepare(for: UIStoryboardSegue(identifier: "anisetteServers", source: self, destination: vc), sender: nil)
 
-            case .vpnConfiguration:
+            case .connectionConfig:
                 let connectionConfigView = ConnectionConfigView()
                 let vc = UIHostingController(rootView: connectionConfigView)
 
@@ -1543,50 +1538,18 @@ extension SettingsViewController
         case .diagnostics:
             let row = DiagnosticsRow.allCases[indexPath.row]
             switch row {
-                
-            case .deleteDatabase:
-                if !Self.deleteDBInProgress {
-                    Self.deleteDBInProgress = true
-                    
-                    _ = DatabaseManager.deleteDatabase()
-                    
-                    exit(0) // exit app immediately to prevent db usage and crashes
-                }
-                
-            case .exportDatabase:
-                // do not accept simulatenous export requests
-                if !Self.exportDBInProgress {
-                    Self.exportDBInProgress = true
-                    Task{
-                        var toastView: ToastView?
-                        do{
-                            let exportedURL = try await CoreDataHelper.exportCoreDataStore()
-                            debugLog("exportSqliteDB: ExportedURL: \(exportedURL)")
-                            toastView = ToastView(text: "Export Successful", detailText: nil)
-                        }catch{
-                            debugLog("exportSqliteDB: \(error)")
-                            toastView = ToastView(error: error)
-                        }
-                        
-                        // show toast to user about the result
-                        DispatchQueue.main.async {
-                            toastView?.show(in: self)
-                        }
-                        
-                        // update that work has finished
-                        Self.exportDBInProgress = false
-                    }
-                }
-                
-            case .operationsLoggingControl:
-                
-                // Instantiate SwiftUI View inside UIHostingController
-                let operationsLoggingControlView = OperationsLoggingControlView()
-                let operationsLoggingController = UIHostingController(rootView: operationsLoggingControlView)
-                let segue = UIStoryboardSegue(identifier: "operationsLoggingControl", source: self, destination: operationsLoggingController)
-                self.present(segue.destination, animated: true, completion: nil)
-                
-            case .responseCaching, .verboseOperationsLogging, .altSignVerboseLogging, .minimuxerVerboseLogging, .recreateDatabase, .rotateLogsOnStartup : break
+            case .developerOptions:
+                let developerOptionsView = DeveloperOptionsView()
+                let hostingController = UIHostingController(rootView: developerOptionsView)
+                hostingController.view.backgroundColor = .settingsBackground
+                hostingController.title = NSLocalizedString("Developer Options", comment: "")
+                self.prepare(for: UIStoryboardSegue(identifier: "diagnostics", source: self, destination: hostingController), sender: nil)
+            case .experimentalFeatures:
+                let experimentalFeaturesView = ExperimentalFeaturesView()
+                let hostingController = UIHostingController(rootView: experimentalFeaturesView)
+                hostingController.view.backgroundColor = .settingsBackground
+                hostingController.title = NSLocalizedString("Experimental Features", comment: "")
+                self.prepare(for: UIStoryboardSegue(identifier: "diagnostics", source: self, destination: hostingController), sender: nil)
             }
             
             

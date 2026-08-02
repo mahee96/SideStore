@@ -1,0 +1,234 @@
+//
+//  DeveloperOptionsView.swift
+//  SideStore
+//
+//  Created by Magesh K on 8/2/26.
+//  Copyright © 2026 SideStore. All rights reserved.
+//
+
+import SwiftUI
+@preconcurrency import AltSign
+import AltStoreCore
+
+private extension Color {
+    static let settingsRowBackground = Color.white.opacity(0.15)
+    static let settingsDivider = Color.white.opacity(0.15)
+}
+
+struct DeveloperOptionsView: View {
+    @State private var responseCachingDisabled: Bool = UserDefaults.standard.responseCachingDisabled
+    @State private var isVerboseOperationsLoggingEnabled: Bool = UserDefaults.standard.isVerboseOperationsLoggingEnabled
+    @State private var isAltSignVerboseLoggingEnabled: Bool = UserDefaults.standard.isAltSignVerboseLoggingEnabled
+    @State private var isMinimuxerVerboseLoggingEnabled: Bool = UserDefaults.standard.isMinimuxerVerboseLoggingEnabled
+    @State private var isRotateLogsOnStartupEnabled: Bool = UserDefaults.standard.isRotateLogsOnStartupEnabled
+    @State private var recreateDatabaseOnNextStart: Bool = UserDefaults.standard.recreateDatabaseOnNextStart
+    
+    @State private var isExportingDB: Bool = false
+    @State private var showDeleteConfirmation: Bool = false
+    
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                // Section 1: Logging & Diagnostics
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("LOGGING & DIAGNOSTICS")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.6))
+                        .padding(.horizontal, 16)
+                    
+                    VStack(spacing: 0) {
+                        toggleRow(title: "Disable URL Response Caching", isOn: Binding(
+                            get: { responseCachingDisabled },
+                            set: { newValue in
+                                responseCachingDisabled = newValue
+                                UserDefaults.standard.responseCachingDisabled = newValue
+                            }
+                        ))
+                        
+                        divider
+                        
+                        toggleRow(title: "Rotate Logs on Startup", isOn: Binding(
+                            get: { isRotateLogsOnStartupEnabled },
+                            set: { newValue in
+                                isRotateLogsOnStartupEnabled = newValue
+                                UserDefaults.standard.isRotateLogsOnStartupEnabled = newValue
+                                let suffixFormat: SuffixFormat = newValue ? .timestamp : .none
+                                if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
+                                    appDelegate.consoleLog.updateConfiguration(baseName: "console", suffixFormat: suffixFormat, policy: .immediate)
+                                }
+                            }
+                        ))
+                        toggleRow(title: "AltSign Verbose Logging", isOn: Binding(
+                            get: { isAltSignVerboseLoggingEnabled },
+                            set: { newValue in
+                                isAltSignVerboseLoggingEnabled = newValue
+                                UserDefaults.standard.isAltSignVerboseLoggingEnabled = newValue
+                                AltSign.setLogging(newValue)
+                            }
+                        ))
+                        
+                        divider
+                        
+                        toggleRow(title: "Minimuxer Verbose Logging", isOn: Binding(
+                            get: { isMinimuxerVerboseLoggingEnabled },
+                            set: { newValue in
+                                isMinimuxerVerboseLoggingEnabled = newValue
+                                UserDefaults.standard.isMinimuxerVerboseLoggingEnabled = newValue
+                                minimuxerSetLogging(newValue)
+                            }
+                        ))
+                        
+                        divider
+                        
+                        toggleRow(title: "Operations Verbose Logging", isOn: Binding(
+                            get: { isVerboseOperationsLoggingEnabled },
+                            set: { newValue in
+                                isVerboseOperationsLoggingEnabled = newValue
+                                UserDefaults.standard.isVerboseOperationsLoggingEnabled = newValue
+                            }
+                        ))
+                        
+                        divider
+                        
+                        NavigationLink(destination: OperationsLoggingControlView()) {
+                            HStack {
+                                Text("Operations Logging Control")
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(.white)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(Color.white.opacity(0.4))
+                            }
+                            .padding(.horizontal, 16)
+                            .frame(height: 50)
+                        }
+                    }
+                    .background(Color.settingsRowBackground)
+                    .cornerRadius(14)
+                }
+                
+                // Section 2: Database Options
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("DATABASE OPTIONS")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.6))
+                        .padding(.horizontal, 16)
+                    
+                    VStack(spacing: 0) {
+                        SwiftUI.Button(action: { exportDatabase() }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.white)
+                                Text("Export Database...")
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(.white)
+                                Spacer()
+                                if isExportingDB {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                            .frame(height: 50)
+                        }
+                        .disabled(isExportingDB)
+                        
+                        divider
+                        
+                        SwiftUI.Button(action: { showDeleteConfirmation = true }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(Color(red: 1.0, green: 0.27, blue: 0.27))
+                                Text("Delete Database...")
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(Color(red: 1.0, green: 0.27, blue: 0.27))
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .frame(height: 50)
+                        }
+                        
+                        divider
+                        
+                        toggleRow(title: "Recreate Database on Next Start", isOn: Binding(
+                            get: { recreateDatabaseOnNextStart },
+                            set: { newValue in
+                                recreateDatabaseOnNextStart = newValue
+                                UserDefaults.standard.recreateDatabaseOnNextStart = newValue
+                            }
+                        ))
+                    }
+                    .background(Color.settingsRowBackground)
+                    .cornerRadius(14)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 32)
+        }
+        .background(Color(uiColor: .settingsBackground).ignoresSafeArea())
+        .navigationTitle("Developer Options")
+        .navigationBarTitleDisplayMode(.large)
+        .alert("Delete Database", isPresented: $showDeleteConfirmation) {
+            SwiftUI.Button("Delete & Exit", role: .destructive) {
+                _ = DatabaseManager.deleteDatabase()
+                exit(0)
+            }
+            SwiftUI.Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(
+            """
+            Deleting the database will remove all app entries and sources from SideStore.
+            • Your installed apps and account settings will not be affected. 
+            • SideStore will close immediately, and any ongoing installs or refreshes will be canceled.
+            """
+            )
+        }
+    }
+    
+    private func toggleRow(title: String, isOn: Binding<Bool>) -> some View {
+        HStack {
+            Text(title)
+                .font(.system(size: 17, weight: .bold))
+                .foregroundColor(.white)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer()
+            Toggle("", isOn: isOn)
+                .labelsHidden()
+                .tint(.green)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .frame(minHeight: 50)
+    }
+    
+    private var divider: some View {
+        Rectangle()
+            .fill(Color.settingsDivider)
+            .frame(height: 0.5)
+            .padding(.horizontal, 16)
+    }
+    
+    private func exportDatabase() {
+        guard !isExportingDB else { return }
+        isExportingDB = true
+        
+        Task {
+            do {
+                let exportedURL = try await CoreDataHelper.exportCoreDataStore()
+                debugLog("[DeveloperOptionsView] ExportedURL: \(exportedURL)")
+                await MainActor.run {
+                    isExportingDB = false
+                }
+            } catch {
+                debugLog("[DeveloperOptionsView] Export error: \(error)")
+                await MainActor.run {
+                    isExportingDB = false
+                }
+            }
+        }
+    }
+}

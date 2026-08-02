@@ -91,6 +91,10 @@ public extension UserDefaults
         }
         set { self.set(newValue, forKey: #function) }
     }
+    @objc var freeAcctAppIdDeletion: Bool {
+        get { self.bool(forKey: #function) }
+        set { self.set(newValue, forKey: #function) }
+    }
     @objc var isBetaUpdatesEnabled: Bool {
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
