@@ -309,7 +309,8 @@ final class SettingsViewController: UITableViewController
             #endif
             return nil
         }
-        return ImportedAccount(email: email, password: password, certificateData: cert, certificatePassword: certpass, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
+        let certPass = CertificateManager.shared.activeSigningCertificatePassword ?? certpass
+        return ImportedAccount(email: email, password: password, certificateData: cert, certificatePassword: certPass, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
     }
     
     func showExportAccount() {
@@ -473,7 +474,7 @@ private extension SettingsViewController
     func update()
     {
         let currentActiveTeam = DatabaseManager.shared.activeTeam()
-        debugLog("[SettingsVC] update() called. activeTeam: \(currentActiveTeam?.name ?? "nil"), account: \(currentActiveTeam?.account.appleID ?? "nil")")
+        debugLog("[SettingsVC] update() called. activeTeam: \(currentActiveTeam?.identifier ?? "nil"), account: \(currentActiveTeam?.account.appleID ?? "nil")")
         
         if let team = currentActiveTeam
         {

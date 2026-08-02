@@ -10,9 +10,16 @@
 import sys
 import os
 import getpass
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.primitives import hashes
+
+try:
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+    from cryptography.hazmat.primitives import hashes
+except ImportError:
+    print("Error: Required 'cryptography' library is missing.")
+    print("Please install requirements by running:")
+    print("  pip install -r requirements.txt")
+    sys.exit(1)
 
 def decrypt_sideconf(file_path: str, password: str) -> str:
     with open(file_path, "rb") as f:

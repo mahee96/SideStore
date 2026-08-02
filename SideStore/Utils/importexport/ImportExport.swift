@@ -42,7 +42,8 @@ class ImportExport {
               let adiPB = AnisetteDataManager.shared.anisetteAdiBlob else {
             return nil
         }
-        return ImportedAccount(email: email, password: passwordStr, certificateData: cert, certificatePassword: password, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
+        let certPass = CertificateManager.shared.activeSigningCertificatePassword ?? password
+        return ImportedAccount(email: email, password: passwordStr, certificateData: cert, certificatePassword: certPass, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
     }
 
     public static func importAccountJSON(from file: URL) throws {
@@ -99,7 +100,8 @@ class ImportExport {
         }
 
         let applePasswordToInclude = includeApplePassword ? AuthManager.shared.password : nil
-        let account = ImportedAccount(email: email, password: applePasswordToInclude, certificateData: cert, certificatePassword: password, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
+        let certPass = CertificateManager.shared.activeSigningCertificatePassword ?? ""
+        let account = ImportedAccount(email: email, password: applePasswordToInclude, certificateData: cert, certificatePassword: certPass, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
 
         let jsonData = try Foundation.JSONEncoder().encode(account)
         
