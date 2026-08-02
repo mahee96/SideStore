@@ -79,15 +79,12 @@ extension SettingsViewController
         case resetPairingFile       // row 3 - Reset Pairing File
         case anisetteServers        // row 4 - Anisette Servers
         case connectionConfig       // row 5 - Connection Configuration
-        case cacheManagement        // row 6 - Cache Management
-        case certificateManagement  // row 7 - Certificate Management
-        case wirelessPair           // row 8 - Wireless Pairing (only iOS 26+)
-        case networkDiscovery       // row 9 - Network Discovery (Bonjour browser)
-        case exportResignedApp      // row 10 - Export Resigned Apps (moved here from diagnostics)
-        case enableEMPForWiregaurd  // row 11 - Enable EMP for wireguard
-        case customizeAppId         // row 12 - Enable AppId Customization
-        case customizeAppExtensions // row 13 - Enable AppExtns Customization
-        case cellularRefresh        // row 14 - Enable Cellular Refresh (< iOS 26.4)
+        case certificateManagement  // row 6 - Certificate Management
+        case exportResignedApp      // row 7 - Export Resigned Apps
+        case enableEMPForWiregaurd  // row 8 - Enable EMP for wireguard
+        case customizeAppId         // row 9 - Enable AppId Customization
+        case customizeAppExtensions // row 10 - Enable AppExtns Customization
+        case cellularRefresh        // row 11 - Enable Cellular Refresh (< iOS 26.4)
     }
     
     private enum SigningSettingsRow: Int, CaseIterable {
@@ -392,13 +389,11 @@ final class SettingsViewController: UITableViewController
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "anisetteServers" || segue.identifier == "certificateManagement" || segue.identifier == "wirelessPairing" || segue.identifier == "networkDiscovery" || segue.identifier == "diagnostics" {
+        if segue.identifier == "anisetteServers" || segue.identifier == "certificateManagement" || segue.identifier == "diagnostics" {
             let controller = segue.destination
             
             if segue.identifier == "anisetteServers"        || 
                 segue.identifier == "certificateManagement" || 
-                segue.identifier == "wirelessPairing"       || 
-                segue.identifier == "networkDiscovery"      ||
                 segue.identifier == "diagnostics"
             {
                 let appearance = UINavigationBarAppearance()
@@ -1045,13 +1040,7 @@ extension SettingsViewController
         let section = Section.allCases[indexPath.section]
         if section == .advancedSettings {
             let row = AdvancedSettingsRow.allCases[indexPath.row]
-            if row == .wirelessPair {
-                if #available(iOS 26.0, *) {
-                    return super.tableView(tableView, heightForRowAt: indexPath)
-                } else {
-                    return 0
-                }
-            } else if row == .cellularRefresh {
+            if row == .cellularRefresh {
                 if #available(iOS 26.4, *) {
                     return 0
                 } else {
@@ -1083,13 +1072,7 @@ extension SettingsViewController
         
         if section == .advancedSettings {
             let row = AdvancedSettingsRow.allCases[indexPath.row]
-            if row == .wirelessPair {
-                if #available(iOS 26.0, *) {
-                    // Custom styles or details for Wireless Pairing if needed
-                } else {
-                    cell.isHidden = true
-                }
-            } else if row == .cellularRefresh {
+            if row == .cellularRefresh {
                 if #available(iOS 26.4, *) {
                     cell.isHidden = true
                 } else {
@@ -1468,57 +1451,6 @@ extension SettingsViewController
                 let certificateManagementView = CertificatesView(presentingViewController: self)
                 let vc = UIHostingController(rootView: certificateManagementView)
                 self.prepare(for: UIStoryboardSegue(identifier: "certificateManagement", source: self, destination: vc), sender: nil)
-                
-            case .wirelessPair:
-                if #available(iOS 26.0, *) {
-                    let wirelessPairView = WirelessPairView()
-                    let vc = UIHostingController(rootView: wirelessPairView)
-                    self.prepare(for: UIStoryboardSegue(identifier: "wirelessPairing", source: self, destination: vc), sender: nil)
-                } else {
-                    break
-                }
-                
-            case .networkDiscovery:
-                // Preflight Local Network Permission Check
-                /*
-                Task {
-                    let hasPermission = await LocalNetworkPermissionChecker.shared.checkPermission()
-                    if hasPermission {
-                        let discoveryView = BonjourDiscoveryView()
-//                        let discoveryView = BonjourDiscoveryViewV2()
-                        let vc = UIHostingController(rootView: discoveryView)
-                        self.prepare(for: UIStoryboardSegue(identifier: "networkDiscovery", source: self, destination: vc), sender: nil)
-                    } else {
-                        let alert = UIAlertController(
-                            title: "Local Network Access Required",
-                            message: "SideStore needs local network access to search for AltServer. Please enable it in Settings.",
-                            preferredStyle: .alert
-                        )
-                        alert.addAction(UIAlertAction(title: "Settings", style: .default) { _ in
-                            if let url = URL(string: UIApplication.openSettingsURLString) {
-                                UIApplication.shared.open(url, options: [:], completionHandler: nil)
-                            }
-                        })
-                        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
-                        self.present(alert, animated: true, completion: nil)
-                    }
-                }
-                */
-//                let discoveryView = BonjourDiscoveryView()
-                let discoveryView = BonjourDiscoveryViewV2()
-                let vc = UIHostingController(rootView: discoveryView)
-                self.prepare(for: UIStoryboardSegue(identifier: "networkDiscovery", source: self, destination: vc), sender: nil)
-                
-            case .cacheManagement:
-                let cacheManagementView = CacheManagementView()
-                let vc = UIHostingController(rootView: cacheManagementView)
-                
-                let appearance = UINavigationBarAppearance()
-                appearance.configureWithDefaultBackground()
-                vc.navigationItem.scrollEdgeAppearance = appearance
-                vc.navigationItem.standardAppearance = appearance
-                
-                navigationController?.pushViewController(vc, animated: true)
                 
             case .refreshAttempts, .exportResignedApp, .enableEMPForWiregaurd, .customizeAppId, .customizeAppExtensions, .cellularRefresh: break
             }

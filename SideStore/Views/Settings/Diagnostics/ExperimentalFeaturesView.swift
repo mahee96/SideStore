@@ -20,8 +20,53 @@ struct ExperimentalFeaturesView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
+                // Section 1: STANDALONE FEATURES
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("EXPERIMENTAL FEATURES")
+                    Text("STANDALONE FEATURES")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.6))
+                        .padding(.horizontal, 16)
+                    
+                    VStack(spacing: 0) {
+                        if #available(iOS 26.0, *) {
+                            NavigationLink(destination: WirelessPairView()) {
+                                HStack {
+                                    Text("Wireless Pairing")
+                                        .font(.system(size: 17, weight: .bold))
+                                        .foregroundColor(.white)
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(Color.white.opacity(0.4))
+                                }
+                                .padding(.horizontal, 16)
+                                .frame(height: 50)
+                            }
+                            
+                            divider
+                        }
+                        
+                        NavigationLink(destination: CacheManagementView()) {
+                            HStack {
+                                Text("Cache Management")
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(.white)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(Color.white.opacity(0.4))
+                            }
+                            .padding(.horizontal, 16)
+                            .frame(height: 50)
+                        }
+                    }
+                    .background(Color.settingsRowBackground)
+                    .cornerRadius(14)
+                }
+                
+                // Section 2: FEATURE FLAGS
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("FEATURE FLAGS")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.6))
                         .padding(.horizontal, 16)
@@ -46,6 +91,13 @@ struct ExperimentalFeaturesView: View {
         .background(Color(uiColor: .settingsBackground).ignoresSafeArea())
         .navigationTitle("Experimental Features")
         .navigationBarTitleDisplayMode(.large)
+    }
+
+    private var divider: some View {
+        Rectangle()
+            .fill(Color.settingsDivider)
+            .frame(height: 1)
+            .padding(.leading, 16)
     }
 
     private func toggleRow(title: String, isOn: Binding<Bool>) -> some View {
