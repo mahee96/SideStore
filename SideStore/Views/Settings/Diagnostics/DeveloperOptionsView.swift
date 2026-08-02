@@ -121,7 +121,7 @@ struct DeveloperOptionsView: View {
                                 Image(systemName: "square.and.arrow.up")
                                     .font(.system(size: 18, weight: .semibold))
                                     .foregroundColor(.white)
-                                Text("Export Database...")
+                                Text("Export Database")
                                     .font(.system(size: 17, weight: .bold))
                                     .foregroundColor(.white)
                                 Spacer()
@@ -142,7 +142,7 @@ struct DeveloperOptionsView: View {
                                 Image(systemName: "trash")
                                     .font(.system(size: 18, weight: .semibold))
                                     .foregroundColor(Color(red: 1.0, green: 0.27, blue: 0.27))
-                                Text("Delete Database...")
+                                Text("Delete Database")
                                     .font(.system(size: 17, weight: .bold))
                                     .foregroundColor(Color(red: 1.0, green: 0.27, blue: 0.27))
                                 Spacer()
@@ -153,7 +153,7 @@ struct DeveloperOptionsView: View {
                         
                         divider
                         
-                        toggleRow(title: "Recreate Database on Next Start", isOn: Binding(
+                        toggleRow(title: "Wipe Database on Next Start", isOn: Binding(
                             get: { recreateDatabaseOnNextStart },
                             set: { newValue in
                                 recreateDatabaseOnNextStart = newValue
