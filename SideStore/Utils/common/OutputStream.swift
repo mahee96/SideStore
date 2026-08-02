@@ -1,6 +1,6 @@
 //
 //  OutputStream.swift
-//  AltStore
+//  SideStore
 //
 //  Created by Magesh K on 28/12/24.
 //  Copyright © 2024 SideStore. All rights reserved.

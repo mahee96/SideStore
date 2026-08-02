@@ -1,8 +1,9 @@
 //
 //  TaskChainCoalescer.swift
-//  AltStore
+//  SideStore
 //
 //  Created by Magesh K on 31/7/26.
+//  Copyright © 2026 SideStore. All rights reserved.
 //
 
 import Foundation

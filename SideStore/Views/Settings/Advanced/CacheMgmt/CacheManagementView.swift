@@ -1,6 +1,6 @@
 //
 //  CacheManagementView.swift
-//  AltStore
+//  SideStore
 //
 //  Created by Magesh K on 2026-06-29.
 //  Copyright © 2026 SideStore. All rights reserved.

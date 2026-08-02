@@ -1,6 +1,6 @@
 //
 //  ChangeAppIconOperation.swift
-//  AltStore
+//  SideStore
 //
 //  Created by Magesh K on 23/7/26.
 //  Copyright © 2026 AltStore. All rights reserved.

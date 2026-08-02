@@ -1,6 +1,6 @@
 //
 //  PrepareAppExtensionBundleIDsOperation.swift
-//  AltStore
+//  SideStore
 //
 //  Created by Magesh K on 01/08/26.
 //  Copyright © 2026 AltStore. All rights reserved.

@@ -1,6 +1,6 @@
 //
 //  ConsoleCapture.swift
-//  AltStore
+//  SideStore
 //
 //  Created by Magesh K on 25/11/24.
 //  Copyright © 2024 SideStore. All rights reserved.

@@ -1,6 +1,6 @@
 //
 //  ConsoleLogView.swift
-//  AltStore
+//  SideStore
 //
 //  Created by Magesh K on 29/12/24.
 //  Copyright © 2024 SideStore. All rights reserved.

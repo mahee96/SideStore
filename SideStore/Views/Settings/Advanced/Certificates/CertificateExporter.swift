@@ -1,6 +1,6 @@
 //
 //  CertificateExporter.swift
-//  AltStore
+//  SideStore
 //
 //  Created by Magesh K on 2026-07-03.
 //  Copyright © 2026 SideStore. All rights reserved.

@@ -1,6 +1,6 @@
 //
 //  UserCustomizationOperation.swift
-//  AltStore
+//  SideStore
 //
 //  Created by Magesh K on 30/07/26.
 //  Copyright © 2026 AltStore. All rights reserved.

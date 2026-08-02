@@ -1,8 +1,9 @@
 //
 //  TaskChainSerializer.swift
-//  AltStore
+//  SideStore
 //
 //  Created by Magesh K on 7/2/26.
+//  Copyright © 2026 SideStore. All rights reserved.
 //
 
 import Foundation

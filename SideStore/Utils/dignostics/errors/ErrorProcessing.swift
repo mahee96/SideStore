@@ -1,6 +1,6 @@
 //
 //  ErrorProcessing.swift
-//  AltStore
+//  SideStore
 //
 //  Created by Magesh K on 20/01/25.
 //  Copyright © 2025 SideStore. All rights reserved.

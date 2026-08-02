@@ -1,6 +1,6 @@
 //
 //  InfoPlistContainerView.swift
-//  AltStore
+//  SideStore
 //
 //  Created by Magesh K on 2026-07-02.
 //  Copyright © 2026 SideStore. All rights reserved.

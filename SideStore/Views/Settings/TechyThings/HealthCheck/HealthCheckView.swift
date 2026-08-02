@@ -1,6 +1,6 @@
 //
 //  HealthCheckView.swift
-//  AltStore
+//  SideStore
 //
 //  Created by Magesh K on 11/07/26.
 //  Copyright © 2026 SideStore. All rights reserved.
