@@ -450,18 +450,64 @@ public struct DirectoryExplorerView: View {
     }
     
     private var folderSummaryString: String {
+        let items = viewModel.filteredAndSortedItems
+        if items.isEmpty {
+            return "0 items (Zero KB)"
+        }
+        let folders = items.filter { $0.isDirectory }
+        let files = items.filter { !$0.isDirectory }
         let sizeStr = ByteCountFormatter.string(fromByteCount: viewModel.currentFolderSize, countStyle: .file)
-        return "\(viewModel.items.count) items (\(sizeStr))"
+        
+        if !folders.isEmpty && !files.isEmpty {
+            let folderLabel = folders.count == 1 ? "1 Folder" : "\(folders.count) Folders"
+            let fileLabel = files.count == 1 ? "1 File" : "\(files.count) Files"
+            return "\(folderLabel), \(fileLabel) (\(sizeStr))"
+        } else if !folders.isEmpty {
+            let folderLabel = folders.count == 1 ? "1 Folder" : "\(folders.count) Folders"
+            return "\(folderLabel) (\(sizeStr))"
+        } else {
+            let fileLabel = files.count == 1 ? "1 File" : "\(files.count) Files"
+            return "\(fileLabel) (\(sizeStr))"
+        }
     }
     
     public var body: some View {
         VStack(spacing: 0) {
-            List {
-                DirectoryItemListSectionView(viewModel: viewModel, clipboard: clipboard)
-                EmptyPasteAreaSectionView(viewModel: viewModel, clipboard: clipboard)
+            if viewModel.filteredAndSortedItems.isEmpty {
+                Spacer()
+                
+                VStack(spacing: 16) {
+                    Image(systemName: "folder.badge.minus")
+                        .font(.system(size: 64, weight: .light))
+                        .foregroundColor(.secondary.opacity(0.7))
+                    
+                    VStack(spacing: 4) {
+                        Text("Empty Directory")
+                            .font(.title3.weight(.semibold))
+                            .foregroundColor(.primary)
+                        
+                        Text("No files or subfolders found in this directory.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                }
+                .padding(.horizontal, 32)
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+                .contextMenu {
+                    EmptyAreaContextMenuView(viewModel: viewModel, clipboard: clipboard)
+                }
+                
+                Spacer()
+            } else {
+                List {
+                    DirectoryItemListSectionView(viewModel: viewModel, clipboard: clipboard)
+                    EmptyPasteAreaSectionView(viewModel: viewModel, clipboard: clipboard)
+                }
+                .listStyle(.insetGrouped)
+                .searchable(text: $viewModel.searchText, prompt: "Search files & folders")
             }
-            .listStyle(.insetGrouped)
-            .searchable(text: $viewModel.searchText, prompt: "Search files & folders")
             
             // Bottom Status & Storage Information Bar + Selection Actions Bar
             VStack(spacing: 0) {
@@ -562,29 +608,60 @@ private struct DirectoryItemListSectionView: View {
     @ObservedObject var clipboard: StorageExplorerClipboard
     
     var body: some View {
-        ForEach(viewModel.filteredAndSortedItems) { item in
-            if viewModel.isSelectionMode {
-                ItemRow(item: item, isSelected: viewModel.selectedURLs.contains(item.url), isSelectionMode: true, isTextWrapEnabled: viewModel.isTextWrapEnabled)
-                    .onTapGesture {
-                        if viewModel.selectedURLs.contains(item.url) {
-                            viewModel.selectedURLs.remove(item.url)
-                        } else {
-                            viewModel.selectedURLs.insert(item.url)
-                        }
-                    }
-            } else if item.isDirectory {
-                NavigationLink(destination: DirectoryExplorerView(url: item.url)) {
-                    ItemRow(item: item, isSelected: false, isSelectionMode: false, isTextWrapEnabled: viewModel.isTextWrapEnabled)
+        let items = viewModel.filteredAndSortedItems
+        let folders = items.filter { $0.isDirectory }
+        let files = items.filter { !$0.isDirectory }
+        
+        if !folders.isEmpty && !files.isEmpty {
+            Section("Folders (\(folders.count))") {
+                ForEach(folders) { item in
+                    renderRow(item: item)
                 }
+            }
+            
+            Section("Files (\(files.count))") {
+                ForEach(files) { item in
+                    renderRow(item: item)
+                }
+            }
+        } else if !folders.isEmpty {
+            Section("Folders (\(folders.count))") {
+                ForEach(folders) { item in
+                    renderRow(item: item)
+                }
+            }
+        } else {
+            Section("Files (\(files.count))") {
+                ForEach(files) { item in
+                    renderRow(item: item)
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func renderRow(item: StorageExplorerItem) -> some View {
+        if viewModel.isSelectionMode {
+            ItemRow(item: item, isSelected: viewModel.selectedURLs.contains(item.url), isSelectionMode: true, isTextWrapEnabled: viewModel.isTextWrapEnabled)
+                .onTapGesture {
+                    if viewModel.selectedURLs.contains(item.url) {
+                        viewModel.selectedURLs.remove(item.url)
+                    } else {
+                        viewModel.selectedURLs.insert(item.url)
+                    }
+                }
+        } else if item.isDirectory {
+            NavigationLink(destination: DirectoryExplorerView(url: item.url)) {
+                ItemRow(item: item, isSelected: false, isSelectionMode: false, isTextWrapEnabled: viewModel.isTextWrapEnabled)
+            }
+            .contextMenu {
+                ItemContextMenuView(viewModel: viewModel, item: item)
+            }
+        } else {
+            ItemRow(item: item, isSelected: false, isSelectionMode: false, isTextWrapEnabled: viewModel.isTextWrapEnabled)
                 .contextMenu {
                     ItemContextMenuView(viewModel: viewModel, item: item)
                 }
-            } else {
-                ItemRow(item: item, isSelected: false, isSelectionMode: false, isTextWrapEnabled: viewModel.isTextWrapEnabled)
-                    .contextMenu {
-                        ItemContextMenuView(viewModel: viewModel, item: item)
-                    }
-            }
         }
     }
 }
