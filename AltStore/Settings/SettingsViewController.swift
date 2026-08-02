@@ -980,11 +980,11 @@ extension SettingsViewController
         case .signIn where self.activeTeam != nil: return 1.0
         case .account where self.activeTeam == nil: return 1.0            
         // case .signIn, .patreon, .display, .appRefresh, .techyThings, .macDirtyCow:
-        case .signIn, .patreon, .display, .appRefresh, .techyThings, .diagnostics, .betaTesting:
+        case .signIn, .patreon, .display, .appRefresh, .techyThings, .betaTesting:
             let height = self.preferredHeight(for: self.prototypeHeaderFooterView, in: section, isHeader: false)
             return height
             
-        case .account, .credits, .advancedSettings, .instructions: return 0.0
+        case .account, .credits, .advancedSettings, .instructions, .diagnostics: return 0.0
         }
     }
 }
