@@ -211,6 +211,7 @@
 				AppBootManager.swift,
 				AppConstants.swift,
 				Core/Anisette/AnisetteConfigManager.swift,
+				Core/Anisette/AnisetteDataManager.swift,
 				Core/Anisette/AnisetteServersManager.swift,
 				Core/Auth/AuthManager.swift,
 				Core/Auth/DeveloperPortalService.swift,
