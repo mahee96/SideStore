@@ -240,8 +240,9 @@
 				Core/Operations/StandaloneOperations/SyncAppIDsOperation.swift,
 				Core/Pairing/PairingFileManager.swift,
 				Core/Storage/CacheManager.swift,
+				DeepLinks/ExportCertificateDialog.swift,
+				DeepLinks/InstallAppDialog.swift,
 				"Extensions/NSAttributedString+Markdown.swift",
-				URLHandler.swift,
 				Utils/common/BuildInfo.swift,
 				Utils/common/DateTimeUtil.swift,
 				Utils/common/FileOutputStream.swift,
@@ -294,8 +295,6 @@
 				Views/Settings/TechyThings/HealthCheck/HealthCheckView.swift,
 				Views/Settings/TechyThings/HealthCheck/HealthCheckViewModel.swift,
 				Views/Settings/TechyThings/StorageExplorer/StorageExplorerView.swift,
-				DeepLinks/ExportCertificateDialog.swift,
-				DeepLinks/InstallAppDialog.swift,
 			);
 			target = BFD247692284B9A500981D42 /* SideStore */;
 		};
