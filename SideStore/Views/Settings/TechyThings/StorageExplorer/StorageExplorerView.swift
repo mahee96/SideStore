@@ -170,11 +170,23 @@ public final class StorageExplorerViewModel: ObservableObject {
         return "Unknown"
     }
     
+    private var loadTask: Task<Void, Never>?
+    
+    deinit {
+        loadTask?.cancel()
+    }
+    
+    public func cancelLoading() {
+        loadTask?.cancel()
+        loadTask = nil
+    }
+    
     public static func calculateDirectorySize(url: URL) -> Int64 {
         let fileManager = FileManager.default
         var total: Int64 = 0
         if let enumerator = fileManager.enumerator(at: url, includingPropertiesForKeys: [.fileSizeKey], options: [.skipsHiddenFiles]) {
             for case let fileURL as URL in enumerator {
+                if Task.isCancelled { break }
                 if let vals = try? fileURL.resourceValues(forKeys: [.fileSizeKey]), let size = vals.fileSize {
                     total += Int64(size)
                 }
@@ -184,10 +196,11 @@ public final class StorageExplorerViewModel: ObservableObject {
     }
     
     public func loadContents() {
+        loadTask?.cancel()
         self.isLoading = true
         let targetURL = self.currentURL
         
-        Task.detached {
+        loadTask = Task.detached {
             var loadedItems: [StorageExplorerItem] = []
             var folderTotalSize: Int64 = 0
             
@@ -196,6 +209,7 @@ public final class StorageExplorerViewModel: ObservableObject {
                 let contents = try fileManager.contentsOfDirectory(at: targetURL, includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey, .contentModificationDateKey], options: [.skipsHiddenFiles])
                 
                 for itemURL in contents {
+                    if Task.isCancelled { return }
                     let resourceValues = try? itemURL.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey, .contentModificationDateKey])
                     let isDir = resourceValues?.isDirectory ?? false
                     let modDate = resourceValues?.contentModificationDate ?? Date()
@@ -204,6 +218,7 @@ public final class StorageExplorerViewModel: ObservableObject {
                     
                     if isDir {
                         size = await Self.calculateDirectorySize(url: itemURL)
+                        if Task.isCancelled { return }
                         if let subContents = try? fileManager.contentsOfDirectory(at: itemURL, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) {
                             itemCount = subContents.count
                         }
@@ -223,6 +238,7 @@ public final class StorageExplorerViewModel: ObservableObject {
                 debugLog("[StorageExplorerViewModel] Error reading directory \(targetURL.path): \(error)")
             }
             
+            if Task.isCancelled { return }
             let totalFolderSize = folderTotalSize
             await MainActor.run {
                 self.items = loadedItems
@@ -267,45 +283,57 @@ public final class StorageExplorerViewModel: ObservableObject {
     }
     
     public func delete(item: StorageExplorerItem) {
-        do {
-            try FileManager.default.removeItem(at: item.url)
-            self.loadContents()
-        } catch {
-            self.activeAlert = .error("Failed to delete \(item.name): \(error.localizedDescription)")
+        Task.detached {
+            do {
+                try FileManager.default.removeItem(at: item.url)
+                await MainActor.run {
+                    self.loadContents()
+                }
+            } catch {
+                await MainActor.run {
+                    self.activeAlert = .error("Failed to delete \(item.name): \(error.localizedDescription)")
+                }
+            }
         }
     }
     
     public func bulkDeleteSelected() {
         let targets = items.filter { selectedURLs.contains($0.url) }
-        var errors: [String] = []
-        
-        for item in targets {
-            do {
-                try FileManager.default.removeItem(at: item.url)
-            } catch {
-                errors.append("\(item.name): \(error.localizedDescription)")
+        Task.detached {
+            var errors: [String] = []
+            for item in targets {
+                do {
+                    try FileManager.default.removeItem(at: item.url)
+                } catch {
+                    errors.append("\(item.name): \(error.localizedDescription)")
+                }
             }
-        }
-        
-        self.selectedURLs.removeAll()
-        self.isSelectionMode = false
-        self.loadContents()
-        
-        if !errors.isEmpty {
-            self.activeAlert = .error("Errors deleting items:\n" + errors.joined(separator: "\n"))
+            await MainActor.run {
+                self.selectedURLs.removeAll()
+                self.isSelectionMode = false
+                self.loadContents()
+                if !errors.isEmpty {
+                    self.activeAlert = .error("Errors deleting items:\n" + errors.joined(separator: "\n"))
+                }
+            }
         }
     }
     
     public func rename(item: StorageExplorerItem, to newName: String) {
         let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, trimmed != item.name else { return }
-        
         let destinationURL = item.url.deletingLastPathComponent().appendingPathComponent(trimmed)
-        do {
-            try FileManager.default.moveItem(at: item.url, to: destinationURL)
-            self.loadContents()
-        } catch {
-            self.activeAlert = .error("Failed to rename \(item.name): \(error.localizedDescription)")
+        Task.detached {
+            do {
+                try FileManager.default.moveItem(at: item.url, to: destinationURL)
+                await MainActor.run {
+                    self.loadContents()
+                }
+            } catch {
+                await MainActor.run {
+                    self.activeAlert = .error("Failed to rename \(item.name): \(error.localizedDescription)")
+                }
+            }
         }
     }
     
@@ -323,28 +351,31 @@ public final class StorageExplorerViewModel: ObservableObject {
             return
         }
         
-        var errors: [String] = []
-        var index = 1
-        
-        for item in targets {
-            let ext = item.url.pathExtension
-            let nameWithoutExt = ext.isEmpty ? "\(trimmed)_\(index)" : "\(trimmed)_\(index).\(ext)"
-            let destinationURL = item.url.deletingLastPathComponent().appendingPathComponent(nameWithoutExt)
+        Task.detached {
+            var errors: [String] = []
+            var index = 1
             
-            do {
-                try FileManager.default.moveItem(at: item.url, to: destinationURL)
-            } catch {
-                errors.append("\(item.name): \(error.localizedDescription)")
+            for item in targets {
+                let ext = item.url.pathExtension
+                let nameWithoutExt = ext.isEmpty ? "\(trimmed)_\(index)" : "\(trimmed)_\(index).\(ext)"
+                let destinationURL = item.url.deletingLastPathComponent().appendingPathComponent(nameWithoutExt)
+                
+                do {
+                    try FileManager.default.moveItem(at: item.url, to: destinationURL)
+                } catch {
+                    errors.append("\(item.name): \(error.localizedDescription)")
+                }
+                index += 1
             }
-            index += 1
-        }
-        
-        self.selectedURLs.removeAll()
-        self.isSelectionMode = false
-        self.loadContents()
-        
-        if !errors.isEmpty {
-            self.activeAlert = .error("Errors renaming items:\n" + errors.joined(separator: "\n"))
+            
+            await MainActor.run {
+                self.selectedURLs.removeAll()
+                self.isSelectionMode = false
+                self.loadContents()
+                if !errors.isEmpty {
+                    self.activeAlert = .error("Errors renaming items:\n" + errors.joined(separator: "\n"))
+                }
+            }
         }
     }
     
@@ -364,35 +395,37 @@ public final class StorageExplorerViewModel: ObservableObject {
     public func pasteCopiedItems() {
         let sources = StorageExplorerClipboard.shared.copiedURLs
         guard !sources.isEmpty else { return }
+        let currentTargetURL = self.currentURL
         
-        var conflicts: [PasteConflict] = []
-        var copyErrors: [String] = []
-        let fileManager = FileManager.default
-        
-        // Phase 1: Complete all non-conflicting items immediately (including recursive directories)
-        for sourceURL in sources {
-            guard fileManager.fileExists(atPath: sourceURL.path) else { continue }
-            let destURL = self.currentURL.appendingPathComponent(sourceURL.lastPathComponent)
+        Task.detached {
+            var conflicts: [PasteConflict] = []
+            var copyErrors: [String] = []
+            let fileManager = FileManager.default
             
-            if fileManager.fileExists(atPath: destURL.path) {
-                conflicts.append(PasteConflict(sourceURL: sourceURL, destinationDirectory: self.currentURL, existingName: sourceURL.lastPathComponent))
-            } else {
-                do {
-                    try fileManager.copyItem(at: sourceURL, to: destURL)
-                } catch {
-                    copyErrors.append("\(sourceURL.lastPathComponent): \(error.localizedDescription)")
+            for sourceURL in sources {
+                guard fileManager.fileExists(atPath: sourceURL.path) else { continue }
+                let destURL = currentTargetURL.appendingPathComponent(sourceURL.lastPathComponent)
+                
+                if fileManager.fileExists(atPath: destURL.path) {
+                    conflicts.append(PasteConflict(sourceURL: sourceURL, destinationDirectory: currentTargetURL, existingName: sourceURL.lastPathComponent))
+                } else {
+                    do {
+                        try fileManager.copyItem(at: sourceURL, to: destURL)
+                    } catch {
+                        copyErrors.append("\(sourceURL.lastPathComponent): \(error.localizedDescription)")
+                    }
                 }
             }
-        }
-        
-        self.loadContents()
-        
-        // Phase 2: Process conflicts sequentially
-        if !conflicts.isEmpty {
-            self.pendingConflicts = conflicts
-            self.presentNextConflict()
-        } else if !copyErrors.isEmpty {
-            self.activeAlert = .error("Errors copying items:\n" + copyErrors.joined(separator: "\n"))
+            
+            await MainActor.run {
+                self.loadContents()
+                if !conflicts.isEmpty {
+                    self.pendingConflicts = conflicts
+                    self.presentNextConflict()
+                } else if !copyErrors.isEmpty {
+                    self.activeAlert = .error("Errors copying items:\n" + copyErrors.joined(separator: "\n"))
+                }
+            }
         }
     }
     
@@ -439,6 +472,18 @@ public final class StorageExplorerViewModel: ObservableObject {
     }
 }
 
+// MARK: - Lazy Destination View Helper
+
+public struct LazyDestinationView<Content: View>: View {
+    let build: () -> Content
+    public init(_ build: @autoclosure @escaping () -> Content) {
+        self.build = build
+    }
+    public var body: some View {
+        build()
+    }
+}
+
 // MARK: - Directory Explorer View
 
 public struct DirectoryExplorerView: View {
@@ -473,7 +518,21 @@ public struct DirectoryExplorerView: View {
     
     public var body: some View {
         VStack(spacing: 0) {
-            if viewModel.filteredAndSortedItems.isEmpty {
+            if viewModel.isLoading {
+                Spacer()
+                
+                VStack(spacing: 12) {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle())
+                        .scaleEffect(1.2)
+                    Text("Loading directory contents...")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                
+                Spacer()
+            } else if viewModel.filteredAndSortedItems.isEmpty {
                 Spacer()
                 
                 VStack(spacing: 16) {
@@ -536,6 +595,9 @@ public struct DirectoryExplorerView: View {
             ActivityViewController(activityItems: [shareItem.url])
         }
         .alert(item: $viewModel.activeAlert, content: makeAlert)
+        .onDisappear {
+            viewModel.cancelLoading()
+        }
     }
     
     private func makeAlert(for alertType: StorageExplorerViewModel.ActiveAlert) -> Alert {
@@ -651,7 +713,7 @@ private struct DirectoryItemListSectionView: View {
                     }
                 }
         } else if item.isDirectory {
-            NavigationLink(destination: DirectoryExplorerView(url: item.url)) {
+            NavigationLink(destination: LazyDestinationView(DirectoryExplorerView(url: item.url))) {
                 ItemRow(item: item, isSelected: false, isSelectionMode: false, isTextWrapEnabled: viewModel.isTextWrapEnabled)
             }
             .contextMenu {
@@ -1020,38 +1082,41 @@ public struct StorageExplorerView: View {
     public init() {}
     
     public var body: some View {
-        List {
-            Section(
-                header: Text("App Storage Containers"),
-                footer: StorageExplorerFooterView(
-                    appStorageUsedString: appStorageUsedString,
-                    freeHardwareSpaceString: freeHardwareSpaceString,
-                    totalHardwareSpaceString: totalHardwareSpaceString
-                )
-            ) {
-                ForEach(locations) { location in
-                    NavigationLink(destination: DirectoryExplorerView(url: location.url)) {
-                        HStack(spacing: 12) {
-                            Image(systemName: location.iconName)
-                                .font(.title2)
-                                .foregroundColor(.accentColor)
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(location.name)
-                                    .font(.headline)
-                                Text(location.subtitle)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+        NavigationView {
+            List {
+                Section(
+                    header: Text("App Storage Containers"),
+                    footer: StorageExplorerFooterView(
+                        appStorageUsedString: appStorageUsedString,
+                        freeHardwareSpaceString: freeHardwareSpaceString,
+                        totalHardwareSpaceString: totalHardwareSpaceString
+                    )
+                ) {
+                    ForEach(locations) { location in
+                        NavigationLink(destination: LazyDestinationView(DirectoryExplorerView(url: location.url))) {
+                            HStack(spacing: 12) {
+                                Image(systemName: location.iconName)
+                                    .font(.title2)
+                                    .foregroundColor(.accentColor)
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(location.name)
+                                        .font(.headline)
+                                    Text(location.subtitle)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
                             }
+                            .padding(.vertical, 4)
                         }
-                        .padding(.vertical, 4)
                     }
                 }
             }
+            .listStyle(.insetGrouped)
+            .navigationTitle("Storage Explorer")
+            .navigationBarTitleDisplayMode(.inline)
         }
-        .listStyle(.insetGrouped)
-        .navigationTitle("Storage Explorer")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationViewStyle(.stack)
         .onAppear {
             self.loadLocations()
             self.loadStorageStats()
