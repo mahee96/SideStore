@@ -139,6 +139,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A8000551301F0E1B007E29D5 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Core/Certificates/CertificateManager.swift,
+			);
+			target = BF66EE7D2501AE50007EE018 /* AltStoreCore */;
+		};
 		A8EEC0BF2F4AF7FB00F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -203,11 +210,71 @@
 				AppBootManager.swift,
 				AppConstants.swift,
 				Core/Auth/AuthManager.swift,
-				Core/Certificates/CertificateManager.swift,
 				Core/Certificates/SigningCertificateValidator.swift,
+				Core/Operations/AppOperation.swift,
+				Core/Operations/AsyncOperation.swift,
+				Core/Operations/OperationEntitlements.swift,
+				Core/Operations/OperationStep.swift,
+				Core/Operations/OperationStepsDefinition.swift,
+				Core/Operations/PipelineOperations/CacheAppOperation.swift,
+				Core/Operations/PipelineOperations/ChangeAppIconOperation.swift,
+				Core/Operations/PipelineOperations/CleanStagedAppOperation.swift,
+				Core/Operations/PipelineOperations/ExportResignedAppOperation.swift,
+				Core/Operations/PipelineOperations/PreflightChecksOperation.swift,
+				Core/Operations/PipelineOperations/PrepareAppExtensionBundleIDsOperation.swift,
+				Core/Operations/PipelineOperations/StageAppOperation.swift,
+				Core/Operations/PipelineOperations/StageBackupAppOperation.swift,
+				Core/Operations/PipelineOperations/UpdateAppCertificateOperation.swift,
+				Core/Operations/PipelineOperations/UserCustomizationOperation.swift,
+				Core/Operations/PipelineOperations/VerifyCertificateOperation.swift,
+				Core/Operations/Shared/TaskChainCoalescer.swift,
+				Core/Operations/Shared/TaskChainSerializer.swift,
+				Core/Operations/Shared/TaskMutexSerializer.swift,
+				Core/Operations/StandaloneOperations/ScheduleExpirationWarningNotificationOperation.swift,
+				Core/Operations/StandaloneOperations/SyncAppIDsOperation.swift,
+				Core/Pairing/PairingFileManager.swift,
+				Core/Storage/CacheManager.swift,
 				EMProxyWrapper.swift,
+				"Extensions/NSAttributedString+Markdown.swift",
 				MinimuxerWrapper.swift,
 				OperationLogging.swift,
+				Settings/AnisetteConfigManager.swift,
+				Settings/AnisetteDataView.swift,
+				Settings/AnisetteServersManager.swift,
+				Settings/Cache/CacheManagementView.swift,
+				Settings/Cache/CacheService.swift,
+				Settings/Cache/CacheViewModel.swift,
+				Settings/Certificates/ActiveCertSectionView.swift,
+				Settings/Certificates/CertificateASN1Parser.swift,
+				Settings/Certificates/CertificateDetailView.swift,
+				Settings/Certificates/CertificateExporter.swift,
+				Settings/Certificates/CertificateRowView.swift,
+				Settings/Certificates/CertificatesListView.swift,
+				Settings/Certificates/CertificatesView.swift,
+				Settings/Certificates/CertificatesViewModel.swift,
+				Settings/Certificates/CertificateTypes.swift,
+				Settings/Certificates/DeveloperPortalService.swift,
+				Settings/Certificates/PrivateKeyTextEditor.swift,
+				Settings/Certificates/PrivateKeyTextInputView.swift,
+				Settings/Certificates/RevokeAlertViewController.swift,
+				Settings/Certificates/SetCertificateAlertViewController.swift,
+				Settings/Certificates/SignableCertificatesListViewController.swift,
+				Settings/ConnectionConfig.swift,
+				Settings/ConnectionConfigView.swift,
+				Settings/ConsoleLogView.swift,
+				Settings/Discovery/BonjourDiscoveryManager.swift,
+				Settings/Discovery/BonjourDiscoveryManagerV2.swift,
+				Settings/Discovery/BonjourDiscoveryTypes.swift,
+				Settings/Discovery/BonjourDiscoveryView.swift,
+				Settings/Discovery/BonjourDiscoveryViewV2.swift,
+				Settings/Discovery/LocalNetworkPermissionChecker.swift,
+				Settings/HealthCheckView.swift,
+				Settings/OperationsLoggingContolView.swift,
+				Settings/SignOutAlertViewController.swift,
+				Settings/StorageExplorerView.swift,
+				Settings/VPNConfigurationView.swift,
+				Settings/WirelessPair/WirelessPairManager.swift,
+				Settings/WirelessPair/WirelessPairView.swift,
 				SideStoreLogging.swift,
 				URLHandler.swift,
 				Utils/common/BuildInfo.swift,
@@ -223,7 +290,10 @@
 				Utils/iostreams/AbstractClassError.swift,
 				Utils/iostreams/ConsoleLog.swift,
 				Utils/iostreams/ConsoleLogger.swift,
-				Views/UIKit/CollapsingMarkdownView.swift,
+				Views/Components/AppInfoView.swift,
+				Views/Components/BundleResourceBrowserView.swift,
+				Views/Components/InfoPlistContainerView.swift,
+				Views/Components/UIKit/CollapsingMarkdownView.swift,
 			);
 			target = BFD247692284B9A500981D42 /* SideStore */;
 		};
@@ -261,7 +331,7 @@
 		A8EEC3D92F4B0FC800F2436D /* SideBackup */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC3E22F4B0FC800F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = SideBackup; sourceTree = "<group>"; };
 		A8EEC71D2F4B10D900F2436D /* xcconfigs */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = xcconfigs; sourceTree = "<group>"; };
 		A8EEC8412F4B146A00F2436D /* AltStore */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC8CB2F4B146B00F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8EEC8CC2F4B146B00F2436D /* PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet */, A8EEC8CD2F4B146B00F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = AltStore; sourceTree = "<group>"; };
-		A8EECF2A2F4B195000F2436D /* SideStore */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EECF492F4B195000F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8EECF4A2F4B195000F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = SideStore; sourceTree = "<group>"; };
+		A8EECF2A2F4B195000F2436D /* SideStore */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EECF492F4B195000F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8000551301F0E1B007E29D5 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8EECF4A2F4B195000F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = SideStore; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */

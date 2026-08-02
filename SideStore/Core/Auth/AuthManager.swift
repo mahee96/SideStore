@@ -94,7 +94,7 @@ public final class AuthManager: @unchecked Sendable {
     }
     
     @discardableResult
-    public func performAuthenticationOperation(
+    func performAuthenticationOperation(
         context: AuthenticatedOperationContext,
         presentingViewController: UIViewController?,
         skipDeviceRegistration: Bool = false,
