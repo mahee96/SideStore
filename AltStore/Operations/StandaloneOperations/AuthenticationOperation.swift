@@ -178,6 +178,11 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         self.debugLog("[Authentication] execute: fetchTeam completed successfully.")
         self.context.team = team
         
+        self.debugLog("[Authentication] Saving team & account immediately after fetchTeam")
+        AuthManager.shared.team = team
+        AuthManager.shared.session = session
+        try await self.save(team)
+        
         let certificate: ALTCertificate?
         if self.skipCertificateProvisioning {
             self.verboseLog("[Authentication] execute: Skipping certificate provisioning.")
@@ -189,8 +194,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             self.context.certificate = certificate
         }
         
-        AuthManager.shared.team = team
-        AuthManager.shared.session = session
+        self.debugLog("[Authentication] Saving certificate after fetching certificate")
         CertificateManager.shared.activeCertificate = certificate
         
         return (team, certificate, session)
