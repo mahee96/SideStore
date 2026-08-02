@@ -84,3 +84,10 @@ Dependencies/idevice/
 // crash reports
 *.ips
 **/*.ips
+
+// local dirs (scratch pad dirs)
+local/
+local
+tmp/
+tmp
+*.log
