@@ -371,7 +371,7 @@ extension AppDelegate
         
         let token = tokenParts.joined()
         #if DEBUG
-        debugLog("Push Token: \(token)")
+        debugLog("[AppDelegate] Apple Push Notification(APN) Token: \(token)")
         #endif
     }
     

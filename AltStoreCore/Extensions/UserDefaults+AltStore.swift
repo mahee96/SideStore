@@ -184,11 +184,6 @@ public extension UserDefaults
         set { self.set(newValue, forKey: #function) }
     }
     
-    @objc var localServerSupportsRefreshing: Bool {
-        get { self.bool(forKey: #function) }
-        set { self.set(newValue, forKey: #function) }
-    }
-    
     @objc var patchedApps: [String]? {
         get { self.stringArray(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
@@ -276,7 +271,6 @@ public extension UserDefaults
         let activeAppLimitIncludesExtensions = !ProcessInfo.processInfo.isOperatingSystemAtLeast(ios13_5)
         
         let ios14 = OperatingSystemVersion(majorVersion: 14, minorVersion: 0, patchVersion: 0)
-        let localServerSupportsRefreshing = !ProcessInfo.processInfo.isOperatingSystemAtLeast(ios14)
         
         let ios16 = OperatingSystemVersion(majorVersion: 16, minorVersion: 0, patchVersion: 0)
         let ios16_2 = OperatingSystemVersion(majorVersion: 16, minorVersion: 2, patchVersion: 0)
@@ -287,43 +281,48 @@ public extension UserDefaults
         (ProcessInfo.processInfo.isOperatingSystemAtLeast(ios14) && !ProcessInfo.processInfo.isOperatingSystemAtLeast(ios15_7_2)) ||
         (ProcessInfo.processInfo.isOperatingSystemAtLeast(ios16) && !ProcessInfo.processInfo.isOperatingSystemAtLeast(ios16_2))
         
-        let permissionCheckingDisabled = false
-        
         // Pre-iOS 15 doesn't support custom sorting, so default to sorting by name.
         // Otherwise, default to `default` sorting (a.k.a. "source order").
         let preferredAppSorting: AppSorting = if #available(iOS 15, *) { .default } else { .name }
         
         let defaults = [
-            #keyPath(UserDefaults.useLocalVPN): true,
-            #keyPath(UserDefaults.isCellularRefreshEnabled): false,
-            #keyPath(UserDefaults.isAppLimitDisabled): false,
-            #keyPath(UserDefaults.isBetaUpdatesEnabled): false,
-            #keyPath(UserDefaults.customizeAppId): false,
-            #keyPath(UserDefaults.isExportResignedAppEnabled): false,
-            #keyPath(UserDefaults.isDebugModeEnabled): false,
-            #keyPath(UserDefaults.isVerboseOperationsLoggingEnabled): false,
-            #keyPath(UserDefaults.isAltSignVerboseLoggingEnabled): true,
-            #keyPath(UserDefaults.isMinimuxerVerboseLoggingEnabled): true,
-            #keyPath(UserDefaults.isRotateLogsOnStartupEnabled): true,
-            #keyPath(UserDefaults.recreateDatabaseOnNextStart): false,
-            #keyPath(UserDefaults.isBackgroundRefreshEnabled): true,
-            #keyPath(UserDefaults.enableEMPforWireguard): false,
-            #keyPath(UserDefaults.isIdleTimeoutDisableEnabled): true,
-            #keyPath(UserDefaults.isPairingReset): true,
+            // TODO: @mahee96: need to retire since irrelevant in ios 15+
             #keyPath(UserDefaults.isLegacyDeactivationSupported): isLegacyDeactivationSupported,
             #keyPath(UserDefaults.activeAppLimitIncludesExtensions): activeAppLimitIncludesExtensions,
-            #keyPath(UserDefaults.localServerSupportsRefreshing): localServerSupportsRefreshing,
+            
+            // still used on ios 15+
             #keyPath(UserDefaults.requiresAppGroupMigration): true,
-            #keyPath(UserDefaults.menuAnisetteList): "https://servers.sidestore.io/servers.json",
-            #keyPath(UserDefaults.menuAnisetteURL): "https://ani.sidestore.io",
+            #keyPath(UserDefaults.isAppLimitDisabled): false,
             #keyPath(UserDefaults.isCowExploitSupported): isMacDirtyCowSupported,
-            #keyPath(UserDefaults.permissionCheckingDisabled): permissionCheckingDisabled,
             #keyPath(UserDefaults._preferredAppSorting): preferredAppSorting.rawValue,
-            #keyPath(UserDefaults.betaUdpatesTrack): defaultBetaUpdatesTrack,
+
+            // sidestore actively used
             #keyPath(UserDefaults.keepSigningCertsAfterLogout): true,
             #keyPath(UserDefaults.keepAnisetteDataAfterLogout): true,
+            #keyPath(UserDefaults.isBackgroundRefreshEnabled): true,
+            #keyPath(UserDefaults.isBetaUpdatesEnabled): false,
+            #keyPath(UserDefaults.permissionCheckingDisabled): true,
+            #keyPath(UserDefaults.isIdleTimeoutDisableEnabled): true,
+            #keyPath(UserDefaults.betaUdpatesTrack): defaultBetaUpdatesTrack,
+            #keyPath(UserDefaults.menuAnisetteList): "https://servers.sidestore.io/servers.json",
+            #keyPath(UserDefaults.menuAnisetteURL): "https://ani.sidestore.io",
             #keyPath(UserDefaults.isAnisetteOfflineMode): false,
             #keyPath(UserDefaults.disableAnisetteRotation): false,
+            #keyPath(UserDefaults.useLocalVPN): true,
+            #keyPath(UserDefaults.enableEMPforWireguard): false,
+            
+            #keyPath(UserDefaults.responseCachingDisabled): false,
+            #keyPath(UserDefaults.customizeAppId): false,
+            #keyPath(UserDefaults.isExportResignedAppEnabled): false,
+            #keyPath(UserDefaults.isVerboseOperationsLoggingEnabled): false,
+            #keyPath(UserDefaults.isAltSignVerboseLoggingEnabled): false,
+            #keyPath(UserDefaults.isMinimuxerVerboseLoggingEnabled): false,
+            #keyPath(UserDefaults.isRotateLogsOnStartupEnabled): true,
+            #keyPath(UserDefaults.recreateDatabaseOnNextStart): false,
+            #keyPath(UserDefaults.isCellularRefreshEnabled): false,
+            #keyPath(UserDefaults.isPairingReset): true,
+            #keyPath(UserDefaults.isDebugModeEnabled): false,
+
         ] as [String: Any]
         
         UserDefaults.standard.register(defaults: defaults)
@@ -335,9 +334,5 @@ public extension UserDefaults
             // Disable isAppLimitDisabled if running iOS version that doesn't support MacDirtyCow.
             UserDefaults.standard.isAppLimitDisabled = false
         }
-        
-        #if !BETA
-        UserDefaults.standard.responseCachingDisabled = false
-        #endif
     }
 }
