@@ -202,6 +202,7 @@ struct DeveloperOptionsView: View {
                     .cornerRadius(14)
                 }
                 
+                #if DEBUG
                 // Section 3: Account Management
                 VStack(alignment: .leading, spacing: 8) {
                     Text("ACCOUNT MANAGEMENT")
@@ -246,6 +247,7 @@ struct DeveloperOptionsView: View {
                     .background(Color.settingsRowBackground)
                     .cornerRadius(14)
                 }
+                #endif
             }
             .padding(.horizontal, 16)
             .padding(.top, 16)
