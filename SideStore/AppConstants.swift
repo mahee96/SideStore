@@ -9,9 +9,14 @@
 import Foundation
 
 public enum AppConstants {
-   enum Proxy {
+    enum Proxy {
         static let address = "127.0.0.1"
         static let port = "51820"
         static let serverURL = "\(address):\(port)"
+    }
+    
+    public enum Connection {
+        public static let defaultOverrideIP = "10.7.0.1"
+        public static let defaultRemoteServerIP = "10.7.0.1"
     }
 }

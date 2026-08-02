@@ -12,8 +12,8 @@ import Combine
 final class ConnectionConfig: ObservableObject {
     static let shared = ConnectionConfig()
 
-    private static let defaultOverrideIP: String = "10.7.0.1"
-    private static let defaultRemoteServerIP: String = "10.7.0.1"
+    private static var defaultOverrideIP: String { AppConstants.Connection.defaultOverrideIP }
+    private static var defaultRemoteServerIP: String { AppConstants.Connection.defaultRemoteServerIP }
 
     @Published var tunnelIfaceIp: String?
     @Published var tunnelIfaceSubnetMask: String?
