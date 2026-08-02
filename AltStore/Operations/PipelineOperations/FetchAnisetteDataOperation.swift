@@ -183,7 +183,7 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext
             let currentServerUrlString = serverUrls[currentIndex]
 
             guard let url = URL(string: currentServerUrlString) else {
-                let errmsg = "Skipping invalid URL: \(currentServerUrlString)"
+                let errmsg = "[FetchAnisetteDataOperation] Skipping invalid URL: \(currentServerUrlString)"
                 self.verboseLog(errmsg)
                 self.showToast(viewContext: viewContext, message: errmsg)
                 continue
@@ -192,19 +192,19 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext
             do {
                 let success = try await pingServer(url)
                 if success {
-                    let okmsg = "Found working server: \(url.absoluteString)"
+                    let okmsg = "[FetchAnisetteDataOperation] Found working server: \(url.absoluteString)"
                     self.verboseLog(okmsg)
                     if triedCount > 0 {
                         self.showToast(viewContext: viewContext, message: okmsg)
                     }
                     return currentServerUrlString
                 } else {
-                    let errmsg = "Server ping failed: \(url.absoluteString)"
+                    let errmsg = "[FetchAnisetteDataOperation] Server ping failed: \(url.absoluteString)"
                     self.verboseLog(errmsg)
                     self.showToast(viewContext: viewContext, message: errmsg)
                 }
             } catch {
-                let errmsg = "Server connection failed: \(url.absoluteString) with error: \(error.localizedDescription)"
+                let errmsg = "[FetchAnisetteDataOperation] Server connection failed: \(url.absoluteString) with error: \(error.localizedDescription)"
                 self.verboseLog(errmsg)
                 self.showToast(viewContext: viewContext, message: errmsg)
             }
@@ -227,7 +227,7 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext
 
     private func showToast(viewContext: UIViewController?, message: String) {
         #if DEBUG
-        debugLog("[Anisette] \(message)")
+        debugLog("\(message.hasPrefix("[FetchAnisetteDataOperation]") ? message : "[FetchAnisetteDataOperation] \(message)")")
         #endif
     }
     
@@ -540,13 +540,13 @@ private class AnisetteWebSocketSession: WebSocketDelegate {
             self.handleTextEvent(string, client: client)
             
         case .connected:
-            parentOperation.debugLog("Connected")
+            parentOperation.debugLog("[FetchAnisetteDataOperation] Connected")
             
         case .disconnected(let string, let code):
-            parentOperation.debugLog("Disconnected: \(code); \(string)")
+            parentOperation.debugLog("[FetchAnisetteDataOperation] Disconnected: \(code); \(string)")
             
         case .error(let error):
-            parentOperation.debugLog("Got error: \(String(describing: error))")
+            parentOperation.debugLog("[FetchAnisetteDataOperation] Got error: \(String(describing: error))")
             
         default:
             parentOperation.debugLog("[FetchAnisetteDataOperation] Unknown event: \(event)")
