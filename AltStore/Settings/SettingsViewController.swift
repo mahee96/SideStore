@@ -84,7 +84,6 @@ extension SettingsViewController
         case enableEMPForWiregaurd  // row 8 - Enable EMP for wireguard
         case customizeAppId         // row 9 - Enable AppId Customization
         case customizeAppExtensions // row 10 - Enable AppExtns Customization
-        case cellularRefresh        // row 11 - Enable Cellular Refresh (< iOS 26.4)
     }
     
     private enum SigningSettingsRow: Int, CaseIterable {
@@ -129,7 +128,6 @@ final class SettingsViewController: UITableViewController
     @IBOutlet private var customizeAppIdSwitch: UISwitch!
     @IBOutlet private var customizeAppExtensionsSwitch: UISwitch!
     @IBOutlet private var exportResignedAppsSwitch: UISwitch!
-    @IBOutlet private var cellularRefreshSwitch: UISwitch!
     @IBOutlet private var verboseOperationsLoggingSwitch: UISwitch!
     @IBOutlet private var altSignVerboseLoggingSwitch: UISwitch!
     @IBOutlet private var minimuxerVerboseLoggingSwitch: UISwitch!
@@ -511,7 +509,6 @@ private extension SettingsViewController
         // AdvancedSettingsRow
         self.customizeAppIdSwitch.isOn = UserDefaults.standard.customizeAppId
         self.customizeAppExtensionsSwitch.isOn = UserDefaults.standard.customizeAppExtensions
-        self.cellularRefreshSwitch?.isOn = UserDefaults.standard.isCellularRefreshEnabled
 
         // BetaTestingRow
         self.betaUpdatesSwitch.isOn = UserDefaults.standard.isBetaUpdatesEnabled
@@ -834,10 +831,6 @@ private extension SettingsViewController
         UserDefaults.standard.customizeAppExtensions = sender.isOn
     }
     
-    @IBAction func toggleCellularRefresh(_ sender: UISwitch) {
-        UserDefaults.standard.isCellularRefreshEnabled = sender.isOn
-    }
-    
     @IBAction func toggleIsBackgroundRefreshEnabled(_ sender: UISwitch)
     {
         UserDefaults.standard.isBackgroundRefreshEnabled = sender.isOn
@@ -1037,17 +1030,6 @@ extension SettingsViewController
     
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat
     {
-        let section = Section.allCases[indexPath.section]
-        if section == .advancedSettings {
-            let row = AdvancedSettingsRow.allCases[indexPath.row]
-            if row == .cellularRefresh {
-                if #available(iOS 26.4, *) {
-                    return 0
-                } else {
-                    return super.tableView(tableView, heightForRowAt: indexPath)
-                }
-            }
-        }
         return super.tableView(tableView, heightForRowAt: indexPath)
     }
     
@@ -1067,19 +1049,7 @@ extension SettingsViewController
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell
     {
-        let section = Section.allCases[indexPath.section]
         let cell = super.tableView(tableView, cellForRowAt: indexPath)
-        
-        if section == .advancedSettings {
-            let row = AdvancedSettingsRow.allCases[indexPath.row]
-            if row == .cellularRefresh {
-                if #available(iOS 26.4, *) {
-                    cell.isHidden = true
-                } else {
-                    cell.isHidden = false
-                }
-            }
-        }
         
         if #available(iOS 14, *) {}
         else if let cell = cell as? InsetGroupTableViewCell,
@@ -1452,7 +1422,7 @@ extension SettingsViewController
                 let vc = UIHostingController(rootView: certificateManagementView)
                 self.prepare(for: UIStoryboardSegue(identifier: "certificateManagement", source: self, destination: vc), sender: nil)
                 
-            case .refreshAttempts, .exportResignedApp, .enableEMPForWiregaurd, .customizeAppId, .customizeAppExtensions, .cellularRefresh: break
+            case .refreshAttempts, .exportResignedApp, .enableEMPForWiregaurd, .customizeAppId, .customizeAppExtensions: break
             }
         case .signing:
             let row = SigningSettingsRow.allCases[indexPath.row]

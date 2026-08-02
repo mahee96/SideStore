@@ -16,6 +16,7 @@ private extension Color {
 
 struct ExperimentalFeaturesView: View {
     @State private var freeAcctAppIdDeletion: Bool = UserDefaults.standard.freeAcctAppIdDeletion
+    @State private var isCellularRefreshEnabled: Bool = UserDefaults.standard.isCellularRefreshEnabled
 
     var body: some View {
         ScrollView {
@@ -77,6 +78,16 @@ struct ExperimentalFeaturesView: View {
                             set: { newValue in
                                 freeAcctAppIdDeletion = newValue
                                 UserDefaults.standard.freeAcctAppIdDeletion = newValue
+                            }
+                        ))
+                        
+                        divider
+                        
+                        toggleRow(title: "Cellular Refresh", isOn: Binding(
+                            get: { isCellularRefreshEnabled },
+                            set: { newValue in
+                                isCellularRefreshEnabled = newValue
+                                UserDefaults.standard.isCellularRefreshEnabled = newValue
                             }
                         ))
                     }
