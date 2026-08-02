@@ -109,7 +109,7 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
             additionalValues[Bundle.Info.deviceID] = udid
             additionalValues[Bundle.Info.serverID] = UserDefaults.standard.preferredServerID
             
-            let signingCertificate = CertificateManager.shared.activeCertificate
+            let signingCertificate = try? CertificateManager.shared.getActiveCertificate()
             let encryptingPassword = CertificateManager.shared.activeSigningCertificatePassword
             
             if

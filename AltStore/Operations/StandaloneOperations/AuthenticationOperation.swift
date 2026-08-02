@@ -46,17 +46,7 @@ typealias AuthenticationResult = (ALTTeam, ALTCertificate?, ALTAppleAPISession)
 
 private struct SessionCache {
     let team: ALTTeam
-    let certificate: ALTCertificate?
     let session: ALTAppleAPISession
-    
-    static func loadFromKeychain() -> SessionCache? {
-        guard let session = AuthManager.shared.session,
-              let team = AuthManager.shared.team else {
-            return nil
-        }
-        let certificate = CertificateManager.shared.activeCertificate
-        return SessionCache(team: team, certificate: certificate, session: session)
-    }
 }
 
 final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperationContext, AuthenticationResult>, @unchecked Sendable {
@@ -108,7 +98,10 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         // PHASE 1: Resolve valid session (Coalesced)
         let authResult = try await TaskChainCoalescer.shared.coalesce(key: "apple_auth") { () -> AuthenticationResult in
             // Check L1 - Session Cache
-            if let cache = SessionCache.loadFromKeychain() {
+            if let session = AuthManager.shared.session, 
+               let team = AuthManager.shared.team 
+            {
+                let cache = SessionCache(team: team, session: session)
                 if let validatedResult = try await self.validateSessionCache(cache) {
                     return validatedResult
                 }
@@ -142,9 +135,10 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             self.activeCertificates = certificates
             self.context.activeCertificates = certificates
             
-            var certToUse = cache.certificate
-            if let keychainCert = CertificateManager.shared.activeCertificate,
-               certificates.contains(where: { $0.serialNumber == keychainCert.serialNumber }) {
+            var certToUse: ALTCertificate?
+            if let keychainCert = try? CertificateManager.shared.getActiveCertificate(),
+                   certificates.contains(where: { $0.serialNumber == keychainCert.serialNumber })
+            {
                 certToUse = keychainCert
             }
             
@@ -186,7 +180,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         let certificate: ALTCertificate?
         if self.skipCertificateProvisioning {
             self.verboseLog("[Authentication] execute: Skipping certificate provisioning.")
-            certificate = CertificateManager.shared.activeCertificate
+            certificate = try? CertificateManager.shared.getActiveCertificate()
         } else {
             self.verboseLog("[Authentication] execute: Invoking fetchCertificate...")
             certificate = try await self.fetchCertificate(for: team, session: session)
@@ -195,7 +189,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         }
         
         self.debugLog("[Authentication] Saving certificate after fetching certificate")
-        CertificateManager.shared.activeCertificate = certificate
+        try? CertificateManager.shared.setActiveCertificate(certificate)
         
         return (team, certificate, session)
     }
@@ -323,7 +317,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                 let didShowResignAlert = await self.showResignScreenIfNecessary(signer: signer, session: session)
                 self.verboseLog("[Authentication] postAuthenticationCleanup: didShowResignAlert = \(didShowResignAlert)")
                 if !didShowResignAlert {
-                    CertificateManager.shared.activeCertificate = altCertificate
+                    try? CertificateManager.shared.setActiveCertificate(altCertificate)
                     self.verboseLog("[Authentication] postAuthenticationCleanup: Cached signing certificate in Keychain.")
                 }
             }
@@ -646,7 +640,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         self.activeCertificates = certificates
         self.context.activeCertificates = certificates
         
-        if let localCertificate = CertificateManager.shared.activeCertificate,
+        if let localCertificate = try? CertificateManager.shared.getActiveCertificate(),
            let certificate = certificates.first(where: { $0.serialNumber == localCertificate.serialNumber })
         {
             localCertificate.machineIdentifier = certificate.machineIdentifier

@@ -90,13 +90,17 @@ class CertificatesViewModel: ObservableObject {
     private let certificateKeychain = KeychainAccess.Keychain(service: Bundle.Info.appbundleIdentifier)
         .accessibility(.afterFirstUnlock)
     
-    func fetchActiveSerialNumber() {
-        self.activeSerialNumber = CertificateManager.shared.activeCertificate?.serialNumber
+    private var activeLocalCert: ALTCertificate? {
+        do {
+            return try CertificateManager.shared.getActiveCertificate()
+        } catch {
+            self.errorMessage = "Failed to load active certificate: \(error.localizedDescription)"
+            return nil
+        }
     }
     
-    private var activeLocalCert: ALTCertificate? {
-        guard let activeCert = CertificateManager.shared.activeCertificate else { return nil }
-        return CertificateManager.shared.loadCertificate(for: activeCert.serialNumber) ?? activeCert
+    func fetchActiveSerialNumber() {
+        self.activeSerialNumber = activeLocalCert?.serialNumber
     }
     
     func loadLocalCertificates() -> [ALTCertificate] {
@@ -396,7 +400,7 @@ class CertificatesViewModel: ObservableObject {
     
     func makeCertificateActive(_ certificate: ALTCertificate) {
         guard certificate.privateKey != nil else { self.errorMessage = "Cannot activate certificate: private key missing."; return }
-        CertificateManager.shared.activeCertificate = certificate
+        try? CertificateManager.shared.setActiveCertificate(certificate)
         self.fetchActiveSerialNumber()
         self.alertMessage = "Active signing certificate replaced successfully."
         self.showAlert    = true

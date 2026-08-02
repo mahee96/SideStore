@@ -28,18 +28,22 @@ final class SetCertificateAlertViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let currentSerial = installedApp.certificateSerialNumber
+        var isCertificateBad = false
         let activeCertObj: ALTCertificate? = {
-            if let serial = currentSerial {
-                return CertificateManager.shared.loadCertificate(for: serial)
+            do {
+                return try CertificateManager.shared.getActiveCertificate()
+            } catch {
+                debugLog("[SetCertificateAlertViewController] Failed to load active certificate: \(error)")
+                isCertificateBad = true
+                return nil
             }
-            return CertificateManager.shared.activeCertificate
         }()
         
-        let activeName = activeCertObj?.name ?? "N/A"
-        let activeMachine = activeCertObj?.machineName ?? "N/A"
-        let activeSerial = activeCertObj?.serialNumber ?? "N/A"
-        let activeEmail = activeCertObj?.requesterEmail ?? "N/A"
+        let fallbackLabel = isCertificateBad ? "BAD" : "N/A"
+        let activeName = activeCertObj?.name ?? fallbackLabel
+        let activeMachine = activeCertObj?.machineName ?? fallbackLabel
+        let activeSerial = activeCertObj?.serialNumber ?? fallbackLabel
+        let activeEmail = activeCertObj?.requesterEmail ?? fallbackLabel
         
         let targetName = newCertificate.name ?? "N/A"
         let targetMachine = newCertificate.machineName ?? "N/A"

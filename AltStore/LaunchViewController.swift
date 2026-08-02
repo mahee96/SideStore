@@ -189,7 +189,7 @@ final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
         AnisetteDataManager.shared.anisetteIdentifier = account.anisetteIdentifier
         do {
             let altCert = try CertificateStore.load(account.certificateData, password: account.certificatePassword)
-            CertificateManager.shared.activeCertificate = altCert
+            try CertificateManager.shared.setActiveCertificate(altCert)
             let toastView = ToastView(text: NSLocalizedString("Successfully imported '\(account.email)'!", comment: ""), detailText: "SideStore should be fully operational!")
             return toastView.show(in: self)
         } catch {

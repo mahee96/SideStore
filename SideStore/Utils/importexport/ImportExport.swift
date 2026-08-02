@@ -63,7 +63,7 @@ class ImportExport {
         AnisetteDataManager.shared.anisetteIdentifier = account.anisetteIdentifier
         
         let altCert = try CertificateStore.load(account.certificateData, password: account.certificatePassword)
-        CertificateManager.shared.activeCertificate = altCert
+        try CertificateManager.shared.setActiveCertificate(altCert)
     }
 
     private static func deriveKey(password: String, salt: Data) -> SymmetricKey {
@@ -154,7 +154,7 @@ class ImportExport {
             AnisetteDataManager.shared.anisetteIdentifier = account.anisetteIdentifier
             
             let altCert = try CertificateStore.load(account.certificateData, password: account.certificatePassword)
-            CertificateManager.shared.activeCertificate = altCert
+            try CertificateManager.shared.setActiveCertificate(altCert)
             
             return account
         } catch {

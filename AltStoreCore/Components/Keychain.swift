@@ -80,21 +80,7 @@ public class Keychain
     @KeychainItem(key: "adiPb")
     public var adiPb: String?
 
-    // explicit throwing - coz we don't want to silently ignore errors using 'try?' when using variables
-    public func loadCertificate() throws -> ALTCertificate? {
-        guard let data = self.signingCertificate else { return nil }
-        return try CertificateStore.load(data, password: self.signingCertificatePassword)
-    }
 
-    public func storeCertificate(_ cert: ALTCertificate?) throws {
-        if let cert = cert {
-            self.signingCertificate = try CertificateStore.export(cert, password: cert.machineIdentifier)
-            self.signingCertificatePassword = cert.machineIdentifier
-        } else {
-            self.signingCertificate = nil
-            self.signingCertificatePassword = nil
-        }
-    }
     public var session: ALTAppleAPISession? = nil
     public var team: ALTTeam? = nil
     

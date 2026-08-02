@@ -95,7 +95,7 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
         self.setProgress(30)
         
         let bundleID = self.context.targetBundleIdentifier
-        let activeKeychainCert = CertificateManager.shared.activeCertificate
+        let activeKeychainCert = try? CertificateManager.shared.getActiveCertificate()
         let activeKeychainSerial = activeKeychainCert?.serialNumber
         let authenticatedCertSerial = self.context.authenticatedContext.certificate?.serialNumber
         let overrideCertSerial = self.context.overrideCertificate?.serialNumber
