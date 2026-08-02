@@ -95,15 +95,8 @@ class CertificatesViewModel: ObservableObject {
     }
     
     private var activeLocalCert: ALTCertificate? {
-        guard let cert = CertificateManager.shared.activeCertificate else { return nil }
-        if let metadata = UserDefaults.standard.dictionary(forKey: "certMetadata_" + cert.serialNumber) as? [String: String]
-        {
-            cert.machineName        = metadata["machineName"]
-            cert.identifier         = metadata["identifier"]
-            cert.requesterEmail     = metadata["requesterEmail"]
-            cert.machineIdentifier  = metadata["machineIdentifier"]
-        }
-        return cert
+        guard let activeCert = CertificateManager.shared.activeCertificate else { return nil }
+        return CertificateManager.shared.loadCertificate(for: activeCert.serialNumber) ?? activeCert
     }
     
     func loadLocalCertificates() -> [ALTCertificate] {
