@@ -80,10 +80,7 @@ extension SettingsViewController
         case anisetteServers        // row 4 - Anisette Servers
         case connectionConfig       // row 5 - Connection Configuration
         case certificateManagement  // row 6 - Certificate Management
-        case exportResignedApp      // row 7 - Export Resigned Apps
-        case enableEMPForWiregaurd  // row 8 - Enable EMP for wireguard
-        case customizeAppId         // row 9 - Enable AppId Customization
-        case customizeAppExtensions // row 10 - Enable AppExtns Customization
+        case userCustomizations     // row 7 - User Customizations
     }
     
     private enum SigningSettingsRow: Int, CaseIterable {
@@ -121,13 +118,9 @@ final class SettingsViewController: UITableViewController
     @IBOutlet private var accountTypeLabel: UILabel!
     
     @IBOutlet private var backgroundRefreshSwitch: UISwitch!
-    @IBOutlet private var enableEMPforWireguard: UISwitch!
     @IBOutlet private var noIdleTimeoutSwitch: UISwitch!
     @IBOutlet private var disableAppLimitSwitch: UISwitch!
     @IBOutlet private var betaUpdatesSwitch: UISwitch!
-    @IBOutlet private var customizeAppIdSwitch: UISwitch!
-    @IBOutlet private var customizeAppExtensionsSwitch: UISwitch!
-    @IBOutlet private var exportResignedAppsSwitch: UISwitch!
     @IBOutlet private var verboseOperationsLoggingSwitch: UISwitch!
     @IBOutlet private var altSignVerboseLoggingSwitch: UISwitch!
     @IBOutlet private var minimuxerVerboseLoggingSwitch: UISwitch!
@@ -502,13 +495,8 @@ private extension SettingsViewController
         
         // AppRefreshRow
         self.backgroundRefreshSwitch.isOn = UserDefaults.standard.isBackgroundRefreshEnabled
-        self.enableEMPforWireguard.isOn = UserDefaults.standard.enableEMPforWireguard
         self.noIdleTimeoutSwitch.isOn = UserDefaults.standard.isIdleTimeoutDisableEnabled
         self.disableAppLimitSwitch.isOn = UserDefaults.standard.isAppLimitDisabled
-
-        // AdvancedSettingsRow
-        self.customizeAppIdSwitch.isOn = UserDefaults.standard.customizeAppId
-        self.customizeAppExtensionsSwitch.isOn = UserDefaults.standard.customizeAppExtensions
 
         // BetaTestingRow
         self.betaUpdatesSwitch.isOn = UserDefaults.standard.isBetaUpdatesEnabled
@@ -517,7 +505,6 @@ private extension SettingsViewController
         // DiagnosticsRow
         // DiagnosticsRow (managed via DeveloperOptionsView)
         self.disableResponseCachingSwitch?.isOn = UserDefaults.standard.responseCachingDisabled
-        self.exportResignedAppsSwitch?.isOn = UserDefaults.standard.isExportResignedAppEnabled
         self.verboseOperationsLoggingSwitch?.isOn = UserDefaults.standard.isVerboseOperationsLoggingEnabled
         self.altSignVerboseLoggingSwitch?.isOn = UserDefaults.standard.isAltSignVerboseLoggingEnabled
         self.minimuxerVerboseLoggingSwitch?.isOn = UserDefaults.standard.isMinimuxerVerboseLoggingEnabled
@@ -756,11 +743,6 @@ private extension SettingsViewController
         }
     }
     
-    @IBAction func toggleResignedAppExport(_ sender: UISwitch) {
-        // update it in database
-        UserDefaults.standard.isExportResignedAppEnabled = sender.isOn
-    }
-
     @IBAction func toggleVerboseOperationsLogging(_ sender: UISwitch) {
         // update it in database
         UserDefaults.standard.isVerboseOperationsLoggingEnabled = sender.isOn
@@ -822,23 +804,9 @@ private extension SettingsViewController
         UserDefaults.standard.isBetaUpdatesEnabled = sender.isOn
     }
     
-    @IBAction func toggleEnableAppIdCustomization(_ sender: UISwitch) {
-        // update it in database
-        UserDefaults.standard.customizeAppId = sender.isOn
-    }
-    
-    @IBAction func toggleEnableAppExtensionsCustomization(_ sender: UISwitch) {
-        UserDefaults.standard.customizeAppExtensions = sender.isOn
-    }
-    
     @IBAction func toggleIsBackgroundRefreshEnabled(_ sender: UISwitch)
     {
         UserDefaults.standard.isBackgroundRefreshEnabled = sender.isOn
-    }
-    
-    @IBAction func toggleEnableEMPforWireguard(_ sender: UISwitch)
-    {
-        UserDefaults.standard.enableEMPforWireguard = sender.isOn
     }
     
     @IBAction func toggleNoIdleTimeoutEnabled(_ sender: UISwitch)
@@ -1422,7 +1390,18 @@ extension SettingsViewController
                 let vc = UIHostingController(rootView: certificateManagementView)
                 self.prepare(for: UIStoryboardSegue(identifier: "certificateManagement", source: self, destination: vc), sender: nil)
                 
-            case .refreshAttempts, .exportResignedApp, .enableEMPForWiregaurd, .customizeAppId, .customizeAppExtensions: break
+            case .userCustomizations:
+                let userCustomizationsView = UserCustomizationsView()
+                let vc = UIHostingController(rootView: userCustomizationsView)
+                
+                let appearance = UINavigationBarAppearance()
+                appearance.configureWithDefaultBackground()
+                vc.navigationItem.scrollEdgeAppearance = appearance
+                vc.navigationItem.standardAppearance = appearance
+                
+                navigationController?.pushViewController(vc, animated: true)
+                
+            case .refreshAttempts: break
             }
         case .signing:
             let row = SigningSettingsRow.allCases[indexPath.row]

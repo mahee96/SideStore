@@ -288,6 +288,7 @@
 				Views/Settings/Advanced/NetworkDiscovery/BonjourDiscoveryView.swift,
 				Views/Settings/Advanced/NetworkDiscovery/BonjourDiscoveryViewV2.swift,
 				Views/Settings/Advanced/NetworkDiscovery/LocalNetworkPermissionChecker.swift,
+				Views/Settings/Advanced/UserCustomizations/UserCustomizationsView.swift,
 				Views/Settings/Advanced/WirelessPair/WirelessPairManager.swift,
 				Views/Settings/Advanced/WirelessPair/WirelessPairView.swift,
 				Views/Settings/Auth/SignOutAlertViewController.swift,
