@@ -31,7 +31,7 @@ struct UserCustomizationsView: View {
                         .padding(.horizontal, 16)
                     
                     VStack(spacing: 0) {
-                        toggleRow(title: "Prompt AppID Customization", isOn: Binding(
+                        toggleRow(title: "Customize AppID", isOn: Binding(
                             get: { customizeAppId },
                             set: { newValue in
                                 customizeAppId = newValue
@@ -41,7 +41,7 @@ struct UserCustomizationsView: View {
                         
                         divider
                         
-                        toggleRow(title: "Prompt AppExtns Customization", isOn: Binding(
+                        toggleRow(title: "Customize App Extensions", isOn: Binding(
                             get: { customizeAppExtensions },
                             set: { newValue in
                                 customizeAppExtensions = newValue
