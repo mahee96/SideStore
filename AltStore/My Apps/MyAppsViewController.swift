@@ -1546,9 +1546,8 @@ private extension MyAppsViewController
         
         guard let url = notification.userInfo?[AppDelegate.importAppDeepLinkURLKey] as? URL else { return }
         
-        self.sideloadApp(at: url) { (result) in
+        let cleanup = {
             guard url.isFileURL else { return }
-            
             do
             {
                 try FileManager.default.removeItem(at: url)
@@ -1558,6 +1557,19 @@ private extension MyAppsViewController
                 debugLog("Unable to remove imported .ipa. \(error)")
             }
         }
+        
+        InstallAppDialog.present(
+            ipaURL: url,
+            from: self,
+            onConfirm: { [weak self] in
+                self?.sideloadApp(at: url) { _ in
+                    cleanup()
+                }
+            },
+            onCancel: {
+                cleanup()
+            }
+        )
     }
     
     @objc func checkForUpdates(_ sender: UIRefreshControl)
