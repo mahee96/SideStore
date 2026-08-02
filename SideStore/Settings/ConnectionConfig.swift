@@ -34,13 +34,13 @@ final class ConnectionConfig: ObservableObject {
     }
 
     private static var overrideIPStorage: String {
-        get { UserDefaults.standard.string(forKey: "TunnelOverridePeerIp") ?? defaultOverrideIP }
-        set { UserDefaults.standard.set(newValue, forKey: "TunnelOverridePeerIp") }
+        get { getStoredOverrideIP(default: defaultOverrideIP) }
+        set { setStoredOverrideIP(newValue) }
     }
 
     private static var remoteServerIPStorage: String {
-        get { UserDefaults.standard.string(forKey: "RemoteServerIp") ?? defaultRemoteServerIP }
-        set { UserDefaults.standard.set(newValue, forKey: "RemoteServerIp") }
+        get { getStoredRemoteServerIP(default: defaultRemoteServerIP) }
+        set { setStoredRemoteServerIP(newValue) }
     }
 
     private static var useLocalVPNStorage: Bool {
@@ -50,4 +50,24 @@ final class ConnectionConfig: ObservableObject {
 
     var overrideTunnelPeerActive: ActiveState { overrideTunnelPeerReachable ? .yes : .no }
     var remoteActive: ActiveState { remoteReachable ? .yes : .no }
+}
+
+// MARK: - Private ConnectionConfig Domain Persistence Extension
+
+private extension ConnectionConfig {
+    static func getStoredOverrideIP(default defaultIP: String) -> String {
+        return UserDefaults.standard.string(forKey: "TunnelOverridePeerIp") ?? defaultIP
+    }
+    
+    static func setStoredOverrideIP(_ ip: String) {
+        UserDefaults.standard.set(ip, forKey: "TunnelOverridePeerIp")
+    }
+    
+    static func getStoredRemoteServerIP(default defaultIP: String) -> String {
+        return UserDefaults.standard.string(forKey: "RemoteServerIp") ?? defaultIP
+    }
+    
+    static func setStoredRemoteServerIP(_ ip: String) {
+        UserDefaults.standard.set(ip, forKey: "RemoteServerIp")
+    }
 }

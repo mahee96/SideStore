@@ -124,13 +124,13 @@ public actor AnisetteServersManager {
     private let importedFileNameKey = "AnisetteServersManager.importedFileName"
 
     public var isOfflineMode: Bool {
-        get { UserDefaults.standard.bool(forKey: isOfflineModeKey) }
-        set { UserDefaults.standard.set(newValue, forKey: isOfflineModeKey) }
+        get { storedOfflineMode }
+        set { storedOfflineMode = newValue }
     }
 
     public var importedFileName: String? {
-        get { UserDefaults.standard.string(forKey: importedFileNameKey) }
-        set { UserDefaults.standard.set(newValue, forKey: importedFileNameKey) }
+        get { storedImportedFileName }
+        set { storedImportedFileName = newValue }
     }
 
     public func importFromFile(url: URL) throws -> [AnisetteServerItem] {
@@ -377,8 +377,8 @@ public actor AnisetteServersManager {
             return
         }
 
-        let lastSyncTime = UserDefaults.standard.double(forKey: lastDailySyncKey)
-        let lastSuccess = UserDefaults.standard.bool(forKey: lastDailySyncSuccessKey)
+        let lastSyncTime = lastDailySyncTimestamp
+        let lastSuccess = lastDailySyncWasSuccessful
         let now = Date().timeIntervalSince1970
 
         let twentyFourHours: TimeInterval = 24 * 60 * 60
@@ -386,11 +386,11 @@ public actor AnisetteServersManager {
         if !lastSuccess || (now - lastSyncTime >= twentyFourHours) {
             do {
                 try await syncWithRemote()
-                UserDefaults.standard.set(now, forKey: self.lastDailySyncKey)
-                UserDefaults.standard.set(true, forKey: self.lastDailySyncSuccessKey)
+                lastDailySyncTimestamp = now
+                lastDailySyncWasSuccessful = true
                 debugLog("[AnisetteServersManager] Daily boot sync completed successfully")
             } catch {
-                UserDefaults.standard.set(false, forKey: self.lastDailySyncSuccessKey)
+                lastDailySyncWasSuccessful = false
                 debugLog("[AnisetteServersManager] Daily boot sync failed for URL '\(UserDefaults.standard.menuAnisetteList)': \(error.localizedDescription)")
             }
         }
@@ -408,7 +408,7 @@ public actor AnisetteServersManager {
             return
         }
 
-        let lastFailureTime = UserDefaults.standard.double(forKey: lastFailureSyncKey)
+        let lastFailureTime = lastFailureSyncTimestamp
         let now = Date().timeIntervalSince1970
         let fifteenMinutes: TimeInterval = 15 * 60
 
@@ -417,12 +417,41 @@ public actor AnisetteServersManager {
             return
         }
 
-        UserDefaults.standard.set(now, forKey: lastFailureSyncKey)
+        lastFailureSyncTimestamp = now
         do {
             try await syncWithRemote()
             debugLog("[AnisetteServersManager] Failure-triggered background sync completed")
         } catch {
             debugLog("[AnisetteServersManager] Failure-triggered background sync failed for URL '\(UserDefaults.standard.menuAnisetteList)': \(error.localizedDescription)")
         }
+    }
+}
+
+// MARK: - Private AnisetteServersManager Domain Persistence Extension
+
+private extension AnisetteServersManager {
+    var storedOfflineMode: Bool {
+        get { UserDefaults.standard.bool(forKey: isOfflineModeKey) }
+        set { UserDefaults.standard.set(newValue, forKey: isOfflineModeKey) }
+    }
+    
+    var storedImportedFileName: String? {
+        get { UserDefaults.standard.string(forKey: importedFileNameKey) }
+        set { UserDefaults.standard.set(newValue, forKey: importedFileNameKey) }
+    }
+    
+    var lastDailySyncTimestamp: Double {
+        get { UserDefaults.standard.double(forKey: lastDailySyncKey) }
+        set { UserDefaults.standard.set(newValue, forKey: lastDailySyncKey) }
+    }
+    
+    var lastDailySyncWasSuccessful: Bool {
+        get { UserDefaults.standard.bool(forKey: lastDailySyncSuccessKey) }
+        set { UserDefaults.standard.set(newValue, forKey: lastDailySyncSuccessKey) }
+    }
+    
+    var lastFailureSyncTimestamp: Double {
+        get { UserDefaults.standard.double(forKey: lastFailureSyncKey) }
+        set { UserDefaults.standard.set(newValue, forKey: lastFailureSyncKey) }
     }
 }

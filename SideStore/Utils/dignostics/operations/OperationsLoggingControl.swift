@@ -18,7 +18,7 @@ class OperationsLoggingControl {
         // This method should handle the database update logic based on the operation and value
         let key = Self.getKey(operation)
         debugLog("Updating database for key: \(key), value: \(value)")
-        UserDefaults.standard.set(value, forKey: key)
+        setOperationLoggingState(key: key, value: value)
     }
     
     private static func stripGenericTypeName(from string: String) -> String {
@@ -42,7 +42,7 @@ class OperationsLoggingControl {
 
     static func getUpdatedFromDatabase(for operation: any OperationLogging.Type, defaultVal: Bool)  -> Bool{
         let key = Self.getKey(operation)
-        let valueInDb = UserDefaults.standard.value(forKey: key) as? Bool
+        let valueInDb = getOperationLoggingValueInDb(key: key)
         if valueInDb == nil {
             // put the value if not already present
             setLoggingEnabled(for: operation, value: defaultVal)
@@ -52,6 +52,22 @@ class OperationsLoggingControl {
 
     public static func isLoggingEnabled(for operation: any OperationLogging.Type) -> Bool {
         let key = Self.getKey(operation)
+        return getOperationLoggingBool(key: key)
+    }
+}
+
+// MARK: - Private OperationsLoggingControl Persistence Extension
+
+private extension OperationsLoggingControl {
+    static func setOperationLoggingState(key: String, value: Bool) {
+        UserDefaults.standard.set(value, forKey: key)
+    }
+    
+    static func getOperationLoggingValueInDb(key: String) -> Bool? {
+        return UserDefaults.standard.value(forKey: key) as? Bool
+    }
+    
+    static func getOperationLoggingBool(key: String) -> Bool {
         return UserDefaults.standard.bool(forKey: key)
     }
 }
