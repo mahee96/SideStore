@@ -44,6 +44,10 @@ class ToastView: RSTToastView
         
         super.init(text: text, detailText: detailedText)
         
+        self.backgroundColor = .altPrimary
+        self.textLabel.textColor = .white
+        self.detailTextLabel.textColor = .white
+        
         self.isAccessibilityElement = true
         
         self.layoutMargins = UIEdgeInsets(top: 8, left: 16, bottom: 10, right: 16)
