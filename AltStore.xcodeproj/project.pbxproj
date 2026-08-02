@@ -202,9 +202,9 @@
 			membershipExceptions = (
 				AppBootManager.swift,
 				AppConstants.swift,
-				Components/Auth/AuthManager.swift,
-				Components/Certificates/CertificateManager.swift,
-				Components/Certificates/SigningCertificateValidator.swift,
+				Core/Auth/AuthManager.swift,
+				Core/Certificates/CertificateManager.swift,
+				Core/Certificates/SigningCertificateValidator.swift,
 				EMProxyWrapper.swift,
 				MinimuxerWrapper.swift,
 				OperationLogging.swift,
