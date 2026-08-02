@@ -106,17 +106,19 @@ public class Keychain
         cert.privateKey = privateKey
         
         // 4. Create PKCS12 data structure
-        if let p12Data = cert.unencryptedP12Data()
-        {
+        do {
+            let p12Data = try cert.unencryptedP12Data()
             // 5. Store the new PKCS12 format in signingCertificate slot
-            try? self.keychain.set(p12Data, key: signingCertificateKey)
-            try? self.keychain.set("", key: "signingCertificatePassword")
+            try self.keychain.set(p12Data, key: signingCertificateKey)
+            try self.keychain.set("", key: "signingCertificatePassword")
             
             // 6. Clear legacy keys
-            try? self.keychain.remove(privateKeyKey)
-            try? self.keychain.remove(serialNumberKey)
+            try self.keychain.remove(privateKeyKey)
+            try self.keychain.remove(serialNumberKey)
             
             debugLog("[Keychain] Successfully migrated legacy certificate and private key to PKCS12 format and cleared legacy keys.")
+        } catch {
+            debugLog("[Keychain] Failed to migrate legacy certificate to PKCS12 format: \(error)")
         }
     }
     

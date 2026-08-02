@@ -27,8 +27,13 @@ enum CertificateExporter {
     }
     
     static func shareP12(_ cert: ALTCertificate, password: String, onError: @escaping (String) -> Void) {
-        guard let p12Data = cert.encryptedP12Data(password: password) else { onError("Failed to build encrypted p12 data."); return }
-        share(data: p12Data, filename: (cert.machineName ?? cert.name) + ".p12", onError: onError)
+        do {
+            let p12Data = try cert.encryptedP12Data(password: password)
+            share(data: p12Data, filename: (cert.machineName ?? cert.name) + ".p12", onError: onError)
+        } catch {
+            debugLog("[CertificateExporter] Failed to build encrypted p12 data: \(error)")
+            onError("Failed to build encrypted p12 data: \(error.localizedDescription)")
+        }
     }
     
     static func sharePrivateKeyAsPEM(_ cert: ALTCertificate, onError: @escaping (String) -> Void) {

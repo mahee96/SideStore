@@ -10,6 +10,22 @@ import Foundation
 import KeychainAccess
 @preconcurrency import AltSign
 
+public struct ActiveCertificate: Sendable {
+    public let certificate: ALTCertificate
+    public let p12Data: Data
+    public let password: String?
+    
+    public var serialNumber: String {
+        certificate.serialNumber
+    }
+
+    fileprivate init(certificate: ALTCertificate, p12Data: Data, password: String?) {
+        self.certificate = certificate
+        self.p12Data = p12Data
+        self.password = password
+    }
+}
+
 public final class CertificateManager: @unchecked Sendable {
     public static let shared = CertificateManager()
     
@@ -21,48 +37,53 @@ public final class CertificateManager: @unchecked Sendable {
     private let metadataPrefix = "certMetadata_"
     private let certKeyPrefix = "importedCert_"
     
-    private var activeCertificate: ALTCertificate?
+    public private(set) var activeCertificate: ActiveCertificate?
     
-    private init() {}
+    private init() {
+        try? loadActiveCertificate()
+    }
     
     // MARK: - Active Keychain Certificate Encapsulation
     
-    /// Retrieves active signing certificate from memory cache, or loads and decrypts from Keychain.
-    public func getActiveCertificate() throws -> ALTCertificate? {
-        if let cached = activeCertificate {
-            debugLog("[CertificateManager] getActiveCertificate: Returning in-memory cached certificate (serial: \(cached.serialNumber)).")
-            return cached
-        }
+    /// Loads active signing certificate from Keychain into memory.
+    @discardableResult
+    public func loadActiveCertificate() throws -> ActiveCertificate? {
         guard let data = Keychain.shared.signingCertificate else {
-            debugLog("[CertificateManager] getActiveCertificate: No signingCertificate data found in Keychain.")
+            debugLog("[CertificateManager] loadActiveCertificate: No signingCertificate data found in Keychain.")
+            self.activeCertificate = nil
             return nil
         }
+        let password = Keychain.shared.signingCertificatePassword
         do {
-            let cert = try CertificateStore.load(data, password: Keychain.shared.signingCertificatePassword)
-            activeCertificate = cert
-            debugLog("[CertificateManager] getActiveCertificate: Successfully loaded certificate (serial: \(cert.serialNumber)).")
-            return cert
+            let cert = try CertificateStore.load(data, password: password)
+            let active = ActiveCertificate(certificate: cert, p12Data: data, password: password)
+            self.activeCertificate = active
+            debugLog("[CertificateManager] loadActiveCertificate: Successfully loaded certificate (serial: \(cert.serialNumber)).")
+            return active
         } catch {
-            debugLog("[CertificateManager] getActiveCertificate failed to load/decrypt certificate: \(error)")
+            debugLog("[CertificateManager] loadActiveCertificate failed to load/decrypt certificate: \(error)")
+            self.activeCertificate = nil
             throw error
         }
     }
 
     /// Sets active signing certificate in memory cache, encrypts and persists to Keychain.
     public func setActiveCertificate(_ cert: ALTCertificate?) throws {
-        _cachedActiveCertificate = cert
         if let cert = cert {
             do {
                 let p12Data = try CertificateStore.export(cert, password: cert.machineIdentifier)
                 Keychain.shared.signingCertificate = p12Data
                 Keychain.shared.signingCertificatePassword = cert.machineIdentifier
                 saveCertificate(cert)
+                let active = ActiveCertificate(certificate: cert, p12Data: p12Data, password: cert.machineIdentifier)
+                self.activeCertificate = active
                 debugLog("[CertificateManager] setActiveCertificate: Successfully stored certificate (serial: \(cert.serialNumber)).")
             } catch {
                 debugLog("[CertificateManager] setActiveCertificate failed to export/encrypt certificate: \(error)")
                 throw error
             }
         } else {
+            self.activeCertificate = nil
             Keychain.shared.signingCertificate = nil
             Keychain.shared.signingCertificatePassword = nil
             debugLog("[CertificateManager] setActiveCertificate: Cleared active certificate in Keychain.")
@@ -127,9 +148,9 @@ public final class CertificateManager: @unchecked Sendable {
     }
     
     public func getLocalCertificate(serialNumber: String) -> ALTCertificate? {
-        if let activeCert = try? self.getActiveCertificate(), activeCert.serialNumber == serialNumber {
+        if let activeCert = self.activeCertificate, activeCert.serialNumber == serialNumber {
             debugLog("[CertificateManager] Found in active Keychain.shared.certificate")
-            return activeCert
+            return activeCert.certificate
         }
         do {
             if let data = try self.keychain.getData(certKeyPrefix + serialNumber) {
@@ -177,7 +198,7 @@ public final class CertificateManager: @unchecked Sendable {
     
     public func deleteLocalCertificate(serialNumber: String) {
         debugLog("[CertificateManager] deleteLocalCertificate: \(serialNumber)")
-        if (try? getActiveCertificate())?.serialNumber == serialNumber {
+        if self.activeCertificate?.serialNumber == serialNumber {
             try? clearActiveCertificate()
         }
         try? self.keychain.remove(certKeyPrefix + serialNumber)
@@ -188,14 +209,14 @@ public final class CertificateManager: @unchecked Sendable {
     }
     
     public func isCertificateLocallyCached(serialNumber: String) -> Bool {
-        if let activeCert = try? self.getActiveCertificate(), activeCert.serialNumber == serialNumber {
+        if let activeCert = self.activeCertificate, activeCert.serialNumber == serialNumber {
             return true
         }
         return getImportedCertificateSerials().contains(serialNumber)
     }
     
     public func isCertificateLocallyCached(cert: ALTCertificate) -> Bool {
-        if let activeCert = try? self.getActiveCertificate(), activeCert.serialNumber == cert.serialNumber {
+        if let activeCert = self.activeCertificate, activeCert.serialNumber == cert.serialNumber {
             return true
         }
         let serials = getImportedCertificateSerials()

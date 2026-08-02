@@ -91,12 +91,7 @@ class CertificatesViewModel: ObservableObject {
         .accessibility(.afterFirstUnlock)
     
     private var activeLocalCert: ALTCertificate? {
-        do {
-            return try CertificateManager.shared.getActiveCertificate()
-        } catch {
-            self.errorMessage = "Failed to load active certificate: \(error.localizedDescription)"
-            return nil
-        }
+        CertificateManager.shared.activeCertificate?.certificate
     }
     
     func fetchActiveSerialNumber() {

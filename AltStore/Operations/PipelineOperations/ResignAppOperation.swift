@@ -109,18 +109,11 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
             additionalValues[Bundle.Info.deviceID] = udid
             additionalValues[Bundle.Info.serverID] = UserDefaults.standard.preferredServerID
             
-            let signingCertificate = try? CertificateManager.shared.getActiveCertificate()
-            let encryptingPassword = CertificateManager.shared.activeSigningCertificatePassword
-            
-            if
-                let signingCertificate = signingCertificate,
-                let encryptingPassword = encryptingPassword {
-                additionalValues[Bundle.Info.certificateID] = signingCertificate.serialNumber
-                
-                let encryptedData = signingCertificate.encryptedP12Data(withPassword: encryptingPassword)
-                try encryptedData?.write(to: appBundle.certificateURL, options: .atomic)
+            if let activeCert = CertificateManager.shared.activeCertificate {
+                additionalValues[Bundle.Info.certificateID] = activeCert.serialNumber
+                try activeCert.p12Data.write(to: appBundle.certificateURL, options: .atomic)
             } else {
-                // The embedded certificate + certificate identifier are already in app bundle, no need to update them.
+                self.verboseLog("[ResignAppOperation] No activeCertificate found in CertificateManager. Embedded certificate + certificate identifier in app bundle will not be updated.")
             }
         } else if infoDictionary.keys.contains(Bundle.Info.deviceID), let udid = try await fetchUDID() {
             // There is an ALTDeviceID entry, so assume the app is using AltKit and replace it with the device's UDID.

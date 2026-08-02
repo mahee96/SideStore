@@ -92,7 +92,7 @@ class ImportExport {
 
     public static func exportAccount(password: String, includeApplePassword: Bool) throws -> Data {
         guard let email = AuthManager.shared.currentAppleID,
-              let cert = CertificateManager.shared.activeSigningCertificateData,
+              let activeCert = CertificateManager.shared.activeCertificate,
               let identifier = AnisetteDataManager.shared.anisetteIdentifier,
               let adiPB = AnisetteDataManager.shared.anisetteAdiBlob else {
             throw OperationError.invalidParameters("Account or signing data is missing.")
@@ -104,10 +104,10 @@ class ImportExport {
 
         let applePasswordToInclude = includeApplePassword ? AuthManager.shared.password : nil
         let account: ImportedAccount
-        if let certPass = CertificateManager.shared.activeSigningCertificatePassword {
-            account = ImportedAccount(version: ImportedAccount.currentVersion, email: email, password: applePasswordToInclude, certificateData: cert, certificatePassword: certPass, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
+        if let certPass = activeCert.password {
+            account = ImportedAccount(version: ImportedAccount.currentVersion, email: email, password: applePasswordToInclude, certificateData: activeCert.p12Data, certificatePassword: certPass, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
         } else {
-            account = ImportedAccount(version: ImportedAccount.currentVersion, email: email, password: applePasswordToInclude, certificateData: cert, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
+            account = ImportedAccount(version: ImportedAccount.currentVersion, email: email, password: applePasswordToInclude, certificateData: activeCert.p12Data, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
         }
 
         let jsonData = try Foundation.JSONEncoder().encode(account)

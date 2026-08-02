@@ -136,10 +136,10 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             self.context.activeCertificates = certificates
             
             var certToUse: ALTCertificate?
-            if let keychainCert = try? CertificateManager.shared.getActiveCertificate(),
-                   certificates.contains(where: { $0.serialNumber == keychainCert.serialNumber })
+            if let keychainCert = CertificateManager.shared.activeCertificate,
+               certificates.contains(where: { $0.serialNumber == keychainCert.serialNumber })
             {
-                certToUse = keychainCert
+                certToUse = keychainCert.certificate
             }
             
             if self.skipCertificateProvisioning || (certToUse != nil && certificates.contains(where: { $0.serialNumber == certToUse?.serialNumber })) {
@@ -180,7 +180,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         let certificate: ALTCertificate?
         if self.skipCertificateProvisioning {
             self.verboseLog("[Authentication] execute: Skipping certificate provisioning.")
-            certificate = try? CertificateManager.shared.getActiveCertificate()
+            certificate = CertificateManager.shared.activeCertificate?.certificate
         } else {
             self.verboseLog("[Authentication] execute: Invoking fetchCertificate...")
             certificate = try await self.fetchCertificate(for: team, session: session)
@@ -640,11 +640,11 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         self.activeCertificates = certificates
         self.context.activeCertificates = certificates
         
-        if let localCertificate = try? CertificateManager.shared.getActiveCertificate(),
-           let certificate = certificates.first(where: { $0.serialNumber == localCertificate.serialNumber })
+        if let activeCert = CertificateManager.shared.activeCertificate,
+           let certificate = certificates.first(where: { $0.serialNumber == activeCert.serialNumber })
         {
-            localCertificate.machineIdentifier = certificate.machineIdentifier
-            return localCertificate
+            activeCert.certificate.machineIdentifier = certificate.machineIdentifier
+            return activeCert.certificate
         }
         
         if let serialNumber = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String {
