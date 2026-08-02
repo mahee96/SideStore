@@ -42,8 +42,11 @@ class ImportExport {
               let adiPB = AnisetteDataManager.shared.anisetteAdiBlob else {
             return nil
         }
-        let certPass = CertificateManager.shared.activeSigningCertificatePassword ?? password
-        return ImportedAccount(email: email, password: passwordStr, certificateData: cert, certificatePassword: certPass, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
+        if let certPass = CertificateManager.shared.activeSigningCertificatePassword {
+            return ImportedAccount(version: ImportedAccount.currentVersion, email: email, password: passwordStr, certificateData: cert, certificatePassword: certPass, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
+        } else {
+            return ImportedAccount(version: ImportedAccount.currentVersion, email: email, password: passwordStr, certificateData: cert, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
+        }
     }
 
     public static func importAccountJSON(from file: URL) throws {
@@ -59,7 +62,7 @@ class ImportExport {
         AnisetteDataManager.shared.anisetteAdiBlob = account.anisetteAdiBlob
         AnisetteDataManager.shared.anisetteIdentifier = account.anisetteIdentifier
         
-        let altCert = try ALTCertificate(p12Data: account.certificateData, password: account.certificatePassword)
+        let altCert = try CertificateStore.load(account.certificateData, password: account.certificatePassword)
         CertificateManager.shared.activeCertificate = altCert
     }
 
@@ -100,8 +103,12 @@ class ImportExport {
         }
 
         let applePasswordToInclude = includeApplePassword ? AuthManager.shared.password : nil
-        let certPass = CertificateManager.shared.activeSigningCertificatePassword ?? ""
-        let account = ImportedAccount(email: email, password: applePasswordToInclude, certificateData: cert, certificatePassword: certPass, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
+        let account: ImportedAccount
+        if let certPass = CertificateManager.shared.activeSigningCertificatePassword {
+            account = ImportedAccount(version: ImportedAccount.currentVersion, email: email, password: applePasswordToInclude, certificateData: cert, certificatePassword: certPass, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
+        } else {
+            account = ImportedAccount(version: ImportedAccount.currentVersion, email: email, password: applePasswordToInclude, certificateData: cert, anisetteIdentifier: identifier, anisetteAdiBlob: adiPB)
+        }
 
         let jsonData = try Foundation.JSONEncoder().encode(account)
         
@@ -113,28 +120,28 @@ class ImportExport {
         
         let key = deriveKey(password: password, salt: salt)
         let sealedBox = try AES.GCM.seal(jsonData, using: key)
-        guard let combined = sealedBox.combined else {
-            throw OperationError.invalidParameters("Encryption failed.")
+        guard let combinedData = sealedBox.combined else {
+            throw OperationError.invalidParameters("Encryption payload failed.")
         }
         
         var finalData = Data()
         finalData.append(salt)
-        finalData.append(combined)
+        finalData.append(combinedData)
         return finalData
     }
 
     public static func importAccountData(_ encryptedData: Data, filePassword: String) throws -> ImportedAccount {
         guard encryptedData.count > 16 else {
-            throw BackupEncryptionError.decryptionFailed
+            throw BackupEncryptionError.invalidDataFormat
         }
         
         let salt = encryptedData.prefix(16)
-        let gcmData = encryptedData.dropFirst(16)
+        let ciphertext = encryptedData.dropFirst(16)
         
         let key = deriveKey(password: filePassword, salt: salt)
         
         do {
-            let sealedBox = try AES.GCM.SealedBox(combined: gcmData)
+            let sealedBox = try AES.GCM.SealedBox(combined: ciphertext)
             let decryptedData = try AES.GCM.open(sealedBox, using: key)
             let account = try Foundation.JSONDecoder().decode(ImportedAccount.self, from: decryptedData)
             
@@ -146,7 +153,7 @@ class ImportExport {
             AnisetteDataManager.shared.anisetteAdiBlob = account.anisetteAdiBlob
             AnisetteDataManager.shared.anisetteIdentifier = account.anisetteIdentifier
             
-            let altCert = try ALTCertificate(p12Data: account.certificateData, password: account.certificatePassword)
+            let altCert = try CertificateStore.load(account.certificateData, password: account.certificatePassword)
             CertificateManager.shared.activeCertificate = altCert
             
             return account

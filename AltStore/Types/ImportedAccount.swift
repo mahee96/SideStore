@@ -8,30 +8,54 @@
 
 import Foundation
 
+public enum CertificateType: String, Codable {
+    case encrypted
+    case unencrypted
+}
+
 struct ImportedAccount: Codable {
+    public static let currentVersion = "2.0"
+
+    let version: String
     let email: String
     let password: String?
     let certificateData: Data
-    let certificatePassword: String
+    let certificatePassword: String?
     let anisetteIdentifier: String
     let anisetteAdiBlob: String
 
+    var certificateType: CertificateType {
+        certificatePassword != nil ? .encrypted : .unencrypted
+    }
+
     enum CodingKeys: String, CodingKey {
+        case version
         case email
         case password
         case certificateData
+        case certificateType = "certType"
         case certificatePassword
         case anisetteIdentifier
         case anisetteAdiBlob
 
-        // Legacy fallback keys
+        // Legacy (pre 2.0) fallback keys
         case legacyCert = "cert"
         case legacyCertPass = "certpass"
         case legacyLocalUser = "local_user"
         case legacyAdiPB = "adiPB"
     }
 
-    init(email: String, password: String?, certificateData: Data, certificatePassword: String, anisetteIdentifier: String, anisetteAdiBlob: String) {
+    // Encrypted Initializer (Requires passphrase)
+    init(
+        version: String = ImportedAccount.currentVersion,
+        email: String,
+        password: String?,
+        certificateData: Data,
+        certificatePassword: String,
+        anisetteIdentifier: String,
+        anisetteAdiBlob: String
+    ) {
+        self.version = version
         self.email = email
         self.password = password
         self.certificateData = certificateData
@@ -40,8 +64,27 @@ struct ImportedAccount: Codable {
         self.anisetteAdiBlob = anisetteAdiBlob
     }
 
+    // Unencrypted Initializer (No passphrase)
+    init(
+        version: String = ImportedAccount.currentVersion,
+        email: String,
+        password: String?,
+        certificateData: Data,
+        anisetteIdentifier: String,
+        anisetteAdiBlob: String
+    ) {
+        self.version = version
+        self.email = email
+        self.password = password
+        self.certificateData = certificateData
+        self.certificatePassword = nil
+        self.anisetteIdentifier = anisetteIdentifier
+        self.anisetteAdiBlob = anisetteAdiBlob
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.version = (try container.decodeIfPresent(String.self, forKey: .version)) ?? "1.0"
         self.email = try container.decode(String.self, forKey: .email)
         self.password = try container.decodeIfPresent(String.self, forKey: .password)
 
@@ -51,10 +94,25 @@ struct ImportedAccount: Codable {
             self.certificateData = try container.decode(Data.self, forKey: .legacyCert)
         }
 
-        if let certPass = try container.decodeIfPresent(String.self, forKey: .certificatePassword) {
-            self.certificatePassword = certPass
+        if let explicitType = try container.decodeIfPresent(CertificateType.self, forKey: .certificateType) {
+            // v2.0 Payload: Strict, explicit certType (no guessing)
+            switch explicitType {
+            case .encrypted:
+                self.certificatePassword = try container.decode(String.self, forKey: .certificatePassword)
+            case .unencrypted:
+                self.certificatePassword = nil
+            }
         } else {
-            self.certificatePassword = try container.decode(String.self, forKey: .legacyCertPass)
+            // TODO: Remove this fallback branch when pre 2.0 payloads are deprecated.
+            // Pre 2.0 payloads always included mandatory "certpass".
+            // If non-empty -> encrypted (certificatePassword = legacyPass, certificateType evaluates to .encrypted)
+            // If empty ("") -> unencrypted (certificatePassword = nil, certificateType evaluates to .unencrypted)
+            let legacyPass = try container.decode(String.self, forKey: .legacyCertPass)
+            if !legacyPass.isEmpty {
+                self.certificatePassword = legacyPass
+            } else {
+                self.certificatePassword = nil
+            }
         }
 
         if let identifier = try container.decodeIfPresent(String.self, forKey: .anisetteIdentifier) {
@@ -72,10 +130,12 @@ struct ImportedAccount: Codable {
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(version, forKey: .version)
         try container.encode(email, forKey: .email)
         try container.encodeIfPresent(password, forKey: .password)
         try container.encode(certificateData, forKey: .certificateData)
-        try container.encode(certificatePassword, forKey: .certificatePassword)
+        try container.encode(certificateType, forKey: .certificateType)
+        try container.encodeIfPresent(certificatePassword, forKey: .certificatePassword)
         try container.encode(anisetteIdentifier, forKey: .anisetteIdentifier)
         try container.encode(anisetteAdiBlob, forKey: .anisetteAdiBlob)
     }

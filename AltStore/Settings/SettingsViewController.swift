@@ -275,7 +275,7 @@ final class SettingsViewController: UITableViewController
         signIn()
         update()
         do {
-            let altCert = try ALTCertificate(p12Data: account.certificateData, password: account.certificatePassword)
+            let altCert = try CertificateStore.load(account.certificateData, password: account.certificatePassword)
             CertificateManager.shared.activeCertificate = altCert
             let toastView = ToastView(text: NSLocalizedString("Successfully imported '\(account.email)'!", comment: ""), detailText: "SideStore should be fully operational!")
             return toastView.show(in: self)
