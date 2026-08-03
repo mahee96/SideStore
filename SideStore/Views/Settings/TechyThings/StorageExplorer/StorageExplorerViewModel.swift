@@ -152,7 +152,7 @@ public final class StorageExplorerViewModel: ObservableObject {
     public func loadDiskSpace() {
         Task.detached {
             let space = await Self.getFreeDiskSpaceString()
-            await MainActor.run {
+            Task { @MainActor in
                 self.freeDiskSpaceString = space
             }
         }
@@ -255,7 +255,7 @@ public final class StorageExplorerViewModel: ObservableObject {
             let totalFolderSize = folderTotalSize
             verboseLog("[StorageExplorerViewModel] loadContents completed for: \(targetURL.path) -> \(loadedItems.count) items, totalSize: \(totalFolderSize) bytes (\(String(format: "%.3f", duration))s)")
             
-            await MainActor.run {
+            Task { @MainActor in
                 self.items = loadedItems
                 self.currentFolderSize = totalFolderSize
                 self.isLoading = false
@@ -301,11 +301,11 @@ public final class StorageExplorerViewModel: ObservableObject {
         Task.detached {
             do {
                 try FileManager.default.removeItem(at: item.url)
-                await MainActor.run {
+                Task { @MainActor in
                     self.loadContents()
                 }
             } catch {
-                await MainActor.run {
+                Task { @MainActor in
                     self.activeAlert = .error("Failed to delete \(item.name): \(error.localizedDescription)")
                 }
             }
@@ -323,7 +323,7 @@ public final class StorageExplorerViewModel: ObservableObject {
                     errors.append("\(item.name): \(error.localizedDescription)")
                 }
             }
-            await MainActor.run {
+            Task { @MainActor in
                 self.selectedURLs.removeAll()
                 self.isSelectionMode = false
                 self.loadContents()
@@ -341,11 +341,11 @@ public final class StorageExplorerViewModel: ObservableObject {
         Task.detached {
             do {
                 try FileManager.default.moveItem(at: item.url, to: destinationURL)
-                await MainActor.run {
+                Task { @MainActor in
                     self.loadContents()
                 }
             } catch {
-                await MainActor.run {
+                Task { @MainActor in
                     self.activeAlert = .error("Failed to rename \(item.name): \(error.localizedDescription)")
                 }
             }
@@ -383,7 +383,7 @@ public final class StorageExplorerViewModel: ObservableObject {
                 index += 1
             }
             
-            await MainActor.run {
+            Task { @MainActor in
                 self.selectedURLs.removeAll()
                 self.isSelectionMode = false
                 self.loadContents()
@@ -432,7 +432,7 @@ public final class StorageExplorerViewModel: ObservableObject {
                 }
             }
             
-            await MainActor.run {
+            Task { @MainActor in
                 self.loadContents()
                 if !conflicts.isEmpty {
                     self.pendingConflicts = conflicts

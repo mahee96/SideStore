@@ -12,9 +12,18 @@ import Combine
 // MARK: - Root Storage Explorer View
 
 public struct StorageExplorerView: View {
+    private static var hasCompletedInitialStatsScan: Bool = false
     private static var cachedAppStorageUsed: String = ""
     private static var cachedFreeSpace: String = ""
     private static var cachedTotalSpace: String = ""
+    
+    public static func clearCache() {
+        verboseLog("[StorageExplorerView] Static cache cleared")
+        hasCompletedInitialStatsScan = false
+        cachedAppStorageUsed = ""
+        cachedFreeSpace = ""
+        cachedTotalSpace = ""
+    }
     
     @State private var locations: [StorageLocation] = []
     @State private var totalHardwareSpaceString: String = StorageExplorerView.cachedTotalSpace
@@ -49,7 +58,16 @@ public struct StorageExplorerView: View {
         .onAppear {
             verboseLog("[StorageExplorerView] onAppear triggered")
             self.loadLocations()
-            self.loadStorageStats()
+            if !StorageExplorerView.hasCompletedInitialStatsScan {
+                verboseLog("[StorageExplorerView] Initial load -> starting loadStorageStats immediately")
+                self.loadStorageStats(delayMs: 0)
+            } else {
+                verboseLog("[StorageExplorerView] Returning from folder -> displaying cached stats and scheduling 500ms reconciliation task")
+                self.totalHardwareSpaceString = StorageExplorerView.cachedTotalSpace
+                self.freeHardwareSpaceString = StorageExplorerView.cachedFreeSpace
+                self.appStorageUsedString = StorageExplorerView.cachedAppStorageUsed
+                self.loadStorageStats(delayMs: 500)
+            }
         }
         .onDisappear {
             verboseLog("[StorageExplorerView] onDisappear triggered - cancelling statsTask")
@@ -59,62 +77,75 @@ public struct StorageExplorerView: View {
     }
     
     private func loadLocations() {
-        var locs: [StorageLocation] = []
-        let fileManager = FileManager.default
-        
-        // 1. Private Documents
-        if let docsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first {
-            locs.append(StorageLocation(
-                name: "Private Documents",
-                subtitle: docsURL.path,
-                iconName: "folder.badge.gearshape",
-                url: docsURL
-            ))
-        }
-        
-        // 2. App Group Containers
-        var seenGroupPaths = Set<String>()
-        for groupID in Bundle.main.appGroups {
-            if let groupURL = fileManager.containerURL(forSecurityApplicationGroupIdentifier: groupID),
-               !seenGroupPaths.contains(groupURL.path) {
-                seenGroupPaths.insert(groupURL.path)
+        Task.detached {
+            var locs: [StorageLocation] = []
+            let fileManager = FileManager.default
+            
+            // 1. Private Documents
+            if let docsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first {
                 locs.append(StorageLocation(
-                    name: "App Group Container (\(groupID))",
-                    subtitle: groupURL.path,
-                    iconName: "shippingbox",
-                    url: groupURL
+                    name: "Private Documents",
+                    subtitle: docsURL.path,
+                    iconName: "folder.badge.gearshape",
+                    url: docsURL
                 ))
             }
-        }
-        
-        // 3. App Backups Directory
-        if let backupsURL = fileManager.appBackupsDirectory {
+            
+            // 2. App Group Containers
+            var seenGroupPaths = Set<String>()
+            for groupID in Bundle.main.appGroups {
+                if let groupURL = fileManager.containerURL(forSecurityApplicationGroupIdentifier: groupID),
+                   !seenGroupPaths.contains(groupURL.path) {
+                    seenGroupPaths.insert(groupURL.path)
+                    locs.append(StorageLocation(
+                        name: "App Group Container (\(groupID))",
+                        subtitle: groupURL.path,
+                        iconName: "shippingbox",
+                        url: groupURL
+                    ))
+                }
+            }
+            
+            // 3. App Backups Directory
+            if let backupsURL = fileManager.appBackupsDirectory {
+                locs.append(StorageLocation(
+                    name: "App Backups Directory",
+                    subtitle: backupsURL.path,
+                    iconName: "archivebox",
+                    url: backupsURL
+                ))
+            }
+            
+            // 4. Temporary Directory
+            let tmpURL = fileManager.temporaryDirectory
             locs.append(StorageLocation(
-                name: "App Backups Directory",
-                subtitle: backupsURL.path,
-                iconName: "archivebox",
-                url: backupsURL
+                name: "Temporary Directory (tmp)",
+                subtitle: tmpURL.path,
+                iconName: "trash.circle",
+                url: tmpURL
             ))
+            
+            Task { @MainActor in
+                self.locations = locs
+            }
         }
-        
-        // 4. Temporary Directory
-        let tmpURL = fileManager.temporaryDirectory
-        locs.append(StorageLocation(
-            name: "Temporary Directory (tmp)",
-            subtitle: tmpURL.path,
-            iconName: "trash.circle",
-            url: tmpURL
-        ))
-        
-        self.locations = locs
     }
     
-    private func loadStorageStats() {
-        verboseLog("[StorageExplorerView] loadStorageStats requested")
+    private func loadStorageStats(delayMs: Int = 0) {
+        verboseLog("[StorageExplorerView] loadStorageStats requested (delayMs: \(delayMs))")
         statsTask?.cancel()
         
         statsTask = Task.detached {
-            verboseLog("[StorageExplorerView] statsTask starting on background thread")
+            if delayMs > 0 {
+                verboseLog("[StorageExplorerView] statsTask waiting \(delayMs)ms before scanning...")
+                try? await Task.sleep(nanoseconds: UInt64(delayMs) * 1_000_000)
+            }
+            if Task.isCancelled {
+                verboseLog("[StorageExplorerView] statsTask cancelled during initial delay")
+                return
+            }
+            
+            verboseLog("[StorageExplorerView] statsTask starting container scan on background thread")
             let fileManager = FileManager.default
             var totalAppSize: Int64 = 0
             
@@ -172,7 +203,8 @@ public struct StorageExplorerView: View {
             
             if Task.isCancelled { return }
             
-            await MainActor.run {
+            Task { @MainActor in
+                StorageExplorerView.hasCompletedInitialStatsScan = true
                 StorageExplorerView.cachedTotalSpace = hwTotalStr
                 StorageExplorerView.cachedFreeSpace = hwFreeStr
                 StorageExplorerView.cachedAppStorageUsed = appSizeStr

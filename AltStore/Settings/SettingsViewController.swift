@@ -1028,6 +1028,7 @@ extension SettingsViewController
             case .errorLog: break
             case .storageExplorer:
                 verboseLog("[SettingsVC] Storage Explorer selected")
+                StorageExplorerView.clearCache()
                 func makeExplorerVC(url: URL? = nil) -> UIViewController {
                     let onSelectFolder: (URL) -> Void = { [weak self] targetURL in
                         guard let self = self else { return }
