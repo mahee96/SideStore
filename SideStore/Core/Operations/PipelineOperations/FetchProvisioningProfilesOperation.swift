@@ -250,19 +250,6 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<AppOperationCont
 
 class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperation, @unchecked Sendable {
     
-    override func execute(parentProgress: Progress?) async throws -> [String : ALTProvisioningProfile] {
-        if self.context.app?.bundle.bundleURL.path.contains("SideBackup") == true || self.context.app?.bundle.bundleURL.path.contains("AltBackup") == true {
-            var appGroups = self.context.app?.entitlements[.appGroups] as? [String] ?? []
-            if !appGroups.contains(Bundle.baseAltStoreAppGroupID) {
-                appGroups.append(Bundle.baseAltStoreAppGroupID)
-            }
-            var stepAdditionalEntitlements = self.additionalEntitlements ?? [:]
-            stepAdditionalEntitlements[.appGroups] = appGroups
-            self.additionalEntitlements = stepAdditionalEntitlements
-        }
-        return try await super.execute(parentProgress: parentProgress)
-    }
-    
     // modify Operations are allowed for the app groups and other stuffs
     override func fetchProvisioningProfile(for appID: ALTAppID,
                                     app: ALTApplication,

@@ -11,10 +11,10 @@ import Foundation
 @preconcurrency import AltSign
 
 final class StageBackupAppOperation: BasePipelineOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
-    let app: InstalledApp?
+    let targetApp: InstalledApp?
 
     init(app: InstalledApp?, context: InstallAppOperationContext) throws {
-        self.app = app
+        self.targetApp = app
         try super.init(context: context)
     }
 
@@ -24,16 +24,16 @@ final class StageBackupAppOperation: BasePipelineOperation<InstallAppOperationCo
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
         
-        guard let app = self.app else {
+        guard let targetApp = self.targetApp else {
             debugLog("[StageBackupAppOperation] Error: target app is nil")
             throw OperationError.invalidParameters("StageBackupAppOperation: target app is nil")
         }
         
-        debugLog("[StageBackupAppOperation] Preparing backup app stage for '\(app.name)' (\(app.bundleIdentifier)), target bundleID: '\(context.targetBundleIdentifier)'")
+        debugLog("[StageBackupAppOperation] Preparing backup app stage for '\(targetApp.name)' (\(targetApp.bundleIdentifier)), target bundleID: '\(context.targetBundleIdentifier)'")
         
-        guard ALTApplication(fileURL: app.fileURL) != nil else {
-            debugLog("[StageBackupAppOperation] Error: ALTApplication invalid/not found at \(app.fileURL.path)")
-            throw OperationError.appNotFound(name: app.name)
+        guard ALTApplication(fileURL: targetApp.fileURL) != nil else {
+            debugLog("[StageBackupAppOperation] Error: ALTApplication invalid/not found at \(targetApp.fileURL.path)")
+            throw OperationError.appNotFound(name: targetApp.name)
         }
 
         self.setProgress(20)
@@ -59,15 +59,22 @@ final class StageBackupAppOperation: BasePipelineOperation<InstallAppOperationCo
 
         self.setProgress(70)
         if var infoDictionary = unzippedAppBundle.infoDictionary {
-            debugLog("[StageBackupAppOperation] Updating Info.plist: CFBundleDisplayName='\(app.name)', CFBundleIdentifier='\(context.targetBundleIdentifier)'")
-            infoDictionary["CFBundleDisplayName"] = app.name
+            debugLog("[StageBackupAppOperation] Updating Info.plist: CFBundleDisplayName='\(targetApp.name)', CFBundleIdentifier='\(context.targetBundleIdentifier)'")
+            infoDictionary["CFBundleDisplayName"] = targetApp.name
             infoDictionary[kCFBundleIdentifierKey as String] = context.targetBundleIdentifier
+
+            let cachedApp = ALTApplication(fileURL: targetApp.fileURL)
+            var appGroups = (cachedApp?.entitlements[.appGroups] as? [String]) ?? []
+            if !appGroups.contains(Bundle.baseAltStoreAppGroupID) {
+                appGroups.append(Bundle.baseAltStoreAppGroupID)
+            }
+            infoDictionary[Bundle.Info.appGroups] = appGroups
 
             let installedAppUTI = [
                 "UTTypeConformsTo": [],
                 "UTTypeDescription": "SideStore Backup App",
                 "UTTypeIconFiles": [],
-                "UTTypeIdentifier": app.installedBackupAppUTI,
+                "UTTypeIdentifier": targetApp.installedBackupAppUTI,
                 "UTTypeTagSpecification": [:]
             ] as [String: Any]
 
@@ -75,7 +82,7 @@ final class StageBackupAppOperation: BasePipelineOperation<InstallAppOperationCo
             exportedUTIs.append(installedAppUTI)
             infoDictionary[Bundle.Info.exportedUTIs] = exportedUTIs
 
-            if let cachedApp = ALTApplication(fileURL: app.fileURL), let icon = cachedApp.icon?.resizing(to: CGSize(width: 180, height: 180)) {
+            if let cachedApp = ALTApplication(fileURL: targetApp.fileURL), let icon = cachedApp.icon?.resizing(to: CGSize(width: 180, height: 180)) {
                 let iconFileURL = unzippedAppBundleURL.appendingPathComponent("AppIcon.png")
                 if let iconData = icon.pngData() {
                     try? iconData.write(to: iconFileURL, options: .atomic)
@@ -97,6 +104,6 @@ final class StageBackupAppOperation: BasePipelineOperation<InstallAppOperationCo
         context.app = backupApp
         debugLog("[StageBackupAppOperation] Successfully set context.app to staged SideBackup app ('\(backupApp.bundleIdentifier)')")
         self.setProgress(100)
-        return app
+        return targetApp
     }
 }
