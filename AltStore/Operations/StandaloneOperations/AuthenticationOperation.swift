@@ -289,9 +289,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             return
             
         case .success((let team, _, _)):
-            self.debugLog("[Authentication] postAuthenticationCleanup: Success result.")
-            self.verboseLog("[Authentication] postAuthenticationCleanup: Success result for team \(team.identifier)")
-            self.verboseLog("[AuthenticationOperation] Authenticated account for team \(team.identifier).")
+            self.verboseLog("[Authentication] postAuthenticationCleanup: Authentication Success for team \(team.identifier) account.")
         }
         
         guard let context = self.context.dbBackgroundContext else {
@@ -300,8 +298,12 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         }
         
         self.verboseLog("[Authentication] postAuthenticationCleanup: Performing database updates inside context...")
-        try await context.perform {
-            try self.postAuthenticationCleanup(result: result, in: context)
+        do {
+            try await context.perform {
+                try self.postAuthenticationCleanup(result: result, in: context)
+            }
+        } catch {
+            self.debugLog("[Authentication] postAuthenticationCleanup: error occured when performing cleanup: \(error)")
         }
         self.verboseLog("[Authentication] postAuthenticationCleanup: Database updates completed.")
         
@@ -335,7 +337,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     }
     
     private func postAuthenticationCleanup(result: Result<(ALTTeam, ALTCertificate?, ALTAppleAPISession), Error>, in context: NSManagedObjectContext) throws {
-        let (altTeam, altCertificate, _) = try result.get()
+        let (altTeam, _, _) = try result.get()
         
         guard
             let account = Account.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(Account.identifier), altTeam.account.identifier), in: context),
@@ -484,7 +486,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                 }
                 activeContinuation = nil
                 
-                if authenticationViewController.presentingViewController != nil {
+                if result == nil && authenticationViewController.presentingViewController != nil {
                     authenticationViewController.dismiss(animated: true)
                 }
                 
@@ -640,14 +642,19 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         self.activeCertificates = certificates
         self.context.activeCertificates = certificates
         
+        let bundleCertID = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String
+        
         if let activeCert = CertificateManager.shared.activeCertificate,
            let certificate = certificates.first(where: { $0.serialNumber == activeCert.serialNumber })
         {
             activeCert.certificate.machineIdentifier = certificate.machineIdentifier
+            if let bundleCertID = bundleCertID, bundleCertID.lowercased() != activeCert.serialNumber.lowercased() {
+                self.debugLog("[Authentication] Active certificate (\(activeCert.serialNumber)) and running bundle certificate (\(bundleCertID)) mismatch detected. Running Bundle Certificate is still active on the Paid account portal. Using active Keychain certificate.")
+            }
             return activeCert.certificate
         }
         
-        if let serialNumber = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String {
+        if let serialNumber = bundleCertID {
             if let certificate = certificates.first(where: { $0.serialNumber == serialNumber }) {
                 let fileExists = FileManager.default.fileExists(atPath: Bundle.main.certificateURL.path)
                 if fileExists,
@@ -656,6 +663,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                     let localCertificate = try? ALTCertificate(p12Data: data, password: machineIdentifier)
                     if let localCertificate = localCertificate {
                         localCertificate.machineIdentifier = machineIdentifier
+                        self.debugLog("[Authentication] Using certificate (\(serialNumber)) found in app bundle and active on portal.")
                         return localCertificate
                     }
                 }
@@ -789,30 +797,36 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             
             let noAction = UIAlertAction(title: NSLocalizedString("No", comment: ""), style: .default) { _ in
                 self.debugLog("[Authentication] showRevokeAlert: User clicked No.")
-                if teamType == .free {
-                    let warningAlert = UIAlertController(
-                        title: NSLocalizedString("Warning", comment: ""),
-                        message: NSLocalizedString("SideStore cannot manage the existing certificate without owning its private key. The apps signed with the existing certificate will expire soon unless they are resigned and renewed explicitly by SideStore.", comment: ""),
-                        preferredStyle: .alert
-                    )
-                    warningAlert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .default) { _ in
-                        self.verboseLog("[Authentication] showRevokeAlert: User acknowledged warning OK.")
-                        continuation.resume(returning: .keepExisting)
-                    })
-                    
-                    let presented = self.presentAlert(warningAlert)
-                    if !presented {
-                        self.debugLog("[Authentication] showRevokeAlert: Warning alert could not be presented, resuming with keepExisting.")
+                alertController.dismiss(animated: true) {
+                    if teamType == .free {
+                        let warningAlert = UIAlertController(
+                            title: NSLocalizedString("Warning", comment: ""),
+                            message: NSLocalizedString("SideStore cannot manage the existing certificate without owning its private key. The apps signed with the existing certificate will expire soon unless they are resigned and renewed explicitly by SideStore.", comment: ""),
+                            preferredStyle: .alert
+                        )
+                        warningAlert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .default) { _ in
+                            self.verboseLog("[Authentication] showRevokeAlert: User acknowledged warning OK.")
+                            warningAlert.dismiss(animated: true) {
+                                continuation.resume(returning: .keepExisting)
+                            }
+                        })
+                        
+                        let presented = self.presentAlert(warningAlert)
+                        if !presented {
+                            self.debugLog("[Authentication] showRevokeAlert: Warning alert could not be presented, resuming with keepExisting.")
+                            continuation.resume(returning: .keepExisting)
+                        }
+                    } else {
                         continuation.resume(returning: .keepExisting)
                     }
-                } else {
-                    continuation.resume(returning: .keepExisting)
                 }
             }
             
             let yesAction = UIAlertAction(title: NSLocalizedString("Yes", comment: ""), style: .default) { _ in
                 self.debugLog("[Authentication] showRevokeAlert: User clicked Yes.")
-                continuation.resume(returning: .revokeAll)
+                alertController.dismiss(animated: true) {
+                    continuation.resume(returning: .revokeAll)
+                }
             }
             
             alertController.addAction(noAction)
@@ -847,16 +861,26 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     
     @MainActor
     private func showInstructionsIfNecessary() async -> Bool {
-        guard self.shouldShowInstructions else { return false }
+        self.verboseLog("[Authentication] showInstructionsIfNecessary: entering method, shouldShowInstructions = \(self.shouldShowInstructions)")
+        guard self.shouldShowInstructions else {
+            self.verboseLog("[Authentication] showInstructionsIfNecessary: shouldShowInstructions is false, returning false")
+            return false
+        }
         
         return await withCheckedContinuation { continuation in
+            self.verboseLog("[Authentication] showInstructionsIfNecessary: instantiating instructionsViewController...")
             let instructionsViewController = self.storyboard.instantiateViewController(withIdentifier: "instructionsViewController") as! InstructionsViewController
             instructionsViewController.showsBottomButton = true
             instructionsViewController.completionHandler = {
+                self.verboseLog("[Authentication] showInstructionsIfNecessary: instructionsViewController completionHandler invoked")
                 continuation.resume(returning: true)
             }
             
-            if !self.present(instructionsViewController) {
+            self.verboseLog("[Authentication] showInstructionsIfNecessary: presenting instructionsViewController...")
+            let presented = self.present(instructionsViewController)
+            self.verboseLog("[Authentication] showInstructionsIfNecessary: present returned \(presented)")
+            if !presented {
+                self.debugLog("[Authentication] showInstructionsIfNecessary: present failed, resuming continuation with false")
                 continuation.resume(returning: false)
             }
         }
@@ -864,7 +888,11 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     
     @MainActor
     private func showResignScreenIfNecessary(signer: ALTSigner, session: ALTAppleAPISession) async -> Bool {
-        guard let application = ALTApplication(fileURL: Bundle.main.bundleURL), let provisioningProfile = application.provisioningProfile else { return false }
+        self.verboseLog("[Authentication] showResignScreenIfNecessary: entering method")
+        guard let application = ALTApplication(fileURL: Bundle.main.bundleURL), let provisioningProfile = application.provisioningProfile else {
+            self.verboseLog("[Authentication] showResignScreenIfNecessary: Application bundle or provisioning profile nil, returning false")
+            return false
+        }
         
         let result = SigningCertificateValidator.validate(
             runningProfile: provisioningProfile,
@@ -875,6 +903,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         
         switch result {
         case .success:
+            self.verboseLog("[Authentication] showResignScreenIfNecessary: Validation succeeded, no resign required.")
             return false
             
         case .failure(let reason):
@@ -889,6 +918,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             }
             
             return await withCheckedContinuation { continuation in
+                self.verboseLog("[Authentication] showResignScreenIfNecessary: instantiating resignAltStoreViewController...")
                 let context = AuthenticatedOperationContext(context: self.context)
                 
                 let resignViewController = self.storyboard.instantiateViewController(withIdentifier: "resignAltStoreViewController") as! ResignAltStoreViewController
@@ -897,14 +927,20 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                 resignViewController.completionHandler = { [weak self] result in
                     switch result {
                     case .success:
+                        self?.verboseLog("[Authentication] showResignScreenIfNecessary: resignViewController completionHandler success")
                         continuation.resume(returning: true)
                     case .failure:
+                        self?.verboseLog("[Authentication] showResignScreenIfNecessary: resignViewController completionHandler failure/cancelled")
                         self?.context.isSideStoreResignDismissed = true
                         continuation.resume(returning: false)
                     }
                 }
                 
-                if !self.present(resignViewController) {
+                self.verboseLog("[Authentication] showResignScreenIfNecessary: presenting resignViewController...")
+                let presented = self.present(resignViewController)
+                self.verboseLog("[Authentication] showResignScreenIfNecessary: present returned \(presented)")
+                if !presented {
+                    self.debugLog("[Authentication] showResignScreenIfNecessary: present failed, resuming continuation with false")
                     continuation.resume(returning: false)
                 }
             }

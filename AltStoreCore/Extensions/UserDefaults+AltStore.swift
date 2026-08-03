@@ -361,7 +361,7 @@ public extension UserDefaults
         }
     }
     
-    public static func dumpAllSettingsOnBoot() {
+    static func dumpAllSettingsOnBoot() {
         debugLog("=== [UserDefaults] Standard Suite Dump ===")
         dumpDictionary(UserDefaults.standard.dictionaryRepresentation())
         
