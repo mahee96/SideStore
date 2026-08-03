@@ -21,7 +21,7 @@ enum AlternateIconMode {
 }
 
 protocol WeightedOperationContext: AnyObject {
-    func weight(for operationType: Any.Type) -> Int64?
+    func weight(for step: any OperationStep) -> Int64?
 }
 
 class OperationContext
@@ -61,9 +61,15 @@ class StandaloneOperationContext: OperationContext, WeightedOperationContext
         super.init(context: context)
     }
 
-    func weight(for operationType: Any.Type) -> Int64? {
-        guard let step = StandaloneStep.step(for: operationType), step != .unknown else { return nil }
-        return steps.first(where: { $0.step == step })?.weight
+    private var consumedIndices = Set<Int>()
+
+    func weight(for step: any OperationStep) -> Int64? {
+        guard let standaloneStep = step as? StandaloneStep else { return nil }
+        guard let index = steps.indices.first(where: { steps[$0].step == standaloneStep && !consumedIndices.contains($0) }) else {
+            return nil
+        }
+        consumedIndices.insert(index)
+        return steps[index].weight
     }
 }
 
@@ -138,9 +144,15 @@ class PipelineOperationContext: OperationContext, WeightedOperationContext
         super.init(context: context)
     }
 
-    func weight(for operationType: Any.Type) -> Int64? {
-        guard let step = PipelineStep.step(for: operationType) else { return nil }
-        return pipelineSteps.first(where: { $0.step == step })?.weight
+    private var consumedIndices = Set<Int>()
+
+    func weight(for step: any OperationStep) -> Int64? {
+        guard let pipelineStep = step as? PipelineStep else { return nil }
+        guard let index = pipelineSteps.indices.first(where: { pipelineSteps[$0].step == pipelineStep && !consumedIndices.contains($0) }) else {
+            return nil
+        }
+        consumedIndices.insert(index)
+        return pipelineSteps[index].weight
     }
 }
 

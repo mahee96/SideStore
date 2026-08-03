@@ -22,7 +22,7 @@ protocol AsyncOperation<T>: AnyObject, ProgressReporting, OperationLogging {
 class BaseOperation<Context: OperationContext, Result>: NSObject, AsyncOperation, @unchecked Sendable{
     typealias T = Result
 
-    private(set) var _progress: Progress!
+    private var _progress: Progress!
     private(set) var progress: Progress {
         get { _progress }
         set { _progress = newValue }
@@ -51,6 +51,10 @@ class BaseOperation<Context: OperationContext, Result>: NSObject, AsyncOperation
         verboseLog("[\(String(describing: type(of: self)))] Progress updated: \(previous) -> \(completedUnitCount) (total: \(self.progress.totalUnitCount))")
     }
     
+    func operationStep() throws -> any OperationStep {
+        throw AbstractClassError.abstractMethodInvoked
+    }
+    
     func executePreconditionCheck(parentProgress: Progress?) async throws {
         let className = String(describing: type(of: self))
         debugLog("[\(className)] executePreconditionCheck() started")
@@ -58,9 +62,9 @@ class BaseOperation<Context: OperationContext, Result>: NSObject, AsyncOperation
         
         let unitCount: Int64
         if let parentProgress = parentProgress {
-            let className = String(describing: type(of: self))
+            let step = try self.operationStep()
             guard let weightedContext = self.context as? WeightedOperationContext,
-                  let weight = weightedContext.weight(for: type(of: self)) else {
+                  let weight = weightedContext.weight(for: step) else {
                 throw OperationError.invalidParameters("Missing progress weight for \(className) in steps list")
             }
             unitCount = weight
@@ -95,5 +99,20 @@ class BaseOperation<Context: OperationContext, Result>: NSObject, AsyncOperation
     }
 }
 
-class BasePipelineOperation<Context: OperationContext, Result>: BaseOperation<Context, Result>, @unchecked Sendable {}
-class BaseStandaloneOperation<Context: OperationContext, Result>: BaseOperation<Context, Result>, @unchecked Sendable {}
+class BasePipelineOperation<Context: OperationContext, Result>: BaseOperation<Context, Result>, @unchecked Sendable {
+    override func operationStep() throws -> any OperationStep {
+        guard let step = PipelineStep.step(for: self) else {
+            throw OperationError.invalidParameters("Missing PipelineStep mapping for \(type(of: self))")
+        }
+        return step
+    }
+}
+
+class BaseStandaloneOperation<Context: OperationContext, Result>: BaseOperation<Context, Result>, @unchecked Sendable {
+    override func operationStep() throws -> any OperationStep {
+        guard let step = StandaloneStep.step(for: type(of: self)) else {
+            throw OperationError.invalidParameters("Missing StandaloneStep mapping for \(type(of: self))")
+        }
+        return step
+    }
+}

@@ -73,6 +73,13 @@ enum PipelineStep: OperationStep {
     static func step(for type: Any.Type) -> PipelineStep? {
         stepMap[ObjectIdentifier(type)]
     }
+
+    static func step(for operation: Any) -> PipelineStep? {
+        if let backupOp = operation as? PerformBackupRestoreOperation {
+            return backupOp.action == .backup ? .backupAppData : .restoreAppData
+        }
+        return step(for: type(of: operation))
+    }
 }
 
 enum StandaloneStep: OperationStep {
