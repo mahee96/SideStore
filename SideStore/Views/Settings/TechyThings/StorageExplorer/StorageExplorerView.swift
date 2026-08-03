@@ -47,10 +47,12 @@ public struct StorageExplorerView: View {
         .navigationTitle("Storage Explorer")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
+            verboseLog("[StorageExplorerView] onAppear triggered")
             self.loadLocations()
             self.loadStorageStats()
         }
         .onDisappear {
+            verboseLog("[StorageExplorerView] onDisappear triggered - cancelling statsTask")
             self.statsTask?.cancel()
             self.statsTask = nil
         }
@@ -108,9 +110,11 @@ public struct StorageExplorerView: View {
     }
     
     private func loadStorageStats() {
+        verboseLog("[StorageExplorerView] loadStorageStats requested")
         statsTask?.cancel()
         
         statsTask = Task.detached {
+            verboseLog("[StorageExplorerView] statsTask starting on background thread")
             let fileManager = FileManager.default
             var totalAppSize: Int64 = 0
             
@@ -130,14 +134,24 @@ public struct StorageExplorerView: View {
             
             var seenPaths = Set<String>()
             for containerURL in containerURLs {
-                if Task.isCancelled { return }
+                if Task.isCancelled {
+                    verboseLog("[StorageExplorerView] statsTask cancelled during container scan loop")
+                    return
+                }
                 if !seenPaths.contains(containerURL.path) {
                     seenPaths.insert(containerURL.path)
-                    totalAppSize += StorageExplorerViewModel.calculateDirectorySize(url: containerURL)
+                    let start = Date()
+                    let size = StorageExplorerViewModel.calculateDirectorySize(url: containerURL)
+                    let duration = Date().timeIntervalSince(start)
+                    verboseLog("[StorageExplorerView] Scanned container: \(containerURL.path) -> Size: \(size) bytes (\(String(format: "%.3f", duration))s)")
+                    totalAppSize += size
                 }
             }
             
-            if Task.isCancelled { return }
+            if Task.isCancelled {
+                verboseLog("[StorageExplorerView] statsTask cancelled before HW space query")
+                return
+            }
             
             var hwTotalStr = "Unknown"
             var hwFreeStr = "Unknown"
@@ -154,6 +168,7 @@ public struct StorageExplorerView: View {
             } catch {}
             
             let appSizeStr = ByteCountFormatter.string(fromByteCount: totalAppSize, countStyle: .file)
+            verboseLog("[StorageExplorerView] statsTask completed successfully. totalAppSize: \(appSizeStr), freeSpace: \(hwFreeStr)")
             
             if Task.isCancelled { return }
             
@@ -197,6 +212,7 @@ private struct StorageLocationRowView: View {
         .padding(.vertical, 4)
         .contentShape(Rectangle())
         .onTapGesture {
+            verboseLog("[StorageLocationRowView] Tapped container location: \(location.name) (\(location.url.path))")
             onSelectFolder?(location.url)
         }
     }

@@ -131,6 +131,10 @@ public extension UserDefaults
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
     }
+    @objc var isSideStoreVerboseLoggingEnabled: Bool {
+        get { self.bool(forKey: #function) }
+        set { self.set(newValue, forKey: #function) }
+    }
     @objc var isMinimuxerVerboseLoggingEnabled: Bool {
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
@@ -315,6 +319,7 @@ public extension UserDefaults
             #keyPath(UserDefaults.customizeAppId): false,
             #keyPath(UserDefaults.isExportResignedAppEnabled): false,
             #keyPath(UserDefaults.isVerboseOperationsLoggingEnabled): false,
+            #keyPath(UserDefaults.isSideStoreVerboseLoggingEnabled): false,
             #keyPath(UserDefaults.isAltSignVerboseLoggingEnabled): false,
             #keyPath(UserDefaults.isMinimuxerVerboseLoggingEnabled): false,
             #keyPath(UserDefaults.isRotateLogsOnStartupEnabled): true,

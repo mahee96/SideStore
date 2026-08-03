@@ -1027,21 +1027,26 @@ extension SettingsViewController
                 
             case .errorLog: break
             case .storageExplorer:
+                verboseLog("[SettingsVC] Storage Explorer selected")
                 func makeExplorerVC(url: URL? = nil) -> UIViewController {
                     let onSelectFolder: (URL) -> Void = { [weak self] targetURL in
                         guard let self = self else { return }
+                        verboseLog("[SettingsVC] Navigating to child folder: \(targetURL.path)")
                         let childVC = makeExplorerVC(url: targetURL)
                         self.navigationController?.pushViewController(childVC, animated: true)
                     }
                     if let url = url {
+                        verboseLog("[SettingsVC] Creating DirectoryExplorerView for: \(url.path)")
                         let view = DirectoryExplorerView(url: url, onSelectFolder: onSelectFolder)
                         return UIHostingController(rootView: view)
                     } else {
+                        verboseLog("[SettingsVC] Creating root StorageExplorerView")
                         let view = StorageExplorerView(onSelectFolder: onSelectFolder)
                         return UIHostingController(rootView: view)
                     }
                 }
                 let vc = makeExplorerVC()
+                verboseLog("[SettingsVC] Pushing root StorageExplorerView controller onto navigationController")
                 navigationController?.pushViewController(vc, animated: true)
                 
             case .clearCache: self.clearCache()

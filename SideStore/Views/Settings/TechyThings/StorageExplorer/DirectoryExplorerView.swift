@@ -122,7 +122,11 @@ public struct DirectoryExplorerView: View {
             ActivityViewController(activityItems: [shareItem.url])
         }
         .alert(item: $viewModel.activeAlert, content: makeAlert)
+        .onAppear {
+            verboseLog("[DirectoryExplorerView] onAppear for URL: \(viewModel.currentURL.path)")
+        }
         .onDisappear {
+            verboseLog("[DirectoryExplorerView] onDisappear for URL: \(viewModel.currentURL.path) - cancelling loadTask")
             viewModel.cancelLoading()
         }
     }
@@ -264,6 +268,7 @@ private struct DirectoryItemListSectionView: View {
             ItemRow(item: item, isSelected: false, isSelectionMode: false, isTextWrapEnabled: isTextWrapEnabled)
                 .contentShape(Rectangle())
                 .onTapGesture {
+                    verboseLog("[DirectoryExplorerView] Tapped child folder: \(item.name) (\(item.url.path))")
                     onSelectFolder?(item.url)
                 }
                 .contextMenu {
@@ -271,6 +276,10 @@ private struct DirectoryItemListSectionView: View {
                 }
         } else {
             ItemRow(item: item, isSelected: false, isSelectionMode: false, isTextWrapEnabled: isTextWrapEnabled)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    verboseLog("[DirectoryExplorerView] Tapped file item: \(item.name) (\(item.url.path))")
+                }
                 .contextMenu {
                     ItemContextMenuView(viewModel: viewModel, item: item)
                 }

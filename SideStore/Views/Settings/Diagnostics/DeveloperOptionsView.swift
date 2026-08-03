@@ -20,6 +20,7 @@ private extension Color {
 struct DeveloperOptionsView: View {
     @State private var responseCachingDisabled: Bool = UserDefaults.standard.responseCachingDisabled
     @State private var isVerboseOperationsLoggingEnabled: Bool = UserDefaults.standard.isVerboseOperationsLoggingEnabled
+    @State private var isSideStoreVerboseLoggingEnabled: Bool = UserDefaults.standard.isSideStoreVerboseLoggingEnabled
     @State private var isAltSignVerboseLoggingEnabled: Bool = UserDefaults.standard.isAltSignVerboseLoggingEnabled
     @State private var isMinimuxerVerboseLoggingEnabled: Bool = UserDefaults.standard.isMinimuxerVerboseLoggingEnabled
     @State private var isRotateLogsOnStartupEnabled: Bool = UserDefaults.standard.isRotateLogsOnStartupEnabled
@@ -63,6 +64,20 @@ struct DeveloperOptionsView: View {
                                 }
                             }
                         ))
+                        
+                        divider
+                        
+                        toggleRow(title: "SideStore Verbose Logging", isOn: Binding(
+                            get: { isSideStoreVerboseLoggingEnabled },
+                            set: { newValue in
+                                isSideStoreVerboseLoggingEnabled = newValue
+                                UserDefaults.standard.isSideStoreVerboseLoggingEnabled = newValue
+                                SideStoreLogging.setLogging(newValue)
+                            }
+                        ))
+                        
+                        divider
+                        
                         toggleRow(title: "AltSign Verbose Logging", isOn: Binding(
                             get: { isAltSignVerboseLoggingEnabled },
                             set: { newValue in

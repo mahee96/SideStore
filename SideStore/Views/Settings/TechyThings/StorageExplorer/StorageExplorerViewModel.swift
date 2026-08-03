@@ -196,11 +196,14 @@ public final class StorageExplorerViewModel: ObservableObject {
     }
     
     public func loadContents() {
+        verboseLog("[StorageExplorerViewModel] loadContents requested for: \(currentURL.path)")
         loadTask?.cancel()
         self.isLoading = true
         let targetURL = self.currentURL
         
         loadTask = Task.detached {
+            let start = Date()
+            verboseLog("[StorageExplorerViewModel] loadContents background task starting for: \(targetURL.path)")
             var loadedItems: [StorageExplorerItem] = []
             var folderTotalSize: Int64 = 0
             
@@ -209,7 +212,10 @@ public final class StorageExplorerViewModel: ObservableObject {
                 let contents = try fileManager.contentsOfDirectory(at: targetURL, includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey, .contentModificationDateKey], options: [.skipsHiddenFiles])
                 
                 for itemURL in contents {
-                    if Task.isCancelled { return }
+                    if Task.isCancelled {
+                        verboseLog("[StorageExplorerViewModel] loadContents cancelled during directory iteration for: \(targetURL.path)")
+                        return
+                    }
                     let resourceValues = try? itemURL.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey, .contentModificationDateKey])
                     let isDir = resourceValues?.isDirectory ?? false
                     let modDate = resourceValues?.contentModificationDate ?? Date()
@@ -218,7 +224,10 @@ public final class StorageExplorerViewModel: ObservableObject {
                     
                     if isDir {
                         size = await Self.calculateDirectorySize(url: itemURL)
-                        if Task.isCancelled { return }
+                        if Task.isCancelled {
+                            verboseLog("[StorageExplorerViewModel] loadContents cancelled during subfolder size calculation for: \(itemURL.path)")
+                            return
+                        }
                         if let subContents = try? fileManager.contentsOfDirectory(at: itemURL, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) {
                             itemCount = subContents.count
                         }
@@ -238,8 +247,14 @@ public final class StorageExplorerViewModel: ObservableObject {
                 debugLog("[StorageExplorerViewModel] Error reading directory \(targetURL.path): \(error)")
             }
             
-            if Task.isCancelled { return }
+            if Task.isCancelled {
+                verboseLog("[StorageExplorerViewModel] loadContents cancelled before MainActor dispatch for: \(targetURL.path)")
+                return
+            }
+            let duration = Date().timeIntervalSince(start)
             let totalFolderSize = folderTotalSize
+            verboseLog("[StorageExplorerViewModel] loadContents completed for: \(targetURL.path) -> \(loadedItems.count) items, totalSize: \(totalFolderSize) bytes (\(String(format: "%.3f", duration))s)")
+            
             await MainActor.run {
                 self.items = loadedItems
                 self.currentFolderSize = totalFolderSize
