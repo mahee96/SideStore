@@ -11,7 +11,7 @@ import CoreData
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class SyncAppIDsOperation: BasePipelineOperation<AuthenticatedOperationContext, Void>, @unchecked Sendable {
+final class SyncAppIDsOperation: BaseStandaloneOperation<AuthenticatedOperationContext, Void>, @unchecked Sendable {
     
     override func execute(parentProgress: Progress?) async throws -> Void {
         debugLog("[SyncAppIDsOperation] execute() started")

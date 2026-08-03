@@ -11,7 +11,7 @@ import CoreData
 @preconcurrency import AltStoreCore
 import SemanticVersion
 
-final class FetchSourceOperation: BasePipelineOperation<StandaloneOperationContext, Source>, @unchecked Sendable {
+final class FetchSourceOperation: BaseStandaloneOperation<StandaloneOperationContext, Source>, @unchecked Sendable {
     let sourceURL: URL
     
     // Non-nil when updating an existing source.

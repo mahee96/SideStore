@@ -43,7 +43,7 @@ private let ReceivedApplicationState: @convention(c) (CFNotificationCenter?, Uns
     operation.receivedApplicationState(notification: name)
 }
 
-final class BackgroundRefreshAppsOperation: BasePipelineOperation<OperationContext, [String: Result<InstalledApp, Error>]>, @unchecked Sendable {
+final class BackgroundRefreshAppsOperation: BaseStandaloneOperation<OperationContext, [String: Result<InstalledApp, Error>]>, @unchecked Sendable {
     let installedApps: [InstalledApp]
     
     var presentsFinishedNotification: Bool = true
