@@ -246,6 +246,17 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<AppOperationCont
             }
         }
     }
+    
+    func effectiveAppBundle(for targetAppBundle: ALTApplication) -> ALTApplication {
+        if targetAppBundle.fileURL.path.contains("SideBackup") {
+            if let installedApp = self.context.installedApp,
+               let installedTargetBundle = ALTApplication(fileURL: installedApp.fileURL) {
+                self.debugLog("[FetchProvisioningProfiles] Staged app is SideBackup payload. Using entitlements from installed target app '\(installedApp.name)' (\(installedApp.bundleIdentifier)).")
+                return installedTargetBundle
+            }
+        }
+        return targetAppBundle
+    }
 }
 
 class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperation, @unchecked Sendable {
@@ -265,8 +276,9 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
         return try await super.fetchProvisioningProfile(for: groupAppID, appBundle: appBundle, team: team, session: session)
     }
     
-    private func updateFeatures(for appID: ALTAppID, appBundle: ALTApplication, team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTAppID {
-        var entitlements = appBundle.entitlements
+    private func updateFeatures(for appID: ALTAppID, targetAppBundle: ALTApplication, team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTAppID {
+        let targetBundle = self.effectiveAppBundle(for: targetAppBundle)
+        var entitlements = targetBundle.entitlements
         for (key, value) in additionalEntitlements ?? [:] {
             entitlements[key] = value
         }
@@ -334,6 +346,13 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
             // Assigning an App ID to an empty app group array fails,
             // so just do nothing if there are no app groups.
             return appID
+        }
+        
+        for group in applicationGroups {
+            if group.contains("$(APP_GROUP_IDENTIFIER)") {
+                self.debugLog("[FetchProvisioningProfiles] Error: Application group contains raw placeholder '$(APP_GROUP_IDENTIFIER)': \(group)")
+                throw OperationError.invalidParameters("Application group '\(group)' contains raw placeholder '$(APP_GROUP_IDENTIFIER)'.")
+            }
         }
         
         if appBundle.isAltStoreApp {
