@@ -1111,36 +1111,39 @@ private extension AppManager
     }
     
     private func performOperation(for operation: AppOperation, group: RefreshGroup) async throws {
-        defer {
-            self.set(nil, for: operation)
-        }
         debugLog("[AppManager] performOperation: Starting execution for app: \(operation.bundleIdentifier)")
-        let isSideStore = (operation.app as? ALTApplication)?.isAltStoreApp == true             ||
-                           operation.bundleIdentifier.contains(ALTApplication.altstoreBundleID) ||
-                           operation.bundleIdentifier == StoreApp.altstoreAppID
-        
         do {
             let result = try await self.performPipeline(for: operation, group: group)
+            self.set(nil, for: operation)
+            debugLog("[AppManager] performOperation: completed successfully. progress was reset for installedApp: \(result.bundleIdentifier)")
+
             // persist the result
             if let context = result.managedObjectContext {
                 do {
                     try context.performAndWait {
-                        if context.hasChanges {
+                        let hasChanges = context.hasChanges
+                        if hasChanges {
                             try context.save()
                         }
+                        debugLog("[AppManager] performOperation: Context changes were saved for installedApp: \(result.bundleIdentifier)")
                     }
                 } catch {
                     debugLog("[AppManager] perform(): Failed to save InstalledApp to database. \(error.localizedDescription)")
                 }
             }
-            
+
             // request update view context's in-mem coredata caches (coz we worked so far on bg context)
             DatabaseManager.shared.viewContext.performAndWait {
                 DatabaseManager.shared.viewContext.processPendingChanges()
             }
             
             group.set(.success(result), forAppWithBundleIdentifier: result.bundleIdentifier)
-            
+            debugLog("[AppManager] performOperation: Execution SUCCESS for app: \(operation.bundleIdentifier)")
+
+            debugLog("[AppManager] performOperation: Reloading widget timelines...")
+            WidgetCenter.shared.reloadAllTimelines()
+            debugLog("[AppManager] performOperation: Reloading COMPLETE for widget timelines.")
+
             if result.bundleIdentifier == StoreApp.altstoreAppID {
                 let context = StandaloneOperationContext(steps: .scheduleExpirationWarningNotification, dbBackgroundContext: group.context.dbBackgroundContext)
                 let scheduleNotifOp = try ScheduleExpirationWarningNotificationOperation(
@@ -1149,50 +1152,20 @@ private extension AppManager
                 )
                 try await scheduleNotifOp.execute()
             }
-            
-            WidgetCenter.shared.reloadAllTimelines()
-            debugLog("[AppManager] performOperation: Completed execution successfully for app: \(operation.bundleIdentifier)")
-            
         } catch {
+            self.set(nil, for: operation)
+            
             if Task.isCancelled {
                 debugLog("[AppManager] performOperation: Execution CANCELLED for app: \(operation.bundleIdentifier)")
             } else {
-                debugLog("[AppManager] performOperation: Execution failed for app: \(operation.bundleIdentifier) with error: \(error.localizedDescription)")
+                debugLog("[AppManager] performOperation: Execution FAILED for app: \(operation.bundleIdentifier) with error: \(error.localizedDescription)")
             }
             
-            var appName: String!
-            if let app = operation.app as? (NSManagedObject & AppProtocol) {
-                if let context = app.managedObjectContext {
-                    context.performAndWait {
-                        appName = app.name
-                    }
-                } else {
-                    appName = NSLocalizedString("Unknown App", comment: "")
-                }
-            } else {
-                appName = operation.app.name
-            }
+            let mappedError = getMappedError(for: operation, error: error)
 
-            let localizedTitle: String
-            switch operation
-            {
-                case .install:    localizedTitle = String(format: NSLocalizedString("Failed to Install %@",        comment: ""), appName)
-                case .refresh:    localizedTitle = String(format: NSLocalizedString("Failed to Refresh %@",        comment: ""), appName)
-                case .update:     localizedTitle = String(format: NSLocalizedString("Failed to Update %@",         comment: ""), appName)
-                case .activate:   localizedTitle = String(format: NSLocalizedString("Failed to Activate %@",       comment: ""), appName)
-                case .deactivate: localizedTitle = String(format: NSLocalizedString("Failed to Deactivate %@",     comment: ""), appName)
-                case .deleteApp:  localizedTitle = String(format: NSLocalizedString("Failed to Deactivate %@",     comment: ""), appName)
-                case .backup:     localizedTitle = String(format: NSLocalizedString("Failed to Backup %@",         comment: ""), appName)
-                case .restore:    localizedTitle = String(format: NSLocalizedString("Failed to Restore %@ Backup", comment: ""), appName)
-                case .resign:     localizedTitle = String(format: NSLocalizedString("Failed to Resign %@",         comment: ""), appName)
-                case .removeDeactivatedApp: localizedTitle = String(format: NSLocalizedString("Failed to Remove %@", comment: ""), appName)
-                case .enableJIT:  localizedTitle = String(format: NSLocalizedString("Failed to Enable JIT for %@", comment: ""), appName)
-            }
-            
-            let nsError = error as NSError
-            let mappedError = nsError.withLocalizedTitle(localizedTitle)
-            group.set(.failure(mappedError), forAppWithBundleIdentifier: operation.bundleIdentifier)
             log(mappedError, operation: operation.loggedErrorOperation, app: operation.app)
+
+            group.set(.failure(mappedError), forAppWithBundleIdentifier: operation.bundleIdentifier)
         }
     }
     
@@ -1280,6 +1253,41 @@ private extension AppManager
             let operationName = String(describing: operation).components(separatedBy: "(").first ?? ""
             debugLog("[AppManager] setProgress: \(progress.map { "\($0)" } ?? "nil") for operation: .\(operationName), totalUnitCount: \(progress?.totalUnitCount ?? 0)")
         }
+    }
+    
+    private func getMappedError(for operation: AppOperation, error: Error) -> Error {
+        var appName: String!
+        if let app = operation.app as? (NSManagedObject & AppProtocol) {
+            if let context = app.managedObjectContext {
+                context.performAndWait {
+                    appName = app.name
+                }
+            } else {
+                appName = NSLocalizedString("Unknown App", comment: "")
+            }
+        } else {
+            appName = operation.app.name
+        }
+
+        let localizedTitle: String
+        switch operation
+        {
+            case .install:    localizedTitle = String(format: NSLocalizedString("Failed to Install %@",        comment: ""), appName)
+            case .refresh:    localizedTitle = String(format: NSLocalizedString("Failed to Refresh %@",        comment: ""), appName)
+            case .update:     localizedTitle = String(format: NSLocalizedString("Failed to Update %@",         comment: ""), appName)
+            case .activate:   localizedTitle = String(format: NSLocalizedString("Failed to Activate %@",       comment: ""), appName)
+            case .deactivate: localizedTitle = String(format: NSLocalizedString("Failed to Deactivate %@",     comment: ""), appName)
+            case .deleteApp:  localizedTitle = String(format: NSLocalizedString("Failed to Deactivate %@",     comment: ""), appName)
+            case .backup:     localizedTitle = String(format: NSLocalizedString("Failed to Backup %@",         comment: ""), appName)
+            case .restore:    localizedTitle = String(format: NSLocalizedString("Failed to Restore %@ Backup", comment: ""), appName)
+            case .resign:     localizedTitle = String(format: NSLocalizedString("Failed to Resign %@",         comment: ""), appName)
+            case .removeDeactivatedApp: localizedTitle = String(format: NSLocalizedString("Failed to Remove %@", comment: ""), appName)
+            case .enableJIT:  localizedTitle = String(format: NSLocalizedString("Failed to Enable JIT for %@", comment: ""), appName)
+        }
+        
+        let nsError = error as NSError
+        let mappedError = nsError.withLocalizedTitle(localizedTitle)
+        return mappedError
     }
 }
 
