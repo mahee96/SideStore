@@ -279,8 +279,8 @@ private struct DirectoryItemListSectionView: View {
 }
 
 private struct EmptyPasteAreaSectionView: View {
-    @ObservedObject var viewModel: StorageExplorerViewModel
-    @ObservedObject var clipboard: StorageExplorerClipboard
+    let viewModel: StorageExplorerViewModel
+    let clipboard: StorageExplorerClipboard
     
     var body: some View {
         Section {
@@ -295,14 +295,18 @@ private struct EmptyPasteAreaSectionView: View {
 }
 
 private struct SelectionActionBarView: View {
-    @ObservedObject var viewModel: StorageExplorerViewModel
+    let viewModel: StorageExplorerViewModel
+    
+    @State private var selectedURLs: Set<URL> = []
+    @State private var filteredCount: Int = 0
+    @State private var allFilteredURLs: Set<URL> = []
     
     var body: some View {
-        let count = viewModel.selectedURLs.count
+        let count = selectedURLs.count
         let copyTitle = count > 0 ? "Copy (\(count))" : "Copy"
         let renameTitle = count > 0 ? "Rename (\(count))" : "Rename"
         let deleteTitle = count > 0 ? "Delete (\(count))" : "Delete"
-        let isAllSelected = count > 0 && count == viewModel.filteredAndSortedItems.count
+        let isAllSelected = count > 0 && count == filteredCount
         let selectTitle = isAllSelected ? "Deselect All" : "Select All"
         
         HStack(spacing: 6) {
@@ -310,7 +314,7 @@ private struct SelectionActionBarView: View {
                 if isAllSelected {
                     viewModel.selectedURLs.removeAll()
                 } else {
-                    viewModel.selectedURLs = Set(viewModel.filteredAndSortedItems.map { $0.url })
+                    viewModel.selectedURLs = allFilteredURLs
                 }
             } label: {
                 Text(selectTitle)
@@ -321,7 +325,7 @@ private struct SelectionActionBarView: View {
             Spacer(minLength: 2)
             
             SwiftUI.Button {
-                if !viewModel.selectedURLs.isEmpty {
+                if !selectedURLs.isEmpty {
                     viewModel.copySelectedToClipboard()
                 }
             } label: {
@@ -332,11 +336,11 @@ private struct SelectionActionBarView: View {
             .buttonStyle(.bordered)
             .controlSize(.small)
             .fixedSize(horizontal: true, vertical: false)
-            .disabled(viewModel.selectedURLs.isEmpty)
+            .disabled(selectedURLs.isEmpty)
             
             SwiftUI.Button {
-                if !viewModel.selectedURLs.isEmpty {
-                    if count == 1, let firstURL = viewModel.selectedURLs.first, let item = viewModel.items.first(where: { $0.url == firstURL }) {
+                if !selectedURLs.isEmpty {
+                    if count == 1, let firstURL = selectedURLs.first, let item = viewModel.items.first(where: { $0.url == firstURL }) {
                         viewModel.renameInput = item.name
                     } else {
                         viewModel.renameInput = ""
@@ -351,10 +355,10 @@ private struct SelectionActionBarView: View {
             .buttonStyle(.bordered)
             .controlSize(.small)
             .fixedSize(horizontal: true, vertical: false)
-            .disabled(viewModel.selectedURLs.isEmpty)
+            .disabled(selectedURLs.isEmpty)
             
             SwiftUI.Button(role: .destructive) {
-                if !viewModel.selectedURLs.isEmpty {
+                if !selectedURLs.isEmpty {
                     viewModel.activeAlert = .confirmBulkDelete
                 }
             } label: {
@@ -366,18 +370,36 @@ private struct SelectionActionBarView: View {
             .tint(.red)
             .controlSize(.small)
             .fixedSize(horizontal: true, vertical: false)
-            .disabled(viewModel.selectedURLs.isEmpty)
+            .disabled(selectedURLs.isEmpty)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .background(Color(UIColor.tertiarySystemBackground))
+        .onAppear {
+            updateState()
+        }
+        .onReceive(viewModel.objectWillChange.receive(on: DispatchQueue.main)) { _ in
+            updateState()
+        }
+    }
+    
+    private func updateState() {
+        self.selectedURLs = viewModel.selectedURLs
+        let filtered = viewModel.filteredAndSortedItems
+        self.filteredCount = filtered.count
+        self.allFilteredURLs = Set(filtered.map { $0.url })
     }
 }
 
 private struct BottomInformationBarView: View {
-    @ObservedObject var viewModel: StorageExplorerViewModel
-    @ObservedObject var clipboard: StorageExplorerClipboard
+    let viewModel: StorageExplorerViewModel
+    let clipboard: StorageExplorerClipboard
     let folderSummaryString: String
+    
+    @State private var freeDiskSpaceString: String = ""
+    @State private var isSelectionMode: Bool = false
+    @State private var hasCopiedItems: Bool = false
+    @State private var pasteLabelText: String = "Paste"
     
     var body: some View {
         HStack {
@@ -385,17 +407,17 @@ private struct BottomInformationBarView: View {
                 Text(folderSummaryString)
                     .font(.caption)
                     .foregroundColor(.primary)
-                Text("Available Space: \(viewModel.freeDiskSpaceString)")
+                Text("Available Space: \(freeDiskSpaceString)")
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }
             Spacer()
             
-            if clipboard.hasCopiedItems && !viewModel.isSelectionMode {
+            if hasCopiedItems && !isSelectionMode {
                 SwiftUI.Button {
                     viewModel.pasteCopiedItems()
                 } label: {
-                    Label(clipboard.pasteLabelText, systemImage: "doc.on.clipboard")
+                    Label(pasteLabelText, systemImage: "doc.on.clipboard")
                         .font(.caption.bold())
                 }
                 .buttonStyle(.borderedProminent)
@@ -405,11 +427,33 @@ private struct BottomInformationBarView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .background(Color(UIColor.secondarySystemBackground))
+        .onAppear {
+            updateState()
+        }
+        .onReceive(viewModel.objectWillChange.receive(on: DispatchQueue.main)) { _ in
+            updateState()
+        }
+        .onReceive(clipboard.objectWillChange.receive(on: DispatchQueue.main)) { _ in
+            updateState()
+        }
+    }
+    
+    private func updateState() {
+        self.freeDiskSpaceString = viewModel.freeDiskSpaceString
+        self.isSelectionMode = viewModel.isSelectionMode
+        self.hasCopiedItems = clipboard.hasCopiedItems
+        self.pasteLabelText = clipboard.pasteLabelText
     }
 }
 
 private struct TrailingToolbarMenuView: View {
-    @ObservedObject var viewModel: StorageExplorerViewModel
+    let viewModel: StorageExplorerViewModel
+    
+    @State private var isSelectionMode: Bool = false
+    @State private var sortOption: StorageSortOption = .name
+    @State private var sortAscending: Bool = true
+    @State private var groupFoldersFirst: Bool = true
+    @State private var isTextWrapEnabled: Bool = true
     
     var body: some View {
         Menu {
@@ -417,12 +461,12 @@ private struct TrailingToolbarMenuView: View {
                 viewModel.isSelectionMode.toggle()
                 if !viewModel.isSelectionMode { viewModel.selectedURLs.removeAll() }
             } label: {
-                Label(viewModel.isSelectionMode ? "Done Selecting" : "Select", systemImage: "checkmark.circle")
+                Label(isSelectionMode ? "Done Selecting" : "Select", systemImage: "checkmark.circle")
             }
             
             Divider()
             
-            Menu {
+            Menu("Sort By") {
                 ForEach(StorageSortOption.allCases) { option in
                     SwiftUI.Button {
                         if viewModel.sortOption == option {
@@ -432,36 +476,50 @@ private struct TrailingToolbarMenuView: View {
                             viewModel.sortAscending = true
                         }
                     } label: {
-                        if viewModel.sortOption == option {
-                            Label("\(option.rawValue) (\(viewModel.sortAscending ? "Ascending" : "Descending"))", systemImage: viewModel.sortAscending ? "arrow.up" : "arrow.down")
+                        if sortOption == option {
+                            Label("\(option.rawValue) (\(sortAscending ? "Ascending" : "Descending"))", systemImage: sortAscending ? "arrow.up" : "arrow.down")
                         } else {
                             Text(option.rawValue)
                         }
                     }
                 }
-            } label: {
-                Label("Sort By", systemImage: "arrow.up.arrow.down")
             }
             
-            Toggle(isOn: $viewModel.groupFoldersFirst) {
-                Label("Folders First", systemImage: "folder")
+            Toggle(isOn: Binding(get: { groupFoldersFirst }, set: { viewModel.groupFoldersFirst = $0 })) {
+                Text("Folders First")
             }
             
-            Toggle(isOn: $viewModel.isTextWrapEnabled) {
-                Label("Wrap File Names", systemImage: "text.wrap")
+            Toggle(isOn: Binding(get: { isTextWrapEnabled }, set: { viewModel.isTextWrapEnabled = $0 })) {
+                Text("Wrap File Names")
             }
         } label: {
             Image(systemName: "ellipsis.circle")
         }
+        .onAppear {
+            updateState()
+        }
+        .onReceive(viewModel.objectWillChange.receive(on: DispatchQueue.main)) { _ in
+            updateState()
+        }
+    }
+    
+    private func updateState() {
+        self.isSelectionMode = viewModel.isSelectionMode
+        self.sortOption = viewModel.sortOption
+        self.sortAscending = viewModel.sortAscending
+        self.groupFoldersFirst = viewModel.groupFoldersFirst
+        self.isTextWrapEnabled = viewModel.isTextWrapEnabled
     }
 }
 
 private struct ItemContextMenuView: View {
-    @ObservedObject var viewModel: StorageExplorerViewModel
+    let viewModel: StorageExplorerViewModel
     let item: StorageExplorerItem
     
+    @State private var isSelectionMode: Bool = false
+    
     var body: some View {
-        if !viewModel.isSelectionMode {
+        if !isSelectionMode {
             SwiftUI.Button {
                 viewModel.copyToClipboard(item: item)
             } label: {
@@ -494,15 +552,18 @@ private struct ItemContextMenuView: View {
 }
 
 private struct EmptyAreaContextMenuView: View {
-    @ObservedObject var viewModel: StorageExplorerViewModel
-    @ObservedObject var clipboard: StorageExplorerClipboard
+    let viewModel: StorageExplorerViewModel
+    let clipboard: StorageExplorerClipboard
+    
+    @State private var hasCopiedItems: Bool = false
+    @State private var pasteLabelText: String = "Paste"
     
     var body: some View {
-        if clipboard.hasCopiedItems {
+        if hasCopiedItems {
             SwiftUI.Button {
                 viewModel.pasteCopiedItems()
             } label: {
-                Label(clipboard.pasteLabelText, systemImage: "doc.on.clipboard")
+                Label(pasteLabelText, systemImage: "doc.on.clipboard")
             }
         }
     }
