@@ -101,7 +101,7 @@ final class StageBackupAppOperation: BasePipelineOperation<InstallAppOperationCo
             debugLog("[StageBackupAppOperation] Error: Failed to create ALTApplication for staged backup app at \(unzippedAppBundleURL.path)")
             throw OperationError.invalidApp
         }
-        context.appBundle = sideBackupBundle
+        context.targetAppBundle = sideBackupBundle
         debugLog("[StageBackupAppOperation] Successfully set context.appBundle to staged SideBackup app ('\(sideBackupBundle.bundleIdentifier)')")
         self.setProgress(100)
         return targetApp

@@ -19,13 +19,13 @@ final class StageAppOperation: BasePipelineOperation<InstallAppOperationContext,
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
         
-        if let appBundle = self.context.appBundle,
+        if let appBundle = self.context.targetAppBundle,
            appBundle.bundle.bundleURL.path.contains("SideBackup") || appBundle.bundle.bundleURL.path.contains("AltBackup"),
            let installedApp = self.context.installedApp {
-            self.context.appBundle = ALTApplication(fileURL: installedApp.fileURL)
+            self.context.targetAppBundle = ALTApplication(fileURL: installedApp.fileURL)
         }
         
-        guard let appBundle = self.context.appBundle else {
+        guard let appBundle = self.context.targetAppBundle else {
             throw OperationError.invalidParameters("StageAppOperation: context.appBundle is nil")
         }
         
@@ -61,7 +61,7 @@ final class StageAppOperation: BasePipelineOperation<InstallAppOperationContext,
             throw OperationError.invalidApp
         }
         
-        self.context.appBundle = stagedAppBundle
+        self.context.targetAppBundle = stagedAppBundle
         self.setProgress(100)
         return stagedAppBundle
     }

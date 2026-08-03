@@ -16,7 +16,7 @@ final class PrepareAppExtensionBundleIDsOperation: BasePipelineOperation<AppOper
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         
         if self.context.useMainProfile {
-            if let appBundle = self.context.appBundle, let profile = self.context.provisioningProfiles?[self.context.bundleIdentifier] {
+            if let appBundle = self.context.targetAppBundle, let profile = self.context.provisioningProfiles?[self.context.bundleIdentifier] {
                 var appexBundleIds: [String: String] = [:]
                 for appex in appBundle.appExtensions {
                     appexBundleIds[appex.bundleIdentifier] = appex.bundleIdentifier

@@ -19,7 +19,7 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         
         guard
-            let appBundle = self.context.appBundle,
+            let appBundle = self.context.targetAppBundle,
             let profiles = self.context.provisioningProfiles,
             let team = self.context.authenticatedContext.team,
             let certificate = self.context.overrideCertificate ?? self.context.authenticatedContext.certificate

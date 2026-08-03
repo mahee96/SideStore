@@ -180,7 +180,8 @@ class AppOperationContext: PipelineOperationContext
 {
     let bundleIdentifier: String
     var customBundleIdentifier: String?
-    var appBundle: ALTApplication?
+    var targetAppBundle: ALTApplication?
+
     var provisioningProfiles: [String: ALTProvisioningProfile]?
     var appexBundleIds: [String: String]?
     var useMainProfile = false

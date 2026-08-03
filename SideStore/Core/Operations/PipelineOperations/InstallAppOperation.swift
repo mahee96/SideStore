@@ -75,7 +75,7 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
     }
     
     private func removeRefreshedIPA() {
-        if let appBundle = context.appBundle {
+        if let appBundle = context.targetAppBundle {
             let updatedApp = AnyApp(from: appBundle, bundleId: self.context.targetBundleIdentifier)
             let fileURL = InstalledApp.refreshedIPAURL(for: updatedApp)
             

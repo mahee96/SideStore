@@ -25,7 +25,7 @@ final class RemoveAppExtensionsOperation: BasePipelineOperation<InstallAppOperat
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
         
-        guard let targetAppBundle = context.appBundle else {
+        guard let targetAppBundle = context.targetAppBundle else {
             throw OperationError.invalidParameters("RemoveAppExtensionsOperation: context.appBundle is nil")
         }
         
@@ -152,7 +152,7 @@ final class RemoveAppExtensionsOperation: BasePipelineOperation<InstallAppOperat
     }
 
     private func updateManifest() throws {
-        guard let appBundle = context.appBundle else {
+        guard let appBundle = context.targetAppBundle else {
             return
         }
         

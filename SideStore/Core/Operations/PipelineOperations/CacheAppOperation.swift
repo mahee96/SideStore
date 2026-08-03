@@ -17,7 +17,7 @@ final class CacheAppOperation: BasePipelineOperation<InstallAppOperationContext,
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
 
-        guard let appBundle = context.appBundle else {
+        guard let appBundle = context.targetAppBundle else {
             debugLog("[CacheAppOperation] context.appBundle is nil")
             self.setProgress(100)
             return nil

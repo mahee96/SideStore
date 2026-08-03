@@ -42,7 +42,7 @@ final class VerifyAppOperation: BasePipelineOperation<InstallAppOperationContext
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
         
-        guard let appBundle = self.context.appBundle else {
+        guard let appBundle = self.context.targetAppBundle else {
             throw OperationError.invalidParameters("VerifyAppOperation: context.appBundle is nil")
         }
 

@@ -17,7 +17,7 @@ final class ChangeAppIconOperation: BasePipelineOperation<InstallAppOperationCon
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
         
-        guard let appBundle = self.context.appBundle else {
+        guard let appBundle = self.context.targetAppBundle else {
             throw OperationError.invalidParameters("ChangeAppIconOperation.execute: self.context.appBundle is nil")
         }
         

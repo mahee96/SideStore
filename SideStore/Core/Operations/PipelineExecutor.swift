@@ -94,7 +94,7 @@ final class PipelineExecutor: @unchecked Sendable {
                                                     destinationURL: downloadedAppURL,
                                                     context: context)
                 let downloadedAppBundle = try await step.execute(parentProgress: progress)
-                context.appBundle = downloadedAppBundle
+                context.targetAppBundle = downloadedAppBundle
                 result = downloadedAppBundle
                 return nil
                 

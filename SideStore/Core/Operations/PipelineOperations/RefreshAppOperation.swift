@@ -22,7 +22,7 @@ final class RefreshAppOperation: BasePipelineOperation<InstallAppOperationContex
             throw OperationError.invalidParameters("RefreshAppOperation.execute: self.context.provisioningProfiles is nil")
         }
         
-        guard let appBundle = self.context.appBundle else { throw OperationError(.appNotFound(name: nil)) }
+        guard let appBundle = self.context.targetAppBundle else { throw OperationError(.appNotFound(name: nil)) }
         self.setProgress(10)
         for p in profiles {
             do {
