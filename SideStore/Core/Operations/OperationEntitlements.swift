@@ -11,7 +11,7 @@ import Foundation
 @preconcurrency import AltSign
 
 struct OperationEntitlements {
-    static let defaultAdditionalEntitlements: [ALTEntitlement: Any] = [
+    static let defaultAdditionalEntitlements: [ALTEntitlement: any Sendable] = [
         .increasedDebuggingMemoryLimit  : ALTEntitlement.increasedDebuggingMemoryLimit,
         .increasedMemoryLimit           : ALTEntitlement.increasedMemoryLimit,
         .extendedVirtualAddressing      : ALTEntitlement.extendedVirtualAddressing

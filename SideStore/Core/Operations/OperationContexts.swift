@@ -234,7 +234,7 @@ class InstallAppOperationContext: AppOperationContext
     var ipaURL: URL?
     var resignedAppBundle: ALTApplication?
     var installedApp: InstalledApp?
-    var additionalEntitlements: [ALTEntitlement: Any] = [:]
+    var additionalEntitlements: [ALTEntitlement: any Sendable] = [:]
     
     var beginInstallationHandler: ((InstalledApp) -> Void)?
 
@@ -264,7 +264,7 @@ class InstallAppOperationContext: AppOperationContext
         pipelineSteps: [PipelineExecutionStep],
         bundleIdentifier: String,
         authenticatedContext: AuthenticatedOperationContext,
-        additionalEntitlements: [ALTEntitlement: Any] = [:]
+        additionalEntitlements: [ALTEntitlement: any Sendable] = [:]
     ){
         super.init(pipelineSteps: pipelineSteps, bundleIdentifier: bundleIdentifier, authenticatedContext: authenticatedContext)
     }

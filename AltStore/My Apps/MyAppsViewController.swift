@@ -1966,7 +1966,7 @@ extension MyAppsViewController
         
         let backupMenu = UIMenu(title: NSLocalizedString("Backup", comment: ""), image: UIImage(systemName: "archivebox"), children: backupSubmenuActions)
         
-        let setCertAction = UIAction(title: NSLocalizedString("Set Certificate...", comment: ""), image: UIImage(systemName: "key.icloud")) { [weak self] _ in
+        let setCertAction = UIAction(title: NSLocalizedString("Change Certificate", comment: ""), image: UIImage(systemName: "key.icloud")) { [weak self] _ in
             self?.presentSetCertificateAlert(for: installedApp)
         }
         

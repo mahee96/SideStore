@@ -31,12 +31,12 @@ final class PipelineRunner: Sendable
     let progress: PipelineProgress
     let context: PipelineExecutionContext
     let logger: PipelineErrorLogger
-    let defaultEntitlements: [ALTEntitlement: Any]
+    let defaultEntitlements: [ALTEntitlement: any Sendable]
     
     init(progress: PipelineProgress,
          context: PipelineExecutionContext,
          logger: PipelineErrorLogger,
-         defaultEntitlements: [ALTEntitlement: Any] = [:])
+         defaultEntitlements: [ALTEntitlement: any Sendable] = [:])
     {
         self.progress = progress
         self.context = context
