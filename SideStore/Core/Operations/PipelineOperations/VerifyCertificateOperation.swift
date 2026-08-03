@@ -14,6 +14,12 @@ import Security
 @preconcurrency import AltSign
 
 final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContext, Void>, @unchecked Sendable {
+    private let verifyInstalledOnly: Bool
+    
+    init(context: AppOperationContext, verifyInstalledOnly: Bool = false) throws {
+        self.verifyInstalledOnly = verifyInstalledOnly
+        try super.init(context: context)
+    }
 
     private enum CertificateValidationResult {
         case valid(isCrossSigned: Bool)
@@ -21,7 +27,7 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
     }
     
     override func execute(parentProgress: Progress?) async throws {
-        debugLog("[VerifyCertificateOperation] execute() started")
+        debugLog("[VerifyCertificateOperation] execute() started (verifyInstalledOnly: \(self.verifyInstalledOnly))")
         defer { debugLog("[VerifyCertificateOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
@@ -65,6 +71,7 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
           • authenticatedCertSerial      : \(authenticatedCertSerial ?? "nil")
           • activeKeychainSerial         : \(activeKeychainSerial ?? "nil")
           • portalActiveSerials (\(activeSerials.count))  : \(Array(activeSerials))
+          • verifyInstalledOnly          : \(self.verifyInstalledOnly)
         """)
         
         struct Candidate {
@@ -72,11 +79,20 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
             let serial: String?
         }
         
-        let candidates: [Candidate] = [
-            Candidate(name: "overrideCertificate", serial: overrideCertSerial),
-            Candidate(name: "installedAppSerial", serial: installedAppSerial),
-            Candidate(name: "authenticatedContext.certificate", serial: authenticatedCertSerial)
-        ].compactMap { candidate in
+        let allCandidates: [Candidate]
+        if self.verifyInstalledOnly {
+            allCandidates = [
+                Candidate(name: "installedAppSerial", serial: installedAppSerial)
+            ]
+        } else {
+            allCandidates = [
+                Candidate(name: "overrideCertificate", serial: overrideCertSerial),
+                Candidate(name: "installedAppSerial", serial: installedAppSerial),
+                Candidate(name: "authenticatedContext.certificate", serial: authenticatedCertSerial)
+            ]
+        }
+        
+        let candidates: [Candidate] = allCandidates.compactMap { candidate in
             guard let serial = candidate.serial, !serial.isEmpty else {
                 debugLog("[VerifyCertificateOperation] Candidate [\(candidate.name)] is nil or empty. Skipping.")
                 return nil

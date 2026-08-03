@@ -227,6 +227,7 @@
 				Core/Operations/OperationEntitlements.swift,
 				Core/Operations/OperationStep.swift,
 				Core/Operations/OperationStepsDefinition.swift,
+				Core/Operations/PipelineExecutor.swift,
 				Core/Operations/PipelineOperations/CacheAppOperation.swift,
 				Core/Operations/PipelineOperations/ChangeAppIconOperation.swift,
 				Core/Operations/PipelineOperations/CleanStagedAppOperation.swift,

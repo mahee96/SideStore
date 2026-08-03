@@ -374,7 +374,7 @@ private extension MyAppsViewController
             }
             
             let isExpired = currentDate > installedApp.expirationDate
-            cell.bannerView.buttonLabel.isHidden = isExpired
+            cell.bannerView.buttonLabel.isHidden = isExpired || installedApp.isRevoked
             cell.bannerView.buttonLabel.text = NSLocalizedString("Expires in", comment: "")
             
             cell.bannerView.button.removeTarget(self, action: nil, for: .primaryActionTriggered)
