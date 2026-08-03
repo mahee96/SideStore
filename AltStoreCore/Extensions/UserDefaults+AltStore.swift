@@ -340,4 +340,58 @@ public extension UserDefaults
             UserDefaults.standard.isAppLimitDisabled = false
         }
     }
+    
+    static func enableGlobalLogging() {
+        let setAnySelector = #selector(UserDefaults.set(_:forKey:) as (UserDefaults) -> (Any?, String) -> Void)
+        let setBoolSelector = #selector(UserDefaults.set(_:forKey:) as (UserDefaults) -> (Bool, String) -> Void)
+        let setIntSelector = #selector(UserDefaults.set(_:forKey:) as (UserDefaults) -> (Int, String) -> Void)
+        let removeSelector = #selector(UserDefaults.removeObject(forKey:))
+        
+        let swizzlePairs: [(Selector, Selector)] = [
+            (setAnySelector, #selector(swizzled_setObject(_:forKey:))),
+            (setBoolSelector, #selector(swizzled_setBool(_:forKey:))),
+            (setIntSelector, #selector(swizzled_setInteger(_:forKey:))),
+            (removeSelector, #selector(swizzled_removeObject(forKey:)))
+        ]
+        for (orig, swiz) in swizzlePairs {
+            if let m1 = class_getInstanceMethod(UserDefaults.self, orig),
+               let m2 = class_getInstanceMethod(UserDefaults.self, swiz) {
+                method_exchangeImplementations(m1, m2)
+            }
+        }
+    }
+}
+
+// diag logging hooks without changes to original source 
+// this is to catch any and all userdefault writes
+private extension UserDefaults {
+    private func formatValueForLog(_ value: Any?) -> String {
+        guard let value = value else { return "nil" }
+        if JSONSerialization.isValidJSONObject(value),
+           let data = try? JSONSerialization.data(withJSONObject: value, options: [.prettyPrinted, .sortedKeys]),
+           let jsonString = String(data: data, encoding: .utf8) {
+            return jsonString
+        }
+        return "\(value)"
+    }
+
+    @objc private func swizzled_setObject(_ value: Any?, forKey key: String) {
+        debugLog("[UserDefaults] Key '\(key)' -> \(formatValueForLog(value))")
+        self.swizzled_setObject(value, forKey: key)
+    }
+
+    @objc private func swizzled_setBool(_ value: Bool, forKey key: String) {
+        debugLog("[UserDefaults] Key '\(key)' -> \(value)")
+        self.swizzled_setBool(value, forKey: key)
+    }
+
+    @objc private func swizzled_setInteger(_ value: Int, forKey key: String) {
+        debugLog("[UserDefaults] Key '\(key)' -> \(value)")
+        self.swizzled_setInteger(value, forKey: key)
+    }
+
+    @objc private func swizzled_removeObject(forKey key: String) {
+        debugLog("[UserDefaults] Removed Key '\(key)'")
+        self.swizzled_removeObject(forKey: key)
+    }
 }

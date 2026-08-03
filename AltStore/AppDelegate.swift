@@ -112,6 +112,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         debugLog("===================================================")
         debugLog("\n")
 
+        UserDefaults.enableGlobalLogging()
         SideStoreLogging.setLogging(UserDefaults.standard.isSideStoreVerboseLoggingEnabled)
         AltSign.setLogging(UserDefaults.standard.isAltSignVerboseLoggingEnabled)
         minimuxerSetLogging(UserDefaults.standard.isMinimuxerVerboseLoggingEnabled)
@@ -291,7 +292,7 @@ private extension AppDelegate
             }
             catch
             {
-                debugLog("Failed to create image disk cache. Falling back to URL cache. \(error.localizedDescription)")
+                debugLog("[AppDelegate] Failed to create image disk cache. Falling back to URL cache. \(error.localizedDescription)")
             }
         }
         
@@ -299,7 +300,7 @@ private extension AppDelegate
         
         if let dataCache = ImagePipeline.shared.configuration.dataCache as? DataCache, #available(iOS 15, *)
         {
-            debugLog("Current image cache size: \(dataCache.totalSize.formatted(.byteCount(style: .file)))")
+            debugLog("[AppDelegate] Current image cache size: \(dataCache.totalSize.formatted(.byteCount(style: .file)))")
         }
     }
     
@@ -320,7 +321,7 @@ private extension AppDelegate
             do {
                 try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true, attributes: nil)
             } catch {
-                debugLog("[ALTLog] Failed to create temp directory for imported IPA: \(error)")
+                debugLog("[AppDelegate] Failed to create temp directory for imported IPA: \(error)")
                 return false
             }
 
@@ -329,7 +330,7 @@ private extension AppDelegate
             do {
                 try FileManager.default.copyItem(at: url, to: ipaURL)
             } catch {
-                debugLog("[ALTLog] Failed to copy imported IPA: \(error)")
+                debugLog("[AppDelegate] Failed to copy imported IPA: \(error)")
                 return false
             }
 
@@ -618,7 +619,7 @@ private extension AppDelegate {
             return
         }
         
-        guard let profile = try? ALTProvisioningProfile(url: profileURL) else {
+        guard let profile = ALTProvisioningProfile(url: profileURL) else {
             debugLog("[AppDelegate] reconcileSelfReinstallation: Failed to parse embedded.mobileprovision.")
             return
         }
