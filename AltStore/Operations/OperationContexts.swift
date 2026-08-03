@@ -144,7 +144,6 @@ class PipelineOperationContext: OperationContext, WeightedOperationContext
     }
 }
 
-@dynamicMemberLookup
 class AppOperationContext: PipelineOperationContext
 {
     let bundleIdentifier: String
@@ -183,11 +182,6 @@ class AppOperationContext: PipelineOperationContext
             presentingViewController: authenticatedContext.presentingViewController,
             dbBackgroundContext: authenticatedContext.dbBackgroundContext
         )
-    }
-
-    subscript<T>(dynamicMember keyPath: WritableKeyPath<AuthenticatedOperationContext, T>) -> T
-    {
-        return self.authenticatedContext[keyPath: keyPath]
     }
 }
 

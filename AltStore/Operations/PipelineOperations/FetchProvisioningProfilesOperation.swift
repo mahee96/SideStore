@@ -25,10 +25,10 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<AppOperationCont
             throw error
         }
         
-        guard let team = self.context.team,
-              let session = self.context.session else {
-            self.debugLog("[FetchProvisioningProfiles] Missing parameters: team=\(String(describing: self.context.team)), session=\(String(describing: self.context.session))")
-            throw OperationError.invalidParameters("FetchProvisioningProfilesOperation.main: self.context.team or self.context.session is nil")
+        guard let team = self.context.authenticatedContext.team,
+              let session = self.context.authenticatedContext.session else {
+            self.debugLog("[FetchProvisioningProfiles] Missing parameters: team=\(String(describing: self.context.authenticatedContext.team)), session=\(String(describing: self.context.authenticatedContext.session))")
+            throw OperationError.invalidParameters("FetchProvisioningProfilesOperation.main: self.context.authenticatedContext.team or self.context.authenticatedContext.session is nil")
         }
         
         guard let app = self.context.app else {
