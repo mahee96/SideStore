@@ -341,7 +341,7 @@ public extension UserDefaults
         }
     }
     
-    static func enableGlobalLogging() {
+    public static func enableGlobalLogging() {
         let setAnySelector = #selector(UserDefaults.set(_:forKey:) as (UserDefaults) -> (Any?, String) -> Void)
         let setBoolSelector = #selector(UserDefaults.set(_:forKey:) as (UserDefaults) -> (Bool, String) -> Void)
         let setIntSelector = #selector(UserDefaults.set(_:forKey:) as (UserDefaults) -> (Int, String) -> Void)
@@ -358,6 +358,32 @@ public extension UserDefaults
                let m2 = class_getInstanceMethod(UserDefaults.self, swiz) {
                 method_exchangeImplementations(m1, m2)
             }
+        }
+    }
+    
+    public static func dumpAllSettingsOnBoot() {
+        debugLog("=== [UserDefaults] Standard Suite Dump ===")
+        dumpDictionary(UserDefaults.standard.dictionaryRepresentation())
+        
+        if let appGroup = Bundle.main.altstoreAppGroup,
+           let sharedDefaults = UserDefaults(suiteName: appGroup),
+           sharedDefaults != UserDefaults.standard {
+            debugLog("=== [UserDefaults] Shared AppGroup Suite Dump (\(appGroup)) ===")
+            dumpDictionary(sharedDefaults.dictionaryRepresentation())
+        }
+    }
+    
+    private static func dumpDictionary(_ dict: [String: Any]) {
+        let filtered = dict.filter { key, _ in
+            !key.hasPrefix("Apple") && !key.hasPrefix("NS") && !key.hasPrefix("PK")
+        }
+        
+        if JSONSerialization.isValidJSONObject(filtered),
+           let data = try? JSONSerialization.data(withJSONObject: filtered, options: [.prettyPrinted, .sortedKeys]),
+           let jsonString = String(data: data, encoding: .utf8) {
+            debugLog(jsonString)
+        } else {
+            debugLog("\(filtered)")
         }
     }
 }

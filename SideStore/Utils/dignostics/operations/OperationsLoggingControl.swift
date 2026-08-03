@@ -21,7 +21,14 @@ class OperationsLoggingControl {
     }
 
     public static func isLoggingEnabled(for operation: any OperationLogging.Type) -> Bool {
-        return true
+        guard UserDefaults.standard.isVerboseOperationsLoggingEnabled else { return false }
+        if let step = PipelineStep.step(for: operation) {
+            return isStepLoggingEnabled(for: step)
+        }
+        if let step = StandaloneStep.step(for: operation) {
+            return isStepLoggingEnabled(for: step)
+        }
+        return false
     }
 
     private static func udKey(for step: some OperationStep) -> String {
