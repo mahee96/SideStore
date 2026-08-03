@@ -50,6 +50,11 @@ final class InstalledAppCollectionViewCell: UICollectionViewCell
         
         self.deactivateBadge = deactivateBadge
     }
+    
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        self.bannerView?.button?.resetDisplayState()
+    }
 }
 
 final class InstalledAppsCollectionFooterView: UICollectionReusableView

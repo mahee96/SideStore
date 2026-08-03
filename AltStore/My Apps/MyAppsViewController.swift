@@ -2627,33 +2627,6 @@ extension MyAppsViewController: UIImagePickerControllerDelegate, UINavigationCon
     }
 }
 
-extension PillButton {
-    func configure(for installedApp: InstalledApp) {
-        let currentDate = Date()
-        let expirationDate = installedApp.expirationDate
-        let isExpired = currentDate > expirationDate
-        
-        if installedApp.isRevoked {
-            self.setDisplayState(.revoked)
-        } else if isExpired {
-            self.setDisplayState(.expired)
-        } else {
-            let formatter = DateComponentsFormatter()
-            formatter.unitsStyle = .full
-            formatter.allowedUnits = [.day, .hour, .minute]
-            formatter.maximumUnitCount = 1
-            let title = formatter.string(from: currentDate, to: expirationDate) ?? ""
-            let days = Calendar.current.dateComponents([.day], from: currentDate, to: expirationDate).day ?? 0
-            
-            if installedApp.isCrossSigned {
-                self.setDisplayState(.crossSigned(title: title, daysRemaining: days))
-            } else {
-                self.setDisplayState(.active(title: title, daysRemaining: days))
-            }
-        }
-    }
-}
-
 extension MyAppsViewController {
     private func presentSetCertificateAlert(for installedApp: InstalledApp) {
         let picker = SignableCertificatesListViewController(installedApp: installedApp)

@@ -7,6 +7,7 @@
 //
 
 @preconcurrency import UIKit
+@preconcurrency import AltStoreCore
 
 extension PillButton
 {
@@ -212,6 +213,39 @@ class PillButton: UIButton
 }
 
 extension PillButton {
+    func configure(for installedApp: InstalledApp) {
+        let currentDate = Date()
+        let expirationDate = installedApp.expirationDate
+        let isExpired = currentDate > expirationDate
+        
+        if installedApp.isRevoked {
+            self.setDisplayState(.revoked)
+        } else if isExpired {
+            self.setDisplayState(.expired)
+        } else {
+            let formatter = DateComponentsFormatter()
+            formatter.unitsStyle = .full
+            formatter.allowedUnits = [.day, .hour, .minute]
+            formatter.maximumUnitCount = 1
+            let title = formatter.string(from: currentDate, to: expirationDate) ?? ""
+            let days = Calendar.current.dateComponents([.day], from: currentDate, to: expirationDate).day ?? 0
+            
+            if installedApp.isCrossSigned {
+                self.setDisplayState(.crossSigned(title: title, daysRemaining: days))
+            } else {
+                self.setDisplayState(.active(title: title, daysRemaining: days))
+            }
+        }
+    }
+
+    func resetDisplayState() {
+        self.countdownDate = nil
+        self.borderColor = nil
+        self.borderWidth = 0
+        self.progress = nil
+        self.update()
+    }
+
     func setDisplayState(_ state: DisplayState) {
         switch state {
         case .revoked:

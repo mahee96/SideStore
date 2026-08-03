@@ -239,6 +239,7 @@
 				Core/Operations/PipelineOperations/UpdateAppCertificateOperation.swift,
 				Core/Operations/PipelineOperations/UserCustomizationOperation.swift,
 				Core/Operations/PipelineOperations/VerifyCertificateOperation.swift,
+				Core/Operations/PipelineRunner.swift,
 				Core/Operations/StandaloneOperations/ScheduleExpirationWarningNotificationOperation.swift,
 				Core/Operations/StandaloneOperations/SyncAppIDsOperation.swift,
 				Core/Pairing/PairingFileManager.swift,

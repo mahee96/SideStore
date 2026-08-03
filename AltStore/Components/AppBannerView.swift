@@ -233,6 +233,8 @@ extension AppBannerView
         }
         
         UIView.performWithoutAnimation {
+            self.button.resetDisplayState()
+            
             switch buttonAction
             {
             case .open:
