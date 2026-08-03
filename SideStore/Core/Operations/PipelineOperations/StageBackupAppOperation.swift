@@ -63,12 +63,15 @@ final class StageBackupAppOperation: BasePipelineOperation<InstallAppOperationCo
             infoDictionary["CFBundleDisplayName"] = targetApp.name
             infoDictionary[kCFBundleIdentifierKey as String] = context.targetBundleIdentifier
 
-            let cachedAppBundle = ALTApplication(fileURL: targetApp.fileURL)
-            var appGroups = (cachedAppBundle?.entitlements[.appGroups] as? [String]) ?? []
-            if !appGroups.contains(Bundle.baseAltStoreAppGroupID) {
-                appGroups.append(Bundle.baseAltStoreAppGroupID)
+            let targetAppBundle = ALTApplication(fileURL: targetApp.fileURL)
+            var targetAppGroups = (targetAppBundle?.entitlements[.appGroups] as? [String]) ?? []
+            if !targetAppGroups.contains(Bundle.baseAltStoreAppGroupID) {
+                targetAppGroups.append(Bundle.baseAltStoreAppGroupID)
             }
-            infoDictionary[Bundle.Info.appGroups] = appGroups
+
+            // replace sidebackup app's entitlements with target app's entilements (for appgroup!)
+            infoDictionary[Bundle.Info.appGroups] = targetAppGroups
+            context.additionalEntitlements[.appGroups] = targetAppGroups
 
             let installedAppUTI = [
                 "UTTypeConformsTo": [],

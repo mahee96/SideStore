@@ -234,6 +234,7 @@ class InstallAppOperationContext: AppOperationContext
     var ipaURL: URL?
     var resignedAppBundle: ALTApplication?
     var installedApp: InstalledApp?
+    var additionalEntitlements: [ALTEntitlement: Any] = [:]
     
     var beginInstallationHandler: ((InstalledApp) -> Void)?
 
@@ -258,4 +259,14 @@ class InstallAppOperationContext: AppOperationContext
     // Non-nil when installing from a source.
     @AsyncManaged
     var appVersion: AppVersion?
+    
+    init(
+        pipelineSteps: [PipelineExecutionStep],
+        bundleIdentifier: String,
+        authenticatedContext: AuthenticatedOperationContext,
+        additionalEntitlements: [ALTEntitlement: Any] = [:]
+    ){
+        super.init(pipelineSteps: pipelineSteps, bundleIdentifier: bundleIdentifier, authenticatedContext: authenticatedContext)
+    }
+
 }

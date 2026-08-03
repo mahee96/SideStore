@@ -31,11 +31,17 @@ final class PipelineRunner: Sendable
     let progress: PipelineProgress
     let context: PipelineExecutionContext
     let logger: PipelineErrorLogger
+    let defaultEntitlements: [ALTEntitlement: Any]
     
-    init(progress: PipelineProgress, context: PipelineExecutionContext, logger: PipelineErrorLogger){
+    init(progress: PipelineProgress,
+         context: PipelineExecutionContext,
+         logger: PipelineErrorLogger,
+         defaultEntitlements: [ALTEntitlement: Any] = [:])
+    {
         self.progress = progress
         self.context = context
         self.logger = logger
+        self.defaultEntitlements = defaultEntitlements
     }
     
     @discardableResult
@@ -276,7 +282,8 @@ final class PipelineRunner: Sendable
         let context = InstallAppOperationContext(
             pipelineSteps: pipelineSteps,
             bundleIdentifier: operation.bundleIdentifier,
-            authenticatedContext: group.context
+            authenticatedContext: group.context,
+            additionalEntitlements: defaultEntitlements,
         )
         
         if case .install(_, let customID) = operation { context.customBundleIdentifier  = customID }

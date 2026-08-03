@@ -29,7 +29,6 @@ final class PipelineExecutor: @unchecked Sendable {
         permissionsMode: VerifyAppOperation.PermissionReviewMode,
         operationProgress: Progress?
     ) async throws -> InstalledApp {
-        let additionalEntitlements = OperationEntitlements.defaultAdditionalEntitlements
         var finalApp: InstalledApp?
         
         for pipelineStep in pipelineSteps {
@@ -39,7 +38,6 @@ final class PipelineExecutor: @unchecked Sendable {
                 appOperation: operation,
                 group: group,
                 downloadingApp: downloadingApp,
-                additionalEntitlements: additionalEntitlements,
                 permissionsMode: permissionsMode,
                 progress: operationProgress
             ) {
@@ -59,7 +57,6 @@ final class PipelineExecutor: @unchecked Sendable {
         appOperation: AppOperation,
         group: RefreshGroup,
         downloadingApp: AppProtocol,
-        additionalEntitlements: [ALTEntitlement: Any]?,
         permissionsMode: VerifyAppOperation.PermissionReviewMode,
         progress: Progress?
     ) async throws -> InstalledApp? {
@@ -126,7 +123,6 @@ final class PipelineExecutor: @unchecked Sendable {
             case .fetchProvisioningProfilesInstall:
                 loggerType = FetchProvisioningProfilesInstallOperation.self
                 let step = try FetchProvisioningProfilesInstallOperation(context: context)
-                step.additionalEntitlements = additionalEntitlements
                 let profiles = try await step.execute(parentProgress: progress)
                 context.provisioningProfiles = profiles
                 result = profiles
@@ -281,8 +277,6 @@ final class PipelineExecutor: @unchecked Sendable {
             result = error
             throw error
         }
-        
-        return nil
     }
     
     private func logOperationResult(result: Any?, loggerType: any OperationLogging.Type, operation: any OperationStep) {

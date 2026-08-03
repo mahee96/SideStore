@@ -44,7 +44,12 @@ final class AppManager: ObservableObject, @unchecked Sendable
     static let shared = AppManager()
 
     lazy var pipelineRunner: PipelineRunner = {
-        PipelineRunner(progress: self, context: self, logger: self)
+        PipelineRunner(
+            progress: self, 
+            context: self, 
+            logger: self, 
+            defaultEntitlements: OperationEntitlements.defaultAdditionalEntitlements
+        )
     }()
 
     private static let restartLock = NSLock()

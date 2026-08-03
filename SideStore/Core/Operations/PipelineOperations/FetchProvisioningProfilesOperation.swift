@@ -12,8 +12,6 @@ import Foundation
 import CoreData
 
 class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperationContext, [String: ALTProvisioningProfile]>, @unchecked Sendable {
-    var additionalEntitlements: [ALTEntitlement: Any]?
-    
     // this class is abstract or shouldn't be extended outside, use the subclasses
     
     override func execute(parentProgress: Progress?) async throws -> [String: ALTProvisioningProfile] {
@@ -246,17 +244,6 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
             }
         }
     }
-    
-    func effectiveAppBundle(for targetAppBundle: ALTApplication) -> ALTApplication {
-        if targetAppBundle.fileURL.path.contains("SideBackup") {
-            if let installedApp = self.context.installedApp,
-               let installedTargetBundle = ALTApplication(fileURL: installedApp.fileURL) {
-                self.debugLog("[FetchProvisioningProfiles] Staged app is SideBackup payload. Using entitlements from installed target app '\(installedApp.name)' (\(installedApp.bundleIdentifier)).")
-                return installedTargetBundle
-            }
-        }
-        return targetAppBundle
-    }
 }
 
 class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperation, @unchecked Sendable {
@@ -277,9 +264,8 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
     }
     
     private func updateFeatures(for appID: ALTAppID, targetAppBundle: ALTApplication, team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTAppID {
-        let targetBundle = self.effectiveAppBundle(for: targetAppBundle)
-        var entitlements = targetBundle.entitlements
-        for (key, value) in additionalEntitlements ?? [:] {
+        var entitlements = targetAppBundle.entitlements
+        for (key, value) in context.additionalEntitlements {
             entitlements[key] = value
         }
         
@@ -336,9 +322,8 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
     }
     
     private func updateAppGroups(for appID: ALTAppID, targetAppBundle: ALTApplication, team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTAppID {
-        let targetBundle = self.effectiveAppBundle(for: targetAppBundle)
-        var entitlements = targetBundle.entitlements
-        for (key, value) in additionalEntitlements ?? [:] {
+        var entitlements = targetAppBundle.entitlements
+        for (key, value) in self.context.additionalEntitlements {
             entitlements[key] = value
         }
                 
