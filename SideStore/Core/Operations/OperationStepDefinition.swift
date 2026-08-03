@@ -28,6 +28,9 @@ struct StandaloneExecutionStep: Hashable {
     }
 }
 
+// `PipelineDefinition` defines the exact step sequences for all application operations.
+//  NOTE: A pipeline step CANNOT contain another pipeline step nor any standalone steps.
+//        Nesting or executing pipeline steps recursively inside a step is strictly disallowed by design to keep pipeline explicit
 struct PipelineDefinition {
     static let install: [PipelineExecutionStep] = [
         PipelineExecutionStep(.userCustomization,                 2),

@@ -16,6 +16,9 @@ final class PipelineExecutor: @unchecked Sendable {
     static let shared = PipelineExecutor()
     private init() {}
     
+    // Executes a flat list of `PipelineExecutionStep` items sequentially.
+    // NOTE: Each pipeline step is an atomic operation unit and CANNOT execute another pipeline step
+    //       nor trigger any standalone steps. Recursive step nesting or sub-pipeline invocation is strictly disallowed.
     @discardableResult
     func executePipeline(
         steps pipelineSteps: [PipelineExecutionStep],
