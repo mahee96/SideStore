@@ -302,7 +302,9 @@
 				Views/Settings/TechyThings/ErrorLog/ConsoleLogView.swift,
 				Views/Settings/TechyThings/HealthCheck/HealthCheckView.swift,
 				Views/Settings/TechyThings/HealthCheck/HealthCheckViewModel.swift,
+				Views/Settings/TechyThings/StorageExplorer/DirectoryExplorerView.swift,
 				Views/Settings/TechyThings/StorageExplorer/StorageExplorerView.swift,
+				Views/Settings/TechyThings/StorageExplorer/StorageExplorerViewModel.swift,
 			);
 			target = BFD247692284B9A500981D42 /* SideStore */;
 		};

@@ -1027,14 +1027,21 @@ extension SettingsViewController
                 
             case .errorLog: break
             case .storageExplorer:
-                let storageExplorerView = StorageExplorerView()
-                let vc = UIHostingController(rootView: storageExplorerView)
-                
-                let appearance = UINavigationBarAppearance()
-                appearance.configureWithDefaultBackground()
-                vc.navigationItem.scrollEdgeAppearance = appearance
-                vc.navigationItem.standardAppearance = appearance
-                
+                func makeExplorerVC(url: URL? = nil) -> UIViewController {
+                    let onSelectFolder: (URL) -> Void = { [weak self] targetURL in
+                        guard let self = self else { return }
+                        let childVC = makeExplorerVC(url: targetURL)
+                        self.navigationController?.pushViewController(childVC, animated: true)
+                    }
+                    if let url = url {
+                        let view = DirectoryExplorerView(url: url, onSelectFolder: onSelectFolder)
+                        return UIHostingController(rootView: view)
+                    } else {
+                        let view = StorageExplorerView(onSelectFolder: onSelectFolder)
+                        return UIHostingController(rootView: view)
+                    }
+                }
+                let vc = makeExplorerVC()
                 navigationController?.pushViewController(vc, animated: true)
                 
             case .clearCache: self.clearCache()
