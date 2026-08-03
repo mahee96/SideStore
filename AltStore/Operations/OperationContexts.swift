@@ -20,18 +20,29 @@ enum AlternateIconMode {
     case remove
 }
 
-protocol WeightedOperationContext: AnyObject {
-    func weight(for step: any OperationStep) -> Int64?
+fileprivate struct OperationStepItem {
+    let step: any OperationStep
+    let weight: Int64
 }
 
-class OperationContext
+protocol WeightedOperationContext: AnyObject {
+    func weightForFirstOccurrence(of step: some OperationStep) -> Int64?
+    func weight(for step: some OperationStep, occurrenceNumber: Int) -> Int64?
+    func consumeWeight(for step: some OperationStep) -> Int64?
+}
+
+class OperationContext: WeightedOperationContext
 {
     var error: Error?
     var presentingViewController: UIViewController?
     var dbBackgroundContext: NSManagedObjectContext?
 
-    fileprivate init(error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
+    fileprivate var stepItems: [OperationStepItem]
+    fileprivate var currentIndex = 0
+
+    fileprivate init(stepItems: [OperationStepItem] = [], error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
     {
+        self.stepItems = stepItems
         self.error = error
         self.presentingViewController = presentingViewController
         self.dbBackgroundContext = dbBackgroundContext
@@ -39,20 +50,60 @@ class OperationContext
 
     fileprivate init(context: OperationContext)
     {
+        self.stepItems = context.stepItems
+        self.currentIndex = context.currentIndex
         self.error = context.error
         self.presentingViewController = context.presentingViewController
         self.dbBackgroundContext = context.dbBackgroundContext
     }
+
+    func weightForFirstOccurrence(of step: some OperationStep) -> Int64? {
+        weight(for: step, occurrenceNumber: 1)
+    }
+
+    func weight(for step: some OperationStep, occurrenceNumber: Int) -> Int64? {
+        guard let target = (step as Any) as? AnyHashable else {
+            debugLog("[OperationContext] Failed to cast step '\(step)' to AnyHashable")
+            return nil
+        }
+        var matchCount = 0
+        for item in stepItems {
+            if let itemTarget = (item.step as Any) as? AnyHashable, itemTarget == target {
+                matchCount += 1
+                if matchCount == occurrenceNumber {
+                    return item.weight
+                }
+            }
+        }
+        verboseLog("[OperationContext] Weight not found for step '\(step)' (occurrence \(occurrenceNumber))")
+        return nil
+    }
+
+    func consumeWeight(for step: some OperationStep) -> Int64? {
+        guard let target = (step as Any) as? AnyHashable else {
+            debugLog("[OperationContext] Failed to cast step '\(step)' to AnyHashable during consumeWeight")
+            return nil
+        }
+        guard let index = stepItems.indices[currentIndex...].first(where: {
+            guard let itemTarget = (stepItems[$0].step as Any) as? AnyHashable else { return false }
+            return itemTarget == target
+        }) else {
+            debugLog("[OperationContext] Failed to consume weight for step '\(step)' from index \(currentIndex)")
+            return nil
+        }
+        currentIndex = index + 1
+        return stepItems[index].weight
+    }
 }
 
-class StandaloneOperationContext: OperationContext, WeightedOperationContext
+class StandaloneOperationContext: OperationContext
 {
     let steps: [StandaloneExecutionStep]
 
     init(steps: [StandaloneExecutionStep], error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
     {
         self.steps = steps
-        super.init(error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
+        super.init(stepItems: steps.map { OperationStepItem(step: $0.step, weight: $0.weight) }, error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
     }
 
     init(context: StandaloneOperationContext)
@@ -60,42 +111,31 @@ class StandaloneOperationContext: OperationContext, WeightedOperationContext
         self.steps = context.steps
         super.init(context: context)
     }
-
-    private var consumedIndices = Set<Int>()
-
-    func weight(for step: any OperationStep) -> Int64? {
-        guard let standaloneStep = step as? StandaloneStep else { return nil }
-        guard let index = steps.indices.first(where: { steps[$0].step == standaloneStep && !consumedIndices.contains($0) }) else {
-            return nil
-        }
-        consumedIndices.insert(index)
-        return steps[index].weight
-    }
 }
 
-class CachedOperationContext: OperationContext
+class CachedOperationContext: StandaloneOperationContext
 {
     var appIDs: [ALTAppID]?
     var appGroups: [ALTAppGroup]?
 
-    override init(error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
+    override init(steps: [StandaloneExecutionStep] = [], error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
     {
-        super.init(error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
+        super.init(steps: steps, error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
     }
 
-    override init(context: OperationContext)
+    override init(context: StandaloneOperationContext)
     {
         super.init(context: context)
     }
 
     init(context: CachedOperationContext) {
-        super.init(context: context)
         self.appIDs = context.appIDs
         self.appGroups = context.appGroups
+        super.init(context: context)
     }
 }
 
-final class AuthenticatedOperationContext: CachedOperationContext, WeightedOperationContext
+final class AuthenticatedOperationContext: CachedOperationContext
 {
     var session: ALTAppleAPISession?
     var team: ALTTeam?
@@ -104,16 +144,12 @@ final class AuthenticatedOperationContext: CachedOperationContext, WeightedOpera
     
     var isSideStoreResignDismissed: Bool = false
 
-    let steps: [StandaloneExecutionStep]
-
-    override init(error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
+    init(error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
     {
-        self.steps = .authenticate
-        super.init(error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
+        super.init(steps: .authenticate, error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
     }
 
     init(context: AuthenticatedOperationContext) {
-        self.steps = context.steps
         super.init(context: context)
         self.session = context.session
         self.team = context.team
@@ -121,38 +157,22 @@ final class AuthenticatedOperationContext: CachedOperationContext, WeightedOpera
         self.activeCertificates = context.activeCertificates
         self.isSideStoreResignDismissed = context.isSideStoreResignDismissed
     }
-
-    func weight(for operationType: Any.Type) -> Int64? {
-        guard let step = StandaloneStep.step(for: operationType), step != .unknown else { return nil }
-        return steps.first(where: { $0.step == step })?.weight
-    }
 }
 
-class PipelineOperationContext: OperationContext, WeightedOperationContext
+class PipelineOperationContext: OperationContext
 {
     let pipelineSteps: [PipelineExecutionStep]
 
     init(pipelineSteps: [PipelineExecutionStep], error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
     {
         self.pipelineSteps = pipelineSteps
-        super.init(error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
+        super.init(stepItems: pipelineSteps.map { OperationStepItem(step: $0.step, weight: $0.weight) }, error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
     }
 
     init(context: PipelineOperationContext)
     {
         self.pipelineSteps = context.pipelineSteps
         super.init(context: context)
-    }
-
-    private var consumedIndices = Set<Int>()
-
-    func weight(for step: any OperationStep) -> Int64? {
-        guard let pipelineStep = step as? PipelineStep else { return nil }
-        guard let index = pipelineSteps.indices.first(where: { pipelineSteps[$0].step == pipelineStep && !consumedIndices.contains($0) }) else {
-            return nil
-        }
-        consumedIndices.insert(index)
-        return pipelineSteps[index].weight
     }
 }
 

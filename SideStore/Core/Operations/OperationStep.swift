@@ -8,7 +8,7 @@
 
 import Foundation
 
-protocol OperationStep: Hashable {}
+protocol OperationStep: Equatable, Hashable {}
 
 enum PipelineStep: OperationStep {
     case backupAppData
@@ -40,7 +40,7 @@ enum PipelineStep: OperationStep {
     case verifyCertificate
     case updateAppCertificate
 
-    private static let stepMap: [ObjectIdentifier: PipelineStep] = [
+    fileprivate static let stepMap: [ObjectIdentifier: PipelineStep] = [
         ObjectIdentifier(PerformBackupRestoreOperation.self):             .backupAppData,
         ObjectIdentifier(CacheAppOperation.self):                         .cacheApp,
         ObjectIdentifier(CleanStagedAppOperation.self):                   .cleanStagedApp,
@@ -92,7 +92,7 @@ enum StandaloneStep: OperationStep {
     case scheduleExpirationWarningNotification
     case unknown
 
-    private static let stepMap: [ObjectIdentifier: StandaloneStep] = [
+    fileprivate static let stepMap: [ObjectIdentifier: StandaloneStep] = [
         ObjectIdentifier(AuthenticationOperation.self):                          .authentication,
         ObjectIdentifier(BackgroundRefreshAppsOperation.self):                   .backgroundRefreshApps,
         ObjectIdentifier(ClearAppCacheOperation.self):                           .clearAppCache,

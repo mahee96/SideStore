@@ -22,7 +22,7 @@ protocol AsyncOperation<T>: AnyObject, ProgressReporting, OperationLogging {
 class BaseOperation<Context: OperationContext, Result>: NSObject, AsyncOperation, @unchecked Sendable{
     typealias T = Result
 
-    private var _progress: Progress!
+    fileprivate var _progress: Progress!
     private(set) var progress: Progress {
         get { _progress }
         set { _progress = newValue }
@@ -30,7 +30,7 @@ class BaseOperation<Context: OperationContext, Result>: NSObject, AsyncOperation
     private(set) var context: Context!
     
     private(set) var isCancelled = false
-    private let lock = NSLock()
+    fileprivate let lock = NSLock()
     
 
     var totalUnitCount: Int64 { 100 }
@@ -63,8 +63,7 @@ class BaseOperation<Context: OperationContext, Result>: NSObject, AsyncOperation
         let unitCount: Int64
         if let parentProgress = parentProgress {
             let step = try self.operationStep()
-            guard let weightedContext = self.context as? WeightedOperationContext,
-                  let weight = weightedContext.weight(for: step) else {
+            guard let weight = self.context.consumeWeight(for: step) else {
                 throw OperationError.invalidParameters("Missing progress weight for \(className) in steps list")
             }
             unitCount = weight
