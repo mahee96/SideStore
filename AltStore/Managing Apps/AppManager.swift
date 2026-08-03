@@ -143,8 +143,8 @@ extension AppManager
                             guard app.isActive else { continue }
                         }
                     
-                        let uti = UTTypeCopyDeclaration(app.installedAppUTI as CFString)?.takeRetainedValue() as NSDictionary?
-                        if uti == nil && !legacySideloadedApps.contains(app.bundleIdentifier)
+                        let isDeclared = UTType(app.installedAppUTI)?.isDeclared ?? false
+                        if !isDeclared && !legacySideloadedApps.contains(app.bundleIdentifier)
                         {
                             // This UTI is not declared by any apps, which means this app has been deleted by the user.
                             // This app is also not a legacy sideloaded app, so we can assume it's fine to delete it.
