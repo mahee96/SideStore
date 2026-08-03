@@ -193,8 +193,9 @@ final class PipelineExecutor: @unchecked Sendable {
                 loggerType = RefreshAppOperation.self
                 let step = try RefreshAppOperation(context: context)
                 let installedApp = try await step.execute(parentProgress: progress)
+                context.installedApp = installedApp
                 result = installedApp
-                return nil
+                return installedApp
                 
             case .backupAppData:
                 loggerType = PerformBackupRestoreOperation.self
@@ -214,20 +215,38 @@ final class PipelineExecutor: @unchecked Sendable {
                 result = try await step.execute(parentProgress: progress)
                 return nil
                 
+            case .uninstallApp:
+                loggerType = UninstallAppOperation.self
+                let step = try UninstallAppOperation(context: context)
+                let installedApp = try await step.execute(parentProgress: progress)
+                context.installedApp = installedApp
+                result = installedApp
+                return installedApp
+
+            case .markAppInactive:
+                loggerType = MarkAppInactiveOperation.self
+                let step = try MarkAppInactiveOperation(context: context)
+                let installedApp = try await step.execute(parentProgress: progress)
+                context.installedApp = installedApp
+                result = installedApp
+                return installedApp
+                
             case .removeApp:
                 loggerType = RemoveAppOperation.self
                 let step = try RemoveAppOperation(context: context)
                 let installedApp = try await step.execute(parentProgress: progress)
+                context.installedApp = installedApp
                 result = installedApp
-                return nil
+                return installedApp
                 
             case .deactivateApp:
                 loggerType = DeactivateAppOperation.self
                 let app = appOperation.app as? InstalledApp
                 let step = try DeactivateAppOperation(app: app, context: context)
                 let installedApp = try await step.execute(parentProgress: progress)
+                context.installedApp = installedApp
                 result = installedApp
-                return nil
+                return installedApp
                 
             case .enableJIT:
                 loggerType = EnableJITOperation.self

@@ -1,5 +1,5 @@
 //
-//  OperationStepsDefinition.swift
+//  OperationStepDefinition.swift
 //  SideStore
 //
 //  Created by Magesh K on 30/07/26.
@@ -40,12 +40,12 @@ struct PipelineDefinition {
         PipelineExecutionStep(.changeAppIcon,                     1),
         PipelineExecutionStep(.removeAppExtensions,               6),
         PipelineExecutionStep(.fetchProvisioningProfilesInstall, 10),
-        PipelineExecutionStep(.prepareAppExtensionBundleIDs,     1),
+        PipelineExecutionStep(.prepareAppExtensionBundleIDs,      1),
         PipelineExecutionStep(.resignApp,                        15),
-        PipelineExecutionStep(.exportResignedApp,                1),
+        PipelineExecutionStep(.exportResignedApp,                 1),
         PipelineExecutionStep(.sendApp,                          20),
         PipelineExecutionStep(.installApp,                       15),
-        PipelineExecutionStep(.cleanStagedApp,                   1)
+        PipelineExecutionStep(.cleanStagedApp,                    1)
     ]
 
     static let resign: [PipelineExecutionStep] = [
@@ -55,12 +55,12 @@ struct PipelineDefinition {
         PipelineExecutionStep(.changeAppIcon,                     2),
         PipelineExecutionStep(.removeAppExtensions,               6),
         PipelineExecutionStep(.fetchProvisioningProfilesInstall, 15),
-        PipelineExecutionStep(.prepareAppExtensionBundleIDs,     2),
+        PipelineExecutionStep(.prepareAppExtensionBundleIDs,      2),
         PipelineExecutionStep(.resignApp,                        18),
-        PipelineExecutionStep(.exportResignedApp,                2),
+        PipelineExecutionStep(.exportResignedApp,                 2),
         PipelineExecutionStep(.sendApp,                          20),
         PipelineExecutionStep(.installApp,                       21),
-        PipelineExecutionStep(.cleanStagedApp,                   2)
+        PipelineExecutionStep(.cleanStagedApp,                    2)
     ]
 
     static let refresh: [PipelineExecutionStep] = [
@@ -78,20 +78,34 @@ struct PipelineDefinition {
     ]
 
     static let activate: [PipelineExecutionStep] = [
+        // sidebackup app install
+        PipelineExecutionStep(.stageBackupApp,                    3),
+        PipelineExecutionStep(.updateAppCertificate,              2),
+        PipelineExecutionStep(.verifyCertificate,                 2),
+        PipelineExecutionStep(.fetchProvisioningProfilesInstall,  3),
+        PipelineExecutionStep(.prepareAppExtensionBundleIDs,      1),
+        PipelineExecutionStep(.resignApp,                         3),
+        PipelineExecutionStep(.exportResignedApp,                 1),
+        PipelineExecutionStep(.sendApp,                           5),
+        PipelineExecutionStep(.installApp,                        5),
+        // restore data
         PipelineExecutionStep(.restoreAppData,                   10),
+        // install original app
         PipelineExecutionStep(.stageApp,                          2),
-        PipelineExecutionStep(.updateAppCertificate,              5),
-        PipelineExecutionStep(.verifyCertificate,                 5),
+        PipelineExecutionStep(.updateAppCertificate,              3),
+        PipelineExecutionStep(.verifyCertificate,                 3),
         PipelineExecutionStep(.changeAppIcon,                     2),
         PipelineExecutionStep(.removeAppExtensions,               2),
-        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 10),
-        PipelineExecutionStep(.prepareAppExtensionBundleIDs,     1),
-        PipelineExecutionStep(.resignApp,                        20),
-        PipelineExecutionStep(.exportResignedApp,                1),
-        PipelineExecutionStep(.sendApp,                          15),
-        PipelineExecutionStep(.installApp,                       22),
-        PipelineExecutionStep(.removeBackupData,                  3),
-        PipelineExecutionStep(.cleanStagedApp,                   2)
+        PipelineExecutionStep(.fetchProvisioningProfilesInstall,  5),
+        PipelineExecutionStep(.prepareAppExtensionBundleIDs,      1),
+        PipelineExecutionStep(.resignApp,                        15),
+        PipelineExecutionStep(.exportResignedApp,                 1),
+        PipelineExecutionStep(.sendApp,                          12),
+        PipelineExecutionStep(.installApp,                       15),
+        // cleanup old backup
+        PipelineExecutionStep(.removeBackupData,                  2),
+        // cleanup staged app
+        PipelineExecutionStep(.cleanStagedApp,                    2)
     ]
 
     static let deactivateLegacy: [PipelineExecutionStep] = [
@@ -99,34 +113,50 @@ struct PipelineDefinition {
     ]
 
     static let deactivate: [PipelineExecutionStep] = [
-        PipelineExecutionStep(.stageBackupApp,                   10),
-        PipelineExecutionStep(.backupAppData,                    60),
-        PipelineExecutionStep(.removeApp,                        30)
-    ]
-
-    static let backup: [PipelineExecutionStep] = [
-        PipelineExecutionStep(.stageBackupApp,                   5),
+        // sidebackup install
+        PipelineExecutionStep(.stageBackupApp,                    5),
         PipelineExecutionStep(.updateAppCertificate,              3),
         PipelineExecutionStep(.verifyCertificate,                 3),
         PipelineExecutionStep(.fetchProvisioningProfilesInstall,  5),
-        PipelineExecutionStep(.prepareAppExtensionBundleIDs,     2),
+        PipelineExecutionStep(.prepareAppExtensionBundleIDs,      2),
         PipelineExecutionStep(.resignApp,                         5),
         PipelineExecutionStep(.exportResignedApp,                 2),
         PipelineExecutionStep(.sendApp,                          10),
         PipelineExecutionStep(.installApp,                       10),
+        // backup data
         PipelineExecutionStep(.backupAppData,                    25),
+        // uninstall app from device & mark inactive
+        PipelineExecutionStep(.uninstallApp,                     28),
+        PipelineExecutionStep(.markAppInactive,                   2)
+    ]
+
+    static let backup: [PipelineExecutionStep] = [
+        // sidebackup app install
+        PipelineExecutionStep(.stageBackupApp,                    5),
+        PipelineExecutionStep(.updateAppCertificate,              3),
+        PipelineExecutionStep(.verifyCertificate,                 3),
+        PipelineExecutionStep(.fetchProvisioningProfilesInstall,  5),
+        PipelineExecutionStep(.prepareAppExtensionBundleIDs,      2),
+        PipelineExecutionStep(.resignApp,                         5),
+        PipelineExecutionStep(.exportResignedApp,                 2),
+        PipelineExecutionStep(.sendApp,                          10),
+        PipelineExecutionStep(.installApp,                       10),
+        // backup data
+        PipelineExecutionStep(.backupAppData,                    25),
+        // install original app
         PipelineExecutionStep(.stageApp,                          2),
         PipelineExecutionStep(.updateAppCertificate,              3),
         PipelineExecutionStep(.verifyCertificate,                 3),
         PipelineExecutionStep(.changeAppIcon,                     2),
         PipelineExecutionStep(.removeAppExtensions,               2),
         PipelineExecutionStep(.fetchProvisioningProfilesInstall,  5),
-        PipelineExecutionStep(.prepareAppExtensionBundleIDs,     1),
+        PipelineExecutionStep(.prepareAppExtensionBundleIDs,      1),
         PipelineExecutionStep(.resignApp,                         5),
         PipelineExecutionStep(.exportResignedApp,                 1),
-        PipelineExecutionStep(.sendApp,                          2),
-        PipelineExecutionStep(.installApp,                       2),
-        PipelineExecutionStep(.cleanStagedApp,                   2)
+        PipelineExecutionStep(.sendApp,                           2),
+        PipelineExecutionStep(.installApp,                        2),
+        // cleanup staged app
+        PipelineExecutionStep(.cleanStagedApp,                    2)
     ]
 
     static let restoreLegacy: [PipelineExecutionStep] = [
@@ -137,33 +167,48 @@ struct PipelineDefinition {
     ]
 
     static let restore: [PipelineExecutionStep] = [
+        // sidebackup app install
+        PipelineExecutionStep(.stageBackupApp,                    3),
+        PipelineExecutionStep(.updateAppCertificate,              2),
+        PipelineExecutionStep(.verifyCertificate,                 2),
+        PipelineExecutionStep(.fetchProvisioningProfilesInstall,  3),
+        PipelineExecutionStep(.prepareAppExtensionBundleIDs,      1),
+        PipelineExecutionStep(.resignApp,                         3),
+        PipelineExecutionStep(.exportResignedApp,                 1),
+        PipelineExecutionStep(.sendApp,                           5),
+        PipelineExecutionStep(.installApp,                        5),
+        // restore data
         PipelineExecutionStep(.restoreAppData,                   10),
+        // install original app
         PipelineExecutionStep(.stageApp,                          2),
-        PipelineExecutionStep(.updateAppCertificate,              5),
-        PipelineExecutionStep(.verifyCertificate,                 5),
+        PipelineExecutionStep(.updateAppCertificate,              3),
+        PipelineExecutionStep(.verifyCertificate,                 3),
         PipelineExecutionStep(.changeAppIcon,                     2),
         PipelineExecutionStep(.removeAppExtensions,               2),
-        PipelineExecutionStep(.fetchProvisioningProfilesInstall, 10),
-        PipelineExecutionStep(.prepareAppExtensionBundleIDs,     1),
-        PipelineExecutionStep(.resignApp,                        20),
-        PipelineExecutionStep(.exportResignedApp,                1),
-        PipelineExecutionStep(.sendApp,                          15),
-        PipelineExecutionStep(.installApp,                       22),
-        PipelineExecutionStep(.removeBackupData,                  3),
-        PipelineExecutionStep(.cleanStagedApp,                   2)
+        PipelineExecutionStep(.fetchProvisioningProfilesInstall,  5),
+        PipelineExecutionStep(.prepareAppExtensionBundleIDs,      1),
+        PipelineExecutionStep(.resignApp,                        15),
+        PipelineExecutionStep(.exportResignedApp,                 1),
+        PipelineExecutionStep(.sendApp,                          12),
+        PipelineExecutionStep(.installApp,                       15),
+        // cleanup old backup
+        PipelineExecutionStep(.removeBackupData,                  2),
+        // cleanup staged app
+        PipelineExecutionStep(.cleanStagedApp,                    2)
     ]
 
-    static let remove: [PipelineExecutionStep] = [
-        PipelineExecutionStep(.removeBackupData, 30),
-        PipelineExecutionStep(.removeApp,       70)
+    static let removeDeactivatedApp: [PipelineExecutionStep] = [
+        PipelineExecutionStep(.removeBackupData,                 98),
+        PipelineExecutionStep(.removeApp,                         2)
     ]
 
     static let deleteApp: [PipelineExecutionStep] = [
-        PipelineExecutionStep(.removeApp, 100)
+        PipelineExecutionStep(.uninstallApp,                     98),
+        PipelineExecutionStep(.removeApp,                         2)
     ]
 
     static let enableJIT: [PipelineExecutionStep] = [
-        PipelineExecutionStep(.enableJIT, 100)
+        PipelineExecutionStep(.enableJIT,                       100)
     ]
 
     static func steps(for operation: AppOperation) -> [PipelineExecutionStep] {
@@ -182,8 +227,8 @@ struct PipelineDefinition {
             return backup
         case .restore:
             return UserDefaults.standard.isLegacyDeactivationSupported ? restoreLegacy : restore
-        case .remove:
-            return remove
+        case .removeDeactivatedApp:
+            return removeDeactivatedApp
         case .deleteApp:
             return deleteApp
         case .enableJIT:
@@ -213,16 +258,16 @@ struct StandaloneDefinition {
 }
 
 extension Array where Element == PipelineExecutionStep {
-    static var install:          [PipelineExecutionStep] { PipelineDefinition.install          }
-    static var resign:           [PipelineExecutionStep] { PipelineDefinition.resign           }
-    static var refresh:          [PipelineExecutionStep] { PipelineDefinition.refresh          }
-    static var activate:         [PipelineExecutionStep] { PipelineDefinition.activate         }
-    static var deactivate:       [PipelineExecutionStep] { PipelineDefinition.deactivate       }
-    static var backup:           [PipelineExecutionStep] { PipelineDefinition.backup           }
-    static var restore:          [PipelineExecutionStep] { PipelineDefinition.restore          }
-    static var remove:           [PipelineExecutionStep] { PipelineDefinition.remove           }
-    static var deleteApp:        [PipelineExecutionStep] { PipelineDefinition.deleteApp        }
-    static var enableJIT:        [PipelineExecutionStep] { PipelineDefinition.enableJIT        }
+    static var install:              [PipelineExecutionStep] { PipelineDefinition.install              }
+    static var resign:               [PipelineExecutionStep] { PipelineDefinition.resign               }
+    static var refresh:              [PipelineExecutionStep] { PipelineDefinition.refresh              }
+    static var activate:             [PipelineExecutionStep] { PipelineDefinition.activate             }
+    static var deactivate:           [PipelineExecutionStep] { PipelineDefinition.deactivate           }
+    static var backup:               [PipelineExecutionStep] { PipelineDefinition.backup               }
+    static var restore:              [PipelineExecutionStep] { PipelineDefinition.restore              }
+    static var removeDeactivatedApp: [PipelineExecutionStep] { PipelineDefinition.removeDeactivatedApp }
+    static var deleteApp:            [PipelineExecutionStep] { PipelineDefinition.deleteApp            }
+    static var enableJIT:            [PipelineExecutionStep] { PipelineDefinition.enableJIT            }
 }
 
 extension Array where Element == StandaloneExecutionStep {

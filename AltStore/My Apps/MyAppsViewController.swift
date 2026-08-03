@@ -1293,7 +1293,7 @@ private extension MyAppsViewController
         let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alertController.addAction(.cancel)
         alertController.addAction(UIAlertAction(title: NSLocalizedString("Remove", comment: ""), style: .destructive, handler: { (action) in
-            AppManager.shared.remove(installedApp) { (result) in
+            AppManager.shared.removeDeactivatedApp(installedApp) { (result) in
                 switch result
                 {
                 case .success: break

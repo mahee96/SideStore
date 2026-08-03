@@ -64,7 +64,7 @@ final class PreflightChecksOperation: BasePipelineOperation<AuthenticatedOperati
                     }
                 case .refresh(let installedApp),    .activate(let installedApp),    .deactivate(let installedApp), .deleteApp(let installedApp),
                      .backup(let installedApp),     .restore(let installedApp),     .resign(let installedApp, _),
-                     .remove(let installedApp),     .enableJIT(let installedApp):
+                     .removeDeactivatedApp(let installedApp),     .enableJIT(let installedApp):
                     
                     if let currentTeamID = currentTeamID, installedApp.bundleIdentifier == StoreApp.altstoreAppID {
                         incomingTargetID = installedApp.customBundleIdentifier ?? "\(StoreApp.altstoreAppID).\(currentTeamID)"

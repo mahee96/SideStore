@@ -21,6 +21,7 @@ enum PipelineStep: OperationStep {
     case fetchProvisioningProfilesInstall
     case fetchProvisioningProfilesRefresh
     case installApp
+    case markAppInactive
     case stageBackupApp
     case changeAppIcon
     case prepareAppExtensionBundleIDs
@@ -33,6 +34,7 @@ enum PipelineStep: OperationStep {
     case restoreAppData
     case sendApp
     case stageApp
+    case uninstallApp
     case userCustomization
     case verifyApp
     case verifyCertificate
@@ -49,6 +51,7 @@ enum PipelineStep: OperationStep {
         ObjectIdentifier(FetchProvisioningProfilesInstallOperation.self): .fetchProvisioningProfilesInstall,
         ObjectIdentifier(FetchProvisioningProfilesRefreshOperation.self): .fetchProvisioningProfilesRefresh,
         ObjectIdentifier(InstallAppOperation.self):                       .installApp,
+        ObjectIdentifier(MarkAppInactiveOperation.self):                  .markAppInactive,
         ObjectIdentifier(StageBackupAppOperation.self):                   .stageBackupApp,
         ObjectIdentifier(ChangeAppIconOperation.self):                    .changeAppIcon,
         ObjectIdentifier(PrepareAppExtensionBundleIDsOperation.self):     .prepareAppExtensionBundleIDs,
@@ -60,6 +63,7 @@ enum PipelineStep: OperationStep {
         ObjectIdentifier(ResignAppOperation.self):                        .resignApp,
         ObjectIdentifier(SendAppOperation.self):                          .sendApp,
         ObjectIdentifier(StageAppOperation.self):                         .stageApp,
+        ObjectIdentifier(UninstallAppOperation.self):                     .uninstallApp,
         ObjectIdentifier(UserCustomizationOperation.self):                .userCustomization,
         ObjectIdentifier(VerifyAppOperation.self):                        .verifyApp,
         ObjectIdentifier(VerifyCertificateOperation.self):                .verifyCertificate,

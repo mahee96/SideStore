@@ -852,10 +852,10 @@ extension AppManager
         self.performSingleOperation(.restore(installedApp), presentingViewController: presentingViewController, completionHandler: completionHandler)
     }
     
-    func remove(_ installedApp: InstalledApp, completionHandler: @escaping (Result<Void, Error>) -> Void)
+    func removeDeactivatedApp(_ installedApp: InstalledApp, completionHandler: @escaping (Result<Void, Error>) -> Void)
     {
-        debugLog("[AppManager] remove() called for app: \(installedApp.bundleIdentifier)")
-        self.performVoidOperation(.remove(installedApp), presentingViewController: nil, completionHandler: completionHandler)
+        debugLog("[AppManager] removeDeactivatedApp() called for app: \(installedApp.bundleIdentifier)")
+        self.performVoidOperation(.removeDeactivatedApp(installedApp), presentingViewController: nil, completionHandler: completionHandler)
     }
     
     func enableJIT(for installedApp: InstalledApp, completionHandler: @escaping (Result<Void, Error>) -> Void)
@@ -1185,7 +1185,7 @@ private extension AppManager
                 case .backup:     localizedTitle = String(format: NSLocalizedString("Failed to Backup %@",         comment: ""), appName)
                 case .restore:    localizedTitle = String(format: NSLocalizedString("Failed to Restore %@ Backup", comment: ""), appName)
                 case .resign:     localizedTitle = String(format: NSLocalizedString("Failed to Resign %@",         comment: ""), appName)
-                case .remove:     localizedTitle = String(format: NSLocalizedString("Failed to Remove %@",         comment: ""), appName)
+                case .removeDeactivatedApp: localizedTitle = String(format: NSLocalizedString("Failed to Remove %@", comment: ""), appName)
                 case .enableJIT:  localizedTitle = String(format: NSLocalizedString("Failed to Enable JIT for %@", comment: ""), appName)
             }
             
@@ -1258,7 +1258,7 @@ private extension AppManager
             {
             case .install, .update: 
                 return self.installationProgress[bundleID]
-            case .refresh, .activate, .deactivate, .deleteApp, .backup, .restore, .resign, .remove, .enableJIT: 
+            case .refresh, .activate, .deactivate, .deleteApp, .backup, .restore, .resign, .removeDeactivatedApp, .enableJIT: 
                 return self.refreshProgress[bundleID]
             }
         }
@@ -1274,7 +1274,7 @@ private extension AppManager
             {
             case .install, .update: 
                 self.installationProgress[bundleID] = progress
-            case .refresh, .activate, .deactivate, .deleteApp, .backup, .restore, .resign, .remove, .enableJIT: 
+            case .refresh, .activate, .deactivate, .deleteApp, .backup, .restore, .resign, .removeDeactivatedApp, .enableJIT: 
                 self.refreshProgress[bundleID] = progress
             }
             let operationName = String(describing: operation).components(separatedBy: "(").first ?? ""
