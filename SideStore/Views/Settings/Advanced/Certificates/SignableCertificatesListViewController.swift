@@ -8,8 +8,115 @@
 
 @preconcurrency import UIKit
 import Foundation
+import SwiftUI
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
+
+struct SignableCertificateRowView: View {
+    let cert: ALTCertificate
+    let appName: String
+    let appCertSerial: String?
+    
+    private var isAppCert: Bool {
+        guard let appCertSerial else { return false }
+        return cert.serialNumber == appCertSerial
+    }
+    private var isActiveGlobal: Bool {
+        cert.serialNumber == CertificateManager.shared.activeCertificate?.serialNumber
+    }
+    
+    private var hasPrivateKey: Bool { cert.privateKey != nil }
+    private var briefInfo: CertificateBriefInfo? { getBriefInfo(for: cert.data) }
+    
+    private var statusText: String? {
+        if isAppCert && isActiveGlobal {
+            return "Current App & Active Global"
+        } else if isAppCert {
+            return "Current App"
+        } else if isActiveGlobal {
+            return "Active Global"
+        }
+        return nil
+    }
+    
+    var body: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(cert.machineName ?? cert.name)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                
+                let certName = cert.name
+                if cert.machineName != nil {
+                    (
+                        Text("Name: ").font(.system(size: 10))
+                        + Text(certName).font(.system(size: 10))
+                    )
+                    .foregroundColor(Color(uiColor: .lightGray))
+                }
+                
+                (
+                    Text("Serial: ").font(.system(size: 11))
+                    + Text(cert.serialNumber).font(.system(size: 11, design: .monospaced))
+                )
+                .foregroundColor(Color(uiColor: .lightGray))
+                
+                if let ident = cert.identifier, !ident.isEmpty {
+                    (
+                        Text("ID: ").font(.system(size: 10))
+                        + Text(ident).font(.system(size: 10, design: .monospaced))
+                    )
+                    .foregroundColor(Color(uiColor: .lightGray))
+                }
+                
+                if let brief = briefInfo {
+                    (
+                        Text("Type: ").font(.system(size: 10))
+                        + Text(brief.type).font(.system(size: 10))
+                    )
+                    .foregroundColor(Color(uiColor: .lightGray))
+                    
+                    (
+                        Text("Validity: ").font(.system(size: 10))
+                        + Text("\(brief.validFrom) - \(brief.validUntil)").font(.system(size: 10))
+                    )
+                    .foregroundColor(Color(uiColor: .lightGray))
+                }
+                
+                if let req = cert.requesterEmail, !req.isEmpty {
+                    (
+                        Text("Requester: ").font(.system(size: 10))
+                        + Text(req).font(.system(size: 10))
+                    )
+                    .foregroundColor(Color(uiColor: .lightGray))
+                }
+                
+                (
+                    Text("Keys: ").font(.system(size: 10))
+                    + Text(hasPrivateKey ? "public + private" : "public").font(.system(size: 10))
+                )
+                .foregroundColor(Color(uiColor: .lightGray))
+                
+                if let status = statusText {
+                    (
+                        Text("Status: ").font(.system(size: 10))
+                        + Text(status).font(.system(size: 10, weight: .bold))
+                    )
+                    .foregroundColor(isAppCert ? .green : .cyan)
+                }
+            }
+            
+            Spacer()
+            
+            if isAppCert {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.green)
+                    .font(.title3)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
 
 final class SignableCertificatesListViewController: UITableViewController {
     let installedApp: InstalledApp
@@ -83,18 +190,38 @@ final class SignableCertificatesListViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "CertCell", for: indexPath)
         let cert = certificates[indexPath.row]
-        
-        let certName = cert.name ?? "N/A"
-        let machineName = cert.machineName ?? "N/A"
-        let serialPrefix = String(cert.serialNumber.prefix(8))
         let isCurrent = (cert.serialNumber == installedApp.certificateSerialNumber)
         
-        cell.textLabel?.text = "\(certName) [Machine: \(machineName)] (\(serialPrefix)...)" + (isCurrent ? " (Current)" : "")
-        cell.textLabel?.textColor = .white
-        cell.textLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
-        cell.backgroundColor = UIColor.white.withAlphaComponent(0.15)
-        cell.accessoryType = isCurrent ? .checkmark : .none
-        cell.tintColor = .green
+        debugLog("[SignableCertList] cellForRowAt[\(indexPath.row)]: serial='\(cert.serialNumber)', name='\(cert.name ?? "nil")', machineName='\(cert.machineName ?? "nil")', email='\(cert.requesterEmail ?? "nil")'")
+        
+        if #available(iOS 16.0, *) {
+            cell.contentConfiguration = UIHostingConfiguration {
+                SignableCertificateRowView(cert: cert, appName: installedApp.name, appCertSerial: installedApp.certificateSerialNumber)
+            }
+            .background(Color.white.opacity(0.15))
+        } else {
+            let certName = cert.name ?? "N/A"
+            let machineName = cert.machineName ?? "N/A"
+            let brief = getBriefInfo(for: cert.data)
+            let typeStr = brief?.type ?? "N/A"
+            let validityStr = brief != nil ? "\(brief!.validFrom) - \(brief!.validUntil)" : "N/A"
+            
+            cell.textLabel?.numberOfLines = 0
+            cell.textLabel?.text = """
+            \(certName) [Machine: \(machineName)]\(isCurrent ? " (Current)" : "")
+            Serial: \(cert.serialNumber)
+            ID: \(cert.identifier ?? "N/A")
+            Type: \(typeStr)
+            Validity: \(validityStr)
+            Requester: \(cert.requesterEmail ?? "N/A")
+            Keys: \(cert.privateKey != nil ? "public + private" : "public")
+            """
+            cell.textLabel?.textColor = .white
+            cell.textLabel?.font = .systemFont(ofSize: 12, weight: .regular)
+            cell.backgroundColor = UIColor.white.withAlphaComponent(0.15)
+            cell.accessoryType = isCurrent ? .checkmark : .none
+            cell.tintColor = .green
+        }
         
         return cell
     }

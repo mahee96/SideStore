@@ -129,11 +129,10 @@ public final class CertificateManager: @unchecked Sendable {
             setImportedCertificateSerials(updatedSerials)
         }
         
-        var metadataDict: [String: String] = [
-            "name": cert.name,
-            "serialNumber": cert.serialNumber,
-            "hasPrivateKey": cert.privateKey != nil ? "true" : "false"
-        ]
+        var metadataDict: [String: String] = getCertificateMetadata(for: cert.serialNumber) ?? [:]
+        metadataDict["name"] = cert.name
+        metadataDict["serialNumber"] = cert.serialNumber
+        metadataDict["hasPrivateKey"] = cert.privateKey != nil ? "true" : "false"
         if let v = cert.machineIdentifier { metadataDict["machineIdentifier"] = v }
         if let v = cert.machineName { metadataDict["machineName"] = v }
         if let v = cert.requesterEmail { metadataDict["requesterEmail"] = v }
@@ -143,7 +142,13 @@ public final class CertificateManager: @unchecked Sendable {
     public func getLocalCertificate(serialNumber: String) -> ALTCertificate? {
         if let activeCert = self.activeCertificate, activeCert.serialNumber == serialNumber {
             debugLog("[CertificateManager] Found in active Keychain.shared.certificate")
-            return activeCert.certificate
+            let cert = activeCert.certificate
+            if let metadata = getCertificateMetadata(for: serialNumber) {
+                if cert.machineIdentifier == nil { cert.machineIdentifier = metadata["machineIdentifier"] }
+                if cert.machineName == nil { cert.machineName = metadata["machineName"] }
+                if cert.requesterEmail == nil { cert.requesterEmail = metadata["requesterEmail"] }
+            }
+            return cert
         }
         if let data = Keychain.shared[certificateSerial: serialNumber] {
             debugLog("[CertificateManager] Retrieved data size: \(data.count) for \(serialNumber)")
@@ -201,6 +206,18 @@ public final class CertificateManager: @unchecked Sendable {
     
     public func loadCertificate(for serialNumber: String) -> ALTCertificate? {
         return getLocalCertificate(serialNumber: serialNumber)
+    }
+
+    public func loadCertificate(fromProvisioningProfileAt url: URL) -> ALTCertificate? {
+        guard let profile = ALTProvisioningProfile(url: url), let cert = profile.certificates.first else {
+            return nil
+        }
+        if let localCopy = getLocalCertificate(serialNumber: cert.serialNumber) {
+            if cert.machineName == nil { cert.machineName = localCopy.machineName }
+            if cert.machineIdentifier == nil { cert.machineIdentifier = localCopy.machineIdentifier }
+            if cert.requesterEmail == nil { cert.requesterEmail = localCopy.requesterEmail }
+        }
+        return cert
     }
 
     public func loadAllLocalCertificates() -> [ALTCertificate] {

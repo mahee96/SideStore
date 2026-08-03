@@ -39,7 +39,7 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         
         guard
-            let certificate = context.certificate,
+            let certificate = context.overrideCertificate ?? context.certificate,
             let resignedApp = context.resignedApp,
             let provisioningProfiles = context.provisioningProfiles
         else {
