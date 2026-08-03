@@ -17,17 +17,17 @@ final class ChangeAppIconOperation: BasePipelineOperation<InstallAppOperationCon
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
         
-        guard let app = self.context.app else {
-            throw OperationError.invalidParameters("ChangeAppIconOperation.execute: self.context.app is nil")
+        guard let appBundle = self.context.appBundle else {
+            throw OperationError.invalidParameters("ChangeAppIconOperation.execute: self.context.appBundle is nil")
         }
         
         guard let alternateIconURL = self.context.alternateIconURL,
               FileManager.default.fileExists(atPath: alternateIconURL.path) else {
             self.setProgress(100)
-            return app.fileURL
+            return appBundle.fileURL
         }
         
-        let appBundleURL = app.fileURL
+        let appBundleURL = appBundle.fileURL
         self.setProgress(20)
         
         let data = try Data(contentsOf: alternateIconURL)
@@ -70,6 +70,6 @@ final class ChangeAppIconOperation: BasePipelineOperation<InstallAppOperationCon
         try plistData.write(to: plistURL, options: .atomic)
         
         self.setProgress(100)
-        return app.fileURL
+        return appBundle.fileURL
     }
 }

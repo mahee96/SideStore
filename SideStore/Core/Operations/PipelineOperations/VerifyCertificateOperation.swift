@@ -164,8 +164,8 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
         var certToTest = CertificateManager.shared.loadCertificate(for: serial)
             ?? (self.context.overrideCertificate?.serialNumber == serial ? self.context.overrideCertificate : (self.context.authenticatedContext.certificate?.serialNumber == serial ? self.context.authenticatedContext.certificate : nil))
         
-        if certToTest == nil, let app = self.context.app {
-            let profileURL = app.fileURL.appendingPathComponent("embedded.mobileprovision")
+        if certToTest == nil, let appBundle = self.context.appBundle {
+            let profileURL = appBundle.fileURL.appendingPathComponent("embedded.mobileprovision")
             if let bundleCert = CertificateManager.shared.loadCertificate(fromProvisioningProfileAt: profileURL), bundleCert.serialNumber == serial {
                 certToTest = bundleCert
             }

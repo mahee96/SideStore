@@ -19,7 +19,7 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         
         guard
-            let app = self.context.app,
+            let appBundle = self.context.appBundle,
             let profiles = self.context.provisioningProfiles,
             let team = self.context.authenticatedContext.team,
             let certificate = self.context.overrideCertificate ?? self.context.authenticatedContext.certificate
@@ -36,34 +36,34 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         
         let effectiveBundleId = self.context.targetBundleIdentifier
         
-        let appBundleURL = try await self.prepareAppBundle(for: app, profiles: profiles, appexBundleIds: context.appexBundleIds ?? [:])
+        let appBundleURL = try await self.prepareAppBundle(for: appBundle, profiles: profiles, appexBundleIds: context.appexBundleIds ?? [:])
         
         self.setProgress(40)
         
         let resignedURL = try await self.resignAppBundle(at: appBundleURL, team: team, certificate: certificate, profiles: Array(profiles.values))
         
         let updatedApp = AnyApp(
-            name: app.name,
+            name: appBundle.name,
             bundleIdentifier: effectiveBundleId,
-            url: app.fileURL,
-            storeApp: app.storeApp
+            url: appBundle.fileURL,
+            storeApp: appBundle.storeApp
         )
         let destinationURL = InstalledApp.refreshedIPAURL(for: updatedApp)
         try FileManager.default.copyItem(at: resignedURL, to: destinationURL, shouldReplace: true)
         self.debugLog("[ResignAppOperation] Successfully resigned app to \(destinationURL.absoluteString)")
         
         // Use appBundleURL since we need an app bundle, not .ipa.
-        guard let resignedApplication = ALTApplication(fileURL: appBundleURL) else { throw OperationError.invalidApp }
+        guard let resignedAppBundle = ALTApplication(fileURL: appBundleURL) else { throw OperationError.invalidApp }
         
-        self.debugLog("[ResignAppOperation] Resigned app \(self.context.bundleIdentifier) to \(resignedApplication.bundleIdentifier).")
+        self.debugLog("[ResignAppOperation] Resigned app \(self.context.bundleIdentifier) to \(resignedAppBundle.bundleIdentifier).")
         
         self.setProgress(100)
         
-        return resignedApplication
+        return resignedAppBundle
     }
 
     
-    private func prepareAppBundle(for app: ALTApplication, profiles: [String: ALTProvisioningProfile], appexBundleIds: [String: String]) async throws -> URL {
+    private func prepareAppBundle(for targetAppBundle: ALTApplication, profiles: [String: ALTProvisioningProfile], appexBundleIds: [String: String]) async throws -> URL {
 
         let bundleIdentifier = context.targetBundleIdentifier
         let finalBundleIdentifier: String
@@ -74,8 +74,8 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         }
         
         // Use customized bundle ID if applicable
-        let openURL = InstalledApp.openAppURL(for: AnyApp(from: app, bundleId: finalBundleIdentifier))
-        let fileURL = app.fileURL
+        let openURL = InstalledApp.openAppURL(for: AnyApp(from: targetAppBundle, bundleId: finalBundleIdentifier))
+        let fileURL = targetAppBundle.fileURL
 
         let appBundleURL = self.context.temporaryDirectory.appendingPathComponent("App.app")
         if fileURL.path != appBundleURL.path {
@@ -102,7 +102,7 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         
         var additionalValues: [String: Any] = [Bundle.Info.urlTypes: allURLSchemes]
 
-        if app.isAltStoreApp {
+        if targetAppBundle.isAltStoreApp {
             guard let udid = try await fetchUDID() else { throw OperationError.unknownUDID }
             guard Bundle.main.object(forInfoDictionaryKey: Bundle.Info.devicePairingString) is String else { throw OperationError.unknownUDID }
             additionalValues[Bundle.Info.devicePairingString] = "<insert pairing file here>"
@@ -137,7 +137,7 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
                 #endif
                 
                 guard let appExtension = Bundle(url: fileURL) else { throw ALTError(.missingAppBundle) }
-                let updatedAppExBundleId = appExtension.bundleIdentifier?.replacingOccurrences(of: app.bundleIdentifier, with: bundleIdentifier)
+                let updatedAppExBundleId = appExtension.bundleIdentifier?.replacingOccurrences(of: targetAppBundle.bundleIdentifier, with: bundleIdentifier)
                 try self.prepare(appExtension, bundleID: updatedAppExBundleId, profiles: profiles, appexBundleIds: appexBundleIds)
             }
         }

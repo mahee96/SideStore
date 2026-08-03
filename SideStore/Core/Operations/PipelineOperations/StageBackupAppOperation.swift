@@ -63,8 +63,8 @@ final class StageBackupAppOperation: BasePipelineOperation<InstallAppOperationCo
             infoDictionary["CFBundleDisplayName"] = targetApp.name
             infoDictionary[kCFBundleIdentifierKey as String] = context.targetBundleIdentifier
 
-            let cachedApp = ALTApplication(fileURL: targetApp.fileURL)
-            var appGroups = (cachedApp?.entitlements[.appGroups] as? [String]) ?? []
+            let cachedAppBundle = ALTApplication(fileURL: targetApp.fileURL)
+            var appGroups = (cachedAppBundle?.entitlements[.appGroups] as? [String]) ?? []
             if !appGroups.contains(Bundle.baseAltStoreAppGroupID) {
                 appGroups.append(Bundle.baseAltStoreAppGroupID)
             }
@@ -82,7 +82,7 @@ final class StageBackupAppOperation: BasePipelineOperation<InstallAppOperationCo
             exportedUTIs.append(installedAppUTI)
             infoDictionary[Bundle.Info.exportedUTIs] = exportedUTIs
 
-            if let cachedApp = ALTApplication(fileURL: targetApp.fileURL), let icon = cachedApp.icon?.resizing(to: CGSize(width: 180, height: 180)) {
+            if let cachedAppBundle = ALTApplication(fileURL: targetApp.fileURL), let icon = cachedAppBundle.icon?.resizing(to: CGSize(width: 180, height: 180)) {
                 let iconFileURL = unzippedAppBundleURL.appendingPathComponent("AppIcon.png")
                 if let iconData = icon.pngData() {
                     try? iconData.write(to: iconFileURL, options: .atomic)
@@ -97,12 +97,12 @@ final class StageBackupAppOperation: BasePipelineOperation<InstallAppOperationCo
         }
 
         self.setProgress(90)
-        guard let backupApp = ALTApplication(fileURL: unzippedAppBundleURL) else {
+        guard let sideBackupBundle = ALTApplication(fileURL: unzippedAppBundleURL) else {
             debugLog("[StageBackupAppOperation] Error: Failed to create ALTApplication for staged backup app at \(unzippedAppBundleURL.path)")
             throw OperationError.invalidApp
         }
-        context.app = backupApp
-        debugLog("[StageBackupAppOperation] Successfully set context.app to staged SideBackup app ('\(backupApp.bundleIdentifier)')")
+        context.appBundle = sideBackupBundle
+        debugLog("[StageBackupAppOperation] Successfully set context.appBundle to staged SideBackup app ('\(sideBackupBundle.bundleIdentifier)')")
         self.setProgress(100)
         return targetApp
     }

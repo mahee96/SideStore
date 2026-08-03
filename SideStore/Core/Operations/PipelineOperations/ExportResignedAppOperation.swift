@@ -18,16 +18,16 @@ final class ExportResignedAppOperation: BasePipelineOperation<InstallAppOperatio
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
 
-        guard let resignedApp = self.context.resignedApp else {
-            throw OperationError.invalidParameters("ExportResignedAppOperation: context.resignedApp is nil")
+        guard let resignedAppBundle = self.context.resignedAppBundle else {
+            throw OperationError.invalidParameters("ExportResignedAppOperation: context.resignedAppBundle is nil")
         }
 
         guard UserDefaults.standard.isExportResignedAppEnabled else {
             self.setProgress(100)
-            return resignedApp.fileURL
+            return resignedAppBundle.fileURL
         }
 
-        let sourceURL = resignedApp.fileURL
+        let sourceURL = resignedAppBundle.fileURL
         let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let resignedAppsURL = documentsURL.appendingPathComponent("ResignedApps")
         self.setProgress(30)
@@ -40,9 +40,9 @@ final class ExportResignedAppOperation: BasePipelineOperation<InstallAppOperatio
             throw error
         }
 
-        let utis = Bundle(url: resignedApp.fileURL)?.infoDictionary?[Bundle.Info.exportedUTIs] as? [[String: Any]]
+        let utis = Bundle(url: resignedAppBundle.fileURL)?.infoDictionary?[Bundle.Info.exportedUTIs] as? [[String: Any]]
         let isSideBackup = utis?.first?["UTTypeDescription"] as? String == "SideStore Backup App"
-        let destPath = isSideBackup ? resignedApp.name + "-sidebackup" : resignedApp.name
+        let destPath = isSideBackup ? resignedAppBundle.name + "-sidebackup" : resignedAppBundle.name
         let destinationURL = resignedAppsURL.appendingPathComponent(destPath + ".app")
         self.setProgress(60)
         do {

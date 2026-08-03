@@ -22,7 +22,7 @@ final class RefreshAppOperation: BasePipelineOperation<InstallAppOperationContex
             throw OperationError.invalidParameters("RefreshAppOperation.execute: self.context.provisioningProfiles is nil")
         }
         
-        guard let app = self.context.app else { throw OperationError(.appNotFound(name: nil)) }
+        guard let appBundle = self.context.appBundle else { throw OperationError(.appNotFound(name: nil)) }
         self.setProgress(10)
         for p in profiles {
             do {
@@ -38,19 +38,19 @@ final class RefreshAppOperation: BasePipelineOperation<InstallAppOperationContex
         }
         
         let installedApp = try await dbContext.perform {
-            try self.updateInstalledApp(for: app, profiles: profiles, in: dbContext)
+            try self.updateInstalledApp(for: appBundle, profiles: profiles, in: dbContext)
         }
         
         self.setProgress(100)
         return installedApp
     }
     
-    private func updateInstalledApp(for app: ALTApplication, profiles: [String: ALTProvisioningProfile], in dbContext: NSManagedObjectContext) throws -> InstalledApp {
+    private func updateInstalledApp(for appBundle: ALTApplication, profiles: [String: ALTProvisioningProfile], in dbContext: NSManagedObjectContext) throws -> InstalledApp {
         self.setProgress(self.progress.completedUnitCount + 1)
         
         let predicate = NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), self.context.bundleIdentifier)
         guard let installedApp = InstalledApp.first(satisfying: predicate, in: dbContext) else {
-            throw OperationError(.appNotFound(name: app.name))
+            throw OperationError(.appNotFound(name: appBundle.name))
         }
         installedApp.update(provisioningProfile: profiles.values.first!)
         for installedExtension in installedApp.appExtensions {

@@ -136,24 +136,24 @@ final class DownloadAppOperation: BasePipelineOperation<InstallAppOperationConte
             self.context.appVersion = appVersion
         }
         
-        let application = try await downloadIPA(from: sourceURL)
+        let appBundle = try await downloadIPA(from: sourceURL)
         
-        if self.context.bundleIdentifier == StoreApp.dolphinAppID, self.context.bundleIdentifier != application.bundleIdentifier {
-            if var infoPlist = NSDictionary(contentsOf: application.bundle.infoPlistURL) as? [String: Any] {
+        if self.context.bundleIdentifier == StoreApp.dolphinAppID, self.context.bundleIdentifier != appBundle.bundleIdentifier {
+            if var infoPlist = NSDictionary(contentsOf: appBundle.bundle.infoPlistURL) as? [String: Any] {
                 // Manually update the app's bundle identifier to match the one specified in the source.
                 // This allows people who previously installed the app to still update and refresh normally.
                 infoPlist[kCFBundleIdentifierKey as String] = StoreApp.dolphinAppID
-                (infoPlist as NSDictionary).write(to: application.bundle.infoPlistURL, atomically: true)
+                (infoPlist as NSDictionary).write(to: appBundle.bundle.infoPlistURL, atomically: true)
             }
         }
         
-        let dependencies = try await self.downloadDependencies(for: application)
+        let dependencies = try await self.downloadDependencies(for: appBundle)
         
-        try FileManager.default.copyItem(at: application.fileURL, to: self.destinationURL, shouldReplace: true)
+        try FileManager.default.copyItem(at: appBundle.fileURL, to: self.destinationURL, shouldReplace: true)
         
-        guard let copiedApplication = ALTApplication(fileURL: self.destinationURL) else { throw OperationError.invalidApp }
+        guard let copiedAppBundle = ALTApplication(fileURL: self.destinationURL) else { throw OperationError.invalidApp }
         self.setProgress(100)
-        return copiedApplication
+        return copiedAppBundle
     }
     
     func downloadIPA(from sourceURL: URL) async throws -> ALTApplication {
@@ -199,7 +199,7 @@ final class DownloadAppOperation: BasePipelineOperation<InstallAppOperationConte
             self.context.ipaURL = ipaURL
         }
         
-        guard let application = ALTApplication(fileURL: appBundleURL) else { throw OperationError.invalidApp }
+        guard let appBundle = ALTApplication(fileURL: appBundleURL) else { throw OperationError.invalidApp }
 
         // perform cleanup of the temp files
         if(FileManager.default.fileExists(atPath: fileURL.path)){
@@ -211,7 +211,7 @@ final class DownloadAppOperation: BasePipelineOperation<InstallAppOperationConte
             }
         }
 
-        return application
+        return appBundle
     }
     
     func downloadFile(from downloadURL: URL) async throws -> URL {
@@ -236,31 +236,31 @@ final class DownloadAppOperation: BasePipelineOperation<InstallAppOperationConte
     }
     
     
-    private func downloadDependencies(for application: ALTApplication) async throws -> Set<URL> {
-        guard FileManager.default.fileExists(atPath: application.bundle.altstorePlistURL.path) else {
+    private func downloadDependencies(for appBundle: ALTApplication) async throws -> Set<URL> {
+        guard FileManager.default.fileExists(atPath: appBundle.bundle.altstorePlistURL.path) else {
             return []
         }
         
-        let data = try Data(contentsOf: application.bundle.altstorePlistURL)
+        let data = try Data(contentsOf: appBundle.bundle.altstorePlistURL)
         let altstorePlist = try PropertyListDecoder().decode(AltStorePlist.self, from: data)
                     
         var dependencyURLs = Set<URL>()
         
         for dependency in altstorePlist.dependencies {
-            let fileURL = try await self.download(dependency, for: application)
+            let fileURL = try await self.download(dependency, for: appBundle)
             dependencyURLs.insert(fileURL)
         }
         
         return dependencyURLs
     }
     
-    private func download(_ dependency: Dependency, for application: ALTApplication) async throws -> URL {
+    private func download(_ dependency: Dependency, for appBundle: ALTApplication) async throws -> URL {
         do {
             let (fileURL, response) = try await self.session.download(from: dependency.downloadURL)
             defer { try? FileManager.default.removeItem(at: fileURL) }
             
             let path = dependency.path ?? dependency.preferredFilename
-            let destinationURL = application.fileURL.appendingPathComponent(path)
+            let destinationURL = appBundle.fileURL.appendingPathComponent(path)
             
             let directoryURL = destinationURL.deletingLastPathComponent()
             if !FileManager.default.fileExists(atPath: directoryURL.path) {

@@ -40,16 +40,16 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
         
         guard
             let certificate = context.overrideCertificate ?? context.authenticatedContext.certificate,
-            let resignedApp = context.resignedApp,
+            let resignedAppBundle = context.resignedAppBundle,
             let provisioningProfiles = context.provisioningProfiles
         else {
             throw OperationError.invalidParameters(
-                "InstallAppOperation.execute: self.context.authenticatedContext.certificate or self.context.resignedApp or self.context.provisioningProfiles is nil"
+                "InstallAppOperation.execute: self.context.authenticatedContext.certificate or self.context.resignedAppBundle or self.context.provisioningProfiles is nil"
             )
         }
 
         #if !targetEnvironment(simulator)
-        guard resignedApp.provisioningProfile != nil else {
+        guard resignedAppBundle.provisioningProfile != nil else {
             throw OperationError.invalidApp
         }
         #endif
@@ -66,7 +66,7 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
         let installedApp = try await installApp(
             in: backgroundContext,
             certificate: certificate,
-            resignedApp: resignedApp,
+            resignedAppBundle: resignedAppBundle,
             provisioningProfiles: provisioningProfiles,
             storeBuildVersion: storeBuildVersion
         )
@@ -75,8 +75,8 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
     }
     
     private func removeRefreshedIPA() {
-        if let app = context.app {
-            let updatedApp = AnyApp(from: app, bundleId: self.context.targetBundleIdentifier)
+        if let appBundle = context.appBundle {
+            let updatedApp = AnyApp(from: appBundle, bundleId: self.context.targetBundleIdentifier)
             let fileURL = InstalledApp.refreshedIPAURL(for: updatedApp)
             
             if FileManager.default.fileExists(atPath: fileURL.path) {
@@ -92,7 +92,7 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
     
     private func installApp(in backgroundContext: NSManagedObjectContext,
                             certificate: ALTCertificate,
-                            resignedApp: ALTApplication,
+                            resignedAppBundle: ALTApplication,
                             provisioningProfiles: [String: ALTProvisioningProfile],
                             storeBuildVersion: String?) async throws -> InstalledApp
     {
@@ -101,15 +101,15 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
             let installedApp = try self.fetchOrCreateApp(
                 in: backgroundContext,
                 certificate: certificate,
-                resignedApp: resignedApp,
+                resignedAppBundle: resignedAppBundle,
                 storeBuildVersion: storeBuildVersion
             )
             
-            let isDifferentSideStore = Self.isDifferentSideStoreContainer(installedApp, resignedApp)
+            let isDifferentSideStore = Self.isDifferentSideStoreContainer(installedApp, resignedAppBundle)
             if isDifferentSideStore {
                 self.debugLog("""
                 [WARN] Skipped inserting/updating into InstalledApp table for SideStore:
-                    - Resigned Bundle ID: '\(resignedApp.bundleIdentifier)'
+                    - Resigned Bundle ID: '\(resignedAppBundle.bundleIdentifier)'
                     - Active Container Bundle ID: '\(installedApp.resignedBundleIdentifier)'
                     Reason: A different bundle ID installs SideStore as a new app container which initializes its own database upon launch.
                             Hence we do not perist current change to prevent corruption of current sidestore's database entry.
@@ -118,7 +118,7 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
             } else {
                 /* App Extensions */
                 let installedExtensions = try self.fetchOrCreateExtensions(
-                    for: resignedApp,
+                    for: resignedAppBundle,
                     installedApp: installedApp,
                     in: backgroundContext
                 )
@@ -188,28 +188,28 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
         return installedApp
     }
     
-    private static func isDifferentSideStoreContainer(_ installedApp: InstalledApp, _ resignedApp: ALTApplication) -> Bool {
-        return ((installedApp.bundleIdentifier == StoreApp.altstoreAppID) || resignedApp.isAltStoreApp) &&
-                (resignedApp.bundleIdentifier != installedApp.resignedBundleIdentifier)
+    private static func isDifferentSideStoreContainer(_ installedApp: InstalledApp, _ resignedAppBundle: ALTApplication) -> Bool {
+        return ((installedApp.bundleIdentifier == StoreApp.altstoreAppID) || resignedAppBundle.isAltStoreApp) &&
+                (resignedAppBundle.bundleIdentifier != installedApp.resignedBundleIdentifier)
     }
 
     private func fetchOrCreateApp(in backgroundContext: NSManagedObjectContext,
                                   certificate: ALTCertificate,
-                                  resignedApp: ALTApplication, storeBuildVersion: String?) throws -> InstalledApp
+                                  resignedAppBundle: ALTApplication, storeBuildVersion: String?) throws -> InstalledApp
     {
         let installedApp = try InstalledApp.first(
                                 satisfying: NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), context.bundleIdentifier),
                                 in: backgroundContext
                             ) ?? InstalledApp(
-                                resignedApp: resignedApp,
+                                resignedAppBundle: resignedAppBundle,
                                 originalBundleIdentifier: self.context.bundleIdentifier,
                                 certificateSerialNumber: certificate.serialNumber,
                                 storeBuildVersion: storeBuildVersion,
                                 context: backgroundContext
                             )
-        if !Self.isDifferentSideStoreContainer(installedApp, resignedApp) {
+        if !Self.isDifferentSideStoreContainer(installedApp, resignedAppBundle) {
             installedApp.update(
-                resignedApp: resignedApp,
+                resignedAppBundle: resignedAppBundle,
                 certificateSerialNumber: certificate.serialNumber,
                 storeBuildVersion: storeBuildVersion
             )
@@ -248,13 +248,13 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
         return installedApp
     }
 
-    private func fetchOrCreateExtensions(for resignedApp: ALTApplication,
+    private func fetchOrCreateExtensions(for resignedAppBundle: ALTApplication,
                                          installedApp: InstalledApp,
                                          in backgroundContext: NSManagedObjectContext) throws -> Set<InstalledExtension>
     {
         var installedExtensions = Set<InstalledExtension>()
         
-        if let bundle = Bundle(url: resignedApp.fileURL),
+        if let bundle = Bundle(url: resignedAppBundle.fileURL),
             let directory = bundle.builtInPlugInsURL,
             let enumerator = FileManager.default.enumerator(
                 at: directory,
@@ -266,7 +266,7 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
                 guard let appExtension = ALTApplication(fileURL: appExtensionBundle.bundleURL) else { continue }
                 
                 let parentBundleID = context.bundleIdentifier
-                let resignedParentBundleID = resignedApp.bundleIdentifier
+                let resignedParentBundleID = resignedAppBundle.bundleIdentifier
                 
                 let resignedBundleID = appExtension.bundleIdentifier
                 let appExBundleID = resignedBundleID.replacingOccurrences(of: resignedParentBundleID, with: parentBundleID)
@@ -279,11 +279,11 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
                 let installedExtension = try installedApp.appExtensions
                                                 .first(where: { $0.bundleIdentifier == appExBundleID })
                                             ?? InstalledExtension(
-                                                resignedAppExtension: appExtension,
+                                                resignedAppExtensionBundle: appExtension,
                                                 originalBundleIdentifier: appExBundleID,
                                                 context: backgroundContext
                                             )
-                installedExtension.update(resignedAppExtension: appExtension)
+                installedExtension.update(resignedAppExtensionBundle: appExtension)
                 installedExtensions.insert(installedExtension)
             }
         }

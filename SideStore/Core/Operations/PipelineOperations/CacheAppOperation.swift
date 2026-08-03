@@ -17,18 +17,18 @@ final class CacheAppOperation: BasePipelineOperation<InstallAppOperationContext,
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
 
-        guard let app = context.app else {
-            debugLog("[CacheAppOperation] context.app is nil")
+        guard let appBundle = context.appBundle else {
+            debugLog("[CacheAppOperation] context.appBundle is nil")
             self.setProgress(100)
             return nil
         }
 
         self.setProgress(40)
-        let updatedApp = AnyApp(from: app, bundleId: context.targetBundleIdentifier)
+        let updatedApp = AnyApp(from: appBundle, bundleId: context.targetBundleIdentifier)
         let targetFileURL = InstalledApp.fileURL(for: updatedApp)
         
         self.setProgress(70)
-        try FileManager.default.copyItem(at: app.fileURL, to: targetFileURL, shouldReplace: true)
+        try FileManager.default.copyItem(at: appBundle.fileURL, to: targetFileURL, shouldReplace: true)
         
         self.setProgress(100)
         return targetFileURL

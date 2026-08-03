@@ -180,7 +180,7 @@ class AppOperationContext: PipelineOperationContext
 {
     let bundleIdentifier: String
     var customBundleIdentifier: String?
-    var app: ALTApplication?
+    var appBundle: ALTApplication?
     var provisioningProfiles: [String: ALTProvisioningProfile]?
     var appexBundleIds: [String: String]?
     var useMainProfile = false
@@ -231,7 +231,7 @@ class InstallAppOperationContext: AppOperationContext
     }()
 
     var ipaURL: URL?
-    var resignedApp: ALTApplication?
+    var resignedAppBundle: ALTApplication?
     var installedApp: InstalledApp?
     
     var beginInstallationHandler: ((InstalledApp) -> Void)?

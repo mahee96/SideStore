@@ -20,11 +20,11 @@ final class SendAppOperation: BasePipelineOperation<InstallAppOperationContext, 
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
 
-        guard let resignedApp = self.context.resignedApp else {
-            throw OperationError.invalidParameters("SendAppOperation.main: self.resignedApp is nil")
+        guard let resignedAppBundle = self.context.resignedAppBundle else {
+            throw OperationError.invalidParameters("SendAppOperation.main: self.resignedAppBundle is nil")
         }
 
-        let app = AnyApp(name: resignedApp.name, bundleIdentifier: self.context.targetBundleIdentifier, url: resignedApp.fileURL, storeApp: nil)
+        let app = AnyApp(name: resignedAppBundle.name, bundleIdentifier: self.context.targetBundleIdentifier, url: resignedAppBundle.fileURL, storeApp: nil)
         let fileURL = InstalledApp.refreshedIPAURL(for: app)
         verboseLog("[SendAppOperation] AFC App `fileURL`: \(fileURL.absoluteString)")
 
@@ -47,7 +47,7 @@ final class SendAppOperation: BasePipelineOperation<InstallAppOperationContext, 
         }
         
         try await self.processFile(at: fileURL, for: app.bundleIdentifier)
-        return resignedApp
+        return resignedAppBundle
     }
 
     private func processFile(at fileURL: URL, for bundleIdentifier: String) async throws {

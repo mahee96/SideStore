@@ -889,7 +889,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     @MainActor
     private func showResignScreenIfNecessary(signer: ALTSigner, session: ALTAppleAPISession) async -> Bool {
         self.verboseLog("[Authentication] showResignScreenIfNecessary: entering method")
-        guard let application = ALTApplication(fileURL: Bundle.main.bundleURL), let provisioningProfile = application.provisioningProfile else {
+        guard let appBundle = ALTApplication(fileURL: Bundle.main.bundleURL), let provisioningProfile = appBundle.provisioningProfile else {
             self.verboseLog("[Authentication] showResignScreenIfNecessary: Application bundle or provisioning profile nil, returning false")
             return false
         }

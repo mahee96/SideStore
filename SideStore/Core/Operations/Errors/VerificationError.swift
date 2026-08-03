@@ -28,12 +28,12 @@ extension VerificationError
         case addedPermissions = 7
     }
 
-//    static func privateEntitlements(_ entitlements: [String: Any], app: ALTApplication) -> VerificationError {
-//        VerificationError(code: .privateEntitlements, app: app, entitlements: entitlements)
+//    static func privateEntitlements(_ entitlements: [String: Any], appBundle: ALTApplication) -> VerificationError {
+//        VerificationError(code: .privateEntitlements, app: appBundle, entitlements: entitlements)
 //    }
 
-    static func mismatchedBundleIdentifiers(sourceBundleID: String, app: ALTApplication) -> VerificationError {
-        VerificationError(code: .mismatchedBundleIdentifiers, app: app, sourceBundleID: sourceBundleID)
+    static func mismatchedBundleIdentifiers(sourceBundleID: String, appBundle: ALTApplication) -> VerificationError {
+        VerificationError(code: .mismatchedBundleIdentifiers, app: appBundle, sourceBundleID: sourceBundleID)
     }
     
     static func iOSVersionNotSupported(app: AppProtocol, osVersion: OperatingSystemVersion = ProcessInfo.processInfo.operatingSystemVersion, requiredOSVersion: OperatingSystemVersion?) -> VerificationError {

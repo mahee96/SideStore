@@ -284,7 +284,7 @@ final class PipelineRunner: Sendable
         if case .resign(_,  let mode)     = operation { context.alternateIconMode       = mode }
         
         if let app = operation.app as? InstalledApp {
-            context.app = ALTApplication(fileURL: app.fileURL)
+            context.appBundle = ALTApplication(fileURL: app.fileURL)
             context.useMainProfile = app.useMainProfile
             context.customBundleIdentifier = app.customBundleIdentifier
             context.installedApp = app

@@ -147,7 +147,7 @@ public class InstalledApp: BaseEntity, InstalledAppProtocol
         super.init(entity: entity, insertInto: context)
     }
     
-    public init(resignedApp: ALTApplication, originalBundleIdentifier: String, certificateSerialNumber: String?, storeBuildVersion: String?, context: NSManagedObjectContext) throws
+    public init(resignedAppBundle: ALTApplication, originalBundleIdentifier: String, certificateSerialNumber: String?, storeBuildVersion: String?, context: NSManagedObjectContext) throws
     {
         super.init(entity: InstalledApp.entity(), insertInto: context)
         
@@ -161,7 +161,7 @@ public class InstalledApp: BaseEntity, InstalledAppProtocol
         #if targetEnvironment(simulator)
         self.expirationDate = self.refreshedDate.addingTimeInterval(60 * 60 * 24 * 7)
         #else
-        guard let expirationDate = resignedApp.provisioningProfile?.expirationDate else {
+        guard let expirationDate = resignedAppBundle.provisioningProfile?.expirationDate else {
             throw ALTError.invalidApp(reason: "The app is missing a valid provisioning profile.")
         }
         self.expirationDate = expirationDate
@@ -170,7 +170,7 @@ public class InstalledApp: BaseEntity, InstalledAppProtocol
         // In practice this update() is redundant because we always call update() again after init from callers,
         // but better to have an init that is guaranteed to successfully initialize an object
         // than one that has a hidden assumption a second method will be called.
-        self.update(resignedApp: resignedApp, certificateSerialNumber: certificateSerialNumber, storeBuildVersion: storeBuildVersion)
+        self.update(resignedAppBundle: resignedAppBundle, certificateSerialNumber: certificateSerialNumber, storeBuildVersion: storeBuildVersion)
     }
 }
 
@@ -183,21 +183,21 @@ public extension InstalledApp
         return localizedVersion
     }
     
-    func update(resignedApp: ALTApplication, certificateSerialNumber: String?, storeBuildVersion: String?)
+    func update(resignedAppBundle: ALTApplication, certificateSerialNumber: String?, storeBuildVersion: String?)
     {
-        self.name = resignedApp.name
+        self.name = resignedAppBundle.name
         
-        self.resignedBundleIdentifier = resignedApp.bundleIdentifier
-        self.version = resignedApp.version
+        self.resignedBundleIdentifier = resignedAppBundle.bundleIdentifier
+        self.version = resignedAppBundle.version
         
-        self.buildVersion = resignedApp.buildVersion
+        self.buildVersion = resignedAppBundle.buildVersion
         self.storeBuildVersion = storeBuildVersion
         
         self.certificateSerialNumber = certificateSerialNumber
         self.isRevoked = false
         self.isCrossSigned = false
         
-        if let provisioningProfile = resignedApp.provisioningProfile
+        if let provisioningProfile = resignedAppBundle.provisioningProfile
         {
             self.update(provisioningProfile: provisioningProfile)
         }
@@ -236,8 +236,8 @@ public extension InstalledApp
                     return completion(.success(icon))
                 }
                 
-                let application = ALTApplication(fileURL: fileURL)
-                completion(.success(application?.icon))
+                let appBundle = ALTApplication(fileURL: fileURL)
+                completion(.success(appBundle?.icon))
             }
             catch
             {

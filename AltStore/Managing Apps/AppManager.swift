@@ -244,7 +244,7 @@ extension AppManager
         }
     }
     
-    func deactivateApps(for app: ALTApplication, presentingViewController: UIViewController?, completion: @escaping (Result<Void, Error>) -> Void)
+    func deactivateApps(for appBundle: ALTApplication, presentingViewController: UIViewController?, completion: @escaping (Result<Void, Error>) -> Void)
     {
         guard !UserDefaults.standard.isAppLimitDisabled, let activeAppsLimit = UserDefaults.standard.activeAppsLimit else { return completion(.success(())) }
         
@@ -252,7 +252,7 @@ extension AppManager
             // Only apps signed with a free developer certificate count toward the 3-app free account limit.
             // Apps signed with a paid certificate coexist independently and must not be counted here.
             let activeApps = InstalledApp.fetchActiveApps(in: DatabaseManager.shared.viewContext)
-                .filter { $0.bundleIdentifier != app.bundleIdentifier } // Don't count app towards total if it matches activating app
+                .filter { $0.bundleIdentifier != appBundle.bundleIdentifier } // Don't count app towards total if it matches activating app
                 .filter { ($0.team?.type ?? .unknown) == .free }        // Only free-cert-signed apps count against the free limit
                 .sorted { ($0.name, $0.refreshedDate) < ($1.name, $1.refreshedDate) }
             
@@ -261,7 +261,7 @@ extension AppManager
             
             if UserDefaults.standard.activeAppLimitIncludesExtensions
             {
-                if app.appExtensions.isEmpty
+                if appBundle.appExtensions.isEmpty
                 {
                     message = NSLocalizedString("Non-developer Apple IDs are limited to 3 active apps and app extensions. Please choose an app to deactivate.", comment: "")
                 }
@@ -269,8 +269,8 @@ extension AppManager
                 {
                     title = NSLocalizedString("Cannot Activate More than 3 Apps and App Extensions", comment: "")
                     
-                    let appExtensionText = app.appExtensions.count == 1 ? NSLocalizedString("app extension", comment: "") : NSLocalizedString("app extensions", comment: "")
-                    message = String(format: NSLocalizedString("Non-developer Apple IDs are limited to 3 active apps and app extensions, and \"%@\" contains %@ %@. Please choose an app to deactivate.", comment: ""), app.name, NSNumber(value: app.appExtensions.count), appExtensionText)
+                    let appExtensionText = appBundle.appExtensions.count == 1 ? NSLocalizedString("app extension", comment: "") : NSLocalizedString("app extensions", comment: "")
+                    message = String(format: NSLocalizedString("Non-developer Apple IDs are limited to 3 active apps and app extensions, and \"%@\" contains %@ %@. Please choose an app to deactivate.", comment: ""), appBundle.name, NSNumber(value: appBundle.appExtensions.count), appExtensionText)
                 }
             }
             else
@@ -281,11 +281,11 @@ extension AppManager
             let activeAppsCount = activeApps.map { $0.requiredActiveSlots }.reduce(0, +)
                     
             let availableActiveApps = max(activeAppsLimit - activeAppsCount, 0)
-            let requiredActiveSlots = UserDefaults.standard.activeAppLimitIncludesExtensions ? (1 + app.appExtensions.count) : 1
+            let requiredActiveSlots = UserDefaults.standard.activeAppLimitIncludesExtensions ? (1 + appBundle.appExtensions.count) : 1
             guard requiredActiveSlots > availableActiveApps else { return completion(.success(())) }
 
             guard let presentingViewController else {
-                let failureReason = String(format: NSLocalizedString("SideStore needs to deactivate another app before installing %@.", comment: ""), app.name)
+                let failureReason = String(format: NSLocalizedString("SideStore needs to deactivate another app before installing %@.", comment: ""), appBundle.name)
                 return completion(.failure(OperationError.forbidden(failureReason: failureReason)))
             }
             
@@ -309,7 +309,7 @@ extension AppManager
                             }
                             
                         case .success:
-                            self.deactivateApps(for: app, presentingViewController: presentingViewController, completion: completion)
+                            self.deactivateApps(for: appBundle, presentingViewController: presentingViewController, completion: completion)
                         }
                     }
                 })
@@ -743,10 +743,10 @@ extension AppManager
         try FileManager.default.createDirectory(at: unzippedAppDirectory, withIntermediateDirectories: true)
 
         let unzippedApplicationURL = try FileManager.default.unzipAppBundle(at: ipaURL, toDirectory: unzippedAppDirectory)
-        guard let application = ALTApplication(fileURL: unzippedApplicationURL) else { throw OperationError.invalidApp }
+        guard let appBundle = ALTApplication(fileURL: unzippedApplicationURL) else { throw OperationError.invalidApp }
 
         return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<InstalledApp, Error>) in
-            let group = self.install(application, presentingViewController: nil, context: context) { result in
+            let group = self.install(appBundle, presentingViewController: nil, context: context) { result in
                 continuation.resume(with: result)
             }
 

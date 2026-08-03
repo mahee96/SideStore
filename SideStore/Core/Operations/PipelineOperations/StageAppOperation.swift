@@ -19,17 +19,17 @@ final class StageAppOperation: BasePipelineOperation<InstallAppOperationContext,
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
         
-        if let app = self.context.app,
-           app.bundle.bundleURL.path.contains("SideBackup") || app.bundle.bundleURL.path.contains("AltBackup"),
+        if let appBundle = self.context.appBundle,
+           appBundle.bundle.bundleURL.path.contains("SideBackup") || appBundle.bundle.bundleURL.path.contains("AltBackup"),
            let installedApp = self.context.installedApp {
-            self.context.app = ALTApplication(fileURL: installedApp.fileURL)
+            self.context.appBundle = ALTApplication(fileURL: installedApp.fileURL)
         }
         
-        guard let app = self.context.app else {
-            throw OperationError.invalidParameters("StageAppOperation: context.app is nil")
+        guard let appBundle = self.context.appBundle else {
+            throw OperationError.invalidParameters("StageAppOperation: context.appBundle is nil")
         }
         
-        let fileURL = app.fileURL
+        let fileURL = appBundle.fileURL
         let tempDir = self.context.temporaryDirectory
         
         self.setProgress(30)
@@ -40,7 +40,7 @@ final class StageAppOperation: BasePipelineOperation<InstallAppOperationContext,
         if fileURL.path.hasPrefix(tempDir.path) {
             debugLog("[StageAppOperation] App is already in temporary directory: \(fileURL)")
             self.setProgress(100)
-            return app
+            return appBundle
         }
         
         let destinationURL = tempDir.appendingPathComponent(fileURL.lastPathComponent)
@@ -57,12 +57,12 @@ final class StageAppOperation: BasePipelineOperation<InstallAppOperationContext,
         try FileManager.default.copyItem(at: fileURL, to: destinationURL)
         debugLog("[StageAppOperation] Successfully copied app bundle to destination.")
         
-        guard let stagedApp = ALTApplication(fileURL: destinationURL) else {
+        guard let stagedAppBundle = ALTApplication(fileURL: destinationURL) else {
             throw OperationError.invalidApp
         }
         
-        self.context.app = stagedApp
+        self.context.appBundle = stagedAppBundle
         self.setProgress(100)
-        return stagedApp
+        return stagedAppBundle
     }
 }

@@ -16,11 +16,11 @@ final class PrepareAppExtensionBundleIDsOperation: BasePipelineOperation<AppOper
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         
         if self.context.useMainProfile {
-            if let app = self.context.app, let profile = self.context.provisioningProfiles?[self.context.bundleIdentifier] {
+            if let appBundle = self.context.appBundle, let profile = self.context.provisioningProfiles?[self.context.bundleIdentifier] {
                 var appexBundleIds: [String: String] = [:]
-                for appex in app.appExtensions {
+                for appex in appBundle.appExtensions {
                     appexBundleIds[appex.bundleIdentifier] = appex.bundleIdentifier
-                        .replacingOccurrences(of: app.bundleIdentifier, with: profile.bundleIdentifier)
+                        .replacingOccurrences(of: appBundle.bundleIdentifier, with: profile.bundleIdentifier)
                 }
                 self.context.appexBundleIds = appexBundleIds
             }

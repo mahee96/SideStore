@@ -852,7 +852,7 @@ private extension MyAppsViewController
         class Context
         {
             var fileURL: URL?
-            var application: ALTApplication?
+            var appBundle: ALTApplication?
             var installedApp: InstalledApp? {
                 didSet {
                     self.installedAppContext = self.installedApp?.managedObjectContext
@@ -923,8 +923,8 @@ private extension MyAppsViewController
                 try FileManager.default.createDirectory(at: unzippedAppDirectory, withIntermediateDirectories: true, attributes: nil)
                 let unzippedApplicationURL = try FileManager.default.unzipAppBundle(at: fileURL, toDirectory: unzippedAppDirectory)
                 
-                guard let application = ALTApplication(fileURL: unzippedApplicationURL) else { throw OperationError.invalidApp }
-                context.application = application
+                guard let appBundle = ALTApplication(fileURL: unzippedApplicationURL) else { throw OperationError.invalidApp }
+                context.appBundle = appBundle
                 
                 unzipProgress.completedUnitCount = 1
             }
@@ -949,11 +949,11 @@ private extension MyAppsViewController
                     throw error
                 }
                 
-                guard let application = context.application else {
-                    throw OperationError.invalidParameters("MyAppsViewController.sideloadApp.installAppOperation: context.application is nil")
+                guard let appBundle = context.appBundle else {
+                    throw OperationError.invalidParameters("MyAppsViewController.sideloadApp.installAppOperation: context.appBundle is nil")
                 }
                 
-                let group = AppManager.shared.install(application, presentingViewController: self) { (result) in
+                let group = AppManager.shared.install(appBundle, presentingViewController: self) { (result) in
                     switch result
                     {
                     case .success(let installedApp): context.installedApp = installedApp
@@ -1192,9 +1192,9 @@ private extension MyAppsViewController
                     
             if !UserDefaults.standard.isAppLimitDisabled && UserDefaults.standard.activeAppsLimit != nil, #available(iOS 13, *)
             {
-                guard let app = ALTApplication(fileURL: installedApp.fileURL) else { return finish(.failure(OperationError.invalidApp)) }
+                guard let appBundle = ALTApplication(fileURL: installedApp.fileURL) else { return finish(.failure(OperationError.invalidApp)) }
                 
-                AppManager.shared.deactivateApps(for: app, presentingViewController: self) { result in
+                AppManager.shared.deactivateApps(for: appBundle, presentingViewController: self) { result in
                     installedApp.managedObjectContext?.perform {
                         switch result
                         {

@@ -93,9 +93,9 @@ final class PipelineExecutor: @unchecked Sendable {
                 let step = try DownloadAppOperation(app: downloadingApp,
                                                     destinationURL: downloadedAppURL,
                                                     context: context)
-                let downloadedApp = try await step.execute(parentProgress: progress)
-                context.app = downloadedApp
-                result = downloadedApp
+                let downloadedAppBundle = try await step.execute(parentProgress: progress)
+                context.appBundle = downloadedAppBundle
+                result = downloadedAppBundle
                 return nil
                 
             case .verifyApp:
@@ -155,9 +155,9 @@ final class PipelineExecutor: @unchecked Sendable {
             case .resignApp:
                 loggerType = ResignAppOperation.self
                 let step = try ResignAppOperation(context: context)
-                let resignedApp = try await step.execute(parentProgress: progress)
-                context.resignedApp = resignedApp
-                result = resignedApp
+                let resignedAppBundle = try await step.execute(parentProgress: progress)
+                context.resignedAppBundle = resignedAppBundle
+                result = resignedAppBundle
                 return nil
                 
             case .exportResignedApp:
@@ -295,6 +295,7 @@ final class PipelineExecutor: @unchecked Sendable {
             [PipelineExecutor] ====> OPERATION: .\(operation) completed with: \(resultStatus) <====
                 • Component: '\(loggerType)'
                 • Result: \(result ?? "nil")
+                
             """
             )
         }

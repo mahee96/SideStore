@@ -25,8 +25,8 @@ final class RemoveAppExtensionsOperation: BasePipelineOperation<InstallAppOperat
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
         
-        guard let targetAppBundle = context.app else {
-            throw OperationError.invalidParameters("RemoveAppExtensionsOperation: context.app is nil")
+        guard let targetAppBundle = context.appBundle else {
+            throw OperationError.invalidParameters("RemoveAppExtensionsOperation: context.appBundle is nil")
         }
         
         // target App Bundle doesn't contain extensions so don't bother
@@ -152,11 +152,11 @@ final class RemoveAppExtensionsOperation: BasePipelineOperation<InstallAppOperat
     }
 
     private func updateManifest() throws {
-        guard let app = context.app else {
+        guard let appBundle = context.appBundle else {
             return
         }
         
-        let scInfoURL = app.fileURL.appendingPathComponent("SC_Info")
+        let scInfoURL = appBundle.fileURL.appendingPathComponent("SC_Info")
         let manifestPlistURL = scInfoURL.appendingPathComponent("Manifest.plist")
         
         if let manifestPlist = NSMutableDictionary(contentsOf: manifestPlistURL),
