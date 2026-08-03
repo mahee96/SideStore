@@ -14,7 +14,13 @@ struct DeveloperPortalService {
     static let shared = DeveloperPortalService()
     
     func authenticate(presentingViewController: UIViewController?) async throws -> (ALTTeam, ALTAppleAPISession) {
-        try await withCheckedThrowingContinuation { continuation in
+        if let team = AuthManager.shared.team,
+           let session = AuthManager.shared.session,
+           session.anisetteData.date.timeIntervalSinceNow >= -40.0 {
+            return (team, session)
+        }
+        
+        return try await withCheckedThrowingContinuation { continuation in
             AppManager.shared.authenticate(presentingViewController: presentingViewController, skipDeviceRegistration: true, skipCertificateProvisioning: true) { result in
                 switch result {
                 case .success(let (team, _, session)):

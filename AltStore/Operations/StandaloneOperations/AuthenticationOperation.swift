@@ -120,8 +120,8 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     }
     
     private func validateSessionCache(_ cache: SessionCache) async throws -> AuthenticationResult? {
-        // Update anisette data if expired
-        if cache.session.anisetteData.date.timeIntervalSinceNow < -40.0 {
+        // Update anisette data if expired and provisioning is required
+        if !self.skipCertificateProvisioning && cache.session.anisetteData.date.timeIntervalSinceNow < -40.0 {
             do {
                 let anisetteData = try await FetchAnisetteDataOperation(context: self.context).execute(parentProgress: self.progress)
                 cache.session.anisetteData = anisetteData

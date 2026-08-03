@@ -161,7 +161,9 @@ class CertificatesViewModel: ObservableObject {
                 self.certificates  = merged
                 self.remoteSerials = matchedRemoteSerials
             } catch {
-                if !(error is CancellationError) { self.errorMessage = error.localizedDescription }
+                if isPullToRefresh && !(error is CancellationError) {
+                    self.errorMessage = error.localizedDescription
+                }
             }
         }
     }
