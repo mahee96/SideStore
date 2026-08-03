@@ -435,6 +435,12 @@ private extension SourceDetailContentViewController
         }
         
         sender.progress = nil
+        if let index = self.appsDataSource.items.firstIndex(of: storeApp) {
+            let indexPath = IndexPath(item: index, section: Section.featuredApps.rawValue)
+            UIView.performWithoutAnimation {
+                self.collectionView.reloadItems(at: [indexPath])
+            }
+        }
     }
     
     func open(_ installedApp: InstalledApp)
