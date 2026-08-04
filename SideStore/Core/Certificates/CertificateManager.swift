@@ -224,6 +224,15 @@ public final class CertificateManager: @unchecked Sendable {
         return getAllLocalCertificates()
     }
 
+    public func getSignableCertificate(for serialNumber: String) -> ALTCertificate? {
+        guard let cert = getLocalCertificate(serialNumber: serialNumber) else { return nil }
+        guard cert.privateKey != nil else {
+            debugLog("[CertificateManager] getSignableCertificate: Certificate \(serialNumber) found in cache, but lacks local private key (only public key/DER is available).")
+            return nil
+        }
+        return cert
+    }
+
     public func loadAllSignableLocalCertificates() -> [ALTCertificate] {
         return getAllLocalCertificates().filter { $0.privateKey != nil }
     }
