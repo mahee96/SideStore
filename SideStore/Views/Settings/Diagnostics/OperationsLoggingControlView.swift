@@ -1,5 +1,5 @@
 //
-//  OperationsLoggingContolView.swift
+//  OperationsLoggingControlView.swift
 //  SideStore
 //
 //  Created by Magesh K on 14/01/25.

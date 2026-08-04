@@ -394,7 +394,8 @@ private extension DatabaseManager
                     storeApp.source = altStoreSource
                 }
                             
-                let serialNumber = (Bundle.main.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String) ?? localAppBundle.provisioningProfile?.certificates.first?.serialNumber
+                let serialNumber = CertificateManager.shared.getSigningCertificate(at: Bundle.main.bundleURL)?.serialNumber
+                
                 let installedApp: InstalledApp
                 
                 if let app = storeApp.installedApp

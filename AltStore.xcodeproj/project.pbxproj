@@ -142,6 +142,7 @@
 		A8000551301F0E1B007E29D5 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Core/Certificates/CertificateASN1Parser.swift,
 				Core/Certificates/CertificateManager.swift,
 				Core/Certificates/CertificateStore.swift,
 				Core/Logging/SideStoreLogging.swift,
@@ -217,7 +218,7 @@
 				Core/Auth/AuthManager.swift,
 				Core/Auth/DeveloperPortalService.swift,
 				Core/Certificates/CertificateASN1Parser.swift,
-				Core/Certificates/SigningCertificateValidator.swift,
+				Core/Certificates/CodeSignValidator.swift,
 				Core/DeviceApi/EMProxyWrapper.swift,
 				Core/DeviceApi/MinimuxerWrapper.swift,
 				Core/Logging/OperationLogging.swift,
@@ -326,7 +327,7 @@
 				Views/Settings/Auth/SignOutAlertViewController.swift,
 				Views/Settings/Diagnostics/DeveloperOptionsView.swift,
 				Views/Settings/Diagnostics/ExperimentalFeaturesView.swift,
-				Views/Settings/Diagnostics/OperationsLoggingContolView.swift,
+				Views/Settings/Diagnostics/OperationsLoggingControlView.swift,
 				Views/Settings/TechyThings/ErrorLog/ConsoleLogView.swift,
 				Views/Settings/TechyThings/HealthCheck/HealthCheckView.swift,
 				Views/Settings/TechyThings/HealthCheck/HealthCheckViewModel.swift,

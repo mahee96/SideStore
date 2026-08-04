@@ -141,39 +141,29 @@ public final class CertificateManager: @unchecked Sendable {
     }
     
     public func getLocalCertificate(serialNumber: String) -> ALTCertificate? {
-        if let activeCert = self.activeCertificate, activeCert.serialNumber == serialNumber {
-            debugLog("[CertificateManager] Found in active Keychain.shared.certificate")
-            let cert = activeCert.certificate
-            if let metadata = getCertificateMetadata(for: serialNumber) {
-                if cert.machineIdentifier == nil { cert.machineIdentifier = metadata["machineIdentifier"] }
-                if cert.machineName == nil { cert.machineName = metadata["machineName"] }
-                if cert.requesterEmail == nil { cert.requesterEmail = metadata["requesterEmail"] }
-            }
-            return cert
+        if let active = self.activeCertificate, active.serialNumber == serialNumber {
+            return active.certificate
         }
         if let data = Keychain.shared[certificateSerial: serialNumber] {
-            debugLog("[CertificateManager] Retrieved data size: \(data.count) for \(serialNumber)")
-            var loadedCert: ALTCertificate?
-            let savedPassword = getCertificateMetadata(for: serialNumber)?["machineIdentifier"]
-            do {
-                loadedCert = try CertificateStore.load(data, password: savedPassword)
-                debugLog("[CertificateManager] Parsed as p12")
-            } catch {
-                debugLog("[CertificateManager] Failed p12 parse: \(error)")
+            if data.isPKCS12 {
+                let savedPassword = getCertificateMetadata(for: serialNumber)?["machineIdentifier"]
+                if let cert = try? CertificateStore.load(data, password: savedPassword) {
+                    if let metadata = getCertificateMetadata(for: serialNumber) {
+                        cert.machineIdentifier = metadata["machineIdentifier"]
+                        cert.machineName = metadata["machineName"]
+                        cert.requesterEmail = metadata["requesterEmail"]
+                    }
+                    return cert
+                }
+            } else {
                 if let cert = ALTCertificate(data: data) {
-                    loadedCert = cert
-                    debugLog("[CertificateManager] Parsed as raw cert")
-                } else {
-                    debugLog("[CertificateManager] Failed raw cert parsing")
+                    if let metadata = getCertificateMetadata(for: serialNumber) {
+                        cert.machineIdentifier = metadata["machineIdentifier"]
+                        cert.machineName = metadata["machineName"]
+                        cert.requesterEmail = metadata["requesterEmail"]
+                    }
+                    return cert
                 }
-            }
-            if let cert = loadedCert {
-                if let metadata = getCertificateMetadata(for: serialNumber) {
-                    cert.machineIdentifier = metadata["machineIdentifier"]
-                    cert.machineName = metadata["machineName"]
-                    cert.requesterEmail = metadata["requesterEmail"]
-                }
-                return cert
             }
         }
         return nil
@@ -240,7 +230,7 @@ public final class CertificateManager: @unchecked Sendable {
         return cert
     }
 
-    public func getSigningCertificate(at url: URL) -> ALTCertificate? {
+    public func getSigningCertificate(at url: URL, withPlistFallback: Bool = true) -> ALTCertificate? {
         let executableURL: URL
         if url.pathExtension == "app" {
             guard let execURL = Bundle(url: url)?.executableURL else {
@@ -248,38 +238,68 @@ public final class CertificateManager: @unchecked Sendable {
                 return nil
             }
             executableURL = execURL
+            debugLog("[CertificateManager] getSigningCertificate: Resolved app bundle to executable at \(executableURL.path)")
         } else {
             executableURL = url
         }
         
-        guard let parser = try? MachOParser(url: executableURL) else {
-            debugLog("[CertificateManager] getSigningCertificate: Failed to parse Mach-O at \(executableURL.path)")
-            return nil
-        }
-        
-        let secCertChain = parser.certificates()
-        // traverse the single certificate chain and get leaf certificate
-        for secCert in secCertChain {
-            let derData = SecCertificateCopyData(secCert) as Data
-            let details = parseCertificate(derData: derData)
-            
-            // Filter out CA certificates (Intermediate / Root)
-            let issuerDN = details.issuer
-            let subjectDN = details.subject
-            if subjectDN.contains("Root") || issuerDN.contains("Root") ||
-               subjectDN.contains("Authority") || subjectDN.contains("Relations") || issuerDN.contains("Authority") {
-                continue
-            }
-            
-            let serial = details.serialHex.replacingOccurrences(of: "0x", with: "").uppercased()
-            if let localCert = getLocalCertificate(serialNumber: serial) {
-                return localCert
-            } else {
-                if let cert = ALTCertificate(data: derData) {
-                    return cert
+        debugLog("[CertificateManager] getSigningCertificate: Attempting to parse Mach-O signature at \(executableURL.path)...")
+        if let parser = try? MachOParser(url: executableURL) {
+            let secCertChain = parser.certificates()
+            debugLog("[CertificateManager] getSigningCertificate: Extracted \(secCertChain.count) certificates from Mach-O signature.")
+            // traverse the single certificate chain and get leaf certificate
+            for secCert in secCertChain {
+                let derData = SecCertificateCopyData(secCert) as Data
+                let details = parseCertificate(derData: derData)
+                
+                debugLog("[CertificateManager] getSigningCertificate: Evaluating certificate in chain - Subject: '\(details.subject)', Issuer: '\(details.issuer)'")
+                
+                // Filter out CA certificates (Intermediate / Root)
+                let issuerDN = details.issuer
+                let subjectDN = details.subject
+                if subjectDN.contains("Root") || issuerDN.contains("Root") ||
+                   subjectDN.contains("Authority") || subjectDN.contains("Relations") || issuerDN.contains("Authority") {
+                    debugLog("[CertificateManager] getSigningCertificate: Skipping intermediate/root CA certificate: '\(details.subject)'")
+                    continue
+                }
+                
+                let serial = details.serialHex.replacingOccurrences(of: "0x", with: "").uppercased()
+                debugLog("[CertificateManager] getSigningCertificate: Found leaf developer certificate serial: '\(serial)'")
+                
+                if let localCert = getLocalCertificate(serialNumber: serial) {
+                    debugLog("[CertificateManager] getSigningCertificate: Found signing certificate serial '\(serial)' in local keychain cache.")
+                    return localCert
+                } else {
+                    if let cert = ALTCertificate(data: derData) {
+                        debugLog("[CertificateManager] getSigningCertificate: Signing certificate serial '\(serial)' not in local keychain cache. Returning raw parsed certificate.")
+                        return cert
+                    }
                 }
             }
+            debugLog("[CertificateManager] getSigningCertificate: Finished parsing Mach-O chain, no leaf developer certificate found.")
+        } else {
+            debugLog("[CertificateManager] getSigningCertificate: Failed to parse Mach-O binary signature at \(executableURL.path).")
         }
+        
+        // Fallback to Info.plist if requested
+        if withPlistFallback {
+            debugLog("[CertificateManager] getSigningCertificate: Code signature check did not yield a certificate. Checking Info.plist fallback...")
+            let plistURL = url.pathExtension == "app" ? url : url.deletingLastPathComponent()
+            if let plistCertID = Bundle(url: plistURL)?.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String {
+                debugLog("[CertificateManager] getSigningCertificate: Found fallback certificate ID '\(plistCertID)' in Info.plist.")
+                if let localCert = getLocalCertificate(serialNumber: plistCertID) {
+                    debugLog("[CertificateManager] getSigningCertificate: Retrieved local keychain certificate for fallback ID '\(plistCertID)'.")
+                    return localCert
+                } else if let cert = ALTCertificate(responseDictionary: ["name": "Developer Certificate", "serialNumber": plistCertID]) {
+                    debugLog("[CertificateManager] getSigningCertificate: Fallback ID '\(plistCertID)' not in local keychain cache. Returning raw fallback certificate.")
+                    return cert
+                }
+            } else {
+                debugLog("[CertificateManager] getSigningCertificate: No certificate ID found in Info.plist.")
+            }
+        }
+        
+        debugLog("[CertificateManager] getSigningCertificate: WARNING: No signing certificate found for \(url.lastPathComponent).")
         return nil
     }
 

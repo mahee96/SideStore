@@ -13,7 +13,7 @@
 final class ResignAltStoreViewController: UIViewController
 {
     var context: AuthenticatedOperationContext!
-    var mismatchReason: SigningCertificateMismatchReason?
+    var mismatchReason: CodeSignValidationReason?
     
     var completionHandler: ((Result<Void, Error>) -> Void)?
     

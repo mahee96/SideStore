@@ -29,18 +29,18 @@ struct ValidityStats {
     let progress: Double
 }
 
-struct ParsedCertificateDetails {
-    var version: String = "N/A"
-    var subject: String = "N/A"
-    var issuer: String = "N/A"
-    var serialHex: String = "N/A"
-    var serialDec: String = "N/A"
-    var validFrom: Date? = nil
-    var validUntil: Date? = nil
-    var publicKeyType: String = "N/A"
-    var signatureAlgorithm: String = "N/A"
-    var fingerprintSHA1: String = "N/A"
-    var fingerprintSHA256: String = "N/A"
+public struct ParsedCertificateDetails {
+    public var version: String = "N/A"
+    public var subject: String = "N/A"
+    public var issuer: String = "N/A"
+    public var serialHex: String = "N/A"
+    public var serialDec: String = "N/A"
+    public var validFrom: Date? = nil
+    public var validUntil: Date? = nil
+    public var publicKeyType: String = "N/A"
+    public var signatureAlgorithm: String = "N/A"
+    public var fingerprintSHA1: String = "N/A"
+    public var fingerprintSHA256: String = "N/A"
 }
 
 func getDERData(from pemOrDer: Data) -> Data? {
@@ -254,7 +254,7 @@ func parseSignatureAlgorithm(_ oidData: Data) -> String {
     }
 }
 
-func parseCertificate(derData: Data) -> ParsedCertificateDetails {
+public func parseCertificate(derData: Data) -> ParsedCertificateDetails {
     var details = ParsedCertificateDetails()
     guard let cleanDer = getDERData(from: derData) else { return details }
     details.fingerprintSHA1 = computeSHA1Fingerprint(data: cleanDer)

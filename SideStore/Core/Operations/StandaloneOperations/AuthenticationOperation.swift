@@ -644,6 +644,8 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         
         let bundleCertID = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String
         
+        let binaryCert = CertificateManager.shared.getSigningCertificate(at: Bundle.main.bundleURL)
+        
         if let activeCert = CertificateManager.shared.activeCertificate,
            let certificate = certificates.first(where: { $0.serialNumber == activeCert.serialNumber })
         {
@@ -654,20 +656,12 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             return activeCert.certificate
         }
         
-        if let serialNumber = bundleCertID {
-            if let certificate = certificates.first(where: { $0.serialNumber == serialNumber }) {
-                let fileExists = FileManager.default.fileExists(atPath: Bundle.main.certificateURL.path)
-                if fileExists,
-                   let data = try? Data(contentsOf: Bundle.main.certificateURL) {
-                    let machineIdentifier = certificate.machineIdentifier
-                    let localCertificate = try? ALTCertificate(p12Data: data, password: machineIdentifier)
-                    if let localCertificate = localCertificate {
-                        localCertificate.machineIdentifier = machineIdentifier
-                        self.debugLog("[Authentication] Using certificate (\(serialNumber)) found in app bundle and active on portal.")
-                        return localCertificate
-                    }
-                }
-            }
+        if let binaryCert = binaryCert,
+           let localCert = CertificateManager.shared.getLocalCertificate(serialNumber: binaryCert.serialNumber),
+           let certificate = certificates.first(where: { $0.serialNumber == binaryCert.serialNumber }) {
+            localCert.machineIdentifier = certificate.machineIdentifier
+            self.debugLog("[Authentication] Using running bundle certificate (\(binaryCert.serialNumber)) found in binary and active on portal.")
+            return localCert
         }
         
         if certificates.isEmpty {
@@ -894,7 +888,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             return false
         }
         
-        let result = SigningCertificateValidator.validate(
+        let result = CodeSignValidator.validate(
             runningProfile: provisioningProfile,
             activeCertificates: self.activeCertificates,
             signerCertificate: signer.certificate,
