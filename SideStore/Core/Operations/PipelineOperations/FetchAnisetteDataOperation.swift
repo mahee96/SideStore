@@ -89,31 +89,43 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext
         self.activeConfig = config
         
         let isOffline = AnisetteConfigManager.shared.isOfflineMode
+        var excludedURLs = Set<String>()
         
-        do {
-            return try await self.performProvisioning()
-        } catch {
-            self.debugLog("[FetchAnisetteDataOperation] Provisioning flow failed: \(error). Checking recovery options...")
-            if isOffline {
-                self.debugLog("[FetchAnisetteDataOperation] Recovery: Deleting local config and retrying online.")
-                await AnisetteConfigManager.shared.deleteConfigFile()
+        while true {
+            do {
+                return try await self.performProvisioning(excluding: excludedURLs)
+            } catch {
+                self.debugLog("[FetchAnisetteDataOperation] Provisioning flow failed: \(error). Checking recovery/retry options...")
                 
-                // Clear state properties so performProvisioning will fetch fresh data from server
-                self.clientInfo = nil
-                self.userAgent = nil
-                
-                do {
-                    return try await self.performProvisioning()
-                } catch {
-                    self.debugLog("[FetchAnisetteDataOperation] Recovery attempt failed: \(error)")
-                    throw error
+                if isOffline {
+                    self.debugLog("[FetchAnisetteDataOperation] Recovery: Deleting local config and retrying online.")
+                    await AnisetteConfigManager.shared.deleteConfigFile()
+                    
+                    // Clear state properties so performProvisioning will fetch fresh data from server
+                    self.clientInfo = nil
+                    self.userAgent = nil
+                    
+                    do {
+                        return try await self.performProvisioning(excluding: excludedURLs)
+                    } catch {
+                        self.debugLog("[FetchAnisetteDataOperation] Recovery attempt failed: \(error)")
+                        throw error
+                    }
                 }
+                
+                if let failedURLString = self.url?.absoluteString, !UserDefaults.standard.disableAnisetteRotation {
+                    excludedURLs.insert(failedURLString)
+                    self.debugLog("[FetchAnisetteDataOperation] Server \(failedURLString) failed to provision. Rotating and retrying...")
+                    continue
+                }
+                
+                throw error
             }
-            throw error
         }
     }
 
-    private func performProvisioning() async throws -> ALTAnisetteData {
+    private func performProvisioning(excluding: Set<String> = []) async throws -> ALTAnisetteData {
+        self.url = nil
         let config = await AnisetteConfigManager.shared.loadConfig()
         self.activeConfig = config
         
@@ -138,7 +150,7 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext
         // TODO: Pass in proper view context to show the Toast messages
         let viewContext = self.context.presentingViewController
         self.setProgress(30)
-        let urlString = try await self.getAnisetteServerUrl(viewContext)
+        let urlString = try await self.getAnisetteServerUrl(viewContext, excluding: excluding)
 
         // set as preferred
         UserDefaults.standard.menuAnisetteURL = urlString
@@ -155,32 +167,34 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext
         }
     }
 
-    private func getAnisetteServerUrl(_ viewContext: UIViewController?) async throws -> String {
+    private func getAnisetteServerUrl(_ viewContext: UIViewController?, excluding: Set<String> = []) async throws -> String {
         let serverUrls = await AnisetteServersManager.shared.getActiveServerURLs()
-        guard !serverUrls.isEmpty else {
-            throw NSError(domain: "AnisetteError", code: 0, userInfo: [NSLocalizedDescriptionKey: "No anisette servers configured."])
+        let filteredUrls = serverUrls.filter { !excluding.contains($0) }
+        guard !filteredUrls.isEmpty else {
+            throw NSError(domain: "AnisetteError", code: 0, userInfo: [NSLocalizedDescriptionKey: "No working anisette servers found."])
         }
 
         let lastServer = UserDefaults.standard.menuAnisetteURL
         
         if UserDefaults.standard.disableAnisetteRotation {
-            self.verboseLog("[FetchAnisetteDataOperation] Auto-rotation disabled. Pinging currently active server: \(lastServer)")
-            guard let url = URL(string: lastServer) else {
-                throw NSError(domain: "AnisetteError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Active server URL is invalid: \(lastServer)"])
+            let activeServer = excluding.contains(lastServer) ? (filteredUrls.first ?? lastServer) : lastServer
+            self.verboseLog("[FetchAnisetteDataOperation] Auto-rotation disabled. Pinging currently active server: \(activeServer)")
+            guard let url = URL(string: activeServer) else {
+                throw NSError(domain: "AnisetteError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Active server URL is invalid: \(activeServer)"])
             }
             let success = try await pingServer(url)
             if success {
-                return lastServer
+                return activeServer
             } else {
-                throw NSError(domain: "AnisetteError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Active server is offline: \(lastServer)"])
+                throw NSError(domain: "AnisetteError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Active server is offline: \(activeServer)"])
             }
         }
         
-        let startIndex = serverUrls.firstIndex(of: lastServer) ?? 0
+        let startIndex = filteredUrls.firstIndex(of: lastServer) ?? 0
         
-        for triedCount in 0..<serverUrls.count {
-            let currentIndex = (startIndex + triedCount) % serverUrls.count
-            let currentServerUrlString = serverUrls[currentIndex]
+        for triedCount in 0..<filteredUrls.count {
+            let currentIndex = (startIndex + triedCount) % filteredUrls.count
+            let currentServerUrlString = filteredUrls[currentIndex]
 
             guard let url = URL(string: currentServerUrlString) else {
                 let errmsg = "[FetchAnisetteDataOperation] Skipping invalid URL: \(currentServerUrlString)"
