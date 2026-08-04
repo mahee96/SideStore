@@ -48,6 +48,7 @@ enum MinimuxerStatus: Equatable {
     case invalidVPN
     case pairingFile
     case invalidPairing
+    case notStarted
     case unknown
     
     init(from error: MinimuxerError) {
@@ -59,6 +60,7 @@ enum MinimuxerStatus: Equatable {
         case .noDevice:                 self = .noDevice
         case .noConnection:             self = .noConnection
         case .notReachable(let reason): self = .notReachable(reason)
+        case .notStarted:               self = .notStarted
         default:                        self = .unknown
         }
     }
@@ -71,6 +73,7 @@ enum MinimuxerStatus: Equatable {
         case .notReachable(let reason):     return .notReachable(reason: reason)
         case .noVPN, .invalidVPN:           return .noVPN
         case .pairingFile, .invalidPairing: return .invalidPairingFile
+        case .notStarted:                   return .minimuxerNotStarted
         }
     }
 
@@ -328,6 +331,8 @@ extension MinimuxerError {
             return String(format: NSLocalizedString("Invalid pairing configuration (%@ protocol): %@", comment: ""), proto.description, reason)
         case .muxerNotListening:
             return NSLocalizedString("Usbmuxd server is not listening on the device", comment: "")
+        case .notStarted(let reason):
+            return String(format: NSLocalizedString("Minimuxer has not been started: %@", comment: ""), reason)
         }
     }
 
@@ -395,6 +400,11 @@ extension Error {
         if let minimuxerErr = self as? MinimuxerError,
            case .restartAlreadyInProgressError = minimuxerErr { return true }
         return (self as? MinimuxerWrapperError) == .restartAlreadyInProgress
+    }
+    public var isMinimuxerNotStarted: Bool {
+        if let minimuxerErr = self as? MinimuxerError,
+           case .notStarted = minimuxerErr { return true }
+        return false
     }
 }
 

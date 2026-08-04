@@ -188,6 +188,8 @@ final class HealthCheckViewModel: ObservableObject {
             switch error {
             case .noConnection:
                 return (false, nil, nil, nil, nil, nil)
+            case .notStarted:
+                return (nil, nil, nil, nil, nil, nil)
             case .noVPN, .invalidVPN:
                 return (netSat, false, nil, nil, nil, nil)
             case .noDevice, .notReachable:
