@@ -257,7 +257,7 @@ extension LaunchViewController {
         
         let elapsed = abs(startTime.timeIntervalSinceNow)
         let remaining = elapsed >= 1 ? 0 : 1 - elapsed
-        try? await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000))
+        try? await Task.sleep(nanoseconds: UInt64(remaining * 500_000_000))
         
         destinationVC.loadViewIfNeeded()
         addChild(destinationVC)
