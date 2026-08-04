@@ -58,10 +58,11 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
     private var didChangeActiveApps = false
     private var previousInactiveAppsCount = 0
     private var statusDotView: UIView?
-    private var statusCancellable: AnyCancellable?
     
     private var _imagePickerInstalledApp: InstalledApp?
     private var _viewDidAppear = false
+    
+    private var minimuxerStatusCheckTask: Task<Void, Never>?
     
     // Cache
     private var cachedUpdateSizes = [String: CGSize]()
@@ -73,6 +74,12 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
         NotificationCenter.default.addObserver(self, selector: #selector(MyAppsViewController.didFetchSource(_:)), name: AppManager.didFetchSourceNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(MyAppsViewController.importApp(_:)), name: AppDelegate.importAppDeepLinkNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(MyAppsViewController.appIDsViewControllerDidDismiss(_:)), name: AppIDsViewController.didDismissNotification, object: nil)
+    }
+    
+    deinit {
+        if !(minimuxerStatusCheckTask?.isCancelled == true) {
+            minimuxerStatusCheckTask?.cancel()
+        }
     }
     
     override func viewDidLoad()
@@ -120,11 +127,16 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
         
         NotificationCenter.default.addObserver(self, selector: #selector(MyAppsViewController.didChangeAppIcon(_:)), name: UIApplication.didChangeAppIconNotification, object: nil)
         
-        self.statusCancellable = minimuxerStatusPublisher
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] result in
-                self?.updateStatusDot(with: result)
+        if minimuxerStatusCheckTask == nil {
+            minimuxerStatusCheckTask = Task {
+                await updateStatusDot(with: getMinimuxerStatus())
+                // Listen to subsequent updates reactively
+                for await result in minimuxerStatusPublisher.values {
+                    guard !Task.isCancelled else { break }
+                    updateStatusDot(with: MinimuxerStatus.from(result))
+                }
             }
+        }
     }
     
     override func viewIsAppearing(_ animated: Bool)
@@ -143,7 +155,6 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
     override func viewDidLayoutSubviews()
     {
         super.viewDidLayoutSubviews()
-        self.updateStatusDot()
     }
 
     override func viewDidAppear(_ animated: Bool)
@@ -151,7 +162,6 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
         super.viewDidAppear(animated)
         
         _viewDidAppear = true
-        self.updateStatusDot()
     }
     
     override func viewWillDisappear(_ animated: Bool)
@@ -171,7 +181,7 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
         return nil
     }
 
-    private func updateStatusDot(with result: Result<Bool, Error>? = nil)
+    private func updateStatusDot(with status: MinimuxerStatus)
     {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
@@ -200,14 +210,7 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
             
             // If the dot is already created and attached to largeTitleView, just update color O(1)
             if let existingDot = self.statusDotView, existingDot.superview == largeTitleView {
-                if let result = result {
-                    updateColorClosure(MinimuxerStatus.from(result))
-                } else {
-                    Task {
-                        let status = await getMinimuxerStatus()
-                        updateColorClosure(status)
-                    }
-                }
+                updateColorClosure(status)
                 return
             }
             
@@ -242,14 +245,8 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
                 }, completion: nil)
             }
             
-            if let result = result {
-                animateEntranceClosure(MinimuxerStatus.from(result))
-            } else {
-                Task {
-                    let status = await getMinimuxerStatus()
-                    animateEntranceClosure(status)
-                }
-            }
+            animateEntranceClosure(status)
+            return
         }
     }
     
