@@ -506,7 +506,7 @@ private class AnisetteWebSocketSession: WebSocketDelegate {
     private let deviceId: String
     
     private let parentOperation: FetchAnisetteDataOperation
-    private var continuation: CheckedContinuation<ALTAnisetteData, Error>?
+    private var continuation: SafeContinuation<ALTAnisetteData, Error>?
     
     private var socket: WebSocket!
     
@@ -523,7 +523,7 @@ private class AnisetteWebSocketSession: WebSocketDelegate {
     
     func start() async throws -> ALTAnisetteData {
         try await withCheckedThrowingContinuation { continuation in
-            self.continuation = continuation
+            self.continuation = SafeContinuation(continuation)
             
             let provisioningSessionURL = self.url.appendingPathComponent("v3").appendingPathComponent("provisioning_session")
             var wsRequest = URLRequest(url: provisioningSessionURL)
@@ -544,9 +544,15 @@ private class AnisetteWebSocketSession: WebSocketDelegate {
             
         case .disconnected(let string, let code):
             parentOperation.debugLog("[FetchAnisetteDataOperation] Disconnected: \(code); \(string)")
+            self.continuation?.resume(throwing: OperationError.provisioningError(result: "WebSocket disconnected: \(string) (code: \(code))", message: nil))
             
         case .error(let error):
             parentOperation.debugLog("[FetchAnisetteDataOperation] Got error: \(String(describing: error))")
+            if let error = error {
+                self.continuation?.resume(throwing: error)
+            } else {
+                self.continuation?.resume(throwing: OperationError.provisioningError(result: "WebSocket error", message: nil))
+            }
             
         default:
             parentOperation.debugLog("[FetchAnisetteDataOperation] Unknown event: \(event)")
@@ -699,4 +705,31 @@ extension Data {
     
     // https://stackoverflow.com/a/59127761
     func object<T>() -> T { self.withUnsafeBytes { $0.load(as: T.self) } }
+}
+
+final class SafeContinuation<T, E: Error>: @unchecked Sendable {
+    private var continuation: CheckedContinuation<T, E>?
+    private let lock = NSLock()
+    
+    init(_ continuation: CheckedContinuation<T, E>) {
+        self.continuation = continuation
+    }
+    
+    func resume(returning value: T) {
+        let continuation = lock.withLock {
+            let cont = self.continuation
+            self.continuation = nil
+            return cont
+        }
+        continuation?.resume(returning: value)
+    }
+    
+    func resume(throwing error: E) {
+        let continuation = lock.withLock {
+            let cont = self.continuation
+            self.continuation = nil
+            return cont
+        }
+        continuation?.resume(throwing: error)
+    }
 }
