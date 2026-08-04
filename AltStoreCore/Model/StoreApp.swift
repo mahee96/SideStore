@@ -716,10 +716,6 @@ public extension StoreApp
         let placeholderDate = Date.distantPast
         var placeholderChannel = ReleaseTracks.stable.stringValue      // placeholder is always assumed to be from stable channel
         
-        #if BETA
-        placeholderChannel = ReleaseTracks.nightly.stringValue
-        #endif
-        
         let app = StoreApp(context: context)
         app.name = "SideStore"
         app.bundleIdentifier = placeholderBundleId

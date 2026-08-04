@@ -368,10 +368,6 @@ private extension SourcesViewController
             let source = try await AppManager.shared.fetchSource(sourceURL: url, managedObjectContext: backgroundContext)
             do
             {
-                #if !BETA
-                guard let trustedSourceIDs = UserDefaults.shared.trustedSourceIDs, trustedSourceIDs.contains(source.identifier) else { throw SourceError(code: .unsupported, source: source) }
-                #endif
-                
                 await MainActor.run {
                     showSourceDetails(for: source)
                 }

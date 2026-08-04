@@ -2005,9 +2005,7 @@ extension MyAppsViewController
                 actions.append(jitAction)
             }
             
-            #if BETA
             actions.append(changeIconMenu)
-            #endif
             
             if !backupSubmenuActions.isEmpty
             {
