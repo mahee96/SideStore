@@ -263,9 +263,9 @@ private extension BrowseViewController
             let tintColor = app.tintColor ?? .altPrimary
             cell.tintColor = tintColor
         }
-        dataSource.prefetchHandler = { (storeApp, indexPath, completionHandler) -> Foundation.Operation? in
+        dataSource.prefetchHandler = { (storeApp, indexPath, completionHandler) in
             let iconURL = storeApp.iconURL
-            Task.detached(priority: .background) {
+            return Task.detached(priority: .background) {
                 ImagePipeline.shared.loadImage(with: iconURL, progress: nil) { result in
                     switch result
                     {
@@ -274,7 +274,6 @@ private extension BrowseViewController
                     }
                 }
             }
-            return nil
         }
         dataSource.prefetchCompletionHandler = { [weak dataSource] (cell, image, indexPath, error) in
             let cell = cell as! AppCardCollectionViewCell

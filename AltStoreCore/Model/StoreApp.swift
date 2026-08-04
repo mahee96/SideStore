@@ -714,7 +714,7 @@ public extension StoreApp
         let placeholderSourceID = Source.altStoreIdentifier
         let placeholderVersion = "0.0.0"
         let placeholderDate = Date.distantPast
-        var placeholderChannel = ReleaseTracks.stable.stringValue      // placeholder is always assumed to be from stable channel
+        var placeholderChannel = ReleaseTracks.stable.stringValue
         
         let app = StoreApp(context: context)
         app.name = "SideStore"

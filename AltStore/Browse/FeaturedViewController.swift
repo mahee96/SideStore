@@ -260,9 +260,9 @@ private extension FeaturedViewController
             cell.bannerView.iconImageView.image = nil
             cell.bannerView.iconImageView.isIndicatingActivity = true
         }
-        dataSource.prefetchHandler = { (storeApp, indexPath, completion) -> Foundation.Operation? in
+        dataSource.prefetchHandler = { (storeApp, indexPath, completion) in
             let iconURL = storeApp.iconURL
-            Task.detached(priority: .background) {
+            return Task.detached(priority: .background) {
                 ImagePipeline.shared.loadImage(with: iconURL, progress: nil) { result in
                     switch result
                     {
@@ -271,7 +271,6 @@ private extension FeaturedViewController
                     }
                 }
             }
-            return nil
         }
         dataSource.prefetchCompletionHandler = { [weak dataSource] (cell, image, indexPath, error) in
             let cell = cell as! AppBannerCollectionViewCell
@@ -397,9 +396,9 @@ private extension FeaturedViewController
             cell.bannerView.iconImageView.image = nil
             cell.bannerView.iconImageView.isIndicatingActivity = true
         }
-        dataSource.prefetchHandler = { (storeApp, indexPath, completion) -> Foundation.Operation? in
+        dataSource.prefetchHandler = { (storeApp, indexPath, completion) in
             let iconURL = storeApp.iconURL
-            Task.detached(priority: .background) {
+            return Task.detached(priority: .background) {
                 ImagePipeline.shared.loadImage(with: iconURL, progress: nil) { result in
                     switch result
                     {
@@ -408,7 +407,6 @@ private extension FeaturedViewController
                     }
                 }
             }
-            return nil
         }
         dataSource.prefetchCompletionHandler = { [weak dataSource] (cell, image, indexPath, error) in
             let cell = cell as! AppCardCollectionViewCell
