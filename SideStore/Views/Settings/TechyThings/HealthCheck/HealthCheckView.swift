@@ -65,14 +65,14 @@ struct HealthCheckView: View {
             Section(header: Text("Core Requirements")) {
                 DependencyRow(
                     title: "Network Connectivity",
-                    subtitle: viewModel.isWifiSatisfied ? "Wi-Fi Active" : "No Connection",
+                    subtitle: viewModel.networkSatisfied == nil ? "Unknown" : (viewModel.isWifiSatisfied ? "Wi-Fi Active" : "No Connection"),
                     isSatisfied: viewModel.networkSatisfied
                 )
                 
                 if viewModel.connectionMode == .localVPN {
                     DependencyRow(
                         title: "VPN Tunnel (utun)",
-                        subtitle: viewModel.isUTunAvailable ? "Connected" : "Disconnected",
+                        subtitle: viewModel.vpnSatisfied == nil ? "Unknown" : (viewModel.isUTunAvailable ? "Connected" : "Disconnected"),
                         isSatisfied: viewModel.vpnSatisfied
                     )
                     
@@ -80,7 +80,7 @@ struct HealthCheckView: View {
                         if #available(iOS 26.4, *) {
                             DependencyRow(
                                 title: "IPSec/IKEv2 Tunnel",
-                                subtitle: viewModel.isIKEv2IPSecAvailable ? "Connected" : "Disconnected",
+                                subtitle: viewModel.ipsecSatisfied == nil ? "Unknown" : (viewModel.isIKEv2IPSecAvailable ? "Connected" : "Disconnected"),
                                 isSatisfied: viewModel.ipsecSatisfied
                             )
                         }
@@ -89,7 +89,7 @@ struct HealthCheckView: View {
                 
                 DependencyRow(
                     title: "Device Reachability (Ping)",
-                    subtitle: viewModel.isPingSuccessful ? "Reachable" : "Unreachable",
+                    subtitle: viewModel.pingSatisfied == nil ? "Unknown" : (viewModel.isPingSuccessful ? "Reachable" : "Unreachable"),
                     isSatisfied: viewModel.pingSatisfied
                 )
                 

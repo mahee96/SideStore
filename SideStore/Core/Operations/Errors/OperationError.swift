@@ -257,7 +257,7 @@ struct OperationError: ALTLocalizedError {
         case .notReachable: return self._failureReason ?? NSLocalizedString("Device is not locatable at the specified IP/Endpoint.", comment: "")
         case .invalidPairingFile: return NSLocalizedString("The current pairing file is invalid or missing.\n\nPlease make sure to input a valid pairing file! If the issue persists, replace your pairing with iloader.", comment: "")
         case .minimuxerNotStarted: return NSLocalizedString("Minimuxer has not been started yet.\n\nPlease complete pairing or start minimuxer before performing operations.", comment: "")
-        case .pairingNotComplete: return NSLocalizedString("Pairing Required\n\nWithout a valid pairing file, SideStore operations cannot connect to your device. Please pair your device or import a valid pairing file.", comment: "")
+        case .pairingNotComplete: return NSLocalizedString("Pairing Required:\nWithout a valid pairing file, SideStore operations cannot connect to your device. Please pair your device or import a valid pairing file.", comment: "")
         case .tooNewError: return NSLocalizedString("iOS 17.0-17.3.1 changed how JIT is enabled so SideStore cannot enable JIT without SideJITServer on these versions, sorry for any inconvenience.", comment: "")
         case .unableToConnectSideJIT: return NSLocalizedString("Unable to connect to SideJITServer. Please check that you are on the same Wi-Fi of and your Firewall has been set correctly on your server.", comment: "")
         case .unableToRespondSideJITDevice: return NSLocalizedString("SideJITServer is unable to connect to your iDevice. Please make sure you have paired your iDevice by running 'SideJITServer -y', or try refreshing SideJITServer from Settings.", comment: "")

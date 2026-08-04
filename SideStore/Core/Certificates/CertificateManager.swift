@@ -252,7 +252,7 @@ public final class CertificateManager: @unchecked Sendable {
                 let derData = SecCertificateCopyData(secCert) as Data
                 let details = parseCertificate(derData: derData)
                 
-                debugLog("[CertificateManager] getSigningCertificate: Evaluating certificate in chain - Subject: '\(details.subject)', Issuer: '\(details.issuer)'")
+                verboseLog("[CertificateManager] getSigningCertificate: Evaluating certificate in chain - Subject: '\(details.subject)', Issuer: '\(details.issuer)'")
                 
                 // Filter out CA certificates (Intermediate / Root)
                 let issuerDN = details.issuer
@@ -264,7 +264,7 @@ public final class CertificateManager: @unchecked Sendable {
                 }
                 
                 let serial = details.serialHex.replacingOccurrences(of: "0x", with: "").uppercased()
-                debugLog("[CertificateManager] getSigningCertificate: Found leaf developer certificate serial: '\(serial)'")
+                verboseLog("[CertificateManager] getSigningCertificate: Found leaf developer certificate serial: '\(serial)'")
                 
                 if let localCert = getLocalCertificate(serialNumber: serial) {
                     debugLog("[CertificateManager] getSigningCertificate: Found signing certificate serial '\(serial)' in local keychain cache.")
