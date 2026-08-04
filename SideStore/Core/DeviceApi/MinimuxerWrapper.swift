@@ -50,26 +50,28 @@ enum MinimuxerStatus: Equatable {
     case invalidPairing
     case unknown
     
+    init(from error: MinimuxerError) {
+        switch error {
+        case .noVPN:                    self = .noVPN
+        case .invalidVPN:               self = .invalidVPN
+        case .pairingFile:              self = .pairingFile
+        case .invalidPairing:           self = .invalidPairing
+        case .noDevice:                 self = .noDevice
+        case .noConnection:             self = .noConnection
+        case .notReachable(let reason): self = .notReachable(reason)
+        case .unknown:                  self = .unknown
+        @unknown default:               self = .unknown
+        }
+    }
+    
     var operationError: OperationError? {
         switch self {
-        case .unknown:
-            return nil
-        case .ready:
-            return nil
-        case .noDevice:
-            return .noDevice
-        case .noConnection:
-            return .noConnection
-        case .notReachable(let reason):
-            return .notReachable(reason: reason)
-        case .noVPN:
-            return .noVPN
-        case .invalidVPN:
-            return .noVPN
-        case .pairingFile:
-            return .invalidPairingFile
-        case .invalidPairing:
-            return .invalidPairingFile
+        case .unknown, .ready:              return nil
+        case .noDevice:                     return .noDevice
+        case .noConnection:                 return .noConnection
+        case .notReachable(let reason):     return .notReachable(reason: reason)
+        case .noVPN, .invalidVPN:           return .noVPN
+        case .pairingFile, .invalidPairing: return .invalidPairingFile
         }
     }
 
@@ -78,29 +80,8 @@ enum MinimuxerStatus: Equatable {
         case .success:
             return .ready
         case .failure(let error):
-            guard let error = error as? MinimuxerError else {
-                return .unknown
-            }
-            switch error {
-            case .noVPN:
-                return .noVPN
-            case .invalidVPN:
-                return .invalidVPN
-            case .pairingFile:
-                return .pairingFile
-            case .invalidPairing:
-                return .invalidPairing
-            case .noDevice:
-                return .noDevice
-            case .noConnection:
-                return .noConnection
-            case .notReachable(let reason):
-                return .notReachable(reason)
-            case .unknown:
-                return .unknown
-            @unknown default:
-                return .unknown
-            }
+            guard let error = error as? MinimuxerError else { return .unknown }
+            return MinimuxerStatus(from: error)
         }
     }
 }
