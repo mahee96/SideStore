@@ -29,8 +29,7 @@ final class SetCertificateAlertViewController: UIViewController {
         super.viewDidLoad()
         
         let appCertSerial = installedApp.certificateSerialNumber
-        let profileURL = installedApp.fileURL.appendingPathComponent("embedded.mobileprovision")
-        var currentCertObj = CertificateManager.shared.loadCertificate(fromProvisioningProfileAt: profileURL)
+        var currentCertObj = CertificateManager.shared.getSigningCertificate(at: installedApp.fileURL)
         
         if currentCertObj == nil, let serial = appCertSerial {
             currentCertObj = CertificateManager.shared.getLocalCertificate(serialNumber: serial)

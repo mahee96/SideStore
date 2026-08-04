@@ -9,6 +9,7 @@
 import Foundation
 import KeychainAccess
 @preconcurrency import AltSign
+import Security
 
 public struct ActiveCertificate: Sendable {
     public let certificate: ALTCertificate
@@ -209,6 +210,12 @@ public final class CertificateManager: @unchecked Sendable {
     }
 
     public func loadCertificate(fromProvisioningProfileAt url: URL) -> ALTCertificate? {
+        // Try to get the exact signing certificate from the bundle binary first
+        let appURL = url.deletingLastPathComponent()
+        if appURL.pathExtension == "app", let binaryCert = getSigningCertificate(at: appURL) {
+            return binaryCert
+        }
+        
         guard let profile = ALTProvisioningProfile(url: url), let cert = profile.certificates.first else {
             return nil
         }
@@ -231,6 +238,49 @@ public final class CertificateManager: @unchecked Sendable {
             return nil
         }
         return cert
+    }
+
+    public func getSigningCertificate(at url: URL) -> ALTCertificate? {
+        let executableURL: URL
+        if url.pathExtension == "app" {
+            guard let execURL = Bundle(url: url)?.executableURL else {
+                debugLog("[CertificateManager] getSigningCertificate: Failed to locate executable in bundle: \(url.path)")
+                return nil
+            }
+            executableURL = execURL
+        } else {
+            executableURL = url
+        }
+        
+        guard let parser = try? MachOParser(url: executableURL) else {
+            debugLog("[CertificateManager] getSigningCertificate: Failed to parse Mach-O at \(executableURL.path)")
+            return nil
+        }
+        
+        let secCertChain = parser.certificates()
+        // traverse the single certificate chain and get leaf certificate
+        for secCert in secCertChain {
+            let derData = SecCertificateCopyData(secCert) as Data
+            let details = parseCertificate(derData: derData)
+            
+            // Filter out CA certificates (Intermediate / Root)
+            let issuerDN = details.issuer
+            let subjectDN = details.subject
+            if subjectDN.contains("Root") || issuerDN.contains("Root") ||
+               subjectDN.contains("Authority") || subjectDN.contains("Relations") || issuerDN.contains("Authority") {
+                continue
+            }
+            
+            let serial = details.serialHex.replacingOccurrences(of: "0x", with: "").uppercased()
+            if let localCert = getLocalCertificate(serialNumber: serial) {
+                return localCert
+            } else {
+                if let cert = ALTCertificate(data: derData) {
+                    return cert
+                }
+            }
+        }
+        return nil
     }
 
     public func loadAllSignableLocalCertificates() -> [ALTCertificate] {
