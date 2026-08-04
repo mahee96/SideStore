@@ -234,19 +234,17 @@ private extension SourceDetailContentViewController
             cell.bannerView.iconImageView.isIndicatingActivity = true
         }
         dataSource.prefetchHandler = { (storeApp, indexPath, completion) -> Foundation.Operation? in
-            return RSTAsyncBlockOperation { (operation) in
-                storeApp.managedObjectContext?.perform {
-                    ImagePipeline.shared.loadImage(with: storeApp.iconURL, progress: nil) { result in
-                        guard !operation.isCancelled else { return operation.finish() }
-                        
-                        switch result
-                        {
-                        case .success(let response): completion(response.image, nil)
-                        case .failure(let error): completion(nil, error)
-                        }
+            let iconURL = storeApp.iconURL
+            Task.detached(priority: .background) {
+                ImagePipeline.shared.loadImage(with: iconURL, progress: nil) { result in
+                    switch result
+                    {
+                    case .success(let response): completion(response.image, nil)
+                    case .failure(let error): completion(nil, error)
                     }
                 }
             }
+            return nil
         }
         dataSource.prefetchCompletionHandler = { [weak dataSource] (cell, image, indexPath, error) in
             let cell = cell as! AppBannerCollectionViewCell

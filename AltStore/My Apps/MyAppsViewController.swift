@@ -293,10 +293,8 @@ private extension MyAppsViewController
         dataSource.prefetchHandler = { (installedApp, indexPath, completionHandler) in
             guard let iconURL = installedApp.storeApp?.iconURL else { return nil }
             
-            return RSTAsyncBlockOperation() { (operation) in
+            Task.detached(priority: .background) {
                 ImagePipeline.shared.loadImage(with: iconURL, progress: nil) { result in
-                    guard !operation.isCancelled else { return operation.finish() }
-                    
                     switch result
                     {
                     case .success(let response): completionHandler(response.image, nil)
@@ -304,6 +302,7 @@ private extension MyAppsViewController
                     }
                 }
             }
+            return nil
         }
         dataSource.prefetchCompletionHandler = { (cell, image, indexPath, error) in
             let cell = cell as! UpdateCollectionViewCell
@@ -405,7 +404,7 @@ private extension MyAppsViewController
             }
         }
         dataSource.prefetchHandler = { (item, indexPath, completion) in
-            RSTAsyncBlockOperation { (operation) in
+            Task.detached(priority: .background) {
                 item.managedObjectContext?.perform {
                     item.loadIcon { (result) in
                         switch result
@@ -416,6 +415,7 @@ private extension MyAppsViewController
                     }
                 }
             }
+            return nil
         }
         dataSource.prefetchCompletionHandler = { (cell, image, indexPath, error) in
             let cell = cell as! InstalledAppCollectionViewCell
@@ -494,7 +494,7 @@ private extension MyAppsViewController
             }
         }
         dataSource.prefetchHandler = { (item, indexPath, completion) in
-            RSTAsyncBlockOperation { (operation) in
+            Task.detached(priority: .background) {
                 item.managedObjectContext?.perform {
                     item.loadIcon { (result) in
                         switch result
@@ -505,6 +505,7 @@ private extension MyAppsViewController
                     }
                 }
             }
+            return nil
         }
         dataSource.prefetchCompletionHandler = { (cell, image, indexPath, error) in
             let cell = cell as! InstalledAppCollectionViewCell
@@ -849,165 +850,122 @@ private extension MyAppsViewController
         
         self.navigationItem.leftBarButtonItem?.isIndicatingActivity = true
         
-        class Context
-        {
-            var fileURL: URL?
-            var appBundle: ALTApplication?
-            var installedApp: InstalledApp? {
-                didSet {
-                    self.installedAppContext = self.installedApp?.managedObjectContext
-                }
-            }
-            private var installedAppContext: NSManagedObjectContext?
-            
-            var error: Error?
-        }
-        
         let temporaryDirectory = FileManager.default.uniqueTemporaryURL()
         let unzippedAppDirectory = temporaryDirectory.appendingPathComponent("App")
         
-        let context = Context()
-        
-        let downloadOperation: RSTAsyncBlockOperation?
+        let downloadProgress = Progress.discreteProgress(totalUnitCount: 100)
+        let unzipProgress = Progress.discreteProgress(totalUnitCount: 1)
+        let installProgress = Progress.discreteProgress(totalUnitCount: 100)
         
         if url.isFileURL
         {
-            downloadOperation = nil
-            context.fileURL = url
             progress.totalUnitCount -= 20
         }
         else
         {
-            let downloadProgress = Progress.discreteProgress(totalUnitCount: 100)
-            downloadOperation = RSTAsyncBlockOperation { (operation) in
-                let downloadTask = URLSession.shared.downloadTask(with: url) { (fileURL, response, error) in
-                    do
-                    {
-                        let (fileURL, _) = try Result((fileURL, response), error).get()
-                        
-                        try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true, attributes: nil)
-                        
-                        let destinationURL = temporaryDirectory.appendingPathComponent("App.ipa")
-                        try FileManager.default.moveItem(at: fileURL, to: destinationURL)
-                        
-                        context.fileURL = destinationURL
-                    }
-                    catch
-                    {
-                        context.error = error
-                    }
-                    operation.finish()
-                }
-                downloadProgress.addChild(downloadTask.progress, withPendingUnitCount: 100)
-                downloadTask.resume()
-            }
             progress.addChild(downloadProgress, withPendingUnitCount: 20)
         }
-        
-        let unzipProgress = Progress.discreteProgress(totalUnitCount: 1)
-        let unzipAppOperation = BlockOperation { 
-            do
-            {
-                if let error = context.error
-                {
-                    throw error
-                }
-                
-                guard let fileURL = context.fileURL else {
-                    throw OperationError.invalidParameters("MyAppsViewController.sideloadApp.unzipAppOperation: context.fileURL is nil")
-                }
-                defer {
-                    try? FileManager.default.removeItem(at: fileURL)
-                }
-                
-                try FileManager.default.createDirectory(at: unzippedAppDirectory, withIntermediateDirectories: true, attributes: nil)
-                let unzippedApplicationURL = try FileManager.default.unzipAppBundle(at: fileURL, toDirectory: unzippedAppDirectory)
-                
-                guard let appBundle = ALTApplication(fileURL: unzippedApplicationURL) else { throw OperationError.invalidApp }
-                context.appBundle = appBundle
-                
-                unzipProgress.completedUnitCount = 1
-            }
-            catch
-            {
-                context.error = error
-            }
-        }
         progress.addChild(unzipProgress, withPendingUnitCount: 10)
-        
-        if let downloadOperation = downloadOperation
-        {
-            unzipAppOperation.addDependency(downloadOperation)
-        }
-                
-        let installProgress = Progress.discreteProgress(totalUnitCount: 100)
-        let installAppOperation = RSTAsyncBlockOperation { (operation) in
-            do
-            {
-                if let error = context.error
-                {
-                    throw error
-                }
-                
-                guard let appBundle = context.appBundle else {
-                    throw OperationError.invalidParameters("MyAppsViewController.sideloadApp.installAppOperation: context.appBundle is nil")
-                }
-                
-                let group = AppManager.shared.install(appBundle, presentingViewController: self) { (result) in
-                    switch result
-                    {
-                    case .success(let installedApp): context.installedApp = installedApp
-                    case .failure(let error): context.error = error
-                    }
-                    operation.finish()
-                }
-                installProgress.addChild(group.progress, withPendingUnitCount: 100)
-            }
-            catch
-            {
-                context.error = error
-                operation.finish()
-            }
-        }
-        installAppOperation.completionBlock = {
-            try? FileManager.default.removeItem(at: temporaryDirectory)
-            
-            DispatchQueue.main.async {
-                self.navigationItem.leftBarButtonItem?.isIndicatingActivity = false
-                self.sideloadingProgressView.observedProgress = nil
-                self.sideloadingProgressView.setHidden(true, animated: true)
-                
-                switch Result(context.installedApp, context.error)
-                {
-                case .success(let app):
-                    completion(.success(()))
-                    
-                    app.managedObjectContext?.perform {
-                        debugLog("Successfully installed app: \(app.bundleIdentifier)")
-                    }
-                    
-                case .failure(let error) where error is CancellationError:
-                    completion(.failure(OperationError.cancelled))
-                    
-                case .failure(let error):
-                    ToastView(error: error, opensLog: true).show(in: self)
-
-                    completion(.failure(error))
-                }
-            }
-        }
-        
-        installAppOperation.addDependency(unzipAppOperation)
-        
-        progress.addChild(installProgress, withPendingUnitCount: 65)
+        progress.addChild(installProgress, withPendingUnitCount: 70)
         
         self.sideloadingProgress = progress
         self.sideloadingProgressView.progress = 0
         self.sideloadingProgressView.isHidden = false
         self.sideloadingProgressView.observedProgress = self.sideloadingProgress
         
-        let operations = [downloadOperation, unzipAppOperation, installAppOperation].compactMap { $0 }
-        self.operationQueue.addOperations(operations, waitUntilFinished: false)
+        Task.detached { [weak self] in
+            guard let self else { return }
+            
+            var localFileURL = url
+            
+            do
+            {
+                // 1. Download if remote
+                if !url.isFileURL
+                {
+                    localFileURL = try await withCheckedThrowingContinuation { continuation in
+                        let downloadTask = URLSession.shared.downloadTask(with: url) { (fileURL, response, error) in
+                            do
+                            {
+                                let (fileURL, _) = try Result((fileURL, response), error).get()
+                                try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true, attributes: nil)
+                                let destinationURL = temporaryDirectory.appendingPathComponent("App.ipa")
+                                try FileManager.default.moveItem(at: fileURL, to: destinationURL)
+                                continuation.resume(returning: destinationURL)
+                            }
+                            catch
+                            {
+                                continuation.resume(throwing: error)
+                            }
+                        }
+                        downloadProgress.addChild(downloadTask.progress, withPendingUnitCount: 100)
+                        downloadTask.resume()
+                    }
+                }
+                
+                // 2. Unzip
+                defer {
+                    if !url.isFileURL {
+                        try? FileManager.default.removeItem(at: localFileURL)
+                    }
+                }
+                
+                try FileManager.default.createDirectory(at: unzippedAppDirectory, withIntermediateDirectories: true, attributes: nil)
+                let unzippedApplicationURL = try FileManager.default.unzipAppBundle(at: localFileURL, toDirectory: unzippedAppDirectory)
+                
+                guard let appBundle = ALTApplication(fileURL: unzippedApplicationURL) else { throw OperationError.invalidApp }
+                unzipProgress.completedUnitCount = 1
+                
+                // 3. Install app
+                let installedApp = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<InstalledApp, Error>) in
+                    DispatchQueue.main.async {
+                        let group = AppManager.shared.install(appBundle, presentingViewController: self) { (result) in
+                            switch result
+                            {
+                            case .success(let installedApp): continuation.resume(returning: installedApp)
+                            case .failure(let error): continuation.resume(throwing: error)
+                            }
+                        }
+                        installProgress.addChild(group.progress, withPendingUnitCount: 100)
+                    }
+                }
+                
+                // 4. Success UI callback
+                try? FileManager.default.removeItem(at: temporaryDirectory)
+                
+                await MainActor.run {
+                    self.navigationItem.leftBarButtonItem?.isIndicatingActivity = false
+                    self.sideloadingProgressView.observedProgress = nil
+                    self.sideloadingProgressView.setHidden(true, animated: true)
+                    
+                    completion(.success(()))
+                    
+                    installedApp.managedObjectContext?.perform {
+                        debugLog("Successfully installed app: \(installedApp.bundleIdentifier)")
+                    }
+                }
+            }
+            catch
+            {
+                try? FileManager.default.removeItem(at: temporaryDirectory)
+                
+                await MainActor.run {
+                    self.navigationItem.leftBarButtonItem?.isIndicatingActivity = false
+                    self.sideloadingProgressView.observedProgress = nil
+                    self.sideloadingProgressView.setHidden(true, animated: true)
+                    
+                    if error is CancellationError
+                    {
+                        completion(.failure(OperationError.cancelled))
+                    }
+                    else
+                    {
+                        ToastView(error: error, opensLog: true).show(in: self)
+                        completion(.failure(error))
+                    }
+                }
+            }
+        }
     }
     
     @IBAction func activateApp(_ sender: UIButton)

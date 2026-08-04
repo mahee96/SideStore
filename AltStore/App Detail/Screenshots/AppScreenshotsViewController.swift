@@ -126,11 +126,9 @@ private extension AppScreenshotsViewController
         }
         dataSource.prefetchHandler = { (screenshot, indexPath, completionHandler) in
             let imageURL = screenshot.imageURL
-            return RSTAsyncBlockOperation() { (operation) in
+            Task.detached(priority: .background) {
                 let request = ImageRequest(url: imageURL)
                 ImagePipeline.shared.loadImage(with: request, progress: nil) { result in
-                    guard !operation.isCancelled else { return operation.finish() }
-                    
                     switch result
                     {
                     case .success(let response): completionHandler(response.image, nil)
@@ -138,6 +136,7 @@ private extension AppScreenshotsViewController
                     }
                 }
             }
+            return nil
         }
         dataSource.prefetchCompletionHandler = { (cell, image, indexPath, error) in
             let cell = cell as! AppScreenshotCollectionViewCell

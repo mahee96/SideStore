@@ -546,8 +546,10 @@ extension AppManager
     
     func fetchSources(completionHandler: @escaping (Result<(Set<Source>, NSManagedObjectContext), FetchSourcesError>) -> Void)
     {
-        Task.detached {
+        Task.detached(priority: .utility) {
             let managedObjectContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
+            managedObjectContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+            
             var sourceData = [(objectID: NSManagedObjectID, sourceURL: URL)]()
             
             managedObjectContext.performAndWait {
@@ -563,23 +565,15 @@ extension AppManager
             var fetchedSources = Set<Source>()
             var errors = [Source: Error]()
             
-            await withTaskGroup(of: (NSManagedObjectID, Result<Void, Error>).self) { taskGroup in
+            await withTaskGroup(of: (NSManagedObjectID, Result<Source, Error>).self) { taskGroup in
                 for data in sourceData {
                     taskGroup.addTask {
                         do {
-                            let taskContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
-                            do {
-                                let source = taskContext.performAndWait { taskContext.object(with: data.objectID) as! Source }
-                                let context = StandaloneOperationContext(steps: [], dbBackgroundContext: taskContext)
-                                let fetchSourceOperation = try FetchSourceOperation(source: source, context: context)
-                                try await fetchSourceOperation.execute()
-                                try taskContext.performAndWait {
-                                    try taskContext.save()
-                                }
-                            } catch {
-                                throw error
-                            }
-                            return (data.objectID, .success(()))
+                            let source = managedObjectContext.performAndWait { managedObjectContext.object(with: data.objectID) as! Source }
+                            let context = StandaloneOperationContext(steps: [], dbBackgroundContext: managedObjectContext)
+                            let fetchSourceOperation = try FetchSourceOperation(source: source, context: context)
+                            let fetchedSource = try await fetchSourceOperation.execute()
+                            return (data.objectID, .success(fetchedSource))
                         } catch {
                             return (data.objectID, .failure(error))
                         }
@@ -590,19 +584,27 @@ extension AppManager
                     managedObjectContext.performAndWait {
                         let source = managedObjectContext.object(with: objectID) as! Source
                         switch result {
-                            case .success:
-                                fetchedSources.insert(source)
-                            case .failure(let nsError as NSError):
-                                let title = String(format: NSLocalizedString("Unable to Refresh “%@” Source", comment: ""), source.name)
-                                let error = nsError.withLocalizedTitle(title)
-                                errors[source] = error
-                                source.error = error.sanitizedForSerialization()
+                        case .success(let fetchedSource):
+                            fetchedSources.insert(fetchedSource)
+                        case .failure(let nsError as NSError):
+                            let title = String(format: NSLocalizedString("Unable to Refresh “%@” Source", comment: ""), source.name)
+                            let error = nsError.withLocalizedTitle(title)
+                            errors[source] = error
+                            source.error = error.sanitizedForSerialization()
                         }
                     }
                 }
             }
             
             await managedObjectContext.perform {
+                do {
+                    if managedObjectContext.hasChanges {
+                        try managedObjectContext.save()
+                    }
+                } catch {
+                    debugLog("Failed to save managedObjectContext in fetchSources: \(error.localizedDescription)")
+                }
+                
                 if !errors.isEmpty {
                     let sourcesSet = Set(sourceData.compactMap { managedObjectContext.object(with: $0.objectID) as? Source })
                     completionHandler(.failure(.init(sources: sourcesSet, errors: errors, context: managedObjectContext)))
@@ -624,7 +626,7 @@ extension AppManager
         
         let effectivePresentingVC = showAuthIfRequired ? presentingViewController : nil
         
-        Task.detached {
+        Task.detached(priority: .utility) {
             do {
                 let managedObjectContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
                 let context = AuthenticatedOperationContext(
@@ -651,7 +653,7 @@ extension AppManager
     func updateKnownSources(completionHandler: @escaping (Result<([KnownSource], [KnownSource]), Error>) -> Void) -> UpdateKnownSourcesOperation
     {
         let updateKnownSourcesOperation = UpdateKnownSourcesOperation()
-        Task.detached {
+        Task.detached(priority: .utility) {
             do {
                 let result = try await updateKnownSourcesOperation.execute()
                 completionHandler(.success(result))
