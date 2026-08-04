@@ -9,6 +9,7 @@
 import SwiftUI
 import Minimuxer
 import Darwin
+import Combine
 
 /*
  Minimuxer.shared.isReady Result Mapping to Core Requirements Statuses:
@@ -138,19 +139,18 @@ final class HealthCheckViewModel: ObservableObject {
         )
     }
 
-    func pollMetrics() async {
-        while !Task.isCancelled {
-            if UIApplication.shared.applicationState == .active {
-                // Hop to background thread to perform all synchronous FFI/network checks
-                let metrics = await self.fetchMetrics()
-                
-                let status = self.computeStatuses(metrics)
-                
-                // Update UI back on Main Actor
-                self.updateUI(metrics: metrics, status: status)
-            }
-            
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
+    func observeMetrics() async {
+        // Perform initial diagnostics load
+        let initialMetrics = await self.fetchMetrics()
+        let initialStatus = self.computeStatuses(initialMetrics)
+        self.updateUI(metrics: initialMetrics, status: initialStatus)
+        
+        // Listen to subsequent updates reactively
+        for await _ in minimuxerStatusPublisher.values {
+            guard !Task.isCancelled else { break }
+            let metrics = await self.fetchMetrics()
+            let status = self.computeStatuses(metrics)
+            self.updateUI(metrics: metrics, status: status)
         }
     }
     

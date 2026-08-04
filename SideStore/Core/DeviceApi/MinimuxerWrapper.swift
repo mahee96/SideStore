@@ -59,8 +59,7 @@ enum MinimuxerStatus: Equatable {
         case .noDevice:                 self = .noDevice
         case .noConnection:             self = .noConnection
         case .notReachable(let reason): self = .notReachable(reason)
-        case .unknown:                  self = .unknown
-        @unknown default:               self = .unknown
+        default:                        self = .unknown
         }
     }
     

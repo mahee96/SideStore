@@ -170,7 +170,7 @@ struct HealthCheckView: View {
         .navigationTitle("Health Check")
         .navigationBarTitleDisplayMode(.inline)
         .task {
-            await viewModel.pollMetrics()
+            await viewModel.observeMetrics()
         }
     }
 }
