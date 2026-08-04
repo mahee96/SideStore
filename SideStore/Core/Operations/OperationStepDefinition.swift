@@ -28,10 +28,10 @@ struct StandaloneExecutionStep: Hashable {
     }
 }
 
-// `PipelineDefinition` defines the exact step sequences for all application operations.
+// `PipelineStepDefinition` defines the exact step sequences for all application operations.
 //  NOTE: A pipeline step CANNOT contain another pipeline step nor any standalone steps.
 //        Nesting or executing pipeline steps recursively inside a step is strictly disallowed by design to keep pipeline explicit
-struct PipelineDefinition {
+struct PipelineStepDefinition {
     static let install: [PipelineExecutionStep] = [
         PipelineExecutionStep(.userCustomization,                 2),
         PipelineExecutionStep(.downloadApp,                      20),
@@ -240,7 +240,7 @@ struct PipelineDefinition {
     }
 }
 
-struct StandaloneDefinition {
+struct StandaloneStepDefinition {
     static let authenticate: [StandaloneExecutionStep] = [
         StandaloneExecutionStep(.fetchAnisetteData, 10),
         StandaloneExecutionStep(.authentication,    80),
@@ -261,21 +261,21 @@ struct StandaloneDefinition {
 }
 
 extension Array where Element == PipelineExecutionStep {
-    static var install:              [PipelineExecutionStep] { PipelineDefinition.install              }
-    static var resign:               [PipelineExecutionStep] { PipelineDefinition.resign               }
-    static var refresh:              [PipelineExecutionStep] { PipelineDefinition.refresh              }
-    static var activate:             [PipelineExecutionStep] { PipelineDefinition.activate             }
-    static var deactivate:           [PipelineExecutionStep] { PipelineDefinition.deactivate           }
-    static var backup:               [PipelineExecutionStep] { PipelineDefinition.backup               }
-    static var restore:              [PipelineExecutionStep] { PipelineDefinition.restore              }
-    static var removeDeactivatedApp: [PipelineExecutionStep] { PipelineDefinition.removeDeactivatedApp }
-    static var deleteApp:            [PipelineExecutionStep] { PipelineDefinition.deleteApp            }
-    static var enableJIT:            [PipelineExecutionStep] { PipelineDefinition.enableJIT            }
+    static var install:              [PipelineExecutionStep] { PipelineStepDefinition.install              }
+    static var resign:               [PipelineExecutionStep] { PipelineStepDefinition.resign               }
+    static var refresh:              [PipelineExecutionStep] { PipelineStepDefinition.refresh              }
+    static var activate:             [PipelineExecutionStep] { PipelineStepDefinition.activate             }
+    static var deactivate:           [PipelineExecutionStep] { PipelineStepDefinition.deactivate           }
+    static var backup:               [PipelineExecutionStep] { PipelineStepDefinition.backup               }
+    static var restore:              [PipelineExecutionStep] { PipelineStepDefinition.restore              }
+    static var removeDeactivatedApp: [PipelineExecutionStep] { PipelineStepDefinition.removeDeactivatedApp }
+    static var deleteApp:            [PipelineExecutionStep] { PipelineStepDefinition.deleteApp            }
+    static var enableJIT:            [PipelineExecutionStep] { PipelineStepDefinition.enableJIT            }
 }
 
 extension Array where Element == StandaloneExecutionStep {
-    static var authenticate:                          [StandaloneExecutionStep] { StandaloneDefinition.authenticate                          }
-    static var backgroundRefreshApps:                 [StandaloneExecutionStep] { StandaloneDefinition.backgroundRefreshApps                 }
-    static var clearAppCache:                         [StandaloneExecutionStep] { StandaloneDefinition.clearAppCache                         }
-    static var scheduleExpirationWarningNotification: [StandaloneExecutionStep] { StandaloneDefinition.scheduleExpirationWarningNotification }
+    static var authenticate:                          [StandaloneExecutionStep] { StandaloneStepDefinition.authenticate                          }
+    static var backgroundRefreshApps:                 [StandaloneExecutionStep] { StandaloneStepDefinition.backgroundRefreshApps                 }
+    static var clearAppCache:                         [StandaloneExecutionStep] { StandaloneStepDefinition.clearAppCache                         }
+    static var scheduleExpirationWarningNotification: [StandaloneExecutionStep] { StandaloneStepDefinition.scheduleExpirationWarningNotification }
 }

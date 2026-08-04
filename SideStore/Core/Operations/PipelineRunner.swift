@@ -278,7 +278,7 @@ final class PipelineRunner: Sendable
     
     private func performPipeline(for operation: AppOperation, group: RefreshGroup) async throws -> InstalledApp
     {
-        let pipelineSteps = PipelineDefinition.steps(for: operation)
+        let pipelineSteps = PipelineStepDefinition.steps(for: operation)
         let context = InstallAppOperationContext(
             pipelineSteps: pipelineSteps,
             bundleIdentifier: operation.bundleIdentifier,
