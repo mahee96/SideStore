@@ -36,7 +36,7 @@ public final class CertificateManager: @unchecked Sendable {
     public private(set) var activeCertificate: ActiveCertificate?
     
     private init() {
-        try? loadActiveCertificate()
+        _ = try? loadActiveCertificate()
     }
     
     // MARK: - Active Keychain Certificate Encapsulation
