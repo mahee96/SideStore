@@ -259,7 +259,7 @@ public final class CertificateManager: @unchecked Sendable {
                 let subjectDN = details.subject
                 if subjectDN.contains("Root") || issuerDN.contains("Root") ||
                    subjectDN.contains("Authority") || subjectDN.contains("Relations") || issuerDN.contains("Authority") {
-                    debugLog("[CertificateManager] getSigningCertificate: Skipping intermediate/root CA certificate: '\(details.subject)'")
+                    verboseLog("[CertificateManager] getSigningCertificate: Skipping intermediate/root CA certificate: '\(details.subject)'")
                     continue
                 }
                 
