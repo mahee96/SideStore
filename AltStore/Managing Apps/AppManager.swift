@@ -548,7 +548,6 @@ extension AppManager
     {
         Task.detached(priority: .utility) {
             let managedObjectContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
-            managedObjectContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
             
             var sourceData = [(objectID: NSManagedObjectID, sourceURL: URL)]()
             
