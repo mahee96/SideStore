@@ -749,3 +749,20 @@ final class SafeContinuation<T, E: Error>: @unchecked Sendable {
         continuation?.resume(throwing: error)
     }
 }
+
+extension HTTPUpgradeError: LocalizedError {
+    public var errorDescription: String? {
+        switch self {
+        case .notAnUpgrade(let statusCode, _):
+            return "HTTP Upgrade failed (Status \(statusCode))."
+        case .invalidData:
+            return "Received invalid WebSocket handshake data."
+        }
+    }
+}
+
+extension WSError: LocalizedError {
+    public var errorDescription: String? {
+        return "\(self.message) (code: \(self.code))"
+    }
+}
