@@ -584,6 +584,14 @@ private class AnisetteWebSocketSession: WebSocketDelegate {
                 self.continuation?.resume(throwing: OperationError.provisioningError(result: "WebSocket error", message: nil))
             }
             
+        case .peerClosed:
+            parentOperation.debugLog("[FetchAnisetteDataOperation] Peer closed connection")
+            self.continuation?.resume(throwing: OperationError.provisioningError(result: "Peer closed connection", message: nil))
+            
+        case .cancelled:
+            parentOperation.debugLog("[FetchAnisetteDataOperation] Connection cancelled")
+            self.continuation?.resume(throwing: OperationError.provisioningError(result: "WebSocket connection cancelled", message: nil))
+            
         default:
             parentOperation.debugLog("[FetchAnisetteDataOperation] Unknown event: \(event)")
         }
