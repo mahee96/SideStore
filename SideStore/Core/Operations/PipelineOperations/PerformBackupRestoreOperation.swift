@@ -66,6 +66,9 @@ final class PerformBackupRestoreOperation: BasePipelineOperation<InstallAppOpera
         if OperationsLoggingControl.isLoggingEnabled(for: Self.self) {
             queryItems.append(URLQueryItem(name: "verbose", value: "true"))
         }
+        if UserDefaults.standard.skipNonCopyableBackupFiles {
+            queryItems.append(URLQueryItem(name: "skipNonCopyable", value: "true"))
+        }
 
         var openURLComponents = URLComponents()
         openURLComponents.scheme = openAppURL.scheme

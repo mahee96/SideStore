@@ -19,6 +19,7 @@ struct UserCustomizationsView: View {
     @State private var customizeAppExtensions: Bool = UserDefaults.standard.customizeAppExtensions
     @State private var isExportResignedAppEnabled: Bool = UserDefaults.standard.isExportResignedAppEnabled
     @State private var enableEMPforWireguard: Bool = UserDefaults.standard.enableEMPforWireguard
+    @State private var skipNonCopyableFiles: Bool = UserDefaults.standard.skipNonCopyableBackupFiles
 
     var body: some View {
         ScrollView {
@@ -66,6 +67,16 @@ struct UserCustomizationsView: View {
                             set: { newValue in
                                 enableEMPforWireguard = newValue
                                 UserDefaults.standard.enableEMPforWireguard = newValue
+                            }
+                        ))
+                        
+                        divider
+                        
+                        toggleRow(title: "Skip Non-Copyable Files", isOn: Binding(
+                            get: { skipNonCopyableFiles },
+                            set: { newValue in
+                                skipNonCopyableFiles = newValue
+                                UserDefaults.standard.skipNonCopyableBackupFiles = newValue
                             }
                         ))
                     }

@@ -74,6 +74,10 @@ public extension UserDefaults
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
     }
+    @objc var skipNonCopyableBackupFiles: Bool {
+        get { self.bool(forKey: #function) }
+        set { self.set(newValue, forKey: #function) }
+    }
     @objc var isIdleTimeoutDisableEnabled: Bool {
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
@@ -319,6 +323,7 @@ public extension UserDefaults
             #keyPath(UserDefaults.disableAnisetteRotation): false,
             #keyPath(UserDefaults.useLocalVPN): true,
             #keyPath(UserDefaults.enableEMPforWireguard): false,
+            #keyPath(UserDefaults.skipNonCopyableBackupFiles): false,
             
             #keyPath(UserDefaults.responseCachingDisabled): false,
             #keyPath(UserDefaults.customizeAppId): false,

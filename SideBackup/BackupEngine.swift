@@ -160,7 +160,7 @@ final class BackupEngine: NSObject, Sendable {
         super.init()
     }
     
-    func performBackup(progressHandler: (@Sendable (_ copiedBytes: Int64, _ totalBytes: Int64) -> Void)? = nil) async throws {
+    func performBackup(skipNonCopyable: Bool = false, progressHandler: (@Sendable (_ copiedBytes: Int64, _ totalBytes: Int64) -> Void)? = nil) async throws {
         let logger = try ConsoleLog.getConsoleLog()
         guard let bundleIdentifier = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.altBundleID) as? String else {
             throw BackupError(.invalidBundleID, context: .createBackup)
@@ -192,7 +192,7 @@ final class BackupEngine: NSObject, Sendable {
                 }
                 
                 do {
-                    try self.performBackupCoordinated(temporaryAppBackupDirectory: temporaryAppBackupDirectory, appBackupDirectory: appBackupDirectory, altstoreAppGroup: altstoreAppGroup, progressHandler: progressHandler, logger: logger)
+                    try self.performBackupCoordinated(temporaryAppBackupDirectory: temporaryAppBackupDirectory, appBackupDirectory: appBackupDirectory, altstoreAppGroup: altstoreAppGroup, skipNonCopyable: skipNonCopyable, progressHandler: progressHandler, logger: logger)
                     continuation.resume(returning: ())
                 } catch {
                     continuation.resume(throwing: error)
@@ -201,7 +201,7 @@ final class BackupEngine: NSObject, Sendable {
         }
     }
     
-    func restoreBackup(progressHandler: (@Sendable (_ copiedBytes: Int64, _ totalBytes: Int64) -> Void)? = nil) async throws {
+    func restoreBackup(skipNonCopyable: Bool = false, progressHandler: (@Sendable (_ copiedBytes: Int64, _ totalBytes: Int64) -> Void)? = nil) async throws {
         let logger = try ConsoleLog.getConsoleLog()
         guard let bundleIdentifier = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.altBundleID) as? String else {
             throw BackupError(.invalidBundleID, context: .accessBackup)
@@ -228,7 +228,7 @@ final class BackupEngine: NSObject, Sendable {
                 }
                 
                 do {
-                    try self.restoreBackupCoordinated(appBackupDirectory: appBackupDirectory, altstoreAppGroup: altstoreAppGroup, progressHandler: progressHandler, logger: logger)
+                    try self.restoreBackupCoordinated(appBackupDirectory: appBackupDirectory, altstoreAppGroup: altstoreAppGroup, skipNonCopyable: skipNonCopyable, progressHandler: progressHandler, logger: logger)
                     continuation.resume(returning: ())
                 } catch {
                     continuation.resume(throwing: error)
@@ -237,7 +237,7 @@ final class BackupEngine: NSObject, Sendable {
         }
     }
     
-    private func performBackupCoordinated(temporaryAppBackupDirectory: URL, appBackupDirectory: URL, altstoreAppGroup: String, progressHandler: (@Sendable (Int64, Int64) -> Void)?, logger: ConsoleLog) throws {
+    private func performBackupCoordinated(temporaryAppBackupDirectory: URL, appBackupDirectory: URL, altstoreAppGroup: String, skipNonCopyable: Bool, progressHandler: (@Sendable (Int64, Int64) -> Void)?, logger: ConsoleLog) throws {
         do {
             let mainGroupBackupDirectory = temporaryAppBackupDirectory.appendingPathComponent("App")
             try FileManager.default.createDirectory(at: mainGroupBackupDirectory, withIntermediateDirectories: true, attributes: nil)
@@ -259,7 +259,7 @@ final class BackupEngine: NSObject, Sendable {
                 try FileManager.default.removeItem(at: backupDocumentsDirectory)
             }
             if FileManager.default.fileExists(atPath: documentsDirectory.path) {
-                try FileManager.default.copyDirectoryContents(at: documentsDirectory, to: backupDocumentsDirectory, options: [.skipsHiddenFiles], tracker: tracker, logger: logger)
+                try FileManager.default.copyDirectoryContents(at: documentsDirectory, to: backupDocumentsDirectory, options: [.skipsHiddenFiles], skipNonCopyable: skipNonCopyable, tracker: tracker, logger: logger)
             }
             debugLog(logger, "[SideBackup]: Copied Documents directory from \(documentsDirectory) to \(backupDocumentsDirectory)")
             
@@ -268,7 +268,7 @@ final class BackupEngine: NSObject, Sendable {
                 try FileManager.default.removeItem(at: backupLibraryDirectory)
             }
             if FileManager.default.fileExists(atPath: libraryDirectory.path) {
-                try FileManager.default.copyDirectoryContents(at: libraryDirectory, to: backupLibraryDirectory, options: [.skipsHiddenFiles], tracker: tracker, logger: logger)
+                try FileManager.default.copyDirectoryContents(at: libraryDirectory, to: backupLibraryDirectory, options: [.skipsHiddenFiles], skipNonCopyable: skipNonCopyable, tracker: tracker, logger: logger)
             }
             debugLog(logger, "[SideBackup]: Copied Library directory from \(libraryDirectory) to \(backupLibraryDirectory)")
             
@@ -278,7 +278,7 @@ final class BackupEngine: NSObject, Sendable {
                 }
                 
                 let backupAppGroupURL = temporaryAppBackupDirectory.appendingPathComponent(appGroup)
-                try FileManager.default.copyDirectoryContents(at: appGroupURL, to: backupAppGroupURL, options: [.skipsHiddenFiles], tracker: tracker, logger: logger)
+                try FileManager.default.copyDirectoryContents(at: appGroupURL, to: backupAppGroupURL, options: [.skipsHiddenFiles], skipNonCopyable: skipNonCopyable, tracker: tracker, logger: logger)
             }
             
             // Replace previous backup with new backup.
@@ -296,7 +296,7 @@ final class BackupEngine: NSObject, Sendable {
         }
     }
     
-    private func restoreBackupCoordinated(appBackupDirectory: URL, altstoreAppGroup: String, progressHandler: (@Sendable (Int64, Int64) -> Void)?, logger: ConsoleLog) throws {
+    private func restoreBackupCoordinated(appBackupDirectory: URL, altstoreAppGroup: String, skipNonCopyable: Bool, progressHandler: (@Sendable (Int64, Int64) -> Void)?, logger: ConsoleLog) throws {
         let mainGroupBackupDirectory = appBackupDirectory.appendingPathComponent("App")
         
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -313,8 +313,8 @@ final class BackupEngine: NSObject, Sendable {
         
         let tracker = CopyProgressTracker(totalBytes: totalBytes, progressHandler: progressHandler)
         
-        try FileManager.default.copyDirectoryContents(at: backupDocumentsDirectory, to: documentsDirectory, options: [], tracker: tracker, logger: logger)
-        try FileManager.default.copyDirectoryContents(at: backupLibraryDirectory, to: libraryDirectory, options: [], tracker: tracker, logger: logger)
+        try FileManager.default.copyDirectoryContents(at: backupDocumentsDirectory, to: documentsDirectory, options: [], skipNonCopyable: skipNonCopyable, tracker: tracker, logger: logger)
+        try FileManager.default.copyDirectoryContents(at: backupLibraryDirectory, to: libraryDirectory, options: [], skipNonCopyable: skipNonCopyable, tracker: tracker, logger: logger)
         
         for appGroup in Bundle.main.appGroups where appGroup != altstoreAppGroup {
             guard let appGroupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup) else {
@@ -322,7 +322,7 @@ final class BackupEngine: NSObject, Sendable {
             }
             
             let backupAppGroupURL = appBackupDirectory.appendingPathComponent(appGroup)
-            try FileManager.default.copyDirectoryContents(at: backupAppGroupURL, to: appGroupURL, options: [], tracker: tracker, logger: logger)
+            try FileManager.default.copyDirectoryContents(at: backupAppGroupURL, to: appGroupURL, options: [], skipNonCopyable: skipNonCopyable, tracker: tracker, logger: logger)
         }
         tracker.complete()
     }
@@ -352,6 +352,7 @@ private extension FileManager {
         at sourceDirectoryURL: URL,
         to destinationDirectoryURL: URL,
         options: FileManager.DirectoryEnumerationOptions = [],
+        skipNonCopyable: Bool = false,
         tracker: CopyProgressTracker?,
         logger: ConsoleLog
     ) throws {
@@ -375,7 +376,7 @@ private extension FileManager {
             if self.fileExists(atPath: destinationURL.path) {
                 do {
                     let merged = try removeItemRetrying(at: destinationURL, isDirectory: isDirectory, fallbackMerge: {
-                        try self.copyDirectoryContents(at: fileURL, to: destinationURL, options: options, tracker: tracker, logger: logger)
+                        try self.copyDirectoryContents(at: fileURL, to: destinationURL, options: options, skipNonCopyable: skipNonCopyable, tracker: tracker, logger: logger)
                     }, logger: logger)
                     if merged {
                         successCount += 1
@@ -397,9 +398,9 @@ private extension FileManager {
             
             do {
                 if isDirectory {
-                    try self.copyDirectoryContents(at: fileURL, to: destinationURL, options: options, tracker: tracker, logger: logger)
+                    try self.copyDirectoryContents(at: fileURL, to: destinationURL, options: options, skipNonCopyable: skipNonCopyable, tracker: tracker, logger: logger)
                 } else {
-                    try copyItemRetrying(from: fileURL, to: destinationURL, logger: logger)
+                    try copyItemRetrying(from: fileURL, to: destinationURL, skipNonCopyable: skipNonCopyable, logger: logger)
                     tracker?.add(bytes: fileSize)
                 }
                 successCount += 1
@@ -418,6 +419,11 @@ private extension FileManager {
                 // Ignore errors for /Documents/Inbox
                 guard !(fileURL.lastPathComponent == "Inbox" && fileURL.deletingLastPathComponent().lastPathComponent == "Documents") else {
                     debugLog(logger, "[SideBackup]: Failed to copy Inbox directory: \(error)")
+                    continue
+                }
+                if skipNonCopyable {
+                    failureCount += 1
+                    debugLog(logger, "[SideBackup]: Backup: Skipping non-copyable '\(lastComponent)' — \(error.localizedDescription)")
                     continue
                 }
                 failureCount += 1
@@ -447,7 +453,7 @@ private extension FileManager {
         return false
     }
     
-    func copyItemRetrying(from sourceURL: URL, to destinationURL: URL, maxAttempts: Int = 3, logger: ConsoleLog) throws {
+    func copyItemRetrying(from sourceURL: URL, to destinationURL: URL, skipNonCopyable: Bool = false, maxAttempts: Int = 3, logger: ConsoleLog) throws {
         for attempt in 1...maxAttempts {
             do {
                 try self.copyItem(at: sourceURL, to: destinationURL)
@@ -456,6 +462,10 @@ private extension FileManager {
             } catch let error where isLockingError(error) {
                 verboseLog(logger, "[SideBackup]: Backup: Copy attempt \(attempt)/\(maxAttempts) for '\(sourceURL.lastPathComponent)' failed — \(error.localizedDescription)")
                 if attempt < maxAttempts { Thread.sleep(forTimeInterval: 0.2) }
+                else if skipNonCopyable {
+                    debugLog(logger, "[SideBackup]: Backup: Skipping non-copyable '\(sourceURL.lastPathComponent)' after \(maxAttempts) attempts — \(error.localizedDescription)")
+                    return
+                }
                 else { throw error }
             } catch let error where isFileExistsError(error) {
                 verboseLog(logger, "[SideBackup]: Backup: Destination already exists during copy for '\(destinationURL.lastPathComponent)'. Attempting to remove existing item and retry...")

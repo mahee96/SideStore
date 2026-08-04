@@ -25,6 +25,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     fileprivate static let operationDidFinishNotification = Notification.Name("io.sidestore.BackupOperationFinished")
     
     fileprivate static let operationResultKey = "result"
+    fileprivate static let skipNonCopyableKey = "skipNonCopyable"
     
     private var currentBackupReturnURL: URL?
     
@@ -46,17 +47,23 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             ConsoleLog.setVerbose(isVerbose)
         }
         
+        let skipNonCopyable: Bool = {
+            guard let value = components.queryItems?.first(where: { $0.name == "skipNonCopyable" })?.value else { return false }
+            return value.lowercased() == "true" || value == "1"
+        }()
+        let userInfo: [String: Any] = [AppDelegate.skipNonCopyableKey: skipNonCopyable]
+        
         switch command {
         case "backup":
             guard let returnString = components.queryItems?.first(where: { $0.name == "returnURL" })?.value, let returnURL = URL(string: returnString) else { return false }
             self.currentBackupReturnURL = returnURL
-            NotificationCenter.default.post(name: AppDelegate.startBackupNotification, object: nil)
+            NotificationCenter.default.post(name: AppDelegate.startBackupNotification, object: nil, userInfo: userInfo)
             return true
             
         case "restore":
             guard let returnString = components.queryItems?.first(where: { $0.name == "returnURL" })?.value, let returnURL = URL(string: returnString) else { return false }
             self.currentBackupReturnURL = returnURL
-            NotificationCenter.default.post(name: AppDelegate.startRestoreNotification, object: nil)
+            NotificationCenter.default.post(name: AppDelegate.startRestoreNotification, object: nil, userInfo: userInfo)
             return true
             
         default:
@@ -152,20 +159,22 @@ class AppState: ObservableObject {
         }
         NotificationCenter.default.publisher(for: AppDelegate.startBackupNotification)
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
+            .sink { [weak self] notification in
                 guard let self = self else { return }
+                let skipNonCopyable = notification.userInfo?[AppDelegate.skipNonCopyableKey] as? Bool ?? false
                 Task {
-                    await self.backup()
+                    await self.backup(skipNonCopyable: skipNonCopyable)
                 }
             }
             .store(in: &cancellables)
             
         NotificationCenter.default.publisher(for: AppDelegate.startRestoreNotification)
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
+            .sink { [weak self] notification in
                 guard let self = self else { return }
+                let skipNonCopyable = notification.userInfo?[AppDelegate.skipNonCopyableKey] as? Bool ?? false
                 Task {
-                    await self.restore()
+                    await self.restore(skipNonCopyable: skipNonCopyable)
                 }
             }
             .store(in: &cancellables)
@@ -193,7 +202,7 @@ class AppState: ObservableObject {
         }
     }
 
-    private func backup() async {
+    private func backup(skipNonCopyable: Bool = false) async {
         if let error = self.bootCheckError ?? ConsoleLog.bootCheckError {
             let appName = Bundle.main.appName ?? NSLocalizedString("App", comment: "")
             let title = String(format: NSLocalizedString("%@ could not be backed up.", comment: ""), appName)
@@ -207,7 +216,7 @@ class AppState: ObservableObject {
         let appName = Bundle.main.appName ?? NSLocalizedString("App", comment: "")
         
         do {
-            try await BackupEngine.shared.performBackup { [weak self] copied, total in
+            try await BackupEngine.shared.performBackup(skipNonCopyable: skipNonCopyable) { [weak self] copied, total in
                 Task { @MainActor in
                     self?.updateProgress(copied: copied, total: total)
                 }
@@ -219,7 +228,7 @@ class AppState: ObservableObject {
         }
     }
     
-    private func restore() async {
+    private func restore(skipNonCopyable: Bool = false) async {
         if let error = self.bootCheckError ?? ConsoleLog.bootCheckError {
             let appName = Bundle.main.appName ?? NSLocalizedString("App", comment: "")
             let title = String(format: NSLocalizedString("%@ could not be restored.", comment: ""), appName)
@@ -233,7 +242,7 @@ class AppState: ObservableObject {
         let appName = Bundle.main.appName ?? NSLocalizedString("App", comment: "")
         
         do {
-            try await BackupEngine.shared.restoreBackup { [weak self] copied, total in
+            try await BackupEngine.shared.restoreBackup(skipNonCopyable: skipNonCopyable) { [weak self] copied, total in
                 Task { @MainActor in
                     self?.updateProgress(copied: copied, total: total)
                 }
