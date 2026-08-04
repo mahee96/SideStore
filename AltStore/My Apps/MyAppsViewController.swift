@@ -58,7 +58,7 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
     private var didChangeActiveApps = false
     private var previousInactiveAppsCount = 0
     private var statusDotView: UIView?
-    private var statusTimer: Timer?
+    private var statusCancellable: AnyCancellable?
     
     private var _imagePickerInstalledApp: InstalledApp?
     private var _viewDidAppear = false
@@ -119,6 +119,12 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
         (self as PeekPopPreviewing).registerForPreviewing(with: self, sourceView: self.collectionView)
         
         NotificationCenter.default.addObserver(self, selector: #selector(MyAppsViewController.didChangeAppIcon(_:)), name: UIApplication.didChangeAppIconNotification, object: nil)
+        
+        self.statusCancellable = minimuxerStatusPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] result in
+                self?.updateStatusDot(with: result)
+            }
     }
     
     override func viewIsAppearing(_ animated: Bool)
@@ -145,19 +151,12 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
         super.viewDidAppear(animated)
         
         _viewDidAppear = true
-        
-        self.statusTimer?.invalidate()
-        self.statusTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
-            self?.updateStatusDot()
-        }
         self.updateStatusDot()
     }
     
     override func viewWillDisappear(_ animated: Bool)
     {
         super.viewWillDisappear(animated)
-        self.statusTimer?.invalidate()
-        self.statusTimer = nil
     }
     
     private func findView(in view: UIView, where predicate: (UIView) -> Bool) -> UIView? {
@@ -172,7 +171,7 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
         return nil
     }
 
-    private func updateStatusDot()
+    private func updateStatusDot(with result: Result<Bool, Error>? = nil)
     {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
@@ -183,21 +182,30 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
                 return
             }
             
+            let updateColorClosure: (MinimuxerStatus) -> Void = { [weak self] status in
+                guard let self = self, let existingDot = self.statusDotView else { return }
+                let targetColor: UIColor = (status == .ready) ? .systemGreen : .systemRed
+                
+                if existingDot.backgroundColor != targetColor {
+                    UIView.animate(withDuration: 0.25, delay: 0.0, options: [.beginFromCurrentState, .curveEaseInOut]) {
+                        existingDot.backgroundColor = targetColor
+                        existingDot.transform = CGAffineTransform(scaleX: 1.25, y: 1.25)
+                    } completion: { _ in
+                        UIView.animate(withDuration: 0.15, delay: 0.0, options: .curveEaseInOut) {
+                            existingDot.transform = .identity
+                        }
+                    }
+                }
+            }
+            
             // If the dot is already created and attached to largeTitleView, just update color O(1)
             if let existingDot = self.statusDotView, existingDot.superview == largeTitleView {
-                Task {
-                    let status = await getMinimuxerStatus()
-                    let targetColor: UIColor = (status == .ready) ? .systemGreen : .systemRed
-                    
-                    if existingDot.backgroundColor != targetColor {
-                        UIView.animate(withDuration: 0.25, delay: 0.0, options: [.beginFromCurrentState, .curveEaseInOut]) {
-                            existingDot.backgroundColor = targetColor
-                            existingDot.transform = CGAffineTransform(scaleX: 1.25, y: 1.25)
-                        } completion: { _ in
-                            UIView.animate(withDuration: 0.15, delay: 0.0, options: .curveEaseInOut) {
-                                existingDot.transform = .identity
-                            }
-                        }
+                if let result = result {
+                    updateColorClosure(MinimuxerStatus.from(result))
+                } else {
+                    Task {
+                        let status = await getMinimuxerStatus()
+                        updateColorClosure(status)
                     }
                 }
                 return
@@ -225,14 +233,22 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
                 dot.heightAnchor.constraint(equalToConstant: 7)
             ])
             
-            Task {
-                let status = await getMinimuxerStatus()
+            let animateEntranceClosure: (MinimuxerStatus) -> Void = { status in
                 let targetColor: UIColor = (status == .ready) ? .systemGreen : .systemRed
                 dot.backgroundColor = targetColor
                 UIView.animate(withDuration: 0.35, delay: 0.1, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.8, options: [], animations: {
                     dot.transform = .identity
                     dot.alpha = 1.0
                 }, completion: nil)
+            }
+            
+            if let result = result {
+                animateEntranceClosure(MinimuxerStatus.from(result))
+            } else {
+                Task {
+                    let status = await getMinimuxerStatus()
+                    animateEntranceClosure(status)
+                }
             }
         }
     }

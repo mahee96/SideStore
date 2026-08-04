@@ -7,6 +7,15 @@
 
 import Foundation
 import Minimuxer
+import Combine
+
+public var minimuxerStatusPublisher: AnyPublisher<Result<Bool, Error>, Never> {
+    Minimuxer.shared.statusPublisher
+        .map { result in
+            result.mapError { $0 as Error }
+        }
+        .eraseToAnyPublisher()
+}
 
 func bindConnectionConfig() async {
     defer { debugLog("[SideStore] bindTunnelConfig() completed") }
@@ -63,38 +72,46 @@ enum MinimuxerStatus: Equatable {
             return .invalidPairingFile
         }
     }
-}
 
-func getMinimuxerStatus() async -> MinimuxerStatus {
-//    #if targetEnvironment(simulator)
-//    debugLog("[SideStore] getMinimuxerStatus() = .ready on simulator")
-//    return .ready
-//    #endif
-    
-    let result = await Minimuxer.shared.isReady()
-    switch result {
+    static func from(_ result: Result<Bool, Error>) -> MinimuxerStatus {
+        switch result {
         case .success:
             return .ready
         case .failure(let error):
-            switch error {
-                case .noVPN:
-                    return .noVPN
-                case .invalidVPN:
-                    return .invalidVPN
-                case .pairingFile:
-                    return .pairingFile
-                case .invalidPairing:
-                    return .invalidPairing
-                case .noDevice:
-                    return .noDevice
-                case .noConnection:
-                    return .noConnection
-                case .notReachable(let reason):
-                    return .notReachable(reason)
-                default:
-                    return .unknown
+            guard let error = error as? MinimuxerError else {
+                return .unknown
             }
+            switch error {
+            case .noVPN:
+                return .noVPN
+            case .invalidVPN:
+                return .invalidVPN
+            case .pairingFile:
+                return .pairingFile
+            case .invalidPairing:
+                return .invalidPairing
+            case .noDevice:
+                return .noDevice
+            case .noConnection:
+                return .noConnection
+            case .notReachable(let reason):
+                return .notReachable(reason)
+            case .unknown:
+                return .unknown
+            @unknown default:
+                return .unknown
+            }
+        }
     }
+}
+
+func getMinimuxerStatus() async -> MinimuxerStatus {
+    // #if targetEnvironment(simulator)
+    // debugLog("[SideStore] getMinimuxerStatus() = .ready on simulator")
+    // return .ready
+    // #endif
+    let result = await Minimuxer.shared.isReady()
+    return MinimuxerStatus.from(result.mapError { $0 as Error })
 }
 
 func reinitializePairingData(_ pairingFile: String) async throws {
