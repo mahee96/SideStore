@@ -57,6 +57,8 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
     private var isCheckingForUpdates = false
     private var didChangeActiveApps = false
     private var previousInactiveAppsCount = 0
+    private var statusDotView: UIView?
+    private var statusTimer: Timer?
     
     private var _imagePickerInstalledApp: InstalledApp?
     private var _viewDidAppear = false
@@ -132,11 +134,107 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
         self.previousInactiveAppsCount = self.inactiveAppsDataSource.itemCount
     }
     
+    override func viewDidLayoutSubviews()
+    {
+        super.viewDidLayoutSubviews()
+        self.updateStatusDot()
+    }
+
     override func viewDidAppear(_ animated: Bool)
     {
         super.viewDidAppear(animated)
         
         _viewDidAppear = true
+        
+        self.statusTimer?.invalidate()
+        self.statusTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            self?.updateStatusDot()
+        }
+        self.updateStatusDot()
+    }
+    
+    override func viewWillDisappear(_ animated: Bool)
+    {
+        super.viewWillDisappear(animated)
+        self.statusTimer?.invalidate()
+        self.statusTimer = nil
+    }
+    
+    private func findView(in view: UIView, where predicate: (UIView) -> Bool) -> UIView? {
+        if predicate(view) {
+            return view
+        }
+        for subview in view.subviews {
+            if let found = findView(in: subview, where: predicate) {
+                return found
+            }
+        }
+        return nil
+    }
+
+    private func updateStatusDot()
+    {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            guard let navigationBar = self.navigationController?.navigationBar else { return }
+            
+            guard let largeTitleView = self.findView(in: navigationBar, where: { NSStringFromClass(type(of: $0)).contains("LargeTitle") }) else {
+                return
+            }
+            
+            // If the dot is already created and attached to largeTitleView, just update color O(1)
+            if let existingDot = self.statusDotView, existingDot.superview == largeTitleView {
+                Task {
+                    let status = await getMinimuxerStatus()
+                    let targetColor: UIColor = (status == .ready) ? .systemGreen : .systemRed
+                    
+                    if existingDot.backgroundColor != targetColor {
+                        UIView.animate(withDuration: 0.25, delay: 0.0, options: [.beginFromCurrentState, .curveEaseInOut]) {
+                            existingDot.backgroundColor = targetColor
+                            existingDot.transform = CGAffineTransform(scaleX: 1.25, y: 1.25)
+                        } completion: { _ in
+                            UIView.animate(withDuration: 0.15, delay: 0.0, options: .curveEaseInOut) {
+                                existingDot.transform = .identity
+                            }
+                        }
+                    }
+                }
+                return
+            }
+            
+            self.statusDotView?.removeFromSuperview()
+            
+            let titleText = NSLocalizedString("My Apps", comment: "")
+            let font = UIFont.systemFont(ofSize: 34, weight: .bold)
+            let textWidth = titleText.size(withAttributes: [.font: font]).width
+            let leftMargin: CGFloat = 20
+            
+            let dot = UIView()
+            dot.translatesAutoresizingMaskIntoConstraints = false
+            dot.layer.cornerRadius = 3.5
+            dot.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
+            dot.alpha = 0.0
+            largeTitleView.addSubview(dot)
+            self.statusDotView = dot
+            
+            NSLayoutConstraint.activate([
+                dot.leadingAnchor.constraint(equalTo: largeTitleView.leadingAnchor, constant: leftMargin + textWidth - 2),
+                dot.bottomAnchor.constraint(equalTo: largeTitleView.bottomAnchor, constant: -32),
+                dot.widthAnchor.constraint(equalToConstant: 7),
+                dot.heightAnchor.constraint(equalToConstant: 7)
+            ])
+            
+            Task {
+                let status = await getMinimuxerStatus()
+                let targetColor: UIColor = (status == .ready) ? .systemGreen : .systemRed
+                dot.backgroundColor = targetColor
+                UIView.animate(withDuration: 0.35, delay: 0.1, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.8, options: [], animations: {
+                    dot.transform = .identity
+                    dot.alpha = 1.0
+                }, completion: nil)
+            }
+        }
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?)

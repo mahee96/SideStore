@@ -66,10 +66,11 @@ enum MinimuxerStatus: Equatable {
 }
 
 func getMinimuxerStatus() async -> MinimuxerStatus {
-    #if targetEnvironment(simulator)
-    debugLog("[SideStore] getMinimuxerStatus() = .ready on simulator")
-    return .ready
-    #else
+//    #if targetEnvironment(simulator)
+//    debugLog("[SideStore] getMinimuxerStatus() = .ready on simulator")
+//    return .ready
+//    #endif
+    
     let result = await Minimuxer.shared.isReady()
     switch result {
         case .success:
@@ -94,7 +95,6 @@ func getMinimuxerStatus() async -> MinimuxerStatus {
                     return .unknown
             }
     }
-    #endif
 }
 
 func reinitializePairingData(_ pairingFile: String) async throws {
