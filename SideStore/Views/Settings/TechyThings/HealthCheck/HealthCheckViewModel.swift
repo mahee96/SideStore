@@ -188,7 +188,7 @@ final class HealthCheckViewModel: ObservableObject {
             switch error {
             case .noConnection:
                 return (false, nil, nil, nil, nil, nil)
-            case .notStarted:
+            case .notStarted, .pairingNotLoaded:
                 return (nil, nil, nil, nil, nil, nil)
             case .noVPN, .invalidVPN:
                 return (netSat, false, nil, nil, nil, nil)
@@ -196,7 +196,7 @@ final class HealthCheckViewModel: ObservableObject {
                 pingSat = false
                 pairingSat = nil
                 ddiSat = nil
-            case .pairingFile, .invalidPairing:
+            case .invalidPairing:
                 pairingSat = false
                 ddiSat = nil
             case .mount:

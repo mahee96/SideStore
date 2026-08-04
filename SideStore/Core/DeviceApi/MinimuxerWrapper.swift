@@ -46,34 +46,35 @@ enum MinimuxerStatus: Equatable {
     case notReachable(String)
     case noVPN
     case invalidVPN
-    case pairingFile
     case invalidPairing
     case notStarted
+    case pairingNotLoaded
     case unknown
     
     init(from error: MinimuxerError) {
         switch error {
         case .noVPN:                    self = .noVPN
         case .invalidVPN:               self = .invalidVPN
-        case .pairingFile:              self = .pairingFile
         case .invalidPairing:           self = .invalidPairing
         case .noDevice:                 self = .noDevice
         case .noConnection:             self = .noConnection
         case .notReachable(let reason): self = .notReachable(reason)
         case .notStarted:               self = .notStarted
+        case .pairingNotLoaded:         self = .pairingNotLoaded
         default:                        self = .unknown
         }
     }
     
     var operationError: OperationError? {
         switch self {
-        case .unknown, .ready:              return nil
-        case .noDevice:                     return .noDevice
-        case .noConnection:                 return .noConnection
-        case .notReachable(let reason):     return .notReachable(reason: reason)
-        case .noVPN, .invalidVPN:           return .noVPN
-        case .pairingFile, .invalidPairing: return .invalidPairingFile
-        case .notStarted:                   return .minimuxerNotStarted
+        case .unknown, .ready:          return nil
+        case .noDevice:                 return .noDevice
+        case .noConnection:             return .noConnection
+        case .notReachable(let reason): return .notReachable(reason: reason)
+        case .noVPN, .invalidVPN:       return .noVPN
+        case .invalidPairing:           return .invalidPairingFile
+        case .notStarted:               return .minimuxerNotStarted
+        case .pairingNotLoaded:         return .pairingNotComplete
         }
     }
 
@@ -253,7 +254,7 @@ extension MinimuxerError {
             return NSLocalizedString(reason, comment: "")
         case .noVPN(let reason):
             return String(format: NSLocalizedString("Unable to connect to the device via %@ VPN. Please make sure LocalDevVPN is enabled and running! Reason: %@", comment: ""), "LocalDev", reason)
-        case .pairingFile(let proto, let reason):
+        case .invalidPairing(let proto, let reason):
             return String(format: NSLocalizedString("Invalid pairing file (%@ protocol): %@. Please use iloader to replace it.", comment: ""), proto.description, reason)
         case .createDebug:
             return createService(name: "debug")
@@ -333,6 +334,8 @@ extension MinimuxerError {
             return NSLocalizedString("Usbmuxd server is not listening on the device", comment: "")
         case .notStarted(let reason):
             return String(format: NSLocalizedString("Minimuxer has not been started: %@", comment: ""), reason)
+        case .pairingNotLoaded(let reason):
+            return String(format: NSLocalizedString("No pairing file loaded: %@", comment: ""), reason)
         }
     }
 
@@ -393,7 +396,7 @@ extension Error {
     }
     public var isMinimuxerPairingFile: Bool {
         if let minimuxerErr = self as? MinimuxerError,
-           case .pairingFile = minimuxerErr { return true }
+           case .invalidPairing = minimuxerErr { return true }
         return (self as? MinimuxerWrapperError) == .pairingFile
     }
     public var isMinimuxerRestartInProgress: Bool {
