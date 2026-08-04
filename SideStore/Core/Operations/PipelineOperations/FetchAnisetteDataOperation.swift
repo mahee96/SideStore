@@ -214,11 +214,27 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext
     }
 
     private func pingServer(_ url: URL) async throws -> Bool {
-        var request = URLRequest(url: url)
+        // Try pinging the V3 API client_info endpoint first to verify backend handler is active
+        let v3URL = url.appendingPathComponent("v3").appendingPathComponent("client_info")
+        var request = URLRequest(url: v3URL)
         request.timeoutInterval = 3
         request.httpMethod = "GET"
         
-        let (_, response) = try await URLSession.shared.data(for: request)
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+                return true
+            }
+        } catch {
+            // Ignore error and fall back to root ping
+        }
+        
+        // Fall back to pinging root URL (e.g. for V1 servers or custom configurations)
+        var rootRequest = URLRequest(url: url)
+        rootRequest.timeoutInterval = 3
+        rootRequest.httpMethod = "GET"
+        
+        let (_, response) = try await URLSession.shared.data(for: rootRequest)
         if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
             return true
         }
