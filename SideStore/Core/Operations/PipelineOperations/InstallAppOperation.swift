@@ -219,7 +219,18 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
                 installedApp.team = team
             }
             if let storeApp {
-                installedApp.storeApp = backgroundContext.object(with: storeApp.objectID) as? StoreApp
+                let storeAppInContext = backgroundContext.object(with: storeApp.objectID) as? StoreApp
+                installedApp.storeApp = storeAppInContext
+                
+                if let contextTrack = self.context.releaseTrack {
+                    // 1. If we downloaded a version with a known release track, overwrite the track record
+                    installedApp.releaseTrack = contextTrack
+                } else if installedApp.releaseTrack == nil {
+                    // 2. Backward compatibility: if track was empty, initialize it with the store's active track
+                    if let trackEntity = storeAppInContext?.latestSupportedVersion?.releaseTrack {
+                        installedApp.releaseTrack = trackEntity
+                    }
+                }
             }
             // update alternate icon
             switch context.alternateIconMode {

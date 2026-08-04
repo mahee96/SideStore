@@ -234,6 +234,7 @@ class InstallAppOperationContext: AppOperationContext
     var ipaURL: URL?
     var resignedAppBundle: ALTApplication?
     var installedApp: InstalledApp?
+    var releaseTrack: ReleaseTrack?
     var additionalEntitlements: [ALTEntitlement: any Sendable] = [:]
     
     var beginInstallationHandler: ((InstalledApp) -> Void)?

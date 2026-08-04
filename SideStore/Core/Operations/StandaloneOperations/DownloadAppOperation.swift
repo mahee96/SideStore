@@ -70,6 +70,11 @@ final class DownloadAppOperation: BasePipelineOperation<InstallAppOperationConte
 
             if let appVersion {
                 try self.verify(appVersion)
+                
+                // set release Track for install/update
+                if let track = appVersion.releaseTrack {
+                    self.context.releaseTrack = track
+                }
             }
 
             return try await self.download(appVersion ?? app)

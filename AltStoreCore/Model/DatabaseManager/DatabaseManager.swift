@@ -448,6 +448,11 @@ private extension DatabaseManager
                     } while(false)
                     
                     installedApp.storeApp = storeApp
+                    // Persist the release track for newly created self-app entries
+                    if installedApp.releaseTrack == nil,
+                       let trackEntity = storeApp.latestSupportedVersion?.releaseTrack {
+                        installedApp.releaseTrack = trackEntity
+                    }
                 }
                 
                 /* App Extensions */

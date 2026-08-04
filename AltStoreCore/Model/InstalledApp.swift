@@ -75,6 +75,7 @@ public class InstalledApp: BaseEntity, InstalledAppProtocol
     /* Relationships */
     @NSManaged public var storeApp: StoreApp?
     @NSManaged public var team: Team?
+    @NSManaged public var releaseTrack: ReleaseTrack?
     @NSManaged public var appExtensions: Set<InstalledExtension>
     
     @NSManaged public private(set) var loggedErrors: NSSet /* Set<LoggedError> */ // Use NSSet to avoid eagerly fetching values.
@@ -116,7 +117,7 @@ public class InstalledApp: BaseEntity, InstalledAppProtocol
         
         // Check beta updates if enabled
         if UserDefaults.standard.isBetaUpdatesEnabled,
-           ReleaseTracks.betaTracks.contains(latestVersion.channel),
+           ReleaseTrackType.betaTracks.contains(latestVersion.channel),
            latestVer == currentVer,         // major.minor.patch are matching
            // now compare by preRelease and build to break the tie
            // TODO: since multiple tracks can be independent, when a different version is available on selected track than installed

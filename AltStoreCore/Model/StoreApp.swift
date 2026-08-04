@@ -14,30 +14,6 @@ import CoreData
 
 import SemanticVersion
 
-public enum ReleaseTracks: String, CodingKey, CaseIterable
-{
-    case unknown
-    case local          
-    
-    case alpha
-    case nightly = "nightly"
-    case stable
-    
-        
-    public static var betaTracks: [ReleaseTracks] {
-        ReleaseTracks.allCases.filter(isBetaTrack)
-    }
-
-    public static var nonBetaTracks: [ReleaseTracks] {
-        ReleaseTracks.allCases.filter { !isBetaTrack($0) }
-    }
-
-    private static func isBetaTrack(_ key: ReleaseTracks) -> Bool {
-        key == .alpha || key == .nightly
-    }
-}
-
-
 public extension StoreApp
 {
     static var altstoreAppID: String {
@@ -124,11 +100,11 @@ extension StoreApp {
     }
     
     private func releaseTrackFor(track: String) -> ReleaseTrack? {
-        return releaseTracks?.first(where: { $0.track == track })
+        return releaseTracks?.first(where: { $0.type.rawValue == track })
     }
     
     private var stableTrack: ReleaseTrack? {
-        releaseTrackFor(track: ReleaseTracks.stable.stringValue)
+        releaseTrackFor(track: ReleaseTrackType.stable.description)
     }
     
     private var betaReleases: [AppVersion]? {
@@ -455,7 +431,7 @@ public class StoreApp: BaseEntity, Decodable
         }
         
         // get channel info if present, else default to stable
-        var channel = ReleaseTracks.stable.stringValue
+        var channel = ReleaseTrackType.stable.description
 
         var versions = getReleases(default: stableTrack) ?? []
         if versions.isEmpty {
@@ -467,7 +443,7 @@ public class StoreApp: BaseEntity, Decodable
             {
                 if try container.decodeIfPresent(Bool.self, forKey: .isBeta) ?? false
                 {
-                    channel = ReleaseTracks.nightly.stringValue
+                    channel = ReleaseTrackType.nightly.description
                 }
                 
                 // create one from the storeApp description and use it as current
@@ -714,7 +690,7 @@ public extension StoreApp
         let placeholderSourceID = Source.altStoreIdentifier
         let placeholderVersion = "0.0.0"
         let placeholderDate = Date.distantPast
-        var placeholderChannel = ReleaseTracks.stable.stringValue
+        var placeholderChannel = ReleaseTrackType.stable.description
         
         let app = StoreApp(context: context)
         app.name = "SideStore"

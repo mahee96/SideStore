@@ -164,7 +164,7 @@ final class SettingsViewController: UITableViewController
         let currentTrack = UserDefaults.standard.betaUdpatesTrack
         
         // get all tracks as string available except .stable and .unknown
-        var trackOptions: [String] = ReleaseTracks.betaTracks.map {$0.rawValue}
+        var trackOptions: [String] = ReleaseTrackType.betaTracks.map {$0.rawValue}
 
         if let currentTrack{
             // prepend currently selected beta track from the user defaults

@@ -18,7 +18,7 @@ public extension UserDefaults
     }()
     
     // Default track for beta updates when beta-updates are enabled
-    static let defaultBetaUpdatesTrack: String = ReleaseTracks.nightly.rawValue
+    static let defaultBetaUpdatesTrack: String = ReleaseTrackType.nightly.description
 
 
     @objc var firstLaunch: Date? {
@@ -346,7 +346,7 @@ public extension UserDefaults
         }
     }
     
-    public static func enableGlobalLogging() {
+    static func enableGlobalLogging() {
         let setAnySelector = #selector(UserDefaults.set(_:forKey:) as (UserDefaults) -> (Any?, String) -> Void)
         let setBoolSelector = #selector(UserDefaults.set(_:forKey:) as (UserDefaults) -> (Bool, String) -> Void)
         let setIntSelector = #selector(UserDefaults.set(_:forKey:) as (UserDefaults) -> (Int, String) -> Void)
