@@ -18,6 +18,7 @@ struct ExperimentalFeaturesView: View {
     @State private var freeAcctAppIdDeletion: Bool = UserDefaults.standard.freeAcctAppIdDeletion
     @State private var isCellularRefreshEnabled: Bool = UserDefaults.standard.isCellularRefreshEnabled
     @State private var permissionCheckingDisabled: Bool = UserDefaults.standard.permissionCheckingDisabled
+    @State private var appVerificationDisabled: Bool = UserDefaults.standard.appVerificationDisabled
 
     var body: some View {
         ScrollView {
@@ -99,6 +100,16 @@ struct ExperimentalFeaturesView: View {
                             set: { newValue in
                                 permissionCheckingDisabled = !newValue
                                 UserDefaults.standard.permissionCheckingDisabled = !newValue
+                            }
+                        ))
+                        
+                        divider
+                        
+                        toggleRow(title: "App Verification", isOn: Binding(
+                            get: { !appVerificationDisabled },
+                            set: { newValue in
+                                appVerificationDisabled = !newValue
+                                UserDefaults.standard.appVerificationDisabled = !newValue
                             }
                         ))
                     }

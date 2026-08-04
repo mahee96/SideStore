@@ -40,11 +40,16 @@ final class VerifyAppOperation: BasePipelineOperation<InstallAppOperationContext
         debugLog("[VerifyAppOperation] execute() started")
         defer { debugLog("[VerifyAppOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress)
-        self.setProgress(10)
-        
         guard let appBundle = self.context.targetAppBundle else {
             throw OperationError.invalidParameters("VerifyAppOperation: context.appBundle is nil")
         }
+        
+        guard !UserDefaults.standard.appVerificationDisabled else {
+            debugLog("[VerifyAppOperation] App verification was disabled for \(appBundle.bundleIdentifier), skipping verification.")
+            self.setProgress(100)
+            return true
+        }
+        self.setProgress(10)
 
         if !["ny.litritt.ignited", "com.litritt.ignited"].contains(where: { $0 == appBundle.bundleIdentifier }) {
             guard appBundle.bundleIdentifier == self.context.bundleIdentifier else {
