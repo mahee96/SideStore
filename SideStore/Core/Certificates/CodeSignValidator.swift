@@ -80,11 +80,7 @@ public struct CodeSignValidator {
         }
         
         // 3. Revoked Certificate
-        let isRunningCertActive = runningProfile.certificates.contains { profileCert in
-            activeCertificates.contains { activeCert in
-                activeCert.serialNumber == profileCert.serialNumber
-            }
-        }
+        let isRunningCertActive = activeCertificates.contains { $0.serialNumber == runningCert.serialNumber }
         if !isRunningCertActive {
             if signerTeam.type == .free {
                 debugLog("[CodeSignValidator] Validation failed: freeAccountLimitRevoked (certificate is no longer active on portal for free account)")

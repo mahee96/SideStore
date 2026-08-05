@@ -189,6 +189,7 @@ class AppOperationContext: PipelineOperationContext
 
     let authenticatedContext: AuthenticatedOperationContext
     var overrideCertificate: ALTCertificate?
+    var targetCertStatus: CertificateStatus?
 
     var targetBundleIdentifier: String { customBundleIdentifier ?? bundleIdentifier }
 

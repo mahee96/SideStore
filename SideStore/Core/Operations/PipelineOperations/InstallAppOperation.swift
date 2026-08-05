@@ -213,6 +213,7 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
                 certificateSerialNumber: certificate.serialNumber,
                 storeBuildVersion: storeBuildVersion
             )
+            installedApp.certificateStatus = self.context.targetCertStatus ?? installedApp.certificateStatus
             installedApp.customBundleIdentifier = context.customBundleIdentifier
             installedApp.useMainProfile = context.useMainProfile
             if let team = DatabaseManager.shared.activeTeam(in: backgroundContext) {

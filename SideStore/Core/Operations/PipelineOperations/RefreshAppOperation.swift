@@ -48,11 +48,16 @@ final class RefreshAppOperation: BasePipelineOperation<InstallAppOperationContex
     private func updateInstalledApp(for appBundle: ALTApplication, profiles: [String: ALTProvisioningProfile], in dbContext: NSManagedObjectContext) throws -> InstalledApp {
         self.setProgress(self.progress.completedUnitCount + 1)
         
-        let predicate = NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), self.context.bundleIdentifier)
-        guard let installedApp = InstalledApp.first(satisfying: predicate, in: dbContext) else {
+        guard let mainApp = self.context.installedApp,
+              let installedApp = dbContext.object(with: mainApp.objectID) as? InstalledApp else {
             throw OperationError(.appNotFound(name: appBundle.name))
         }
         installedApp.update(provisioningProfile: profiles.values.first!)
+        
+        if let certStatus = self.context.targetCertStatus {
+            installedApp.certificateStatus = certStatus
+        }
+
         for installedExtension in installedApp.appExtensions {
             guard let provisioningProfile = profiles[installedExtension.bundleIdentifier] else { continue }
             installedExtension.update(provisioningProfile: provisioningProfile)

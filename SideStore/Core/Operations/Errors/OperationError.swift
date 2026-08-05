@@ -126,12 +126,12 @@ extension OperationError
         return o
     }
 
-    static func invalidCertificate(_ serialNumber: String) -> OperationError {
-        OperationError(code: .provisioningError, failureReason: String(format: NSLocalizedString("Signing certificate (serial: %@) is revoked or no longer active on Apple Developer Portal.", comment: ""), serialNumber))
-    }
-
     static func certificateRevoked(appName: String) -> OperationError {
         OperationError(code: .provisioningError, failureReason: String(format: NSLocalizedString("The signing certificate used to install “%@” was revoked on the Apple Developer portal. Please re-sign or reinstall the app.", comment: ""), appName))
+    }
+
+    static func certificateExpired(appName: String) -> OperationError {
+        OperationError(code: .provisioningError, failureReason: String(format: NSLocalizedString("The signing certificate used to install “%@” has expired. Please re-sign or reinstall the app.", comment: ""), appName))
     }
 
     static func certificateChanged(appName: String) -> OperationError {

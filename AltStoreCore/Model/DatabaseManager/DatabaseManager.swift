@@ -579,8 +579,7 @@ private extension DatabaseManager
               • certSerial: '\(installedApp.certificateSerialNumber ?? "nil")'
               • refreshedDate: \(installedApp.refreshedDate)
               • expirationDate: \(installedApp.expirationDate)
-              • isRevoked: \(installedApp.isRevoked)
-              • isCrossSigned: \(installedApp.isCrossSigned)
+              • binaryCertStatus: \(installedApp.certificateStatus)
             
             """)
         }
@@ -590,14 +589,18 @@ private extension DatabaseManager
         installedApp.version = localAppBundle.version
         installedApp.buildVersion = localAppBundle.buildVersion
         installedApp.certificateSerialNumber = serialNumber
-        installedApp.isRevoked = false
         
-        if let activeKeychainSerial = CertificateManager.shared.activeCertificate?.serialNumber,
-           let serialNumber = serialNumber, !serialNumber.isEmpty {
-            installedApp.isCrossSigned = (serialNumber != activeKeychainSerial)
-        } else {
-            installedApp.isCrossSigned = false
+        // for now we just do a simple check, but actual check should be done using verifyAppOperation's robust way
+        let activeKeychainSerial = CertificateManager.shared.activeCertificate?.serialNumber
+        let isCross = (activeKeychainSerial != nil && !activeKeychainSerial!.isEmpty && serialNumber != nil && serialNumber != activeKeychainSerial)
+        
+        var status: CertificateStatus = .valid(isCrossSigned: isCross)
+        if let binaryCert = CertificateManager.shared.getSigningCertificate(at: localAppBundle.fileURL) {
+            if binaryCert.expiryDate <= Date() {
+                status = .expired
+            }
         }
+        installedApp.certificateStatus = status
         
         if let provisioningProfile = localAppBundle.provisioningProfile {
             installedApp.refreshedDate = provisioningProfile.creationDate

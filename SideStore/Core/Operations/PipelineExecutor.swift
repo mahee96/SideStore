@@ -261,9 +261,9 @@ final class PipelineExecutor: @unchecked Sendable {
                 
             case .verifyCertificate:
                 loggerType = VerifyCertificateOperation.self
-                var verifyInstalledOnly = false
-                if case .refresh = appOperation { verifyInstalledOnly = true }
-                let step = try VerifyCertificateOperation(context: context, verifyInstalledOnly: verifyInstalledOnly)
+                var willResign = true
+                if case .refresh = appOperation { willResign = false }
+                let step = try VerifyCertificateOperation(context: context, willResign: willResign)
                 result = try await step.execute(parentProgress: progress)
                 return nil
                 

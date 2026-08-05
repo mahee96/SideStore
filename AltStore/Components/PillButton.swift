@@ -218,9 +218,9 @@ extension PillButton {
         let expirationDate = installedApp.expirationDate
         let isExpired = currentDate > expirationDate
         
-        if installedApp.isRevoked {
+        if installedApp.certificateStatus == .revoked {
             self.setDisplayState(.revoked)
-        } else if isExpired {
+        } else if isExpired || installedApp.certificateStatus == .expired {
             self.setDisplayState(.expired)
         } else {
             let formatter = DateComponentsFormatter()
@@ -230,7 +230,7 @@ extension PillButton {
             let title = formatter.string(from: currentDate, to: expirationDate) ?? ""
             let days = Calendar.current.dateComponents([.day], from: currentDate, to: expirationDate).day ?? 0
             
-            if installedApp.isCrossSigned {
+            if case .valid(let isCrossSigned) = installedApp.certificateStatus, isCrossSigned {
                 self.setDisplayState(.crossSigned(title: title, daysRemaining: days))
             } else {
                 self.setDisplayState(.active(title: title, daysRemaining: days))

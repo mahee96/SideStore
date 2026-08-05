@@ -14,177 +14,130 @@ import Security
 @preconcurrency import AltSign
 
 final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContext, Void>, @unchecked Sendable {
-    private let verifyInstalledOnly: Bool
+    private let willResign: Bool
     
-    init(context: AppOperationContext, verifyInstalledOnly: Bool = false) throws {
-        self.verifyInstalledOnly = verifyInstalledOnly
+    init(context: AppOperationContext, willResign: Bool = true) throws {
+        self.willResign = willResign
         try super.init(context: context)
-    }
-
-    private enum CertificateValidationResult {
-        case valid(isCrossSigned: Bool)
-        case revoked
     }
     
     override func execute(parentProgress: Progress?) async throws {
-        debugLog("[VerifyCertificateOperation] execute() started (verifyInstalledOnly: \(self.verifyInstalledOnly))")
-        defer { debugLog("[VerifyCertificateOperation] execute() completed") }
+        debugLog("[VerifyCertificateOperation] execute() started (willResign: \(self.willResign))")
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
         
         guard let team = self.context.authenticatedContext.team, let session = self.context.authenticatedContext.session else {
             debugLog("[VerifyCertificateOperation] Skipping certificate verification: team or session missing in context.")
             self.setProgress(100)
-            return
+            throw OperationError.notAuthenticated
         }
-        
-        // 1. Obtain active portal certificates (auth context or direct fetch as fallback)
-        let activeCertificates: [ALTCertificate]
-        if let cachedActive = self.context.authenticatedContext.activeCertificates, !cachedActive.isEmpty {
-            activeCertificates = cachedActive
-            self.debugLog("[VerifyCertificateOperation] Utilizing \(activeCertificates.count) active certificates cached from Auth context.")
-        } else {
-            self.debugLog("[VerifyCertificateOperation] Active certificates not found in Auth context. Fetching live from Apple Developer Portal...")
-            activeCertificates = try await ALTAppleAPI.shared.fetchCertificates(for: team, session: session)
-            self.context.authenticatedContext.activeCertificates = activeCertificates
-        }
-        
-        self.setProgress(30)
         
         let bundleID = self.context.targetBundleIdentifier
-        let activeKeychainCert = CertificateManager.shared.activeCertificate
-        let activeKeychainSerial = activeKeychainCert?.serialNumber
-        let authenticatedCertSerial = self.context.authenticatedContext.certificate?.serialNumber
-        let overrideCertSerial = self.context.overrideCertificate?.serialNumber
+        let (appName, installedAppSerial, initialStatus) = await self.fetchInstalledAppInitialState(bundleID: bundleID)
+        var finalStatus = initialStatus
         
-        // 2. Fetch InstalledApp details from CoreData
-        let (appName, installedAppSerial) = await self.fetchInstalledAppDetails(bundleID: bundleID)
-        
-        self.setProgress(50)
-        
-        let activeSerials = Set(activeCertificates.compactMap { $0.serialNumber })
-        
-        debugLog("""
-        [VerifyCertificateOperation] Parameter Accountability for '\(appName)' (\(bundleID)):
-          • installedAppSerial           : \(installedAppSerial ?? "nil")
-          • overrideCertSerial           : \(overrideCertSerial ?? "nil")
-          • authenticatedCertSerial      : \(authenticatedCertSerial ?? "nil")
-          • activeKeychainSerial         : \(activeKeychainSerial ?? "nil")
-          • portalActiveSerials (\(activeSerials.count))  : \(Array(activeSerials))
-          • verifyInstalledOnly          : \(self.verifyInstalledOnly)
-        """)
-        
-        struct Candidate {
-            let name: String
-            let serial: String?
-        }
-        
-        let allCandidates: [Candidate]
-        if self.verifyInstalledOnly {
-            allCandidates = [
-                Candidate(name: "installedAppSerial", serial: installedAppSerial)
-            ]
-        } else {
-            allCandidates = [
-                Candidate(name: "overrideCertificate", serial: overrideCertSerial),
-                Candidate(name: "installedAppSerial", serial: installedAppSerial),
-                Candidate(name: "authenticatedContext.certificate", serial: authenticatedCertSerial)
-            ]
-        }
-        
-        let candidates: [Candidate] = allCandidates.compactMap { candidate in
-            guard let serial = candidate.serial, !serial.isEmpty else {
-                debugLog("[VerifyCertificateOperation] Candidate [\(candidate.name)] is nil or empty. Skipping.")
-                return nil
-            }
-            debugLog("[VerifyCertificateOperation] Candidate [\(candidate.name)] present: '\(serial)'")
-            return candidate
-        }
-        
-        let candidateSummary = candidates.map { "\($0.name) ('\($0.serial ?? "")')" }.joined(separator: ", ")
-        debugLog("[VerifyCertificateOperation] Processing \(candidates.count) candidate certificate(s) in priority order for '\(appName)': [\(candidateSummary)]")
-        
-        var selectedValidSerial: String? = nil
-        var selectedCandidateName: String? = nil
-        var finalIsCrossSigned = false
-        
-        let candidateCount = max(candidates.count, 1)
-        for (index, candidate) in candidates.enumerated() {
-            guard let serial = candidate.serial else { continue }
-            debugLog("[VerifyCertificateOperation] ---> Testing candidate [\(candidate.name)]: '\(serial)'...")
-            let result = validateCandidate(serial: serial, portalActiveSerials: activeSerials, activeKeychainSerial: activeKeychainSerial)
-            
-            let currentProgress = 50 + Int64((Double(index + 1) / Double(candidateCount)) * 40.0)
-            self.setProgress(currentProgress)
-            
-            switch result {
-            case .valid(let isCrossSigned):
-                debugLog("[VerifyCertificateOperation] SELECTED VALID CERTIFICATE: Candidate [\(candidate.name)] with serial '\(serial)' (isCrossSigned: \(isCrossSigned))")
-                selectedValidSerial = serial
-                selectedCandidateName = candidate.name
-                finalIsCrossSigned = isCrossSigned
-            case .revoked:
-                debugLog("[VerifyCertificateOperation] WARN: Candidate [\(candidate.name)] serial '\(serial)' is REVOKED. Skipping to next candidate...")
+        do {
+            // 2. Obtain active portal certificates (auth context or direct fetch as fallback)
+            let activeCertificates: [ALTCertificate]
+            if let cachedActive = self.context.authenticatedContext.activeCertificates, !cachedActive.isEmpty {
+                activeCertificates = cachedActive
+                self.debugLog("[VerifyCertificateOperation] Utilizing \(activeCertificates.count) active certificates cached from Auth context.")
+            } else {
+                self.debugLog("[VerifyCertificateOperation] Active certificates not found in Auth context. Fetching live from Apple Developer Portal...")
+                activeCertificates = try await ALTAppleAPI.shared.fetchCertificates(for: team, session: session)
+                self.context.authenticatedContext.activeCertificates = activeCertificates
             }
             
-            if selectedValidSerial != nil {
-                break
+            self.setProgress(30)
+            
+            let portalCertificateSerials = Set(activeCertificates.compactMap { $0.serialNumber })
+            let signingCertificateSerial = self.context.overrideCertificate?.serialNumber ?? CertificateManager.shared.activeCertificate?.serialNumber
+            
+            debugLog("""
+            [VerifyCertificateOperation] Parameter Accountability for '\(appName)' (\(bundleID)):
+              • installedAppSerial           : \(installedAppSerial ?? "nil")
+              • overrideCertSerial           : \(self.context.overrideCertificate?.serialNumber ?? "nil")
+              • authenticatedCertSerial      : \(self.context.authenticatedContext.certificate?.serialNumber ?? "nil")
+              • signingCertificateSerial     : \(signingCertificateSerial ?? "nil")
+              • portalCertificateSerials (\(portalCertificateSerials.count))  : \(Array(portalCertificateSerials))
+              • willResign                   : \(self.willResign)
+            """)
+            
+            if !willResign {
+                debugLog("[VerifyCertificateOperation] Running in verification-only mode (!willResign) for '\(appName)'...")
+                
+                guard let appBundle = self.context.targetAppBundle else {
+                    throw OperationError.invalidApp
+                }
+                guard let binaryCert = CertificateManager.shared.getSigningCertificate(at: appBundle.fileURL) else {
+                    throw OperationError.invalidApp
+                }
+                
+                let result = validateCertificate(binaryCert, portalCertificateSerials: portalCertificateSerials, signingCertificateSerial: signingCertificateSerial)
+                finalStatus = result
+                self.context.targetCertStatus = result
+                try processValidationResult(result, description: "Target bundle binary certificate", appName: appName)
+                
+            } else {
+                // resigning branch
+                debugLog("[VerifyCertificateOperation] Running in signing mode (resigning) for '\(appName)'...")
+                
+                let certType = self.context.overrideCertificate != nil ? "Override" : "Active"
+                guard let target = self.context.overrideCertificate ?? CertificateManager.shared.activeCertificate?.certificate else {
+                    throw OperationError.invalidParameters("\(certType) certificate is missing.")
+                }
+                guard target.privateKey != nil else {
+                    throw OperationError.invalidParameters("\(certType) certificate lacks a private key.")
+                }
+                
+                let result = validateCertificate(target, portalCertificateSerials: portalCertificateSerials, signingCertificateSerial: signingCertificateSerial)
+                finalStatus = result
+                self.context.targetCertStatus = result
+                try processValidationResult(result, description: "Target signing certificate", appName: appName)
             }
-        }
-        
-        if let verifiedSerial = selectedValidSerial, let candidateName = selectedCandidateName {
-            debugLog("[VerifyCertificateOperation] Final Verified Result for '\(appName)': Selected '\(candidateName)' with serial '\(verifiedSerial)' (isCrossSigned: \(finalIsCrossSigned))")
-            await self.updateAppState(bundleID: bundleID, isRevoked: false, isCrossSigned: finalIsCrossSigned)
+            
+            await self.persistStateIfChanged(bundleID: bundleID, status: finalStatus, initialStatus: initialStatus)
             self.setProgress(100)
-        } else {
-            debugLog("[VerifyCertificateOperation] FAILURE: All candidate certificates for app '\(appName)' are REVOKED!")
-            await self.updateAppState(bundleID: bundleID, isRevoked: true, isCrossSigned: false)
-            self.setProgress(100)
-            throw OperationError.certificateRevoked(appName: appName)
+        } catch {
+            await self.persistStateIfChanged(bundleID: bundleID, status: finalStatus, initialStatus: initialStatus)
+            throw error
         }
     }
 
-
-    private func validateCandidate(serial: String,
-                                   portalActiveSerials: Set<String>,
-                                   activeKeychainSerial: String?) -> CertificateValidationResult {
-        debugLog("[VerifyCertificateOperation] Validating candidate serial '\(serial)'...")
-        
-        // Tier 1: Apple Developer Portal check
-        if portalActiveSerials.contains(serial) {
-            let isCrossSigned = (activeKeychainSerial != nil && !activeKeychainSerial!.isEmpty && serial != activeKeychainSerial)
-            debugLog("[VerifyCertificateOperation] Tier 1: Candidate serial '\(serial)' is ACTIVE on Apple Developer Portal. (isCrossSigned: \(isCrossSigned))")
+    private func validateCertificate(_ certificate: ALTCertificate,
+                                     portalCertificateSerials: Set<String>,
+                                     signingCertificateSerial: String?) -> CertificateStatus {
+        if portalCheck(certificate, portalCertificateSerials: portalCertificateSerials) 
+        {
+            let isCrossSigned = (signingCertificateSerial != nil && !signingCertificateSerial!.isEmpty && certificate.serialNumber != signingCertificateSerial)
+            debugLog("[VerifyCertificateOperation] validateCertificate: Found in portal (isCrossSigned: \(isCrossSigned)).")
             return .valid(isCrossSigned: isCrossSigned)
         }
         
-
-        // Tier 2: Apple OCSP check for external/borrowed certs
-        debugLog("[VerifyCertificateOperation] Tier 2: Candidate serial '\(serial)' not in portal active list. Checking Apple OCSP (ocsp.apple.com)...")
-        
-        var certToTest = CertificateManager.shared.loadCertificate(for: serial)
-            ?? (self.context.overrideCertificate?.serialNumber == serial ? self.context.overrideCertificate : (self.context.authenticatedContext.certificate?.serialNumber == serial ? self.context.authenticatedContext.certificate : nil))
-        
-        if certToTest == nil, let appBundle = self.context.targetAppBundle {
-            if let bundleCert = CertificateManager.shared.getSigningCertificate(at: appBundle.fileURL), bundleCert.serialNumber == serial {
-                certToTest = bundleCert
-            }
-        }
-        
-        guard let cert = certToTest else {
-            debugLog("[VerifyCertificateOperation] Tier 2: Candidate serial '\(serial)' has no local certificate data. Marking as REVOKED.")
-            return .revoked
-        }
-        
-        let isRevoked = checkRevocationWithOCSP(certificate: cert)
-        if isRevoked {
-            debugLog("[VerifyCertificateOperation] Tier 2: Candidate serial '\(serial)' is CONFIRMED REVOKED by Apple OCSP.")
-            return .revoked
-        } else {
-            debugLog("[VerifyCertificateOperation] Tier 2: Candidate serial '\(serial)' is VALID (3rd-party/borrowed cert). Marking as Cross-Signed.")
-            return .valid(isCrossSigned: true)
-        }
+        debugLog("[VerifyCertificateOperation] validateCertificate: Not in portal active list. Falling back to OCSP check...")
+        return OcspCheck(certificate)
     }
     
+
+    private func portalCheck(_ certificate: ALTCertificate, portalCertificateSerials: Set<String>) -> Bool {
+        return portalCertificateSerials.contains(certificate.serialNumber)
+    }
+
+    private func OcspCheck(_ certificate: ALTCertificate) -> CertificateStatus {
+        if certificate.expiryDate <= Date() {
+            debugLog("[VerifyCertificateOperation] OcspCheck: Certificate \(certificate.serialNumber) is EXPIRED.")
+            return .expired
+        }
+        if checkRevocationWithOCSP(certificate: certificate) {
+            debugLog("[VerifyCertificateOperation] OcspCheck: Certificate \(certificate.serialNumber) is REVOKED.")
+            return .revoked
+        }
+        debugLog("[VerifyCertificateOperation] OcspCheck: Certificate \(certificate.serialNumber) is valid (assuming cross-signed).")
+        return .valid(isCrossSigned: true)
+    }
+    
+
+
     private func checkRevocationWithOCSP(certificate: ALTCertificate) -> Bool {
         verboseLog("[VerifyCertificateOperation] checkRevocationWithOCSP started for cert serial: \(certificate.serialNumber)")
         
@@ -223,29 +176,58 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
         return false
     }
     
-    private func fetchInstalledAppDetails(bundleID: String) async -> (appName: String, installedAppSerial: String?) {
-        await DatabaseManager.shared.persistentContainer.performBackgroundTask { (context) -> (String, String?) in
+    private func fetchInstalledAppInitialState(bundleID: String) async -> (name: String, serial: String?, status: CertificateStatus) {
+         await DatabaseManager.shared.persistentContainer.performBackgroundTask { context in
+             let predicate = NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), bundleID)
+             if let installedApp = InstalledApp.first(satisfying: predicate, in: context) {
+                 return (installedApp.name, installedApp.certificateSerialNumber, installedApp.certificateStatus)
+             }
+             return (bundleID, nil, .valid(isCrossSigned: false))
+         }
+    }
+    
+    private func persistStateIfChanged(bundleID: String, status: CertificateStatus, initialStatus: CertificateStatus) async {
+        guard status != initialStatus else { return }
+        
+        if let installContext = self.context as? InstallAppOperationContext,
+           let installedApp = installContext.installedApp {
+            installedApp.certificateStatus = status
+        }
+        
+        await DatabaseManager.shared.persistentContainer.performBackgroundTask { context in
             let predicate = NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), bundleID)
-            if let installedApp = InstalledApp.first(satisfying: predicate, in: context) {
-                return (installedApp.name, installedApp.certificateSerialNumber)
+            guard let installedApp = InstalledApp.first(satisfying: predicate, in: context) else {
+                self.debugLog("[VerifyCertificateOperation] persistStateIfChanged: App with bundleID '\(bundleID)' not found in database.")
+                return
             }
-            return (bundleID, nil)
+            
+            if installedApp.certificateStatus != status {
+                self.debugLog("[VerifyCertificateOperation] State changed in database context for \(installedApp.name). New Status: \(status)")
+                installedApp.certificateStatus = status
+                do {
+                    try context.save()
+                    self.debugLog("[VerifyCertificateOperation] Saved background context successfully.")
+                } catch {
+                    self.debugLog("[VerifyCertificateOperation] Failed to save background context: \(error)")
+                }
+            }
         }
     }
-
-    private func updateAppState(bundleID: String, isRevoked: Bool, isCrossSigned: Bool) async {
-        verboseLog("[VerifyCertificateOperation] updateAppState called for bundleID: \(bundleID), isRevoked: \(isRevoked), isCrossSigned: \(isCrossSigned)")
-        await MainActor.run {
-            let predicate = NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), bundleID)
-            if let app = InstalledApp.first(satisfying: predicate, in: DatabaseManager.shared.viewContext) {
-                app.isRevoked = isRevoked
-                app.isCrossSigned = isCrossSigned
-                try? DatabaseManager.shared.viewContext.save()
-                DatabaseManager.shared.viewContext.processPendingChanges()
-                verboseLog("[VerifyCertificateOperation] updateAppState: CoreData updated successfully for app '\(app.name)' (\(bundleID)).")
+    
+    private func processValidationResult(_ result: CertificateStatus, description: String, appName: String) throws {
+        switch result {
+        case .valid(let isCrossSigned):
+            if isCrossSigned {
+                debugLog("[VerifyCertificateOperation] \(description) is VALID (cross-signed)")
             } else {
-                verboseLog("[VerifyCertificateOperation] updateAppState: App with bundleID '\(bundleID)' not found in CoreData viewContext.")
+                debugLog("[VerifyCertificateOperation] \(description) is VALID")
             }
+        case .revoked:
+            debugLog("[VerifyCertificateOperation] \(description) is REVOKED")
+            throw OperationError.certificateRevoked(appName: appName)
+        case .expired:
+            debugLog("[VerifyCertificateOperation] \(description) is EXPIRED")
+            throw OperationError.certificateExpired(appName: appName)
         }
     }
 }

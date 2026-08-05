@@ -11,7 +11,7 @@ import KeychainAccess
 @preconcurrency import AltSign
 import Security
 
-public struct ActiveCertificate: Sendable {
+public struct ActiveSigningCertificate: Sendable {
     public let certificate: ALTCertificate
     public let p12Data: Data
     public let password: String?
@@ -33,7 +33,7 @@ public final class CertificateManager: @unchecked Sendable {
     private let serialsKey = "importedCertificateSerials"
     private let metadataPrefix = "certMetadata_"
     
-    public private(set) var activeCertificate: ActiveCertificate?
+    public private(set) var activeCertificate: ActiveSigningCertificate?
     
     private init() {
         _ = try? loadActiveCertificate()
@@ -43,7 +43,7 @@ public final class CertificateManager: @unchecked Sendable {
     
     /// Loads active signing certificate from Keychain into memory.
     @discardableResult
-    public func loadActiveCertificate() throws -> ActiveCertificate? {
+    public func loadActiveCertificate() throws -> ActiveSigningCertificate? {
         guard let data = Keychain.shared.signingCertificate else {
             debugLog("[CertificateManager] loadActiveCertificate: No signingCertificate data found in Keychain.")
             self.activeCertificate = nil
@@ -52,7 +52,7 @@ public final class CertificateManager: @unchecked Sendable {
         let password = Keychain.shared.signingCertificatePassword
         do {
             let cert = try CertificateStore.load(data, password: password)
-            let active = ActiveCertificate(certificate: cert, p12Data: data, password: password)
+            let active = ActiveSigningCertificate(certificate: cert, p12Data: data, password: password)
             self.activeCertificate = active
             debugLog("[CertificateManager] loadActiveCertificate: Successfully loaded certificate (serial: \(cert.serialNumber)).")
             return active
@@ -66,12 +66,16 @@ public final class CertificateManager: @unchecked Sendable {
     /// Sets active signing certificate in memory cache, encrypts and persists to Keychain.
     public func setActiveCertificate(_ cert: ALTCertificate?) throws {
         if let cert = cert {
+            guard cert.privateKey != nil else {
+                debugLog("[CertificateManager] setActiveCertificate failed: Certificate \(cert.serialNumber) lacks a private key.")
+                throw ALTCertificateError.invalidFormat(cause: "Target Certificate lacks a private key. Cannot be used as active signing certificate")
+            }
             do {
                 let p12Data = try CertificateStore.export(cert, password: cert.machineIdentifier)
                 Keychain.shared.signingCertificate = p12Data
                 Keychain.shared.signingCertificatePassword = cert.machineIdentifier
                 saveCertificate(cert)
-                let active = ActiveCertificate(certificate: cert, p12Data: p12Data, password: cert.machineIdentifier)
+                let active = ActiveSigningCertificate(certificate: cert, p12Data: p12Data, password: cert.machineIdentifier)
                 self.activeCertificate = active
                 debugLog("[CertificateManager] setActiveCertificate: Successfully stored certificate (serial: \(cert.serialNumber)).")
             } catch {
@@ -238,12 +242,12 @@ public final class CertificateManager: @unchecked Sendable {
                 return nil
             }
             executableURL = execURL
-            debugLog("[CertificateManager] getSigningCertificate: Resolved app bundle to executable at \(executableURL.path)")
+            verboseLog("[CertificateManager] getSigningCertificate: Resolved app bundle to executable at \(executableURL.path)")
         } else {
             executableURL = url
         }
         
-        debugLog("[CertificateManager] getSigningCertificate: Attempting to parse Mach-O signature at \(executableURL.path)...")
+        debugLog("[CertificateManager] getSigningCertificate: Attempting to parse Mach-O signature at \(executableURL.path)")
         if let parser = try? MachOParser(url: executableURL) {
             let secCertChain = parser.certificates()
             debugLog("[CertificateManager] getSigningCertificate: Extracted \(secCertChain.count) certificates from Mach-O signature.")
@@ -255,10 +259,8 @@ public final class CertificateManager: @unchecked Sendable {
                 verboseLog("[CertificateManager] getSigningCertificate: Evaluating certificate in chain - Subject: '\(details.subject)', Issuer: '\(details.issuer)'")
                 
                 // Filter out CA certificates (Intermediate / Root)
-                let issuerDN = details.issuer
                 let subjectDN = details.subject
-                if subjectDN.contains("Root") || issuerDN.contains("Root") ||
-                   subjectDN.contains("Authority") || subjectDN.contains("Relations") || issuerDN.contains("Authority") {
+                if subjectDN.contains("Root") || subjectDN.contains("Authority") || subjectDN.contains("Relations") {
                     verboseLog("[CertificateManager] getSigningCertificate: Skipping intermediate/root CA certificate: '\(details.subject)'")
                     continue
                 }

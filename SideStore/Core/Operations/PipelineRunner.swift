@@ -147,6 +147,8 @@ final class PipelineRunner: Sendable
                 throw minimuxerError
             }
             
+            group.progress.completedUnitCount = 1
+            
             for operation in operations
             {
                 let progress = Progress.discreteProgress(totalUnitCount: 100)
@@ -219,6 +221,12 @@ final class PipelineRunner: Sendable
     
     func performOperation(for operation: AppOperation, group: RefreshGroup) async throws {
         debugLog("[AppManager] performOperation: Starting execution for app: \(operation.bundleIdentifier)")
+        defer{
+            // request update view context's in-mem coredata caches (coz we worked so far on bg context)
+            DatabaseManager.shared.viewContext.performAndWait {
+                DatabaseManager.shared.viewContext.processPendingChanges()
+            }
+        }
         do {
             let result = try await self.performPipeline(for: operation, group: group)
             progress.set(nil, for: operation)
@@ -237,11 +245,6 @@ final class PipelineRunner: Sendable
                 } catch {
                     debugLog("[AppManager] perform(): Failed to save InstalledApp to database. \(error.localizedDescription)")
                 }
-            }
-            
-            // request update view context's in-mem coredata caches (coz we worked so far on bg context)
-            DatabaseManager.shared.viewContext.performAndWait {
-                DatabaseManager.shared.viewContext.processPendingChanges()
             }
             
             group.set(.success(result), forAppWithBundleIdentifier: result.bundleIdentifier)

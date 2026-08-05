@@ -13,6 +13,12 @@ import CoreData
 @preconcurrency import UIKit
 import SemanticVersion
 
+public enum CertificateStatus: Equatable, Sendable {
+    case valid(isCrossSigned: Bool)
+    case revoked
+    case expired
+}
+
 extension InstalledApp
 {
     public static var freeAccountActiveAppsLimit: Int {
@@ -65,9 +71,36 @@ public class InstalledApp: BaseEntity, InstalledAppProtocol
     
     @NSManaged public var certificateSerialNumber: String?
     @NSManaged public var storeBuildVersion: String?
+    @NSManaged public var certificateStatusRaw: String?
     
-    @NSManaged public var isRevoked: Bool
-    @NSManaged public var isCrossSigned: Bool
+    public var certificateStatus: CertificateStatus {
+        get {
+            guard let raw = self.certificateStatusRaw else { return .valid(isCrossSigned: false) }
+            switch raw {
+            case "valid":
+                return .valid(isCrossSigned: false)
+            case "valid-crossSigned":
+                return .valid(isCrossSigned: true)
+            case "revoked":
+                return .revoked
+            case "expired":
+                return .expired
+            default:
+                return .valid(isCrossSigned: false)
+            }
+        }
+        set {
+            switch newValue {
+            case .valid(let isCrossSigned):
+                self.certificateStatusRaw = isCrossSigned ? "validCrossSigned" : "valid"
+            case .revoked:
+                self.certificateStatusRaw = "revoked"
+            case .expired:
+                self.certificateStatusRaw = "expired"
+            }
+        }
+    }
+
     
     /* Transient */
     @NSManaged public var isRefreshing: Bool
@@ -195,8 +228,6 @@ public extension InstalledApp
         self.storeBuildVersion = storeBuildVersion
         
         self.certificateSerialNumber = certificateSerialNumber
-        self.isRevoked = false
-        self.isCrossSigned = false
         
         if let provisioningProfile = resignedAppBundle.provisioningProfile
         {
