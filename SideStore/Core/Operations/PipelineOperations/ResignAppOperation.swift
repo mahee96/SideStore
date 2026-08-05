@@ -22,12 +22,12 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
             let appBundle = self.context.targetAppBundle,
             let profiles = self.context.provisioningProfiles,
             let team = self.context.authenticatedContext.team,
-            let certificate = self.context.overrideCertificate ?? self.context.authenticatedContext.certificate
+            let certificate = self.context.overrideCertificate ?? self.context.authenticatedContext.signingCertificate
         else {
             throw OperationError.invalidParameters("ResignAppOperation.main: " +
                                                    "self.context.authenticatedContext.team or " +
                                                    "self.context.provisioningProfiles or " +
-                                                   "self.context.authenticatedContext.certificate is nil")
+                                                   "self.context.authenticatedContext.signingCertificate is nil")
         }
         
         debugLog("[ResignAppOperation] Resigning app \(self.context.bundleIdentifier)...")

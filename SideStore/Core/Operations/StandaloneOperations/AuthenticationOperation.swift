@@ -112,7 +112,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         }
         
         self.context.team = authResult.0
-        self.context.certificate = authResult.1
+        self.context.signingCertificate = authResult.1
         self.context.session = authResult.2
 
         // PHASE 2: Post-Authentication Work (Unlocked)
@@ -146,7 +146,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                 self.debugLog("[Authentication] SessionCache is valid. (using certificate: \(certToUse?.serialNumber ?? "nil"))")
                 self.context.team = cache.team
                 self.context.session = cache.session
-                self.context.certificate = certToUse
+                self.context.signingCertificate = certToUse
                 return (cache.team, certToUse, cache.session)
             } else {
                 self.debugLog("[Authentication] Cached/active certificate is no longer active on developer portal.")
@@ -185,7 +185,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             self.verboseLog("[Authentication] execute: Invoking fetchCertificate...")
             certificate = try await self.fetchCertificate(for: team, session: session)
             self.debugLog("[Authentication] execute: fetchCertificate completed successfully. Serial: \(certificate?.serialNumber ?? "nil")")
-            self.context.certificate = certificate
+            self.context.signingCertificate = certificate
         }
         
         self.debugLog("[Authentication] Saving certificate after fetching certificate")

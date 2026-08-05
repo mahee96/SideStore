@@ -139,7 +139,7 @@ final class AuthenticatedOperationContext: CachedOperationContext
 {
     var session: ALTAppleAPISession?
     var team: ALTTeam?
-    var certificate: ALTCertificate?
+    var signingCertificate: ALTCertificate?
     var activeCertificates: [ALTCertificate]?
     
     var isSideStoreResignDismissed: Bool = false
@@ -153,7 +153,7 @@ final class AuthenticatedOperationContext: CachedOperationContext
         super.init(context: context)
         self.session = context.session
         self.team = context.team
-        self.certificate = context.certificate
+        self.signingCertificate = context.signingCertificate
         self.activeCertificates = context.activeCertificates
         self.isSideStoreResignDismissed = context.isSideStoreResignDismissed
     }

@@ -19,13 +19,8 @@ final class CacheSigningCertOperation: BasePipelineOperation<AppOperationContext
         let bundleID = self.context.targetBundleIdentifier
         
         // 1. Resolve the certificate used for signing this app
-        let certToCache = self.context.overrideCertificate 
-            ?? self.context.authenticatedContext.certificate 
-            ?? CertificateManager.shared.activeCertificate?.certificate
-            
-        guard let cert = certToCache else {
-            debugLog("[CacheSigningCertOperation] WARNING: No certificate found in context or CertificateManager to cache.")
-            return
+        guard let cert = self.context.overrideCertificate ?? self.context.authenticatedContext.signingCertificate else {
+            throw OperationError.invalidParameters("CacheSigningCertOperation: No signing certificate found in context.")
         }
         
         guard let certData = cert.data else {

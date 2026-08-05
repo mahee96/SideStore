@@ -57,7 +57,7 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
             [VerifyCertificateOperation] Parameter Accountability for '\(appName)' (\(bundleID)):
               • installedAppSerial           : \(installedAppSerial ?? "nil")
               • overrideCertSerial           : \(self.context.overrideCertificate?.serialNumber ?? "nil")
-              • authenticatedCertSerial      : \(self.context.authenticatedContext.certificate?.serialNumber ?? "nil")
+              • authenticatedCertSerial      : \(self.context.authenticatedContext.signingCertificate?.serialNumber ?? "nil")
               • signingCertificateSerial     : \(signingCertificateSerial ?? "nil")
               • portalCertificateSerials (\(portalCertificateSerials.count))  : \(Array(portalCertificateSerials))
               • willResign                   : \(self.willResign)

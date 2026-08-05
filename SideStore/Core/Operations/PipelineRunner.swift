@@ -169,7 +169,7 @@ final class PipelineRunner: Sendable
                         skipDeviceRegistration: false
                     )
                     group.context.team = team
-                    group.context.certificate = cert
+                    group.context.signingCertificate = cert
                     group.context.session = session
                 } catch {
                     group.context.error = error

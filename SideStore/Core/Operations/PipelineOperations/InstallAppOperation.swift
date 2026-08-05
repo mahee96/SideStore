@@ -39,12 +39,12 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         
         guard
-            let certificate = context.overrideCertificate ?? context.authenticatedContext.certificate,
+            let certificate = context.overrideCertificate ?? context.authenticatedContext.signingCertificate,
             let resignedAppBundle = context.resignedAppBundle,
             let provisioningProfiles = context.provisioningProfiles
         else {
             throw OperationError.invalidParameters(
-                "InstallAppOperation.execute: self.context.authenticatedContext.certificate or self.context.resignedAppBundle or self.context.provisioningProfiles is nil"
+                "InstallAppOperation.execute: self.context.authenticatedContext.signingCertificate or self.context.resignedAppBundle or self.context.provisioningProfiles is nil"
             )
         }
 
