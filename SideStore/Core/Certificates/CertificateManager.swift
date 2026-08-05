@@ -235,74 +235,20 @@ public final class CertificateManager: @unchecked Sendable {
     }
 
     public func getSigningCertificate(at url: URL, withPlistFallback: Bool = true) -> ALTCertificate? {
-        let executableURL: URL
-        if url.pathExtension == "app" {
-            guard let execURL = Bundle(url: url)?.executableURL else {
-                debugLog("[CertificateManager] getSigningCertificate: Failed to locate executable in bundle: \(url.path)")
-                return nil
-            }
-            executableURL = execURL
-            verboseLog("[CertificateManager] getSigningCertificate: Resolved app bundle to executable at \(executableURL.path)")
-        } else {
-            executableURL = url
-        }
+        let appDirectory = url.pathExtension == "app" ? url.deletingLastPathComponent() : url
+        let certURL = appDirectory.appendingPathComponent("signing_certificate.der")
         
-        debugLog("[CertificateManager] getSigningCertificate: Attempting to parse Mach-O signature at \(executableURL.path)")
-        if let parser = try? MachOParser(url: executableURL) {
-            let secCertChain = parser.certificates()
-            debugLog("[CertificateManager] getSigningCertificate: Extracted \(secCertChain.count) certificates from Mach-O signature.")
-            // traverse the single certificate chain and get leaf certificate
-            for secCert in secCertChain {
-                let derData = SecCertificateCopyData(secCert) as Data
-                let details = parseCertificate(derData: derData)
-                
-                verboseLog("[CertificateManager] getSigningCertificate: Evaluating certificate in chain - Subject: '\(details.subject)', Issuer: '\(details.issuer)'")
-                
-                // Filter out CA certificates (Intermediate / Root)
-                let subjectDN = details.subject
-                if subjectDN.contains("Root") || subjectDN.contains("Authority") || subjectDN.contains("Relations") {
-                    verboseLog("[CertificateManager] getSigningCertificate: Skipping intermediate/root CA certificate: '\(details.subject)'")
-                    continue
-                }
-                
-                let serial = details.serialHex.replacingOccurrences(of: "0x", with: "").uppercased()
-                verboseLog("[CertificateManager] getSigningCertificate: Found leaf developer certificate serial: '\(serial)'")
-                
-                if let localCert = getLocalCertificate(serialNumber: serial) {
-                    debugLog("[CertificateManager] getSigningCertificate: Found signing certificate serial '\(serial)' in local keychain cache.")
-                    return localCert
-                } else {
-                    if let cert = ALTCertificate(data: derData) {
-                        debugLog("[CertificateManager] getSigningCertificate: Signing certificate serial '\(serial)' not in local keychain cache. Returning raw parsed certificate.")
-                        return cert
-                    }
-                }
-            }
-            debugLog("[CertificateManager] getSigningCertificate: Finished parsing Mach-O chain, no leaf developer certificate found.")
-        } else {
-            debugLog("[CertificateManager] getSigningCertificate: Failed to parse Mach-O binary signature at \(executableURL.path).")
-        }
-        
-        // Fallback to Info.plist if requested
-        if withPlistFallback {
-            debugLog("[CertificateManager] getSigningCertificate: Code signature check did not yield a certificate. Checking Info.plist fallback...")
-            let plistURL = url.pathExtension == "app" ? url : url.deletingLastPathComponent()
-            if let plistCertID = Bundle(url: plistURL)?.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String {
-                debugLog("[CertificateManager] getSigningCertificate: Found fallback certificate ID '\(plistCertID)' in Info.plist.")
-                if let localCert = getLocalCertificate(serialNumber: plistCertID) {
-                    debugLog("[CertificateManager] getSigningCertificate: Retrieved local keychain certificate for fallback ID '\(plistCertID)'.")
-                    return localCert
-                } else if let cert = ALTCertificate(responseDictionary: ["name": "Developer Certificate", "serialNumber": plistCertID]) {
-                    debugLog("[CertificateManager] getSigningCertificate: Fallback ID '\(plistCertID)' not in local keychain cache. Returning raw fallback certificate.")
-                    return cert
-                }
-            } else {
-                debugLog("[CertificateManager] getSigningCertificate: No certificate ID found in Info.plist.")
+        // 1. Try to load cached signing_certificate.der file (new way uses cachedCert)
+        if FileManager.default.fileExists(atPath: certURL.path) {
+            if let derData = try? Data(contentsOf: certURL), let cert = ALTCertificate(data: derData) {
+                debugLog("[CertificateManager] getSigningCertificate: Loaded cached signing certificate from \(certURL.path)")
+                return cert
             }
         }
         
-        debugLog("[CertificateManager] getSigningCertificate: WARNING: No signing certificate found for \(url.lastPathComponent).")
-        return nil
+        // 2. Fall back to active signing certificate for legacy users
+        debugLog("[CertificateManager] getSigningCertificate: Cached certificate not found. Falling back to active certificate.")
+        return activeCertificate?.certificate
     }
 
     public func loadAllSignableLocalCertificates() -> [ALTCertificate] {

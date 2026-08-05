@@ -1,0 +1,50 @@
+//
+//  CacheSigningCertOperation.swift
+//  SideStore
+//
+//  Created by Magesh K on 8/5/26.
+//  Copyright © 2026 SideStore. All rights reserved.
+//
+
+import Foundation
+import AltStoreCore
+import AltSign
+
+final class CacheSigningCertOperation: BasePipelineOperation<AppOperationContext, Void>, @unchecked Sendable {
+    override func execute(parentProgress: Progress?) async throws {
+        debugLog("[CacheSigningCertOperation] execute() started")
+        defer { debugLog("[CacheSigningCertOperation] execute() completed") }
+        try await super.executePreconditionCheck(parentProgress: parentProgress)
+        
+        let bundleID = self.context.targetBundleIdentifier
+        
+        // 1. Resolve the certificate used for signing this app
+        let certToCache = self.context.overrideCertificate 
+            ?? self.context.authenticatedContext.certificate 
+            ?? CertificateManager.shared.activeCertificate?.certificate
+            
+        guard let cert = certToCache else {
+            debugLog("[CacheSigningCertOperation] WARNING: No certificate found in context or CertificateManager to cache.")
+            return
+        }
+        
+        guard let certData = cert.data else {
+            debugLog("[CacheSigningCertOperation] WARNING: Certificate has no data to cache.")
+            return
+        }
+        
+        // 2. Resolve target App directory
+        let appsDirectory = InstalledApp.appsDirectoryURL
+        let appDirectory = appsDirectory.appendingPathComponent(bundleID)
+        
+        do {
+            try FileManager.default.createDirectory(at: appDirectory, withIntermediateDirectories: true, attributes: nil)
+            let certURL = appDirectory.appendingPathComponent("signing_certificate.der")
+            try certData.write(to: certURL, options: .atomic)
+            debugLog("[CacheSigningCertOperation] Successfully cached signing certificate to \(certURL.path)")
+        } catch {
+            debugLog("[CacheSigningCertOperation] ERROR: Failed to write signing certificate to disk: \(error)")
+            throw error
+        }
+    }
+}

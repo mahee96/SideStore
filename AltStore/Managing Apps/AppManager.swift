@@ -931,7 +931,8 @@ extension AppManager: PipelineProgress, PipelineExecutionContext, PipelineErrorL
     {
         // Access outside critical section to avoid deadlock due to `bundleIdentifier` potentially calling performAndWait() on main thread.
         let bundleID = operation.bundleIdentifier
-        
+        let operationName = String(describing: operation.loggedErrorOperation)
+
         self.progressLock.withLock {
             switch operation
             {
@@ -940,7 +941,6 @@ extension AppManager: PipelineProgress, PipelineExecutionContext, PipelineErrorL
             case .refresh, .activate, .deactivate, .deleteApp, .backup, .restore, .resign, .removeDeactivatedApp, .enableJIT: 
                 self.refreshProgress[bundleID] = progress
             }
-            let operationName = String(describing: operation).components(separatedBy: "(").first ?? ""
             debugLog("[AppManager] setProgress: \(progress.map { "\($0)" } ?? "nil") for operation: .\(operationName), totalUnitCount: \(progress?.totalUnitCount ?? 0)")
         }
     }
