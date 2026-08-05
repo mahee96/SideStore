@@ -130,6 +130,18 @@ extension OperationError
         OperationError(code: .provisioningError, failureReason: String(format: NSLocalizedString("The signing certificate used to install “%@” was revoked on the Apple Developer portal. Please re-sign or reinstall the app.", comment: ""), appName))
     }
 
+    static func customCertificateRevoked(appName: String, activeTeam: String) -> OperationError {
+        var o = OperationError(code: .provisioningError, failureReason: String(format: NSLocalizedString("Your active custom/third-party signing certificate (Team: %@) was revoked on the Developer Portal.\n\nIf you did not intend to use a custom certificate, please reset it in Settings -> Advanced -> Certificates.", comment: ""), activeTeam))
+        o.errorTitle = NSLocalizedString("Custom Certificate Revoked", comment: "")
+        return o
+    }
+
+    static func customCertificateExpired(appName: String, activeTeam: String) -> OperationError {
+        var o = OperationError(code: .provisioningError, failureReason: String(format: NSLocalizedString("Your active custom/third-party signing certificate (Team: %@) has expired.\n\nIf you did not intend to use a custom certificate, please reset it in Settings -> Advanced -> Certificates.", comment: ""), activeTeam))
+        o.errorTitle = NSLocalizedString("Custom Certificate Expired", comment: "")
+        return o
+    }
+
     static func certificateExpired(appName: String) -> OperationError {
         OperationError(code: .provisioningError, failureReason: String(format: NSLocalizedString("The signing certificate used to install “%@” has expired. Please re-sign or reinstall the app.", comment: ""), appName))
     }

@@ -50,6 +50,18 @@ struct ActiveCertSectionView: View {
                             if viewModel.revealedSerials.contains(key) { viewModel.revealedSerials.remove(key) }
                             else { viewModel.revealedSerials.insert(key) }
                         }
+                        
+                        if viewModel.isActiveCertThirdParty {
+                            HStack(spacing: 4) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundColor(.orange)
+                                    .font(.footnote)
+                                Text("Custom third-party certificate (different team)")
+                                    .font(.caption)
+                                    .foregroundColor(.orange)
+                            }
+                            .padding(.top, 2)
+                        }
                     }
                 }
                 .padding(.vertical, 4)

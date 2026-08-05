@@ -87,6 +87,18 @@ class CertificatesViewModel: ObservableObject {
         return team.type != .free && team.type != .unknown
     }
     
+    var isActiveCertThirdParty: Bool {
+        guard let activeCert = activeLocalCert,
+              let data = activeCert.data,
+              let team = self.team else { return false }
+        
+        let details = SideStore.parseCertificate(derData: data)
+        let subjectContainsTeam = details.subject.contains(team.identifier)
+        let issuerContainsTeam = details.issuer.contains(team.identifier)
+        
+        return !subjectContainsTeam && !issuerContainsTeam
+    }
+    
     private let certificateKeychain = KeychainAccess.Keychain(service: Bundle.Info.appbundleIdentifier)
         .accessibility(.afterFirstUnlock)
     

@@ -178,9 +178,27 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         try await self.save(team)
         
         let certificate: ALTCertificate?
-        if self.skipCertificateProvisioning {
-            self.verboseLog("[Authentication] execute: Skipping certificate provisioning.")
+        
+        // Check if a custom/third-party certificate is active
+        var isCustomCertActive = false
+        if let activeCert = CertificateManager.shared.activeCertificate?.certificate,
+           let data = activeCert.data {
+            let details = SideStore.parseCertificate(derData: data)
+            let belongsToAuthenticatedTeam = details.subject.contains(team.identifier) || details.issuer.contains(team.identifier)
+            if !belongsToAuthenticatedTeam {
+                self.debugLog("[Authentication] Custom/third-party active certificate detected (Subject OU does not match Team ID '\(team.identifier)').")
+                isCustomCertActive = true
+            }
+        }
+        
+        if self.skipCertificateProvisioning || isCustomCertActive {
+            if isCustomCertActive {
+                self.debugLog("[Authentication] Using custom active certificate '\(CertificateManager.shared.activeCertificate?.certificate.serialNumber ?? "nil")' for signing. Bypassing portal fetch.")
+            } else {
+                self.verboseLog("[Authentication] execute: Skipping certificate provisioning.")
+            }
             certificate = CertificateManager.shared.activeCertificate?.certificate
+            self.context.signingCertificate = certificate
         } else {
             self.verboseLog("[Authentication] execute: Invoking fetchCertificate...")
             certificate = try await self.fetchCertificate(for: team, session: session)
@@ -188,8 +206,17 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             self.context.signingCertificate = certificate
         }
         
-        self.debugLog("[Authentication] Saving certificate after fetching certificate")
-        try? CertificateManager.shared.setActiveCertificate(certificate)
+        // Only update the global active certificate if the user doesn't have a custom third-party certificate selected
+        var shouldUpdateActiveCertificate = true
+        if isCustomCertActive {
+            self.debugLog("[Authentication] Custom/third-party certificate is active. Skipping active certificate overwrite.")
+            shouldUpdateActiveCertificate = false
+        }
+        
+        if shouldUpdateActiveCertificate {
+            self.debugLog("[Authentication] Saving certificate after fetching certificate")
+            try? CertificateManager.shared.setActiveCertificate(certificate)
+        }
         
         return (team, certificate, session)
     }

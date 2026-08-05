@@ -215,6 +215,26 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
     }
     
     private func processValidationResult(_ result: CertificateStatus, description: String, appName: String) throws {
+        // Check if there is a team ID mismatch with the active certificate
+        var activeTeamID: String? = nil
+        var isCustomCertActive = false
+        
+        if let team = self.context.authenticatedContext.team {
+            if let activeCert = CertificateManager.shared.activeCertificate?.certificate,
+               let data = activeCert.data {
+                let details = SideStore.parseCertificate(derData: data)
+                let belongsToAuthenticatedTeam = details.subject.contains(team.identifier) || details.issuer.contains(team.identifier)
+                if !belongsToAuthenticatedTeam {
+                    isCustomCertActive = true
+                    // Try to extract the team ID of the active cert from its Subject
+                    // (It is friendly labeled as "Organizational Unit" in the parsed DN string)
+                    if let ouPart = details.subject.components(separatedBy: ", ").first(where: { $0.hasPrefix("Organizational Unit=") }) {
+                        activeTeamID = ouPart.replacingOccurrences(of: "Organizational Unit=", with: "")
+                    }
+                }
+            }
+        }
+        
         switch result {
         case .valid(let isCrossSigned):
             if isCrossSigned {
@@ -224,9 +244,21 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
             }
         case .revoked:
             debugLog("[VerifyCertificateOperation] \(description) is REVOKED")
+            if isCustomCertActive {
+                throw OperationError.customCertificateRevoked(
+                    appName: appName,
+                    activeTeam: activeTeamID ?? "Unknown Custom Team"
+                )
+            }
             throw OperationError.certificateRevoked(appName: appName)
         case .expired:
             debugLog("[VerifyCertificateOperation] \(description) is EXPIRED")
+            if isCustomCertActive {
+                throw OperationError.customCertificateExpired(
+                    appName: appName,
+                    activeTeam: activeTeamID ?? "Unknown Custom Team"
+                )
+            }
             throw OperationError.certificateExpired(appName: appName)
         }
     }
