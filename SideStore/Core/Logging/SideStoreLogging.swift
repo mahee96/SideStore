@@ -7,21 +7,21 @@
 //
 import Foundation
 
-internal enum SideStoreLogging {
+public enum SideStoreLogging {
     private static let lock = NSLock()
     private nonisolated(unsafe) static var _isLoggingEnabled: Bool = false
 
-    internal static var isLoggingEnabled: Bool {
+    public static var isLoggingEnabled: Bool {
         lock.withLock { _isLoggingEnabled }
     }
 
-    internal static func setLogging(_ enabled: Bool) {
+    public static func setLogging(_ enabled: Bool) {
         lock.withLock { _isLoggingEnabled = enabled }
     }
 }
 
 @inline(__always)
-internal func debugLog(_ text: @autoclosure () -> String) {
+public func debugLog(_ text: @autoclosure () -> String) {
     let message = formatLogMessage(text())
     if !message.isEmpty && message.allSatisfy({ $0 == "\n" || $0 == "\r" }) {
         print(message, terminator: "")
@@ -31,7 +31,7 @@ internal func debugLog(_ text: @autoclosure () -> String) {
 }
 
 @inline(__always)
-internal func verboseLog(_ text: @autoclosure () -> String) {
+public func verboseLog(_ text: @autoclosure () -> String) {
     if SideStoreLogging.isLoggingEnabled {
         let message = formatLogMessage(text())
         if !message.isEmpty && message.allSatisfy({ $0 == "\n" || $0 == "\r" }) {
@@ -52,7 +52,7 @@ private func getTag(level: String) -> String {
     return "\(timestamp) \(level): "
 }
 
-internal func formatLogMessage(_ message: String) -> String {
+public func formatLogMessage(_ message: String) -> String {
     guard message.contains("UserInfo=") || 
           message.contains("NSURLErrorDomain") || 
           message.contains("NSErrorFailingURLStringKey=") ||

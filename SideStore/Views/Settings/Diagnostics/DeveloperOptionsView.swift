@@ -73,6 +73,7 @@ struct DeveloperOptionsView: View {
                                 isSideStoreVerboseLoggingEnabled = newValue
                                 UserDefaults.standard.isSideStoreVerboseLoggingEnabled = newValue
                                 SideStoreLogging.setLogging(newValue)
+                                AltStoreCore.SideStoreLogging.setLogging(newValue)
                             }
                         ))
                         
