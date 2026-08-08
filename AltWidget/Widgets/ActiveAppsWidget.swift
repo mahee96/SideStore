@@ -244,14 +244,14 @@ private struct ActiveAppsWidgetView: View
     let expiredDate = Date().addingTimeInterval(1 * 60 * 60 * 24 * 7)
     let (altstore, delta, clip, longAltStore, longDelta, longClip) = AppSnapshot.makePreviewSnapshots()
     
-    AppsEntry(date: Date(), apps: [altstore, delta, clip])
-    AppsEntry(date: Date(), apps: [longAltStore, longDelta, longClip])
+    AppsEntry<Void>(date: Date(), apps: [altstore, delta, clip])
+    AppsEntry<Void>(date: Date(), apps: [longAltStore, longDelta, longClip])
     
-    AppsEntry(date: expiredDate, apps: [altstore, delta, clip])
+    AppsEntry<Void>(date: expiredDate, apps: [altstore, delta, clip])
     
-    AppsEntry(date: Date(), apps: [altstore, delta])
-    AppsEntry(date: Date(), apps: [altstore])
+    AppsEntry<Void>(date: Date(), apps: [altstore, delta])
+    AppsEntry<Void>(date: Date(), apps: [altstore])
     
-    AppsEntry(date: Date(), apps: [])
-    AppsEntry(date: Date(), apps: [], isPlaceholder: true)
+    AppsEntry<Void>(date: Date(), apps: [])
+    AppsEntry<Void>(date: Date(), apps: [], isPlaceholder: true)
 }

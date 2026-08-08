@@ -153,10 +153,10 @@ private let widgetFamily = if #available(iOS 16, *) { WidgetFamily.accessoryCirc
     let expiredDate = Date().addingTimeInterval(1 * 60 * 60 * 24 * 7)
     let (altstore, _, _, longAltStore, _, _) = AppSnapshot.makePreviewSnapshots()
     
-    AppsEntry(date: Date(), apps: [altstore])
-    AppsEntry(date: Date(), apps: [longAltStore])
+    AppsEntry<Void>(date: Date(), apps: [altstore])
+    AppsEntry<Void>(date: Date(), apps: [longAltStore])
     
-    AppsEntry(date: expiredDate, apps: [altstore])
+    AppsEntry<Void>(date: expiredDate, apps: [altstore])
 }
 
 @available(iOS 17, *)
@@ -166,8 +166,8 @@ private let widgetFamily = if #available(iOS 16, *) { WidgetFamily.accessoryCirc
     let expiredDate = Date().addingTimeInterval(1 * 60 * 60 * 24 * 7)
     let (altstore, _, _, longAltStore, _, _) = AppSnapshot.makePreviewSnapshots()
     
-    AppsEntry(date: Date(), apps: [altstore])
-    AppsEntry(date: Date(), apps: [longAltStore])
+    AppsEntry<Void>(date: Date(), apps: [altstore])
+    AppsEntry<Void>(date: Date(), apps: [longAltStore])
     
-    AppsEntry(date: expiredDate, apps: [altstore])
+    AppsEntry<Void>(date: expiredDate, apps: [altstore])
 }

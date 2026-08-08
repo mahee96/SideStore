@@ -224,11 +224,11 @@ private struct AppIconView: View
 } timeline: {
     let expiredDate = Date().addingTimeInterval(1 * 60 * 60 * 24 * 7)
     let (altstore, _, _, longAltStore, _, _) = AppSnapshot.makePreviewSnapshots()
-    AppsEntry(date: Date(), apps: [altstore])
-    AppsEntry(date: Date(), apps: [longAltStore])
+    AppsEntry<Void>(date: Date(), apps: [altstore])
+    AppsEntry<Void>(date: Date(), apps: [longAltStore])
     
-    AppsEntry(date: expiredDate, apps: [altstore])
+    AppsEntry<Void>(date: expiredDate, apps: [altstore])
     
-    AppsEntry(date: Date(), apps: [])
-    AppsEntry(date: Date(), apps: [], isPlaceholder: true)
+    AppsEntry<Void>(date: Date(), apps: [])
+    AppsEntry<Void>(date: Date(), apps: [], isPlaceholder: true)
 }

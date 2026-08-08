@@ -9,7 +9,7 @@
 import WidgetKit
 @preconcurrency import AltStoreCore
 
-struct AppsEntry<T = Void>: TimelineEntry
+struct AppsEntry<T>: TimelineEntry
 {
     var date: Date
     var relevance: TimelineEntryRelevance?
@@ -18,16 +18,15 @@ struct AppsEntry<T = Void>: TimelineEntry
     var isPlaceholder: Bool = false
     
     var context: T?
-    
 }
 
 class AppsTimelineProviderBase<T>
 {
-    typealias Entry = AppsEntry
+    typealias Entry = AppsEntry<T>
     
     func placeholder(in context: TimelineProviderContext) -> AppsEntry<T>
     {
-        return AppsEntry(date: Date(), apps: [], isPlaceholder: true)
+        return Entry(date: Date(), apps: [], isPlaceholder: true)
     }
     
     func snapshot(for appBundleIDs: [String], in context: T? = nil) async -> AppsEntry<T>
@@ -40,14 +39,14 @@ class AppsTimelineProviderBase<T>
             
             apps = getUpdatedData(apps, context)
             
-            let entry = AppsEntry(date: Date(), apps: apps, context: context)
+            let entry = Entry(date: Date(), apps: apps, context: context)
             return entry
         }
         catch
         {
             debugLog("Failed to prepare widget snapshot: \(error)")
             
-            let entry = AppsEntry(date: Date(), apps: [], context: context)
+            let entry = Entry(date: Date(), apps: [], context: context)
             return entry
         }
     }
@@ -77,7 +76,7 @@ class AppsTimelineProviderBase<T>
         {
             debugLog("Failed to prepare widget timeline: \(error)")
             
-            let entry = AppsEntry(date: Date(), apps: [], context: context)
+            let entry = Entry(date: Date(), apps: [], context: context)
             let timeline = Timeline(entries: [entry], policy: .atEnd)
             return timeline
         }
@@ -119,11 +118,11 @@ extension AppsTimelineProviderBase
         switch numberOfDays
         {
         case ..<0:
-            let entry = AppsEntry(date: currentDate, relevance: TimelineEntryRelevance(score: 0.0), apps: snapshots, context: context)
+            let entry = Entry(date: currentDate, relevance: TimelineEntryRelevance(score: 0.0), apps: snapshots, context: context)
             entries.append(entry)
             
         case 0:
-            let entry = AppsEntry(date: currentDate, relevance: TimelineEntryRelevance(score: 1.0), apps: snapshots, context: context)
+            let entry = Entry(date: currentDate, relevance: TimelineEntryRelevance(score: 1.0), apps: snapshots, context: context)
             entries.append(entry)
             
         default:
@@ -134,7 +133,7 @@ extension AppsTimelineProviderBase
             
             let numberOfEntries = min(numberOfDays, 7) + 2
             
-            let appEntries = (0 ..< numberOfEntries).map { (dayOffset) -> AppsEntry in
+            let appEntries = (0 ..< numberOfEntries).map { (dayOffset) -> Entry in
                 let entryDate = Calendar.current.date(byAdding: .day, value: dayOffset, to: currentDate) ?? currentDate.addingTimeInterval(Double(dayOffset) * 60 * 60 * 24)
                                 
                 let daysSinceRefresh = entryDate.numberOfCalendarDays(since: firstExpiringApp.refreshedDate)
@@ -147,7 +146,7 @@ extension AppsTimelineProviderBase
                     score = 0
                 }
                 
-                let entry = AppsEntry(date: entryDate, relevance: TimelineEntryRelevance(score: score), apps: snapshots, context: context)
+                let entry = Entry(date: entryDate, relevance: TimelineEntryRelevance(score: score), apps: snapshots, context: context)
                 return entry
             }
             
