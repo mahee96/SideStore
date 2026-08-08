@@ -20,10 +20,6 @@ struct AppsEntry<T>: TimelineEntry
     
     var context: T?
     
-    /// Temporary diagnostic field: when set, the widget's "no apps" view
-    /// will display this instead of the normal empty state, so failures can
-    /// be seen directly on-device without needing Console/Analytics access.
-    var debugMessage: String? = nil
 }
 
 class AppsTimelineProviderBase<T>
@@ -52,7 +48,7 @@ class AppsTimelineProviderBase<T>
         {
             debugLog("Failed to prepare widget snapshot: \(error)")
             
-            let entry = AppsEntry(date: Date(), apps: [], context: context, debugMessage: "snapshot: \(error)")
+            let entry = AppsEntry(date: Date(), apps: [], context: context)
             return entry
         }
     }
@@ -82,7 +78,7 @@ class AppsTimelineProviderBase<T>
         {
             debugLog("Failed to prepare widget timeline: \(error)")
             
-            let entry = AppsEntry(date: Date(), apps: [], context: context, debugMessage: "timeline: \(error)")
+            let entry = AppsEntry(date: Date(), apps: [], context: context)
             let timeline = Timeline(entries: [entry], policy: .atEnd)
             return timeline
         }
@@ -110,7 +106,7 @@ extension AppsTimelineProviderBase
             fetchRequest.predicate = NSPredicate(format: "%K IN %@", #keyPath(InstalledApp.bundleIdentifier), bundleIDs)
             fetchRequest.returnsObjectsAsFaults = false
             
-            let installedApps = try context.fetchSafely(fetchRequest)
+            let installedApps = try context.fetch(fetchRequest)
             
             let apps = installedApps.map { AppSnapshot(installedApp: $0) }
             
@@ -124,23 +120,8 @@ extension AppsTimelineProviderBase
     
     func makeEntries(for snapshots: [AppSnapshot], in context: T? = nil) -> [AppsEntry<T>]
     {
-        // A Timeline must always have at least one entry — an empty entries
-        // array is silently discarded by WidgetKit and renders as a blank
-        // box on the home screen (this is why the widget can look fine in
-        // the "Add Widget" gallery, which uses snapshot(), but goes blank
-        // once actually placed, which uses timeline()). So even when there
-        // are no apps to show, we still return one entry with an empty
-        // `apps` array, letting the view's own "no apps" state render.
-        guard !snapshots.isEmpty else
-        {
-            return [AppsEntry(date: Date(), apps: [], context: context, debugMessage: "no apps matched (0 InstalledApp rows returned for the requested bundle IDs)")]
-        }
-
         let sortedAppsByExpirationDate = snapshots.sorted { $0.expirationDate < $1.expirationDate }
-        guard let firstExpiringApp = sortedAppsByExpirationDate.first, let lastExpiringApp = sortedAppsByExpirationDate.last else
-        {
-            return [AppsEntry(date: Date(), apps: [], context: context)]
-        }
+        guard let firstExpiringApp = sortedAppsByExpirationDate.first, let lastExpiringApp = sortedAppsByExpirationDate.last else { return [] }
         
         let currentDate = Calendar.current.startOfDay(for: Date())
         let numberOfDays = lastExpiringApp.expirationDate.numberOfCalendarDays(since: currentDate)
@@ -201,7 +182,7 @@ extension AppsTimelineProviderBase
                 fetchRequest.resultType = .dictionaryResultType
                 fetchRequest.propertiesToFetch = [#keyPath(InstalledApp.bundleIdentifier)]
                 
-                let bundleIDs = try context.fetchSafely(fetchRequest).compactMap { $0[#keyPath(InstalledApp.bundleIdentifier)] as? String }
+                let bundleIDs = try context.fetch(fetchRequest).compactMap { $0[#keyPath(InstalledApp.bundleIdentifier)] as? String }
                 return bundleIDs
             }
             
