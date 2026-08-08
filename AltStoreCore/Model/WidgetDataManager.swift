@@ -9,6 +9,7 @@
 @preconcurrency import UIKit
 import WidgetKit
 import CoreData
+@preconcurrency import AltSign
 
 public struct WidgetAppItem: Codable, Sendable {
     public var name: String
@@ -47,7 +48,7 @@ public final class WidgetDataManager: @unchecked Sendable {
     private init() {}
 
     private var containerURL: URL? {
-        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: DatabaseManager.appGroupIdentifier)
+        FileManager.default.altstoreSharedDirectory
     }
 
     private var jsonFileURL: URL? {
