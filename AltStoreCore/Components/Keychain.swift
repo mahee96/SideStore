@@ -167,4 +167,13 @@ public class Keychain
         self.team = nil
         debugLog("[Keychain] Cleared in-memory session, certificate, and team instances.")
     }
+
+    public func clearAll()
+    {
+        debugLog("[Keychain] Clearing all Keychain items related to this instance...")
+        try? self.keychain.removeAll()
+        self.session = nil
+        self.team = nil
+        debugLog("[Keychain] All Keychain items and in-memory session/team cleared.")
+    }
 }

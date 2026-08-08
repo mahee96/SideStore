@@ -29,6 +29,7 @@ struct DeveloperOptionsView: View {
     @State private var isExportingDB: Bool = false
     @State private var showDeleteConfirmation: Bool = false
     @State private var showClearRefreshAttemptsConfirmation: Bool = false
+    @State private var showClearKeychainConfirmation: Bool = false
     @State private var showExportPasswordPrompt: Bool = false
     @State private var exportCertPassword: String = ""
     
@@ -206,6 +207,22 @@ struct DeveloperOptionsView: View {
                         
                         divider
                         
+                        SwiftUI.Button(action: { showClearKeychainConfirmation = true }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "key")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(Color(red: 1.0, green: 0.27, blue: 0.27))
+                                Text("Clear Keychain Items")
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(Color(red: 1.0, green: 0.27, blue: 0.27))
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .frame(height: 50)
+                        }
+                        
+                        divider
+                        
                         toggleRow(title: "Wipe Database on Next Start", isOn: Binding(
                             get: { recreateDatabaseOnNextStart },
                             set: { newValue in
@@ -297,6 +314,14 @@ struct DeveloperOptionsView: View {
             SwiftUI.Button("Cancel", role: .cancel) {}
         } message: {
             Text("Please enter a password for the certificate.")
+        }
+        .alert("Clear Keychain Items", isPresented: $showClearKeychainConfirmation) {
+            SwiftUI.Button("Clear All", role: .destructive) {
+                Keychain.shared.clearAll()
+            }
+            SwiftUI.Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Do you want to clear all keychain items related to this SideStore instance?")
         }
     }
     
