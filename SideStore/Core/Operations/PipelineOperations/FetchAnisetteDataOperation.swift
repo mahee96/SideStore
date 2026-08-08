@@ -512,7 +512,10 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext
     func fetchAnisetteV3(_ identifier: String, _ adiPb: String) async throws -> ALTAnisetteData {
         try await self.fetchClientInfo()
         self.verboseLog("[FetchAnisetteDataOperation] Fetching anisette V3")
-        var request = URLRequest(url: self.url!.appendingPathComponent("v3").appendingPathComponent("get_headers"))
+        guard let serverURL = self.url else {
+            throw OperationError.anisetteV3Error(message: "Anisette server URL is not configured.")
+        }
+        var request = URLRequest(url: serverURL.appendingPathComponent("v3").appendingPathComponent("get_headers"))
         request.timeoutInterval = 15
         request.httpMethod = "POST"
         request.httpBody = try! JSONSerialization.data(withJSONObject: [
@@ -701,9 +704,9 @@ private class AnisetteWebSocketSession: WebSocketDelegate {
     
     private func handleProvisioningSuccess(json: [String: Any], client: WebSocketClient) {
         parentOperation.debugLog("[FetchAnisetteDataOperation] Provisioning succeeded!")
-        client.disconnect(closeCode: 0)
         guard let adiPb = json["adi_pb"] as? String else {
             parentOperation.debugLog("[FetchAnisetteDataOperation] The server didn't give us an adi.pb file")
+            client.disconnect(closeCode: 0)
             self.continuation?.resume(throwing: OperationError.provisioningError(result: "The server didn't give us an adi.pb file", message: nil))
             return
         }
@@ -711,8 +714,10 @@ private class AnisetteWebSocketSession: WebSocketDelegate {
         Task {
             do {
                 let anisette = try await parentOperation.fetchAnisetteV3(AnisetteDataManager.shared.anisetteIdentifier!, AnisetteDataManager.shared.anisetteAdiBlob!)
+                client.disconnect(closeCode: 0)
                 self.continuation?.resume(returning: anisette)
             } catch {
+                client.disconnect(closeCode: 0)
                 self.continuation?.resume(throwing: error)
             }
         }
