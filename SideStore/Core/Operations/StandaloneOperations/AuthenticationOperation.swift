@@ -124,6 +124,16 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     }
     
     private func validateSessionCache(_ cache: SessionCache) async throws -> AuthenticationResult? {
+        // Update anisette data if expired and provisioning is required
+        if !self.skipCertificateProvisioning && cache.session.anisetteData.date.timeIntervalSinceNow < -40.0 {
+            do {
+                let anisetteData = try await FetchAnisetteDataOperation(context: self.context).execute(parentProgress: self.progress)
+                cache.session.anisetteData = anisetteData
+            } catch {
+                self.verboseLog("[Authentication] Failed to update anisette data for cached session: \(error)")
+            }
+        }
+
         do {
             let certificates = try await ALTAppleAPI.shared.fetchCertificates(for: cache.team, session: cache.session)
             self.activeCertificates = certificates
@@ -138,17 +148,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             
             if self.skipCertificateProvisioning || (certToUse != nil && certificates.contains(where: { $0.serialNumber == certToUse?.serialNumber })) {
                 self.debugLog("[Authentication] SessionCache is valid. (using certificate: \(certToUse?.serialNumber ?? "nil"))")
-                
-                // Update anisette data if provisioning is required
-                if !self.skipCertificateProvisioning {
-                    do {
-                        let anisetteData = try await self.anisetteProvider.getAnisetteData()
-                        cache.session.anisetteData = anisetteData
-                    } catch {
-                        self.verboseLog("[Authentication] Failed to update anisette data for cached session: \(error)")
-                    }
-                }
-                
+             
                 self.context.team = cache.team
                 self.context.session = cache.session
                 self.context.signingCertificate = certToUse
