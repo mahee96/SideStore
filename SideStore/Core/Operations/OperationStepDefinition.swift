@@ -21,10 +21,12 @@ struct PipelineExecutionStep: Hashable {
 struct StandaloneExecutionStep: Hashable {
     let step: StandaloneStep
     let weight: Int64
+    let maxReuse: Int
 
-    init(_ step: StandaloneStep, _ weight: Int64) {
+    init(_ step: StandaloneStep, _ weight: Int64, maxReuse: Int = 1) {
         self.step = step
         self.weight = weight
+        self.maxReuse = maxReuse
     }
 }
 
@@ -251,8 +253,11 @@ struct PipelineStepDefinition {
 
 struct StandaloneStepDefinition {
     static let authenticate: [StandaloneExecutionStep] = [
-        StandaloneExecutionStep(.fetchAnisetteData, 10),
+        // we expect upto 4 anisette fetch calls and each can use 10% of child and can even exceed child budget 
+        // but parent will squeeze them anyway into child's pendingCount so we okay with this only for standalone-op...
+        // pipeline-op still requires explicit 1 time declaration in steps definition!...
         StandaloneExecutionStep(.authentication,    80),
+        StandaloneExecutionStep(.fetchAnisetteData, 10, maxReuse: 4),
         StandaloneExecutionStep(.fetchAppIDs,       10)
     ]
 

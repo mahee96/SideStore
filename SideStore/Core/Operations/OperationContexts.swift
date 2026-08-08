@@ -23,6 +23,7 @@ enum AlternateIconMode {
 fileprivate struct OperationStepItem {
     let step: any OperationStep
     let weight: Int64
+    let maxReuse: Int
 }
 
 protocol WeightedOperationContext: AnyObject {
@@ -37,8 +38,9 @@ class OperationContext: WeightedOperationContext
     var presentingViewController: UIViewController?
     var dbBackgroundContext: NSManagedObjectContext?
 
-    fileprivate var stepItems: [OperationStepItem]
-    fileprivate var currentIndex = 0
+    private var stepItems: [OperationStepItem]
+    private var currentIndex = 0
+    private var remainingReuses: [Int: Int] = [:]
 
     fileprivate init(stepItems: [OperationStepItem] = [], error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
     {
@@ -91,8 +93,26 @@ class OperationContext: WeightedOperationContext
             debugLog("[OperationContext] Failed to consume weight for step '\(step)' from index \(currentIndex)")
             return nil
         }
-        currentIndex = index + 1
-        return stepItems[index].weight
+        
+        let item = stepItems[index]
+        
+        let remaining: Int
+        if let existing = remainingReuses[index] {
+            remaining = existing
+        } else {
+            remaining = item.maxReuse
+            remainingReuses[index] = remaining
+        }
+        
+        if remaining > 1 {
+            remainingReuses[index] = remaining - 1
+            return item.weight
+        } else {
+            // remaining is 1. Clear it completely from the map and advance currentIndex.
+            remainingReuses[index] = nil
+            currentIndex = index + 1
+            return item.weight
+        }
     }
 }
 
@@ -103,7 +123,7 @@ class StandaloneOperationContext: OperationContext
     init(steps: [StandaloneExecutionStep], error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
     {
         self.steps = steps
-        super.init(stepItems: steps.map { OperationStepItem(step: $0.step, weight: $0.weight) }, error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
+        super.init(stepItems: steps.map { OperationStepItem(step: $0.step, weight: $0.weight, maxReuse: $0.maxReuse) }, error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
     }
 
     init(context: StandaloneOperationContext)
@@ -166,7 +186,7 @@ class PipelineOperationContext: OperationContext
     init(pipelineSteps: [PipelineExecutionStep], error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
     {
         self.pipelineSteps = pipelineSteps
-        super.init(stepItems: pipelineSteps.map { OperationStepItem(step: $0.step, weight: $0.weight) }, error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
+        super.init(stepItems: pipelineSteps.map { OperationStepItem(step: $0.step, weight: $0.weight, maxReuse: 1) }, error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
     }
 
     init(context: PipelineOperationContext)
