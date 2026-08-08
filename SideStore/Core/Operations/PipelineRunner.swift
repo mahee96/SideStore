@@ -251,7 +251,7 @@ final class PipelineRunner: Sendable
             debugLog("[AppManager] performOperation: Execution SUCCESS for app: \(operation.bundleIdentifier)")
             
             debugLog("[AppManager] performOperation: Reloading widget timelines...")
-            WidgetCenter.shared.reloadAllTimelines()
+            await WidgetDataManager.publishCurrentInstalledApps(in: group.context.dbBackgroundContext)
             debugLog("[AppManager] performOperation: Reloading COMPLETE for widget timelines.")
             
             if result.bundleIdentifier == StoreApp.altstoreAppID {

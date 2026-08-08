@@ -59,9 +59,12 @@ struct ActiveAppsWidget: Widget
         }
         else
         {
-            // Can't mark ActiveAppsWidget as requiring iOS 17 directly without causing crash on older versions.
-            // So instead we just return EmptyWidgetConfiguration pre-iOS 17.
-            return EmptyWidgetConfiguration()
+            return StaticConfiguration(kind: widgetKind, provider: UnsupportedTimelineProvider()) { _ in
+                UnsupportedWidgetView(requiredVersion: "iOS 17")
+            }
+            .supportedFamilies([.systemMedium])
+            .configurationDisplayName("Active Apps")
+            .description("Requires iOS 17 or later.")
         }
     }
 }
@@ -220,10 +223,17 @@ private struct ActiveAppsWidgetView: View
     }
     
     private var placeholder: some View {
-        Text("App Not Found")
-            .font(.system(.body, design: .rounded))
-            .fontWeight(.semibold)
-            .foregroundColor(Color.white.opacity(0.4))
+        VStack(spacing: 4) {
+            Text("Open SideStore")
+                .font(.system(.body, design: .rounded))
+                .fontWeight(.semibold)
+                .foregroundColor(Color.white.opacity(0.8))
+            Text("Launch app to update widget")
+                .font(.system(.caption, design: .rounded))
+                .foregroundColor(Color.white.opacity(0.5))
+                .multilineTextAlignment(.center)
+        }
+        .padding()
     }
 }
 

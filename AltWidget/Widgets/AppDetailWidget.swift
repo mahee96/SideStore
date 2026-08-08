@@ -129,15 +129,13 @@ private struct AppDetailWidgetView: View
             }
             else
             {
-                VStack {
-                    // Put conditional inside VStack, or else an empty view will be returned
-                    // if isPlaceholder == false, which messes up layout.
+                VStack(spacing: 4) {
                     if !isPlaceholder
                     {
-                        Text("App Not Found")
-                            .font(.system(.body, design: .rounded))
+                        Text("Open SideStore")
+                            .font(.system(.subheadline, design: .rounded))
                             .fontWeight(.semibold)
-                            .foregroundColor(Color.white.opacity(0.4))
+                            .foregroundColor(Color.white.opacity(0.8))
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

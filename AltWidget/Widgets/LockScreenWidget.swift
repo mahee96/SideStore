@@ -28,7 +28,12 @@ struct TextLockScreenWidget: Widget
         }
         else
         {
-            return EmptyWidgetConfiguration()
+            return StaticConfiguration(kind: kind, provider: UnsupportedTimelineProvider()) { _ in
+                UnsupportedWidgetView(requiredVersion: "iOS 16")
+            }
+            .supportedFamilies([.accessoryCircular])
+            .configurationDisplayName("AltWidget (Text)")
+            .description("Requires iOS 16 or later.")
         }
     }
 }
@@ -51,7 +56,12 @@ struct IconLockScreenWidget: Widget
         }
         else
         {
-            return EmptyWidgetConfiguration()
+            return StaticConfiguration(kind: kind, provider: UnsupportedTimelineProvider()) { _ in
+                UnsupportedWidgetView(requiredVersion: "iOS 16")
+            }
+            .supportedFamilies([.accessoryCircular])
+            .configurationDisplayName("AltWidget (Icon)")
+            .description("Requires iOS 16 or later.")
         }
     }
 }

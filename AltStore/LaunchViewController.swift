@@ -250,7 +250,7 @@ extension LaunchViewController {
             toastView.show(in: self.destinationViewController!.selectedViewController ?? self.destinationViewController!)
         }
         updateKnownSources()
-        WidgetCenter.shared.reloadAllTimelines()
+        await WidgetDataManager.publishCurrentInstalledApps(in: DatabaseManager.shared.viewContext)
         didFinishLaunching = true
         
         let destinationVC = destinationViewController!

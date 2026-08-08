@@ -7,7 +7,6 @@
 //
 
 import WidgetKit
-import CoreData
 @preconcurrency import AltStoreCore
 
 struct AppsEntry<T>: TimelineEntry
@@ -92,30 +91,18 @@ class AppsTimelineProviderBase<T>
 
 extension AppsTimelineProviderBase
 {
-    
     private func prepare() async throws
     {
-        try await DatabaseManager.shared.start()
+        // No-op in push-pull architecture: widget snapshot JSON is read directly from App Group container.
     }
     
     private func fetchApps(withBundleIDs bundleIDs: [String]) async throws -> [AppSnapshot]
     {
-        let context = DatabaseManager.shared.persistentContainer.newBackgroundContext()
-        let apps = try await context.performAsync {
-            let fetchRequest = InstalledApp.fetchRequest()
-            fetchRequest.predicate = NSPredicate(format: "%K IN %@", #keyPath(InstalledApp.bundleIdentifier), bundleIDs)
-            fetchRequest.returnsObjectsAsFaults = false
-            
-            let installedApps = try context.fetch(fetchRequest)
-            
-            let apps = installedApps.map { AppSnapshot(installedApp: $0) }
-            
-            // Always list apps in alphabetical order.
-            let sortedApps = apps.sorted { $0.name < $1.name }
-            return sortedApps
-        }
-        
-        return apps
+        let snapshot = WidgetDataManager.shared.fetchSnapshot()
+        let matchingItems = snapshot.allApps.filter { bundleIDs.contains($0.bundleIdentifier) }
+        let apps = matchingItems.map { AppSnapshot(item: $0) }
+        let sortedApps = apps.sorted { $0.name < $1.name }
+        return sortedApps
     }
     
     func makeEntries(for snapshots: [AppSnapshot], in context: T? = nil) -> [AppsEntry<T>]
@@ -172,28 +159,9 @@ extension AppsTimelineProviderBase
     
     func fetchActiveAppBundleIDs() async -> [String]
     {
-        do
-        {
-            try await self.prepare()
-            
-            let context = DatabaseManager.shared.persistentContainer.newBackgroundContext()
-            let bundleIDs = try await context.performAsync {
-                let fetchRequest = InstalledApp.activeAppsFetchRequest() as! NSFetchRequest<NSDictionary>
-                fetchRequest.resultType = .dictionaryResultType
-                fetchRequest.propertiesToFetch = [#keyPath(InstalledApp.bundleIdentifier)]
-                
-                let bundleIDs = try context.fetch(fetchRequest).compactMap { $0[#keyPath(InstalledApp.bundleIdentifier)] as? String }
-                return bundleIDs
-            }
-            
-            return bundleIDs
-        }
-        catch
-        {
-            debugLog("Failed to fetch active bundle IDs, falling back to AltStore bundle ID. \(error)")
-            
-            return [StoreApp.altstoreAppID]
-        }
+        let snapshot = WidgetDataManager.shared.fetchSnapshot()
+        let bundleIDs = snapshot.activeApps.map { $0.bundleIdentifier }
+        return bundleIDs.isEmpty ? [StoreApp.altstoreAppID] : bundleIDs
     }
 }
 
