@@ -9,10 +9,12 @@
 import Foundation
 
 class OperationsLoggingControl {
+    
+    private static let defaultStepLoggingState = false
 
     static func isStepLoggingEnabled(for step: some OperationStep) -> Bool {
         let key = udKey(for: step)
-        return getLoggingValueInDb(key: key) ?? true
+        return getLoggingValueInDb(key: key) ?? defaultStepLoggingState
     }
 
     static func setStepLoggingEnabled(for step: some OperationStep, value: Bool) {
