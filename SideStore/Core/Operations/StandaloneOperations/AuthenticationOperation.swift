@@ -71,12 +71,16 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     
     let skipDeviceRegistration: Bool
     let skipCertificateProvisioning: Bool
+    
+    private lazy var anisetteProvider: AnisetteProvider = {
+        AnisetteProvider(context: context, progress: self.progress)
+    }()
 
     init(context: AuthenticatedOperationContext, presentingViewController: UIViewController?, skipDeviceRegistration: Bool = false, skipCertificateProvisioning: Bool = false) throws {
         self.presentingViewController = presentingViewController
         self.skipDeviceRegistration = skipDeviceRegistration
         self.skipCertificateProvisioning = skipCertificateProvisioning
-        
+
         try super.init(context: context)
         
         self.operationQueue.name = "com.altstore.AuthenticationOperation"
@@ -120,16 +124,6 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     }
     
     private func validateSessionCache(_ cache: SessionCache) async throws -> AuthenticationResult? {
-        // Update anisette data if expired and provisioning is required
-        if !self.skipCertificateProvisioning && cache.session.anisetteData.date.timeIntervalSinceNow < -40.0 {
-            do {
-                let anisetteData = try await FetchAnisetteDataOperation(context: self.context).execute(parentProgress: self.progress)
-                cache.session.anisetteData = anisetteData
-            } catch {
-                self.verboseLog("[Authentication] Failed to update anisette data for cached session: \(error)")
-            }
-        }
-        
         do {
             let certificates = try await ALTAppleAPI.shared.fetchCertificates(for: cache.team, session: cache.session)
             self.activeCertificates = certificates
@@ -144,6 +138,17 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             
             if self.skipCertificateProvisioning || (certToUse != nil && certificates.contains(where: { $0.serialNumber == certToUse?.serialNumber })) {
                 self.debugLog("[Authentication] SessionCache is valid. (using certificate: \(certToUse?.serialNumber ?? "nil"))")
+                
+                // Update anisette data if provisioning is required
+                if !self.skipCertificateProvisioning {
+                    do {
+                        let anisetteData = try await self.anisetteProvider.getAnisetteData()
+                        cache.session.anisetteData = anisetteData
+                    } catch {
+                        self.verboseLog("[Authentication] Failed to update anisette data for cached session: \(error)")
+                    }
+                }
+                
                 self.context.team = cache.team
                 self.context.session = cache.session
                 self.context.signingCertificate = certToUse
@@ -548,20 +553,16 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     }
     
     private func authenticateWithToken(adsid: String, xcodeToken: String) async throws -> (ALTAccount, ALTAppleAPISession) {
-        let anisetteData = try await FetchAnisetteDataOperation(context: self.context)
-            .execute(parentProgress: progress)
-        
+        let anisetteData = try await self.anisetteProvider.getAnisetteData()
         let session = ALTAppleAPISession(dsid: adsid, authToken: xcodeToken, anisetteData: anisetteData)
         let account = try await ALTAppleAPI.shared.fetchAccount2(session: session)
-        
         return (account, session)
     }
     
     private func authenticate(appleID: String, password: String) async throws -> (ALTAccount, ALTAppleAPISession) {
         self.appleIDEmailAddress = appleID
         
-        let anisetteData = try await FetchAnisetteDataOperation(context: self.context)
-            .execute(parentProgress: progress)
+        let anisetteData = try await self.anisetteProvider.getAnisetteData()
         
         let verificationHandler: ((@escaping (String?) -> Void) -> Void)?
         
@@ -612,6 +613,8 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             verificationHandler = nil
         }
         
+        let xcodeVersion = await AnisetteConfigManager.shared.resolvedXcodeVersion()
+
         let (account, session) = try await ALTAppleAPI.shared.authenticate(
             appleID: appleID,
             password: password,
@@ -975,11 +978,11 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
 extension ALTAppleAPI {
     func fetchAccount2(session: ALTAppleAPISession, completionHandler: @escaping (Result<ALTAccount, Error>) -> Void) {
         let url = URL(string: "viewDeveloper.action", relativeTo: self.baseURL)!
-        
+
         self.sendRequest(with: url, additionalParameters: nil, session: session, team: nil) { (responseDictionary, requestError) in
             do {
                 guard let responseDictionary = responseDictionary else { throw requestError ?? ALTAppleAPIError.unknown() }
-                
+
                 guard let account = try self.processResponse(responseDictionary, parseHandler: { () -> Any? in
                     guard let dictionary = responseDictionary["developer"] as? [String: Any] else { return nil }
                     let account = ALTAccount(responseDictionary: dictionary)
@@ -1087,5 +1090,37 @@ extension ALTAppleAPI {
                 }
             }
         }
+    }
+}
+
+private class AnisetteProvider {
+    private let context: OperationContext
+    private let progress: Progress?
+    
+    private var lastFetchedData: ALTAnisetteData?
+    private var lastFetchTime: Date?
+    
+    init(context: OperationContext, progress: Progress?) {
+        self.context = context
+        self.progress = progress
+        
+        if let authContext = context as? AuthenticatedOperationContext,
+           let session = authContext.session {
+            self.lastFetchedData = session.anisetteData
+            self.lastFetchTime = session.anisetteData.date
+        }
+    }
+    
+    func getAnisetteData() async throws -> ALTAnisetteData {
+        if let lastFetchedData = lastFetchedData,
+           let lastFetchTime = lastFetchTime,
+           lastFetchTime.timeIntervalSinceNow >= -40.0 {
+            return lastFetchedData
+        }
+        
+        let data = try await FetchAnisetteDataOperation(context: self.context).execute(parentProgress: self.progress)
+        self.lastFetchedData = data
+        self.lastFetchTime = Date()
+        return data
     }
 }
