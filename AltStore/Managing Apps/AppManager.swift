@@ -237,7 +237,7 @@ extension AppManager
             do {
                 let result = try await AuthManager.shared.performAuthenticationOperation(
                     context: context,
-                    details: handler,
+                    handler: handler,
                     skipDeviceRegistration: skipDeviceRegistration,
                     skipCertificateProvisioning: skipCertificateProvisioning
                 )
@@ -634,7 +634,7 @@ extension AppManager
                 let handler = AuthenticationUIHandler(presentingViewController: effectivePresentingVC)
                 try await AuthManager.shared.performAuthenticationOperation(
                     context: context,
-                    details: handler,
+                    handler: handler,
                     skipDeviceRegistration: true,
                     skipCertificateProvisioning: true
                 )

@@ -23,7 +23,7 @@ enum RevokeDecision: Sendable {
     case keepExisting
 }
 
-protocol AuthenticationDetails: AnyObject {
+protocol AuthenticationHandler: AnyObject {
     func credentials() async throws -> (String, String)
     func verificationCode() async throws -> String?
     func handleVerificationResult(_ result: Result<(ALTAccount, ALTAppleAPISession, ALTTeam, ALTCertificate?), Error>) async
@@ -33,6 +33,8 @@ protocol AuthenticationDetails: AnyObject {
     
     func resolveRevocation(certsText: String, teamType: ALTTeamType) async throws -> RevokeDecision
     func resolveResign(mismatchReason: CodeSignValidationReason, context: AuthenticatedOperationContext) async throws -> Bool
+    
+    func complete() async
 }
 
 
@@ -91,10 +93,10 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         AnisetteProvider(context: context, progress: self.progress)
     }()
 
-    private weak var authenticationDetails: AuthenticationDetails?
+    private weak var authenticationHandler: AuthenticationHandler?
 
-    init(context: AuthenticatedOperationContext, details: AuthenticationDetails, skipDeviceRegistration: Bool = false, skipCertificateProvisioning: Bool = false) throws {
-        self.authenticationDetails = details
+    init(context: AuthenticatedOperationContext, handler: AuthenticationHandler, skipDeviceRegistration: Bool = false, skipCertificateProvisioning: Bool = false) throws {
+        self.authenticationHandler = handler
         self.skipDeviceRegistration = skipDeviceRegistration
         self.skipCertificateProvisioning = skipCertificateProvisioning
 
@@ -342,11 +344,9 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             self.debugLog("[Authentication] postAuthenticationCleanup: Failure result - \(error.localizedDescription)")
             self.verboseLog("[AuthenticationOperation] Failed to authenticate account. \(error.localizedDescription)")
             
-            self.verboseLog("[Authentication] postAuthenticationCleanup: Dismissing navigation controller on main actor (failure case)...")
-            await MainActor.run {
-                self.navigationController.dismiss(animated: true) {
-                    self.debugLog("[Authentication] postAuthenticationCleanup: Navigation controller dismissed (failure case).")
-                }
+            self.verboseLog("[Authentication] postAuthenticationCleanup: Completing session (failure case)...")
+            if let handler = self.authenticationHandler {
+                await handler.complete()
             }
             return
             
@@ -392,11 +392,9 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             self.verboseLog("[AuthenticationOperation] Skipping post-authentication alerts and certificate caching because authentication failed: \(error.localizedDescription)")
         }
         
-        self.verboseLog("[Authentication] postAuthenticationCleanup: Dismissing navigation controller on main actor...")
-        await MainActor.run {
-            self.navigationController.dismiss(animated: true) {
-                self.debugLog("[Authentication] postAuthenticationCleanup: Navigation controller dismissed.")
-            }
+        self.verboseLog("[Authentication] postAuthenticationCleanup: Completing session...")
+        if let handler = self.authenticationHandler {
+            await handler.complete()
         }
     }
     
@@ -485,13 +483,13 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     }
     
     private func presentSignInUI() async throws -> (account: ALTAccount, session: ALTAppleAPISession, team: ALTTeam, certificate: ALTCertificate?) {
-        guard let details = self.authenticationDetails else {
+        guard let handler = self.authenticationHandler else {
             throw OperationError.notAuthenticated
         }
         
         self.verboseLog("[Authentication] presentSignInUI: Requesting credentials...")
         while true {
-            let (appleID, password) = try await details.credentials()
+            let (appleID, password) = try await handler.credentials()
             if self.isCancelled { throw OperationError.cancelled }
             
             do {
@@ -522,12 +520,12 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                 }
                 
                 let result = (account, session, team, certificate)
-                await details.handleVerificationResult(.success(result))
+                await handler.handleVerificationResult(.success(result))
                 
                 return (account, session, team, certificate)
             } catch {
                 self.debugLog("[Authentication] presentSignInUI: Attempt failed with error: \(error)")
-                await details.handleVerificationResult(.failure(error))
+                await handler.handleVerificationResult(.failure(error))
             }
         }
     }
@@ -547,11 +545,11 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         let anisetteData = try await self.anisetteProvider.getAnisetteData()
         
         let verificationHandler: ((@escaping (String?) -> Void) -> Void)?
-        if let details = self.authenticationDetails {
+        if let handler = self.authenticationHandler {
             verificationHandler = { (completionHandler) in
                 Task {
                     do {
-                        let code = try await details.verificationCode()
+                        let code = try await handler.verificationCode()
                         completionHandler(code)
                     } catch {
                         completionHandler(nil)
@@ -601,10 +599,10 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             }
         }
         
-        guard let details = self.authenticationDetails else {
+        guard let handler = self.authenticationHandler else {
             throw AuthenticationError(.noTeam)
         }
-        return try await details.resolveTeam(teams)
+        return try await handler.resolveTeam(teams)
     }
     
     private func fetchCertificate(for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTCertificate {
@@ -749,10 +747,10 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     }
 
     private func showRevokeAlert(certsText: String, teamType: ALTTeamType) async throws -> RevokeDecision {
-        guard let details = self.authenticationDetails else {
+        guard let handler = self.authenticationHandler else {
             return .keepExisting
         }
-        return try await details.resolveRevocation(certsText: certsText, teamType: teamType)
+        return try await handler.resolveRevocation(certsText: certsText, teamType: teamType)
     }
     
     private func registerCurrentDevice(for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTDevice {
@@ -780,8 +778,8 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             return false
         }
         
-        guard let details = self.authenticationDetails else { return false }
-        await details.instructionsViewed()
+        guard let handler = self.authenticationHandler else { return false }
+        await handler.instructionsViewed()
         return true
     }
     
@@ -815,10 +813,10 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                 return false
             }
             
-            guard let details = self.authenticationDetails else { return false }
+            guard let handler = self.authenticationHandler else { return false }
             let context = AuthenticatedOperationContext(context: self.context)
             do {
-                let confirmed = try await details.resolveResign(mismatchReason: reason, context: context)
+                let confirmed = try await handler.resolveResign(mismatchReason: reason, context: context)
                 if !confirmed {
                     self.context.isSideStoreResignDismissed = true
                 }

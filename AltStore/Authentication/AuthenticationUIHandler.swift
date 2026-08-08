@@ -5,7 +5,7 @@ import UIKit
 import AltSign
 import AltStoreCore
 
-class AuthenticationUIHandler: AuthenticationDetails {
+class AuthenticationUIHandler: AuthenticationHandler {
     private weak var presentingViewController: UIViewController?
     private weak var presentedAuthVC: AuthenticationViewController?
     private var credentialsContinuation: CheckedContinuation<(String, String), Error>?
@@ -204,6 +204,13 @@ class AuthenticationUIHandler: AuthenticationDetails {
                 }
             }
             self.present(resignViewController)
+        }
+    }
+    
+    @MainActor
+    func complete() async {
+        if self.navigationController.presentingViewController != nil {
+            self.navigationController.dismiss(animated: true)
         }
     }
     

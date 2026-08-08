@@ -96,13 +96,13 @@ public final class AuthManager: @unchecked Sendable {
     @discardableResult
     func performAuthenticationOperation(
         context: AuthenticatedOperationContext,
-        details: AuthenticationDetails,
+        handler: AuthenticationHandler,
         skipDeviceRegistration: Bool = false,
         skipCertificateProvisioning: Bool = false
     ) async throws -> AuthenticationResult {
         let authOperation = try AuthenticationOperation(
             context: context,
-            details: details,
+            handler: handler,
             skipDeviceRegistration: skipDeviceRegistration,
             skipCertificateProvisioning: skipCertificateProvisioning
         )
