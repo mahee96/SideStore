@@ -118,7 +118,7 @@ public final class WidgetDataManager: @unchecked Sendable {
 extension WidgetDataManager {
     public static func publishCurrentInstalledApps(in context: NSManagedObjectContext) async {
         await context.performAsync {
-            let activeFetch = InstalledApp.activeAppsFetchRequest() as! NSFetchRequest<InstalledApp>
+            let activeFetch = InstalledApp.activeAppsFetchRequest()
             activeFetch.returnsObjectsAsFaults = false
             let activeApps = (try? context.fetch(activeFetch)) ?? []
 
