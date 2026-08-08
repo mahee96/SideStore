@@ -9,7 +9,7 @@
 import WidgetKit
 @preconcurrency import AltStoreCore
 
-struct AppsEntry<T>: TimelineEntry
+struct AppsEntry<T = Void>: TimelineEntry
 {
     var date: Date
     var relevance: TimelineEntryRelevance?

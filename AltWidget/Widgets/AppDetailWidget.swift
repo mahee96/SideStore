@@ -151,7 +151,8 @@ private struct AppDetailWidgetView: View
 
     func backgroundView(icon: UIImage? = nil, tintColor: UIColor? = nil) -> some View
     {
-        let icon = icon ?? UIImage(named: "SideStore")!
+        let defaultIcon = UIImage(named: "SideStore") ?? UIImage(systemName: "app.fill")!
+        let icon = icon ?? defaultIcon
         let tintColor = tintColor ?? .gray
         
         let imageHeight = 60 as CGFloat
@@ -169,7 +170,7 @@ private struct AppDetailWidgetView: View
             height: icon.size.height * scalingFactor
         )
             
-        let resizedIcon = icon.resizing(to: resizedSize)!
+        let resizedIcon = icon.resizing(to: resizedSize) ?? icon
         
         return ZStack(alignment: .topTrailing) {
             // Blurred Image
@@ -206,7 +207,8 @@ private struct AppIconView: View
     let imageHeight: CGFloat
 
     var body: some View {
-        Image(uiImage: icon ?? UIImage())
+        let image = icon ?? UIImage(named: "SideStore") ?? UIImage(systemName: "app.fill")!
+        Image(uiImage: image)
             .resizable()
             .aspectRatio(CGSize(width: 1, height: 1), contentMode: .fit)
             .frame(height: imageHeight)
@@ -222,11 +224,11 @@ private struct AppIconView: View
 } timeline: {
     let expiredDate = Date().addingTimeInterval(1 * 60 * 60 * 24 * 7)
     let (altstore, _, _, longAltStore, _, _) = AppSnapshot.makePreviewSnapshots()
-    AppsEntry<Any>(date: Date(), apps: [altstore])
-    AppsEntry<Any>(date: Date(), apps: [longAltStore])
+    AppsEntry(date: Date(), apps: [altstore])
+    AppsEntry(date: Date(), apps: [longAltStore])
     
-    AppsEntry<Any>(date: expiredDate, apps: [altstore])
+    AppsEntry(date: expiredDate, apps: [altstore])
     
-    AppsEntry<Any>(date: Date(), apps: [])
-    AppsEntry<Any>(date: Date(), apps: [], isPlaceholder: true)
+    AppsEntry(date: Date(), apps: [])
+    AppsEntry(date: Date(), apps: [], isPlaceholder: true)
 }

@@ -123,7 +123,7 @@ private struct ActiveAppsWidgetView: View
                 LazyVStack(spacing: 12) {
                     ForEach(Array(entry.apps.enumerated()), id: \.offset) { index, app in
                     
-                        let icon: UIImage = app.icon ?? UIImage(named: "SideStore")!
+                        let icon: UIImage = app.icon ?? UIImage(named: "SideStore") ?? UIImage(systemName: "app.fill")!
                         
                         // 1024x1024 images are not supported by previews but supported by device
                         // so we scale the image to 97% so as to reduce its actual size but not too much
@@ -135,7 +135,7 @@ private struct ActiveAppsWidgetView: View
                             height: icon.size.height * scalingFactor
                         )
                         
-                        let resizedIcon = icon.resizing(to: resizedSize)!
+                        let resizedIcon = icon.resizing(to: resizedSize) ?? icon
                         let cornerRadius = rowHeight / 5.0
                         let daysRemaining = app.expirationDate.numberOfCalendarDays(since: entry.date)
 
@@ -244,14 +244,14 @@ private struct ActiveAppsWidgetView: View
     let expiredDate = Date().addingTimeInterval(1 * 60 * 60 * 24 * 7)
     let (altstore, delta, clip, longAltStore, longDelta, longClip) = AppSnapshot.makePreviewSnapshots()
     
-    AppsEntry<Any>(date: Date(), apps: [altstore, delta, clip])
-    AppsEntry<Any>(date: Date(), apps: [longAltStore, longDelta, longClip])
+    AppsEntry(date: Date(), apps: [altstore, delta, clip])
+    AppsEntry(date: Date(), apps: [longAltStore, longDelta, longClip])
     
-    AppsEntry<Any>(date: expiredDate, apps: [altstore, delta, clip])
+    AppsEntry(date: expiredDate, apps: [altstore, delta, clip])
     
-    AppsEntry<Any>(date: Date(), apps: [altstore, delta])
-    AppsEntry<Any>(date: Date(), apps: [altstore])
+    AppsEntry(date: Date(), apps: [altstore, delta])
+    AppsEntry(date: Date(), apps: [altstore])
     
-    AppsEntry<Any>(date: Date(), apps: [])
-    AppsEntry<Any>(date: Date(), apps: [], isPlaceholder: true)
+    AppsEntry(date: Date(), apps: [])
+    AppsEntry(date: Date(), apps: [], isPlaceholder: true)
 }
