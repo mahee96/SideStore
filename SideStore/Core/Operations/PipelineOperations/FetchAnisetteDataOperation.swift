@@ -14,8 +14,8 @@ import Starscream
 @preconcurrency import AltSign
 
 final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext, ALTAnisetteData>, @unchecked Sendable {
-    public static let defaultClientInfo = "<MacBookPro18,3> <macOS;26.6;25F84> <com.apple.AuthKit/1 (com.apple.dt.Xcode/3594.4.19)>"
-    public static let defaultUserAgent = "AuthKit/1 (Macintosh; OS X 26.6) (com.apple.dt.Xcode/3594.4.19)"
+    public static let defaultClientInfo = "<MacBookPro18,3> <macOS;26.6;25F84> <com.apple.AuthKit/1 (com.apple.dt.Xcode/26.0)>"
+    public static let defaultUserAgent = "AuthKit/1 (Macintosh; OS X 26.6) (com.apple.dt.Xcode/26.0)"
 
     var url: URL?
     var startProvisioningURL: URL?

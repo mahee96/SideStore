@@ -15,6 +15,7 @@ public struct AnisetteConfig: Codable, Equatable {
     public var customLocalUserID: String?
     public var customLocale: String?
     public var customTimeZone: String?
+    public var customXcodeVersion: String?
     
     public init(
         clientInfo: String,
@@ -22,7 +23,8 @@ public struct AnisetteConfig: Codable, Equatable {
         customDeviceID: String? = nil,
         customLocalUserID: String? = nil,
         customLocale: String? = nil,
-        customTimeZone: String? = nil
+        customTimeZone: String? = nil,
+        customXcodeVersion: String? = nil
     ) {
         self.clientInfo = clientInfo
         self.userAgent = userAgent
@@ -30,6 +32,7 @@ public struct AnisetteConfig: Codable, Equatable {
         self.customLocalUserID = customLocalUserID
         self.customLocale = customLocale
         self.customTimeZone = customTimeZone
+        self.customXcodeVersion = customXcodeVersion
     }
 }
 
@@ -85,6 +88,10 @@ public actor AnisetteConfigManager {
             clientInfo: FetchAnisetteDataOperation.defaultClientInfo,
             userAgent: FetchAnisetteDataOperation.defaultUserAgent
         )
+    }
+
+    public func resolvedXcodeVersion() async -> String {
+        return await loadConfig().customXcodeVersion ?? "26.0 (26A242)"
     }
     
     public func saveConfig(_ config: AnisetteConfig) {

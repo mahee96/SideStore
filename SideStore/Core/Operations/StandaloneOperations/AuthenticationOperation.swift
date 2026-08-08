@@ -554,7 +554,8 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     
     private func authenticateWithToken(adsid: String, xcodeToken: String) async throws -> (ALTAccount, ALTAppleAPISession) {
         let anisetteData = try await self.anisetteProvider.getAnisetteData()
-        let session = ALTAppleAPISession(dsid: adsid, authToken: xcodeToken, anisetteData: anisetteData)
+        let xcodeVersion = await AnisetteConfigManager.shared.resolvedXcodeVersion()
+        let session = ALTAppleAPISession(dsid: adsid, authToken: xcodeToken, anisetteData: anisetteData, xcodeVersion: xcodeVersion)
         let account = try await ALTAppleAPI.shared.fetchAccount2(session: session)
         return (account, session)
     }
@@ -619,6 +620,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             appleID: appleID,
             password: password,
             anisetteData: anisetteData,
+            xcodeVersion: xcodeVersion,
             verificationHandler: verificationHandler
         )
         
@@ -1080,9 +1082,9 @@ extension ALTAppleAPI {
         }
     }
 
-    func authenticate(appleID: String, password: String, anisetteData: ALTAnisetteData, verificationHandler: ((@escaping (String?) -> Void) -> Void)?) async throws -> (ALTAccount, ALTAppleAPISession) {
+    func authenticate(appleID: String, password: String, anisetteData: ALTAnisetteData, xcodeVersion: String, verificationHandler: ((@escaping (String?) -> Void) -> Void)?) async throws -> (ALTAccount, ALTAppleAPISession) {
         try await withCheckedThrowingContinuation { continuation in
-            self.authenticate(appleID: appleID, password: password, anisetteData: anisetteData, verificationHandler: verificationHandler) { (account, session, error) in
+            self.authenticate(appleID: appleID, password: password, anisetteData: anisetteData, xcodeVersion: xcodeVersion, verificationHandler: verificationHandler) { (account, session, error) in
                 if let account = account, let session = session {
                     continuation.resume(returning: (account, session))
                 } else {
