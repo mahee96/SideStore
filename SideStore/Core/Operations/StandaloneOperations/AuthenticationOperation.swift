@@ -13,11 +13,6 @@ import CoreData
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-private extension UIColor {
-    static let altInvertedPrimary = UIColor(named: "SettingsHighlighted")!
-}
-
-
 enum RevokeDecision: Sendable {
     case revokeAll
     case keepExisting

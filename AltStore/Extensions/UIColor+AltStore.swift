@@ -19,6 +19,9 @@ extension UIColor
     static var settingsHighlighted: UIColor {
         return UIColor(named: "SettingsHighlighted")!
     }
+    
+    static let altInvertedPrimary = UIColor(named: "SettingsHighlighted")!
+
 }
 
 extension UIColor
