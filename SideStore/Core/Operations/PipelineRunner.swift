@@ -250,9 +250,11 @@ final class PipelineRunner: Sendable
             group.set(.success(result), forAppWithBundleIdentifier: result.bundleIdentifier)
             debugLog("[AppManager] performOperation: Execution SUCCESS for app: \(operation.bundleIdentifier)")
             
-            debugLog("[AppManager] performOperation: Reloading widget timelines...")
-            await WidgetDataManager.publishCurrentInstalledApps(in: group.context.dbBackgroundContext)
-            debugLog("[AppManager] performOperation: Reloading COMPLETE for widget timelines.")
+            if let dbContext = group.context.dbBackgroundContext {
+                debugLog("[AppManager] performOperation: Reloading widget timelines...")
+                await WidgetDataManager.publishCurrentInstalledApps(in: dbContext)
+                debugLog("[AppManager] performOperation: Reloading COMPLETE for widget timelines.")
+            }
             
             if result.bundleIdentifier == StoreApp.altstoreAppID {
                 let context = StandaloneOperationContext(steps: .scheduleExpirationWarningNotification, dbBackgroundContext: group.context.dbBackgroundContext)
