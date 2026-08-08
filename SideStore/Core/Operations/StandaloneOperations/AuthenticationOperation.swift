@@ -17,6 +17,25 @@ private extension UIColor {
     static let altInvertedPrimary = UIColor(named: "SettingsHighlighted")!
 }
 
+
+enum RevokeDecision: Sendable {
+    case revokeAll
+    case keepExisting
+}
+
+protocol AuthenticationDetails: AnyObject {
+    func credentials() async throws -> (String, String)
+    func verificationCode() async throws -> String?
+    func handleVerificationResult(_ result: Result<(ALTAccount, ALTAppleAPISession, ALTTeam, ALTCertificate?), Error>) async
+    
+    func resolveTeam(_ teams: [ALTTeam]) async throws -> ALTTeam
+    func instructionsViewed() async
+    
+    func resolveRevocation(certsText: String, teamType: ALTTeamType) async throws -> RevokeDecision
+    func resolveResign(mismatchReason: CodeSignValidationReason, context: AuthenticatedOperationContext) async throws -> Bool
+}
+
+
 typealias AuthenticationError = AuthenticationErrorCode.Error
 enum AuthenticationErrorCode: Int, ALTErrorEnum, CaseIterable {
     case noTeam
@@ -42,23 +61,21 @@ enum AuthenticationErrorCode: Int, ALTErrorEnum, CaseIterable {
     }
 }
 
-typealias AuthenticationResult = (ALTTeam, ALTCertificate?, ALTAppleAPISession)
+struct AuthenticationResult {
+    let team: ALTTeam
+    let certificate: ALTCertificate?
+    let session: ALTAppleAPISession
+}
 
 private struct SessionCache {
     let team: ALTTeam
     let session: ALTAppleAPISession
 }
 
+
+
 final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperationContext, AuthenticationResult>, @unchecked Sendable {
-    private weak var presentingViewController: UIViewController?
-    
-    private lazy var navigationController: UINavigationController = {
-        let navigationController = self.storyboard.instantiateViewController(withIdentifier: "navigationController") as! UINavigationController
-        navigationController.isModalInPresentation = true
-        return navigationController
-    }()
-    
-    private lazy var storyboard = UIStoryboard(name: "Authentication", bundle: nil)
+
     
     private var appleIDEmailAddress: String?
     private var appleIDPassword: String?
@@ -67,8 +84,6 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     
     private let operationQueue = OperationQueue()
     
-    private var submitCodeAction: UIAlertAction?
-    
     let skipDeviceRegistration: Bool
     let skipCertificateProvisioning: Bool
     
@@ -76,8 +91,10 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         AnisetteProvider(context: context, progress: self.progress)
     }()
 
-    init(context: AuthenticatedOperationContext, presentingViewController: UIViewController?, skipDeviceRegistration: Bool = false, skipCertificateProvisioning: Bool = false) throws {
-        self.presentingViewController = presentingViewController
+    private weak var authenticationDetails: AuthenticationDetails?
+
+    init(context: AuthenticatedOperationContext, details: AuthenticationDetails, skipDeviceRegistration: Bool = false, skipCertificateProvisioning: Bool = false) throws {
+        self.authenticationDetails = details
         self.skipDeviceRegistration = skipDeviceRegistration
         self.skipCertificateProvisioning = skipCertificateProvisioning
 
@@ -115,9 +132,9 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             return try await self.performNewSignIn()
         }
         
-        self.context.team = authResult.0
-        self.context.signingCertificate = authResult.1
-        self.context.session = authResult.2
+        self.context.team = authResult.team
+        self.context.signingCertificate = authResult.certificate
+        self.context.session = authResult.session
 
         // PHASE 2: Post-Authentication Work (Unlocked)
         return try await self.performPostAuthenticationWork(result: authResult)
@@ -152,7 +169,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                 self.context.team = cache.team
                 self.context.session = cache.session
                 self.context.signingCertificate = certToUse
-                return (cache.team, certToUse, cache.session)
+                return AuthenticationResult(team: cache.team, certificate: certToUse, session: cache.session)
             } else {
                 self.debugLog("[Authentication] Cached/active certificate is no longer active on developer portal.")
             }
@@ -166,16 +183,23 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         let stepWeight: Int64 = self.skipDeviceRegistration ? 33 : 25
         
         self.verboseLog("[Authentication] execute: Invoking signIn...")
-        let (account, session) = try await self.signIn()
+        let (account, session, signInTeam, signInCert) = try await self.signIn()
         self.debugLog("[Authentication] execute: signIn completed successfully.")
         self.context.session = session
         self.setProgress(stepWeight)
         if self.isCancelled { throw OperationError.cancelled }
         
-        self.verboseLog("[Authentication] execute: Invoking fetchTeam...")
-        let team = try await self.fetchTeam(for: account, session: session)
-        self.debugLog("[Authentication] execute: fetchTeam completed successfully.")
-        self.context.team = team
+        let team: ALTTeam
+        if let signInTeam = signInTeam {
+            team = signInTeam
+            self.context.team = team
+            self.debugLog("[Authentication] execute: Using validated team '\(team.name)' from interactive auth.")
+        } else {
+            self.verboseLog("[Authentication] execute: Invoking fetchTeam...")
+            team = try await self.fetchTeam(for: account, session: session)
+            self.debugLog("[Authentication] execute: fetchTeam completed successfully.")
+            self.context.team = team
+        }
         
         self.debugLog("[Authentication] Saving team & account immediately after fetchTeam")
         AuthManager.shared.team = team
@@ -205,10 +229,16 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             certificate = CertificateManager.shared.activeCertificate?.certificate
             self.context.signingCertificate = certificate
         } else {
-            self.verboseLog("[Authentication] execute: Invoking fetchCertificate...")
-            certificate = try await self.fetchCertificate(for: team, session: session)
-            self.debugLog("[Authentication] execute: fetchCertificate completed successfully. Serial: \(certificate?.serialNumber ?? "nil")")
-            self.context.signingCertificate = certificate
+            if let signInCert = signInCert {
+                certificate = signInCert
+                self.context.signingCertificate = certificate
+                self.debugLog("[Authentication] execute: Using validated certificate '\(certificate?.serialNumber ?? "nil")' from interactive auth.")
+            } else {
+                self.verboseLog("[Authentication] execute: Invoking fetchCertificate...")
+                certificate = try await self.fetchCertificate(for: team, session: session)
+                self.debugLog("[Authentication] execute: fetchCertificate completed successfully. Serial: \(certificate?.serialNumber ?? "nil")")
+                self.context.signingCertificate = certificate
+            }
         }
         
         // Only update the global active certificate if the user doesn't have a custom third-party certificate selected
@@ -223,11 +253,11 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             try? CertificateManager.shared.setActiveCertificate(certificate)
         }
         
-        return (team, certificate, session)
+        return AuthenticationResult(team: team, certificate: certificate, session: session)
     }
     
     private func performPostAuthenticationWork(result: AuthenticationResult) async throws -> AuthenticationResult {
-        let (team, certificate, session) = result
+        let (team, certificate, session) = (result.team, result.certificate, result.session)
         let stepWeight: Int64 = self.skipDeviceRegistration ? 33 : 25
         
         do {
@@ -258,9 +288,9 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             self.debugLog("[Authentication] execute: cacheAppIDs completed successfully.")
             
             self.verboseLog("[Authentication] execute: Invoking postAuthenticationCleanup with success...")
-            try await self.postAuthenticationCleanup(result: .success((team, certificate, session)))
+            try await self.postAuthenticationCleanup(result: .success(result))
             self.debugLog("[Authentication] execute: postAuthenticationCleanup completed successfully.")
-            return (team, certificate, session)
+            return result
         } catch {
             self.debugLog("[Authentication] execute: Caught error in post-auth flow: \(error). Cleaning up...")
             try? await self.postAuthenticationCleanup(result: .failure(error))
@@ -305,7 +335,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         try context.save()
     }
     
-    private func postAuthenticationCleanup(result: Result<(ALTTeam, ALTCertificate?, ALTAppleAPISession), Error>) async throws {
+    private func postAuthenticationCleanup(result: Result<AuthenticationResult, Error>) async throws {
         self.verboseLog("[Authentication] postAuthenticationCleanup: Starting cleanup...")
         switch result {
         case .failure(let error):
@@ -320,7 +350,8 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             }
             return
             
-        case .success((let team, _, _)):
+        case .success(let authResult):
+            let team = authResult.team
             self.verboseLog("[Authentication] postAuthenticationCleanup: Authentication Success for team \(team.identifier) account.")
         }
         
@@ -340,7 +371,8 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         self.verboseLog("[Authentication] postAuthenticationCleanup: Database updates completed.")
         
         do {
-            let (altTeam, altCertificate, session) = try result.get()
+            let authResult = try result.get()
+            let (altTeam, altCertificate, session) = (authResult.team, authResult.certificate, authResult.session)
             if let altCertificate = altCertificate, !self.skipCertificateProvisioning {
                 self.verboseLog("[Authentication] postAuthenticationCleanup: Checking instructions and resign alerts...")
                 let didShowInstructions = await self.showInstructionsIfNecessary()
@@ -368,8 +400,9 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         }
     }
     
-    private func postAuthenticationCleanup(result: Result<(ALTTeam, ALTCertificate?, ALTAppleAPISession), Error>, in context: NSManagedObjectContext) throws {
-        let (altTeam, _, _) = try result.get()
+    private func postAuthenticationCleanup(result: Result<AuthenticationResult, Error>, in context: NSManagedObjectContext) throws {
+        let authResult = try result.get()
+        let altTeam = authResult.team
         
         guard
             let account = Account.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(Account.identifier), altTeam.account.identifier), in: context),
@@ -419,57 +452,14 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         try context.save()
     }
     
-    @MainActor
-    private func present(_ viewController: UIViewController) -> Bool {
-        guard let presentingViewController = self.presentingViewController else { return false }
-        
-        self.navigationController.view.tintColor = .altInvertedPrimary
-        
-        if self.navigationController.viewControllers.isEmpty {
-            guard presentingViewController.presentedViewController == nil else { return false }
-            
-            self.navigationController.setViewControllers([viewController], animated: false)            
-            presentingViewController.present(self.navigationController, animated: true, completion: nil)
-        } else {
-            viewController.navigationItem.leftBarButtonItem = nil
-            self.navigationController.pushViewController(viewController, animated: true)
-        }
-        
-        return true
-    }
 
-    @MainActor
-    private func presentAlert(_ alert: UIAlertController) -> Bool {
-        if self.navigationController.presentingViewController != nil {
-            self.navigationController.present(alert, animated: true, completion: nil)
-            return true
-        } else if let presentingViewController = self.presentingViewController {
-            presentingViewController.present(alert, animated: true, completion: nil)
-            return true
-        } else if let topViewController = UIApplication.shared.connectedScenes
-            .filter({ $0.activationState == .foregroundActive })
-            .compactMap({ $0 as? UIWindowScene })
-            .first?.windows
-            .first(where: { $0.isKeyWindow })?
-            .rootViewController {
-            var top = topViewController
-            while let presented = top.presentedViewController {
-                top = presented
-            }
-            top.present(alert, animated: true, completion: nil)
-            return true
-        } else {
-            self.debugLog("[Authentication] Could not find any view controller to present alert.")
-            return false
-        }
-    }
     
-    private func signIn() async throws -> (ALTAccount, ALTAppleAPISession) {
+    private func signIn() async throws -> (ALTAccount, ALTAppleAPISession, ALTTeam?, ALTCertificate?) {
         if let adsid = AuthManager.shared.adsid, let xcodeToken = AuthManager.shared.xcodeToken {
             self.verboseLog("[AuthenticationOperation] Authenticating Apple ID with tokens...")
             do {
                 let (account, session) = try await self.authenticateWithToken(adsid: adsid, xcodeToken: xcodeToken)
-                return (account, session)
+                return (account, session, nil, nil)
             } catch {
                 self.debugLog("[AuthenticationOperation] Authentication failed with token. Fall back to email and password login: \(error)")
             }
@@ -481,76 +471,67 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             do {
                 let (account, session) = try await self.authenticate(appleID: appleID, password: password)
                 self.appleIDPassword = password
-                return (account, session)
+                return (account, session, nil, nil)
             } catch ALTAppleAPIError.incorrectCredentials, ALTAppleAPIError.appSpecificPasswordRequired {
-                return try await self.presentSignInUI()
+                let result = try await self.presentSignInUI()
+                return (result.account, result.session, result.team, result.certificate)
             } catch {
                 throw error
             }
         } else {
-            return try await self.presentSignInUI()
+            let result = try await self.presentSignInUI()
+            return (result.account, result.session, result.team, result.certificate)
         }
     }
     
-    @MainActor
-    private func presentSignInUI() async throws -> (ALTAccount, ALTAppleAPISession) {
-        self.verboseLog("[Authentication] presentSignInUI: Preparing to present sign-in UI...")
-        return try await withCheckedThrowingContinuation { continuation in
-            var activeContinuation: CheckedContinuation<(ALTAccount, ALTAppleAPISession), Error>? = continuation
-            let authenticationViewController = self.storyboard.instantiateViewController(withIdentifier: "authenticationViewController") as! AuthenticationViewController
-            authenticationViewController.authenticationHandler = { (appleID, password, completionHandler) in
-                self.verboseLog("[Authentication] presentSignInUI: authenticationHandler invoked for Apple ID \(appleID)...")
-                Task {
-                    do {
-                        let (account, session) = try await self.authenticate(appleID: appleID, password: password)
-                        self.debugLog("[Authentication] presentSignInUI: AuthenticationOperation.authenticate succeeded.")
-                        completionHandler(.success((account, session)))
-                    } catch {
-                        self.debugLog("[Authentication] presentSignInUI: AuthenticationOperation.authenticate failed: \(error)")
-                        completionHandler(.failure(error))
+    private func presentSignInUI() async throws -> (account: ALTAccount, session: ALTAppleAPISession, team: ALTTeam, certificate: ALTCertificate?) {
+        guard let details = self.authenticationDetails else {
+            throw OperationError.notAuthenticated
+        }
+        
+        self.verboseLog("[Authentication] presentSignInUI: Requesting credentials...")
+        while true {
+            let (appleID, password) = try await details.credentials()
+            if self.isCancelled { throw OperationError.cancelled }
+            
+            do {
+                let (account, session) = try await self.authenticate(appleID: appleID, password: password)
+                self.debugLog("[Authentication] presentSignInUI: authenticate succeeded.")
+                
+                self.verboseLog("[Authentication] presentSignInUI: Fetching team...")
+                let team = try await self.fetchTeam(for: account, session: session)
+                self.debugLog("[Authentication] presentSignInUI: fetchTeam completed.")
+                
+                let certificate: ALTCertificate?
+                var isCustomCertActive = false
+                if let activeCert = CertificateManager.shared.activeCertificate?.certificate,
+                   let data = activeCert.data {
+                    let details = SideStore.parseCertificate(derData: data)
+                    let belongsToAuthenticatedTeam = details.subject.contains(team.identifier) || details.issuer.contains(team.identifier)
+                    if !belongsToAuthenticatedTeam {
+                        isCustomCertActive = true
                     }
                 }
-            }
-            authenticationViewController.completionHandler = { (result) in
-                guard let continuationToResume = activeContinuation else {
-                    self.debugLog("[Authentication] presentSignInUI: completionHandler invoked but activeContinuation is NIL (already consumed).")
-                    return
-                }
-                activeContinuation = nil
                 
-                if result == nil && authenticationViewController.presentingViewController != nil {
-                    authenticationViewController.dismiss(animated: true)
-                }
-                
-                self.debugLog("[Authentication] presentSignInUI: completionHandler invoked (result is \(result != nil ? "success" : "nil/cancelled"))")
-                if let (account, session, password) = result {
-                    // We presented the Auth UI and the user signed in.
-                    // In this case, we'll assume we should show the instructions again.
-                    self.shouldShowInstructions = true
-                    
-                    self.appleIDPassword = password
-                    self.verboseLog("[Authentication] presentSignInUI: Resuming continuation with account: \(account.appleID)")
-                    continuationToResume.resume(returning: (account, session))
+                if self.skipCertificateProvisioning || isCustomCertActive {
+                    certificate = CertificateManager.shared.activeCertificate?.certificate
                 } else {
-                    self.debugLog("[Authentication] presentSignInUI: Resuming continuation with cancelled error.")
-                    continuationToResume.resume(throwing: OperationError.cancelled)
+                    self.verboseLog("[Authentication] presentSignInUI: Fetching certificate...")
+                    certificate = try await self.fetchCertificate(for: team, session: session)
+                    self.debugLog("[Authentication] presentSignInUI: fetchCertificate completed.")
                 }
-            }
-            
-            self.verboseLog("[Authentication] presentSignInUI: Presenting authenticationViewController...")
-            if !self.present(authenticationViewController) {
-                guard let continuationToResume = activeContinuation else {
-                    self.debugLog("[Authentication] presentSignInUI: Failed to present, but activeContinuation is NIL (already consumed).")
-                    return
-                }
-                activeContinuation = nil
-                self.debugLog("[Authentication] presentSignInUI: Failed to present authenticationViewController!")
-                continuationToResume.resume(throwing: OperationError.notAuthenticated)
-            } else {
-                self.verboseLog("[Authentication] presentSignInUI: Presented successfully.")
+                
+                let result = (account, session, team, certificate)
+                await details.handleVerificationResult(.success(result))
+                
+                return (account, session, team, certificate)
+            } catch {
+                self.debugLog("[Authentication] presentSignInUI: Attempt failed with error: \(error)")
+                await details.handleVerificationResult(.failure(error))
             }
         }
     }
+
     
     private func authenticateWithToken(adsid: String, xcodeToken: String) async throws -> (ALTAccount, ALTAppleAPISession) {
         let anisetteData = try await self.anisetteProvider.getAnisetteData()
@@ -566,47 +547,14 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         let anisetteData = try await self.anisetteProvider.getAnisetteData()
         
         let verificationHandler: ((@escaping (String?) -> Void) -> Void)?
-        
-        if let presentingViewController = self.presentingViewController {
+        if let details = self.authenticationDetails {
             verificationHandler = { (completionHandler) in
-                Task { @MainActor in
-                    let alertController = UIAlertController(title: NSLocalizedString("Please enter the 6-digit verification code that was sent to your Apple devices.", comment: ""), message: nil, preferredStyle: .alert)
-                    var observer: NSObjectProtocol?
-                    alertController.addTextField { (textField) in
-                        textField.autocorrectionType = .no
-                        textField.autocapitalizationType = .none
-                        textField.keyboardType = .numberPad
-                        
-                        observer = NotificationCenter.default.addObserver(forName: UITextField.textDidChangeNotification, object: textField, queue: .main) { [weak self] (notification) in
-                            guard let self = self, let textField = notification.object as? UITextField else { return }
-                            self.submitCodeAction?.isEnabled = (textField.text ?? "").count == 6
-                        }
-                    }
-                    
-                    let submitAction = UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .default) { (action) in
-                        if let observer = observer {
-                            NotificationCenter.default.removeObserver(observer)
-                        }
-                        let textField = alertController.textFields?.first
-                        
-                        let code = textField?.text ?? ""
+                Task {
+                    do {
+                        let code = try await details.verificationCode()
                         completionHandler(code)
-                    }
-                    submitAction.isEnabled = false
-                    alertController.addAction(submitAction)
-                    self.submitCodeAction = submitAction
-                    
-                    alertController.addAction(UIAlertAction(title: RSTSystemLocalizedString("Cancel"), style: .cancel) { (action) in
-                        if let observer = observer {
-                            NotificationCenter.default.removeObserver(observer)
-                        }
+                    } catch {
                         completionHandler(nil)
-                    })
-                    
-                    if self.navigationController.presentingViewController != nil {
-                        self.navigationController.present(alertController, animated: true, completion: nil)
-                    } else {
-                        presentingViewController.present(alertController, animated: true, completion: nil)
                     }
                 }
             }
@@ -644,7 +592,6 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         return try await self.selectTeam(from: teams)
     }
     
-    @MainActor
     private func selectTeam(from teams: [ALTTeam]) async throws -> ALTTeam {
         if teams.count <= 1 {
             if let team = teams.first {
@@ -654,19 +601,10 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             }
         }
         
-        return try await withCheckedThrowingContinuation { continuation in
-            let selectTeamViewController = self.storyboard.instantiateViewController(withIdentifier: "selectTeamViewController") as! SelectTeamViewController
-
-            selectTeamViewController.teams = teams
-            selectTeamViewController.completionHandler = { result in
-                continuation.resume(with: result)
-            }
-
-            let presented = self.present(selectTeamViewController)
-            if !presented {
-                continuation.resume(throwing: AuthenticationError(.noTeam))
-            }
+        guard let details = self.authenticationDetails else {
+            throw AuthenticationError(.noTeam)
         }
+        return try await details.resolveTeam(teams)
     }
     
     private func fetchCertificate(for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTCertificate {
@@ -810,61 +748,11 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         }
     }
 
-    enum RevokeAlertAction {
-        case revokeAll
-        case keepExisting
-    }
-
-    @MainActor
-    private func showRevokeAlert(certsText: String, teamType: ALTTeamType) async throws -> RevokeAlertAction {
-        self.verboseLog("[Authentication] showRevokeAlert: Preparing to show revoke alert...")
-        return try await withCheckedThrowingContinuation { continuation in
-            let alertController = UIAlertController(title: NSLocalizedString("Would you like to revoke your previous certificates?\n\(certsText)", comment: ""), message: nil, preferredStyle: .alert)
-            
-            let noAction = UIAlertAction(title: NSLocalizedString("No", comment: ""), style: .default) { _ in
-                self.debugLog("[Authentication] showRevokeAlert: User clicked No.")
-                alertController.dismiss(animated: true) {
-                    if teamType == .free {
-                        let warningAlert = UIAlertController(
-                            title: NSLocalizedString("Warning", comment: ""),
-                            message: NSLocalizedString("SideStore cannot manage the existing certificate without owning its private key. The apps signed with the existing certificate will expire soon unless they are resigned and renewed explicitly by SideStore.", comment: ""),
-                            preferredStyle: .alert
-                        )
-                        warningAlert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .default) { _ in
-                            self.verboseLog("[Authentication] showRevokeAlert: User acknowledged warning OK.")
-                            warningAlert.dismiss(animated: true) {
-                                continuation.resume(returning: .keepExisting)
-                            }
-                        })
-                        
-                        let presented = self.presentAlert(warningAlert)
-                        if !presented {
-                            self.debugLog("[Authentication] showRevokeAlert: Warning alert could not be presented, resuming with keepExisting.")
-                            continuation.resume(returning: .keepExisting)
-                        }
-                    } else {
-                        continuation.resume(returning: .keepExisting)
-                    }
-                }
-            }
-            
-            let yesAction = UIAlertAction(title: NSLocalizedString("Yes", comment: ""), style: .default) { _ in
-                self.debugLog("[Authentication] showRevokeAlert: User clicked Yes.")
-                alertController.dismiss(animated: true) {
-                    continuation.resume(returning: .revokeAll)
-                }
-            }
-            
-            alertController.addAction(noAction)
-            alertController.addAction(yesAction)
-            
-            self.verboseLog("[Authentication] showRevokeAlert: Presenting alert...")
-            let presented = self.presentAlert(alertController)
-            if !presented {
-                self.debugLog("[Authentication] showRevokeAlert: Alert could not be presented, resuming with keepExisting.")
-                continuation.resume(returning: .keepExisting)
-            }
+    private func showRevokeAlert(certsText: String, teamType: ALTTeamType) async throws -> RevokeDecision {
+        guard let details = self.authenticationDetails else {
+            return .keepExisting
         }
+        return try await details.resolveRevocation(certsText: certsText, teamType: teamType)
     }
     
     private func registerCurrentDevice(for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTDevice {
@@ -885,7 +773,6 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         try await syncAppIDsOperation.execute(parentProgress: progress)
     }
     
-    @MainActor
     private func showInstructionsIfNecessary() async -> Bool {
         self.verboseLog("[Authentication] showInstructionsIfNecessary: entering method, shouldShowInstructions = \(self.shouldShowInstructions)")
         guard self.shouldShowInstructions else {
@@ -893,26 +780,11 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             return false
         }
         
-        return await withCheckedContinuation { continuation in
-            self.verboseLog("[Authentication] showInstructionsIfNecessary: instantiating instructionsViewController...")
-            let instructionsViewController = self.storyboard.instantiateViewController(withIdentifier: "instructionsViewController") as! InstructionsViewController
-            instructionsViewController.showsBottomButton = true
-            instructionsViewController.completionHandler = {
-                self.verboseLog("[Authentication] showInstructionsIfNecessary: instructionsViewController completionHandler invoked")
-                continuation.resume(returning: true)
-            }
-            
-            self.verboseLog("[Authentication] showInstructionsIfNecessary: presenting instructionsViewController...")
-            let presented = self.present(instructionsViewController)
-            self.verboseLog("[Authentication] showInstructionsIfNecessary: present returned \(presented)")
-            if !presented {
-                self.debugLog("[Authentication] showInstructionsIfNecessary: present failed, resuming continuation with false")
-                continuation.resume(returning: false)
-            }
-        }
+        guard let details = self.authenticationDetails else { return false }
+        await details.instructionsViewed()
+        return true
     }
     
-    @MainActor
     private func showResignScreenIfNecessary(signer: ALTSigner, session: ALTAppleAPISession) async -> Bool {
         self.verboseLog("[Authentication] showResignScreenIfNecessary: entering method")
         guard let appBundle = ALTApplication(fileURL: Bundle.main.bundleURL), let provisioningProfile = appBundle.provisioningProfile else {
@@ -943,32 +815,17 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                 return false
             }
             
-            return await withCheckedContinuation { continuation in
-                self.verboseLog("[Authentication] showResignScreenIfNecessary: instantiating resignAltStoreViewController...")
-                let context = AuthenticatedOperationContext(context: self.context)
-                
-                let resignViewController = self.storyboard.instantiateViewController(withIdentifier: "resignAltStoreViewController") as! ResignAltStoreViewController
-                resignViewController.context = context
-                resignViewController.mismatchReason = reason
-                resignViewController.completionHandler = { [weak self] result in
-                    switch result {
-                    case .success:
-                        self?.verboseLog("[Authentication] showResignScreenIfNecessary: resignViewController completionHandler success")
-                        continuation.resume(returning: true)
-                    case .failure:
-                        self?.verboseLog("[Authentication] showResignScreenIfNecessary: resignViewController completionHandler failure/cancelled")
-                        self?.context.isSideStoreResignDismissed = true
-                        continuation.resume(returning: false)
-                    }
+            guard let details = self.authenticationDetails else { return false }
+            let context = AuthenticatedOperationContext(context: self.context)
+            do {
+                let confirmed = try await details.resolveResign(mismatchReason: reason, context: context)
+                if !confirmed {
+                    self.context.isSideStoreResignDismissed = true
                 }
-                
-                self.verboseLog("[Authentication] showResignScreenIfNecessary: presenting resignViewController...")
-                let presented = self.present(resignViewController)
-                self.verboseLog("[Authentication] showResignScreenIfNecessary: present returned \(presented)")
-                if !presented {
-                    self.debugLog("[Authentication] showResignScreenIfNecessary: present failed, resuming continuation with false")
-                    continuation.resume(returning: false)
-                }
+                return confirmed
+            } catch {
+                self.context.isSideStoreResignDismissed = true
+                return false
             }
         }
     }

@@ -164,9 +164,9 @@ final class AuthenticatedOperationContext: CachedOperationContext
     
     var isSideStoreResignDismissed: Bool = false
 
-    init(error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
+    init(error: Error? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
     {
-        super.init(steps: .authenticate, error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
+        super.init(steps: .authenticate, error: error, dbBackgroundContext: dbBackgroundContext)
     }
 
     init(context: AuthenticatedOperationContext) {

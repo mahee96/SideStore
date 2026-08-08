@@ -229,19 +229,19 @@ extension AppManager
     {
         let dbBackgroundContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
         let context = AuthenticatedOperationContext(
-            presentingViewController: presentingViewController,
             dbBackgroundContext: dbBackgroundContext
         )
+        let handler = AuthenticationUIHandler(presentingViewController: presentingViewController)
         
         Task.detached {
             do {
                 let result = try await AuthManager.shared.performAuthenticationOperation(
                     context: context,
-                    presentingViewController: presentingViewController,
+                    details: handler,
                     skipDeviceRegistration: skipDeviceRegistration,
                     skipCertificateProvisioning: skipCertificateProvisioning
                 )
-                completionHandler(.success(result))
+                completionHandler(.success((result.team, result.certificate, result.session)))
             } catch {
                 context.error = error
                 completionHandler(.failure(error))
@@ -629,12 +629,12 @@ extension AppManager
             do {
                 let managedObjectContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
                 let context = AuthenticatedOperationContext(
-                    presentingViewController: effectivePresentingVC,
                     dbBackgroundContext: managedObjectContext
                 )
+                let handler = AuthenticationUIHandler(presentingViewController: effectivePresentingVC)
                 try await AuthManager.shared.performAuthenticationOperation(
                     context: context,
-                    presentingViewController: effectivePresentingVC,
+                    details: handler,
                     skipDeviceRegistration: true,
                     skipCertificateProvisioning: true
                 )
