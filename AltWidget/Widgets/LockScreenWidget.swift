@@ -31,7 +31,7 @@ struct TextLockScreenWidget: Widget
             return StaticConfiguration(kind: kind, provider: UnsupportedTimelineProvider()) { _ in
                 UnsupportedWidgetView(requiredVersion: "iOS 16")
             }
-            .supportedFamilies([.accessoryCircular])
+            .supportedFamilies([.systemSmall])
             .configurationDisplayName("AltWidget (Text)")
             .description("Requires iOS 16 or later.")
         }
@@ -59,7 +59,7 @@ struct IconLockScreenWidget: Widget
             return StaticConfiguration(kind: kind, provider: UnsupportedTimelineProvider()) { _ in
                 UnsupportedWidgetView(requiredVersion: "iOS 16")
             }
-            .supportedFamilies([.accessoryCircular])
+            .supportedFamilies([.systemSmall])
             .configurationDisplayName("AltWidget (Icon)")
             .description("Requires iOS 16 or later.")
         }
