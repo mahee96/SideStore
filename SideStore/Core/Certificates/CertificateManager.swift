@@ -246,7 +246,16 @@ public final class CertificateManager: @unchecked Sendable {
             }
         }
         
-        // 2. Fall back to active signing certificate for legacy users
+        // 2. Try to load embedded certificate from app bundle (usually placed by external signers/installers)
+        let targetBundle = Bundle.main
+        if FileManager.default.fileExists(atPath: targetBundle.certificateURL.path),
+           let data = try? Data(contentsOf: targetBundle.certificateURL),
+           let localCertificate = (try? ALTCertificate(p12Data: data, password: nil)) ?? ALTCertificate(data: data) {
+            debugLog("[CertificateManager] getSigningCertificate: Loaded embedded certificate from \(targetBundle.certificateURL.path)")
+            return localCertificate
+        }
+        
+        // 3. Fall back to active signing certificate for legacy users
         debugLog("[CertificateManager] getSigningCertificate: Cached certificate not found. Falling back to active certificate.")
         return activeCertificate?.certificate
     }

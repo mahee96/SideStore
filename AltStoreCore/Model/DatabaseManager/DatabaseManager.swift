@@ -569,6 +569,7 @@ private extension DatabaseManager
     
     private func reconcileSelfFromSelfBinary(installedApp: InstalledApp, localAppBundle: ALTApplication, serialNumber: String?) {
         debugLog("[DatabaseManager] reconcileSelfFromSelfBinary: Started for '\(localAppBundle.name)' (\(localAppBundle.bundleIdentifier)).")
+        var binaryCertSerial: String? = nil
         defer {
             debugLog("""
             [DatabaseManager] reconcileSelfFromSelfBinary: Completed
@@ -576,9 +577,10 @@ private extension DatabaseManager
               • bundleID: '\(installedApp.bundleIdentifier)'
               • version: '\(installedApp.version)'
               • buildVersion: '\(installedApp.buildVersion)'
-              • certSerial: '\(installedApp.certificateSerialNumber ?? "nil")'
               • refreshedDate: \(installedApp.refreshedDate)
               • expirationDate: \(installedApp.expirationDate)
+              • certSerial: '\(installedApp.certificateSerialNumber ?? "nil")'
+              • binaryCertSerial: '\(binaryCertSerial ?? "nil")'
               • binaryCertStatus: \(installedApp.certificateStatus)
             
             """)
@@ -588,17 +590,23 @@ private extension DatabaseManager
         installedApp.resignedBundleIdentifier = localAppBundle.bundleIdentifier
         installedApp.version = localAppBundle.version
         installedApp.buildVersion = localAppBundle.buildVersion
-        installedApp.certificateSerialNumber = serialNumber
         
-        // for now we just do a simple check, but actual check should be done using verifyAppOperation's robust way
-        let activeKeychainSerial = CertificateManager.shared.activeCertificate?.serialNumber
-        let isCross = (activeKeychainSerial != nil && !activeKeychainSerial!.isEmpty && serialNumber != nil && serialNumber != activeKeychainSerial)
-        
-        var status: CertificateStatus = .valid(isCrossSigned: isCross)
+        var status: CertificateStatus = .valid(isCrossSigned: false)
         if let binaryCert = CertificateManager.shared.getSigningCertificate(at: localAppBundle.fileURL) {
+            binaryCertSerial = binaryCert.serialNumber
+            CertificateManager.shared.saveCertificate(binaryCert)
             if binaryCert.expiryDate <= Date() {
                 status = .expired
             }
+        }
+        
+        let effectiveSerial = binaryCertSerial ?? serialNumber
+        installedApp.certificateSerialNumber = effectiveSerial
+        
+        let activeKeychainSerial = CertificateManager.shared.activeCertificate?.serialNumber
+        let isCross = (activeKeychainSerial != nil && !activeKeychainSerial!.isEmpty && effectiveSerial != nil && effectiveSerial != activeKeychainSerial)
+        if case .valid = status {
+            status = .valid(isCrossSigned: isCross)
         }
         installedApp.certificateStatus = status
         
