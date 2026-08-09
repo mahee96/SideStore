@@ -245,7 +245,7 @@ public final class CertificateManager: @unchecked Sendable {
     }
 
     /// Reads the Mach-O binary contents of an app bundle to extract its leaf signing certificate.
-    public func readBinaryCertificate(at url: URL) -> ALTCertificate? {
+    public func readBinaryCertificate(at url: URL) -> ALTX509Certificate? {
         let executableURL: URL
         if url.pathExtension == "app" {
             guard let execURL = Bundle(url: url)?.executableURL else {
@@ -268,7 +268,7 @@ public final class CertificateManager: @unchecked Sendable {
         for (index, secCert) in secCertChain.enumerated() {
             let derData = SecCertificateCopyData(secCert) as Data
             let details = parseCertificate(derData: derData)
-            let altCert = ALTCertificate(data: derData)
+            let x509Cert = ALTX509Certificate(data: derData)
             
             // Filter out Root & Intermediate CA certificates
             let subjectDN = details.subject
@@ -282,14 +282,14 @@ public final class CertificateManager: @unchecked Sendable {
               - Valid From: \(details.validFrom?.description ?? "N/A")
               - Valid Until: \(details.validUntil?.description ?? "N/A")
               - Filtered Out: \(isFilteredOut)
-              - Parsed ALTCertificate: \(altCert != nil ? "Success (serial: \(altCert?.serialNumber ?? "nil"))" : "FAILED")
+              - Parsed ALTX509Certificate: \(x509Cert != nil ? "Success (serial: \(x509Cert?.serialNumber ?? "nil"))" : "FAILED")
             """)
             
             if isFilteredOut {
                 continue
             }
             
-            if let cert = altCert {
+            if let cert = x509Cert {
                 debugLog("[CertificateManager] readBinaryCertificate: Extracted leaf signing certificate from Mach-O (\(executableURL.lastPathComponent))")
                 return cert
             }
@@ -316,9 +316,13 @@ public final class CertificateManager: @unchecked Sendable {
         if isSelf {
             let bundleURL = Bundle.main.bundleURL
             verboseLog("[CertificateManager] Step 1 (Mach-O): Checking \(bundleURL.path)...")
-            if let binaryCert = readBinaryCertificate(at: bundleURL) {
-                debugLog("[CertificateManager] getSigningCertificate: Loaded signing certificate from main bundle Mach-O (serial: \(binaryCert.serialNumber)).")
-                return binaryCert
+            if let binaryX509 = readBinaryCertificate(at: bundleURL) {
+                if let localSignableCert = getSignableCertificate(for: binaryX509.serialNumber) {
+                    debugLog("[CertificateManager] getSigningCertificate: Matched main bundle Mach-O (serial: \(binaryX509.serialNumber)) with local signable certificate.")
+                    return localSignableCert
+                }
+                debugLog("[CertificateManager] getSigningCertificate: Loaded signing certificate from main bundle Mach-O (serial: \(binaryX509.serialNumber)).")
+                return ALTCertificate(x509: binaryX509)
             } else {
                 verboseLog("[CertificateManager] Step 1 (Mach-O): No valid leaf certificate extracted from Mach-O.")
             }
