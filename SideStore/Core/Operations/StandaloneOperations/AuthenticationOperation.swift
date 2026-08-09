@@ -77,7 +77,6 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     private var appleIDEmailAddress: String?
     private var appleIDPassword: String?
     private var shouldShowInstructions = false
-    private var activeCertificates: [ALTCertificate] = []
     
     private let operationQueue = OperationQueue()
     
@@ -147,7 +146,6 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
 
         do {
             let certificates = try await ALTAppleAPI.shared.fetchCertificates(for: cache.team, session: cache.session)
-            self.activeCertificates = certificates
             self.context.activeCertificates = certificates
             
             var certToUse: ALTCertificate?
@@ -593,7 +591,6 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     
     private func fetchCertificate(for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTCertificate {
         let certificates = try await ALTAppleAPI.shared.fetchCertificates(for: team, session: session)
-        self.activeCertificates = certificates
         self.context.activeCertificates = certificates
         
         let bundleCertID = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String
@@ -643,6 +640,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             }
             self.verboseLog("[Authentication] requestCertificate: Fetching certificates to match...")
             let certificates = try await ALTAppleAPI.shared.fetchCertificates(for: team, session: session)
+            self.context.activeCertificates = certificates
             self.verboseLog("[Authentication] requestCertificate: fetchCertificates returned \(certificates.count) certificates.")
             guard let matchedCertificate = certificates.first(where: { $0.serialNumber == certificate.serialNumber }) else {
                 self.debugLog("[Authentication] requestCertificate: Error - missing matched certificate!")
@@ -774,7 +772,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         
         let result = CodeSignValidator.validate(
             runningProfile: provisioningProfile,
-            activeCertificates: self.activeCertificates,
+            activeCertificates: self.context.activeCertificates ?? [],
             signerCertificate: signer.certificate,
             signerTeam: signer.team
         )
