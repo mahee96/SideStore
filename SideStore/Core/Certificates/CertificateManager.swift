@@ -234,11 +234,78 @@ public final class CertificateManager: @unchecked Sendable {
         return cert
     }
 
+    /// Reads the Mach-O binary contents of an app bundle to extract its leaf signing certificate.
+    public func readBinaryCertificate(at url: URL) -> ALTCertificate? {
+        let executableURL: URL
+        if url.pathExtension == "app" {
+            guard let execURL = Bundle(url: url)?.executableURL else {
+                debugLog("[CertificateManager] readBinaryCertificate: Failed to locate executable in bundle: \(url.path)")
+                return nil
+            }
+            executableURL = execURL
+        } else {
+            executableURL = url
+        }
+        
+        guard let parser = try? MachOParser(url: executableURL) else {
+            debugLog("[CertificateManager] readBinaryCertificate: Failed to parse Mach-O at \(executableURL.path)")
+            return nil
+        }
+        
+        let secCertChain = parser.certificates()
+        debugLog("[CertificateManager] readBinaryCertificate: Found \(secCertChain.count) certificate(s) in Mach-O chain.")
+        
+        for (index, secCert) in secCertChain.enumerated() {
+            let derData = SecCertificateCopyData(secCert) as Data
+            let details = parseCertificate(derData: derData)
+            let altCert = ALTCertificate(data: derData)
+            
+            // Filter out Root & Intermediate CA certificates
+            let subjectDN = details.subject
+            let isFilteredOut = subjectDN.contains("Root") || subjectDN.contains("Authority") || subjectDN.contains("Relations")
+            
+            verboseLog("""
+            [CertificateManager] readBinaryCertificate: Certificate [\(index)]:
+              - Subject: '\(details.subject)'
+              - Issuer: '\(details.issuer)'
+              - Serial Hex: '\(details.serialHex)'
+              - Valid From: \(details.validFrom?.description ?? "N/A")
+              - Valid Until: \(details.validUntil?.description ?? "N/A")
+              - Filtered Out: \(isFilteredOut)
+              - Parsed ALTCertificate: \(altCert != nil ? "Success (serial: \(altCert?.serialNumber ?? "nil"))" : "FAILED")
+            """)
+            
+            if isFilteredOut {
+                continue
+            }
+            
+            if let cert = altCert {
+                debugLog("[CertificateManager] readBinaryCertificate: Extracted leaf signing certificate from Mach-O (\(executableURL.lastPathComponent))")
+                return cert
+            }
+        }
+        return nil
+    }
+
     public func getSigningCertificate(at url: URL, externalPassword: String? = nil, withPlistFallback: Bool = true) -> ALTCertificate? {
-        let appDirectory = url.pathExtension == "app" ? url.deletingLastPathComponent() : url
+        var targetURL = url
+        let isMainBundle = targetURL.standardizedFileURL == Bundle.main.bundleURL.standardizedFileURL
+        
+        if isMainBundle {
+            if let binaryCert = readBinaryCertificate(at: targetURL) {
+                debugLog("[CertificateManager] getSigningCertificate: Loaded signing certificate from main bundle Mach-O.")
+                return binaryCert
+            }
+            
+            // Re-target to SideStore's App Group directory for fallback check
+            let bundleID = Bundle.main.bundleIdentifier ?? "com.SideStore.SideStore"
+            targetURL = InstalledApp.appsDirectoryURL.appendingPathComponent(bundleID).appendingPathComponent("SideStore.app")
+        }
+        
+        // Common check: Look for cached signing_certificate.der in the target app directory
+        let appDirectory = targetURL.pathExtension == "app" ? targetURL.deletingLastPathComponent() : targetURL
         let certURL = appDirectory.appendingPathComponent("signing_certificate.der")
         
-        // 1. Try to load cached signing_certificate.der file (new way uses cachedCert)
         if FileManager.default.fileExists(atPath: certURL.path) {
             if let derData = try? Data(contentsOf: certURL), let cert = ALTCertificate(data: derData) {
                 debugLog("[CertificateManager] getSigningCertificate: Loaded cached signing certificate from \(certURL.path)")
@@ -246,8 +313,8 @@ public final class CertificateManager: @unchecked Sendable {
             }
         }
         
-        // 2. Try to load embedded certificate from app bundle (usually placed by external signers/installers)
-        if let targetBundle = Bundle(url: url),
+        // Try to load embedded certificate from app bundle (certificate.p12)
+        if let targetBundle = Bundle(url: targetURL),
            FileManager.default.fileExists(atPath: targetBundle.certificateURL.path),
            let data = try? Data(contentsOf: targetBundle.certificateURL) 
         {
@@ -281,7 +348,7 @@ public final class CertificateManager: @unchecked Sendable {
             }
         }
         
-        // 3. Fall back to active signing certificate for legacy users
+        // Fall back to active signing certificate
         debugLog("[CertificateManager] getSigningCertificate: Cached certificate not found. Falling back to active certificate.")
         return activeCertificate?.certificate
     }
