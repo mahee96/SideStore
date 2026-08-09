@@ -376,8 +376,8 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                     try? CertificateManager.shared.setActiveCertificate(altCertificate)
                     self.verboseLog("[Authentication] postAuthenticationCleanup: Cached signing certificate in Keychain.")
                     
-                    if self.context.isSideStoreResignDismissed && !didShowInstructions {
-                        self.verboseLog("[Authentication] postAuthenticationCleanup: Resign was skipped. Showing instructions now.")
+                    if self.context.isSideStoreResignDismissed && !didShowInstructions && self.shouldShowInstructions {
+                        self.verboseLog("[Authentication] postAuthenticationCleanup: Resign was skipped during interactive auth. Showing instructions now.")
                         await self.context.authenticationHandler.instructionsViewed()
                     }
                 }

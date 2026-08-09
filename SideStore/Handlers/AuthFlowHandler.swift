@@ -185,10 +185,16 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
     @MainActor
     func instructionsViewed() async {
         await withCheckedContinuation { continuation in
+            var hasResumed = false
             let storyboard = UIStoryboard(name: "Authentication", bundle: nil)
             let instructionsViewController = storyboard.instantiateViewController(withIdentifier: "instructionsViewController") as! InstructionsViewController
             instructionsViewController.showsBottomButton = true
             instructionsViewController.completionHandler = {
+                guard !hasResumed else {
+                    debugLog("[AuthFlowHandler] instructionsViewed completionHandler invoked more than once. Ignoring.")
+                    return
+                }
+                hasResumed = true
                 continuation.resume(returning: ())
             }
             self.present(instructionsViewController)
