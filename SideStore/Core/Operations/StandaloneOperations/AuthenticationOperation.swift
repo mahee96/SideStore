@@ -593,25 +593,24 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         let certificates = try await ALTAppleAPI.shared.fetchCertificates(for: team, session: session)
         self.context.activeCertificates = certificates
         
-        let bundleCertID = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String
+        let bundleCertSerial = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String
         
         if let activeCert = CertificateManager.shared.activeCertificate,
            let certificate = certificates.first(where: { $0.serialNumber == activeCert.serialNumber })
         {
             activeCert.certificate.machineIdentifier = certificate.machineIdentifier
-            if let bundleCertID = bundleCertID, bundleCertID.lowercased() != activeCert.serialNumber.lowercased() {
-                self.debugLog("[Authentication] Active certificate (\(activeCert.serialNumber)) and running bundle certificate (\(bundleCertID)) mismatch detected. Running Bundle Certificate is still active on the Paid account portal. Using active Keychain certificate.")
+            if let bundleCertSerial = bundleCertSerial, bundleCertSerial.lowercased() != activeCert.serialNumber.lowercased() {
+                self.debugLog("[Authentication] Active certificate (\(activeCert.serialNumber)) and running bundle certificate (\(bundleCertSerial)) mismatch detected. Running Bundle Certificate is still active on the Paid account portal. Using active Keychain certificate.")
             }
             return activeCert.certificate
         }
         
-        if let bundleCertID = bundleCertID,
-           let certificate = certificates.first(where: { $0.serialNumber.lowercased() == bundleCertID.lowercased() }),
-           let machineIdentifier = certificate.machineIdentifier,
-           let cert = CertificateManager.shared.getSigningCertificate(at: Bundle.main.bundleURL, externalPassword: machineIdentifier) 
+        if let bundleCertSerial = bundleCertSerial,
+           let certificate = certificates.first(where: { $0.serialNumber.lowercased() == bundleCertSerial.lowercased() }),
+           let cert = CertificateManager.shared.getSigningCertificate(at: Bundle.main.bundleURL, externalPassword: bundleCertSerial) 
         {
-            cert.machineIdentifier = machineIdentifier
-            self.debugLog("[Authentication] Using running bundle certificate (\(cert.serialNumber)) decrypted with portal machineIdentifier.")
+            cert.machineIdentifier = certificate.machineIdentifier
+            self.debugLog("[Authentication] Using running bundle certificate (\(cert.serialNumber)) decrypted with serial number.")
             return cert
         }
         

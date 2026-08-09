@@ -34,12 +34,14 @@ final class EmbedSigningCertOperation: BasePipelineOperation<AppOperationContext
             throw OperationError.invalidParameters("EmbedSigningCertOperation: targetAppBundle is missing in context.")
         }
         
+        let p12Password = CertificateManager.shared.getPassword(for: cert)
+        
         do {
-            if let p12Data = cert.p12Data {
+            if let p12Data = try? CertificateStore.export(cert, password: p12Password) {
                 let p12URL = appBundle.fileURL.appendingPathComponent("ALTCertificate.p12")
                 try p12Data.write(to: p12URL, options: .atomic)
                 debugLog("[EmbedSigningCertOperation] Successfully embedded ALTCertificate.p12 in app bundle: \(p12URL.path)")
-            } else if let certData = cert.data {
+            } else {
                 let derURL = appBundle.fileURL.appendingPathComponent("ALTCertificate.der")
                 try certData.write(to: derURL, options: .atomic)
                 debugLog("[EmbedSigningCertOperation] Successfully embedded ALTCertificate.der in app bundle: \(derURL.path)")

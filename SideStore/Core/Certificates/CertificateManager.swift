@@ -63,6 +63,14 @@ public final class CertificateManager: @unchecked Sendable {
         }
     }
 
+    public func getPassword(for cert: ALTCertificate) -> String? {
+        return cert.serialNumber
+    }
+
+    public func getPassword(for serialNumber: String) -> String? {
+        return serialNumber
+    }
+
     /// Sets active signing certificate in memory cache, encrypts and persists to Keychain.
     public func setActiveCertificate(_ cert: ALTCertificate?) throws {
         if let cert = cert {
@@ -71,11 +79,12 @@ public final class CertificateManager: @unchecked Sendable {
                 throw ALTCertificateError.invalidFormat(cause: "Target Certificate lacks a private key. Cannot be used as active signing certificate")
             }
             do {
-                let p12Data = try CertificateStore.export(cert, password: cert.machineIdentifier)
+                let password = getPassword(for: cert)
+                let p12Data = try CertificateStore.export(cert, password: password)
                 Keychain.shared.signingCertificate = p12Data
-                Keychain.shared.signingCertificatePassword = cert.machineIdentifier
+                Keychain.shared.signingCertificatePassword = password
                 saveCertificate(cert)
-                let active = ActiveSigningCertificate(certificate: cert, p12Data: p12Data, password: cert.machineIdentifier)
+                let active = ActiveSigningCertificate(certificate: cert, p12Data: p12Data, password: password)
                 self.activeCertificate = active
                 debugLog("[CertificateManager] setActiveCertificate: Successfully stored certificate (serial: \(cert.serialNumber)).")
             } catch {
@@ -114,7 +123,8 @@ public final class CertificateManager: @unchecked Sendable {
         
         if cert.privateKey != nil {
             do {
-                let p12Data = try CertificateStore.export(cert, password: cert.machineIdentifier)
+                let password = getPassword(for: cert)
+                let p12Data = try CertificateStore.export(cert, password: password)
                 debugLog("[CertificateManager] p12Data generated, size: \(p12Data.count)")
                 Keychain.shared[certificateSerial: cert.serialNumber] = p12Data
                 debugLog("[CertificateManager] Successfully saved p12 to keychain")
@@ -150,7 +160,7 @@ public final class CertificateManager: @unchecked Sendable {
         }
         if let data = Keychain.shared[certificateSerial: serialNumber] {
             if data.isPKCS12 {
-                let savedPassword = getCertificateMetadata(for: serialNumber)?["machineIdentifier"]
+                let savedPassword = getPassword(for: serialNumber)
                 if let cert = try? CertificateStore.load(data, password: savedPassword) {
                     if let metadata = getCertificateMetadata(for: serialNumber) {
                         cert.machineIdentifier = metadata["machineIdentifier"]
@@ -323,8 +333,9 @@ public final class CertificateManager: @unchecked Sendable {
                 verboseLog("[CertificateManager] Step 2 (Embedded p12): Found ALTCertificate.p12 at \(targetBundle.certificateURL.path). Attempting decryption...")
                 let possiblePasswords: [(name: String, value: String?)] = [
                     ("externalPassword", externalPassword),
-                    ("machineIdentifier", activeCertificate?.certificate.machineIdentifier),
                     ("activeCertPassword", activeCertificate?.password),
+                    ("serialNumber", activeCertificate?.certificate.serialNumber),
+                    ("machineIdentifier", activeCertificate?.certificate.machineIdentifier),
                     ("keychainPassword", Keychain.shared.signingCertificatePassword),
                     ("nil", nil)
                 ]
