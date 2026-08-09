@@ -247,12 +247,38 @@ public final class CertificateManager: @unchecked Sendable {
         }
         
         // 2. Try to load embedded certificate from app bundle (usually placed by external signers/installers)
-        let targetBundle = Bundle.main
-        if FileManager.default.fileExists(atPath: targetBundle.certificateURL.path),
-           let data = try? Data(contentsOf: targetBundle.certificateURL),
-           let localCertificate = (try? ALTCertificate(p12Data: data, password: nil)) ?? ALTCertificate(data: data) {
-            debugLog("[CertificateManager] getSigningCertificate: Loaded embedded certificate from \(targetBundle.certificateURL.path)")
-            return localCertificate
+        
+        if let targetBundle = Bundle(url: url), 
+           FileManager.default.fileExists(atPath: targetBundle.certificateURL.path),
+           let data = try? Data(contentsOf: targetBundle.certificateURL) 
+        {
+            let possiblePasswords: [(name: String, value: String?)] = [
+                ("machineIdentifier", activeCertificate?.certificate.machineIdentifier),
+                ("activeCertPassword", activeCertificate?.password),
+                ("keychainPassword", Keychain.shared.signingCertificatePassword),
+                ("nil", nil)
+            ]
+            
+            var localCertificate: ALTCertificate? = nil
+            for (pwdName, password) in possiblePasswords {
+                if let cert = try? ALTCertificate(p12Data: data, password: password) {
+                    localCertificate = cert
+                    debugLog("[CertificateManager] getSigningCertificate: Successfully decrypted embedded p12 using password source '\(pwdName)'.")
+                    break
+                }
+            }
+            
+            if localCertificate == nil {
+                localCertificate = ALTCertificate(data: data)
+                if localCertificate != nil {
+                    debugLog("[CertificateManager] getSigningCertificate: Successfully loaded embedded certificate using raw DER data format.")
+                }
+            }
+            
+            if let cert = localCertificate {
+                debugLog("[CertificateManager] getSigningCertificate: Loaded embedded certificate from \(targetBundle.certificateURL.path)")
+                return cert
+            }
         }
         
         // 3. Fall back to active signing certificate for legacy users
