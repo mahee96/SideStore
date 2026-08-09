@@ -204,11 +204,17 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
     @MainActor
     func resolveResign(mismatchReason: CodeSignValidationReason, context: AuthenticatedOperationContext) async throws -> Bool {
         return try await withCheckedThrowingContinuation { continuation in
+            var hasResumed = false
             let storyboard = UIStoryboard(name: "Authentication", bundle: nil)
             let resignViewController = storyboard.instantiateViewController(withIdentifier: "resignAltStoreViewController") as! ResignAltStoreViewController
             resignViewController.context = context
             resignViewController.mismatchReason = mismatchReason
             resignViewController.completionHandler = { result in
+                guard !hasResumed else {
+                    debugLog("[AuthFlowHandler] resolveResign completionHandler invoked more than once. Ignoring.")
+                    return
+                }
+                hasResumed = true
                 switch result {
                 case .success:
                     continuation.resume(returning: true)
@@ -243,8 +249,9 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
                 self.navigationController.pushViewController(viewController, animated: true)
             }
         } else {
+            self.navigationController.setViewControllers([viewController], animated: false)
             let anchorVC = self.presentingViewController?.presentedViewController ?? self.presentingViewController
-            anchorVC?.present(viewController, animated: true)
+            anchorVC?.present(self.navigationController, animated: true)
         }
     }
 

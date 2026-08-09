@@ -24,6 +24,8 @@ final class ResignAltStoreViewController: UIViewController
     {
         super.viewDidLoad()
         
+        self.placeholderView.textLabel.isHidden = true
+        
         self.placeholderView.detailTextLabel.textAlignment = .left
         self.placeholderView.detailTextLabel.textColor = UIColor.white.withAlphaComponent(0.6)
         
