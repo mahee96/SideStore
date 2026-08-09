@@ -146,6 +146,7 @@
 				Core/Certificates/CertificateManager.swift,
 				Core/Certificates/CertificateStore.swift,
 				Core/Logging/SideStoreLogging.swift,
+				Core/Theme/ThemeManager.swift,
 			);
 			target = BF66EE7D2501AE50007EE018 /* AltStoreCore */;
 		};
@@ -324,6 +325,7 @@
 				Views/Settings/Advanced/NetworkDiscovery/BonjourDiscoveryView.swift,
 				Views/Settings/Advanced/NetworkDiscovery/BonjourDiscoveryViewV2.swift,
 				Views/Settings/Advanced/NetworkDiscovery/LocalNetworkPermissionChecker.swift,
+				Views/Settings/Advanced/UserCustomizations/ThemePickerView.swift,
 				Views/Settings/Advanced/UserCustomizations/UserCustomizationsView.swift,
 				Views/Settings/Advanced/WirelessPair/WirelessPairManager.swift,
 				Views/Settings/Advanced/WirelessPair/WirelessPairView.swift,
@@ -994,11 +996,11 @@
 					"@executable_path/Frameworks",
 				);
 				LD_WARN_DUPLICATE_LIBRARIES = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "SideBackup/SideBackup-Bridging-Header.h";
 				LD_WARN_UNUSED_DYLIBS = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_OBJC_BRIDGING_HEADER = "SideBackup/SideBackup-Bridging-Header.h";
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

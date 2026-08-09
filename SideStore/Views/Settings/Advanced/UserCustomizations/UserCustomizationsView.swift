@@ -24,6 +24,35 @@ struct UserCustomizationsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
+                // Section 0: APPEARANCE & THEMES
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("APPEARANCE & THEMES")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.6))
+                        .padding(.horizontal, 16)
+                    
+                    NavigationLink(destination: ThemePickerView()) {
+                        HStack {
+                            Text("Theme Manager")
+                                .font(.system(size: 17, weight: .bold))
+                                .foregroundColor(.white)
+                            Spacer()
+                            HStack(spacing: 6) {
+                                Circle()
+                                    .fill(Color(uiColor: ThemeManager.shared.primaryColor))
+                                    .frame(width: 14, height: 14)
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(Color.white.opacity(0.4))
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                    }
+                    .background(Color.settingsRowBackground)
+                    .cornerRadius(14)
+                }
+
                 // Section 1: APP & EXTENSIONS CUSTOMIZATION
                 VStack(alignment: .leading, spacing: 8) {
                     Text("CUSTOMIZATION OPTIONS")
