@@ -90,6 +90,11 @@ struct CertificateRowView: View {
             } else {
                 CertPublicKeyMenuItems(cert: cert, viewModel: viewModel, onAddKeyBin: onAddKeyBin, onAddKeyText: onAddKeyText, onExportP12: onExportP12)
             }
+            if isRemote {
+                SwiftUI.Button(role: .destructive) { onRevoke() } label: {
+                    Label("Revoke", systemImage: "xmark.circle")
+                }
+            }
             if viewModel.isCertificateLocallyCached(cert) {
                 SwiftUI.Button(role: .destructive) { onDelete() } label: {
                     Label("Delete", systemImage: "trash")
@@ -178,7 +183,9 @@ private struct CertPrivateKeyMenuItems: View {
             Divider()
             
             Menu {
-                SwiftUI.Button { onExportP12() } label: { Label("Export (.p12)", systemImage: "doc.zipper") }
+                SwiftUI.Button { onExportP12() } label: { Label("Export Full (.p12)", systemImage: "doc.zipper") }
+                SwiftUI.Button { CertificateExporter.sharePublicCertAsDER(cert) { viewModel.errorMessage = $0 } } label: { Label("Export Public (.der)", systemImage: "doc.text") }
+                SwiftUI.Button { CertificateExporter.sharePublicCertAsPEM(cert) { viewModel.errorMessage = $0 } } label: { Label("Export Public (.pem)", systemImage: "doc.text") }
             } label: {
                 Label("Export Certificate", systemImage: "square.and.arrow.up")
             }
@@ -213,7 +220,9 @@ private struct CertPublicKeyMenuItems: View {
             Divider()
             
             Menu {
-                SwiftUI.Button { onExportP12() } label: { Label("Export (.p12)", systemImage: "doc.zipper") }
+                SwiftUI.Button { onExportP12() } label: { Label("Export Full (.p12)", systemImage: "doc.zipper") }
+                SwiftUI.Button { CertificateExporter.sharePublicCertAsDER(cert) { viewModel.errorMessage = $0 } } label: { Label("Export Public (.der)", systemImage: "doc.text") }
+                SwiftUI.Button { CertificateExporter.sharePublicCertAsPEM(cert) { viewModel.errorMessage = $0 } } label: { Label("Export Public (.pem)", systemImage: "doc.text") }
             } label: {
                 Label("Export Certificate", systemImage: "square.and.arrow.up")
             }
