@@ -280,7 +280,7 @@ extension PillButton {
             
         case .crossSigned(let title, let daysRemaining):
             self.setTitle(title.uppercased(), for: .normal)
-            self.borderColor = .refreshRed
+            self.borderColor = .systemBlue
             self.borderWidth = 2.0
             
             switch daysRemaining {
