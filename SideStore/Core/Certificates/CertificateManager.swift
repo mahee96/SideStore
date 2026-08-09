@@ -288,36 +288,69 @@ public final class CertificateManager: @unchecked Sendable {
     }
 
     public func getSigningCertificate(at url: URL, externalPassword: String? = nil, withPlistFallback: Bool = true) -> ALTCertificate? {
-        var targetURL = url
-        let isMainBundle = targetURL.standardizedFileURL == Bundle.main.bundleURL.standardizedFileURL
+        let targetBundleID = ALTApplication(fileURL: url)?.bundleIdentifier ?? Bundle(url: url)?.bundleIdentifier
+        let isSelf = targetBundleID == Bundle.main.bundleIdentifier || 
+                     url.standardizedFileURL == Bundle.main.bundleURL.standardizedFileURL
+        let bundleID = targetBundleID ?? Bundle.main.bundleIdentifier ?? "com.SideStore.SideStore"
         
-        if isMainBundle {
-            if let binaryCert = readBinaryCertificate(at: targetURL) {
-                debugLog("[CertificateManager] getSigningCertificate: Loaded signing certificate from main bundle Mach-O.")
+        self.verboseLog("[CertificateManager] getSigningCertificate started for url: \(url.path), isSelf: \(isSelf), bundleID: \(bundleID)")
+
+        // STEP 1: Mach-O Binary Check (Only for SideStore itself, targeting main bundle)
+        if isSelf {
+            let machOURL = Bundle.main.bundleURL
+            self.verboseLog("[CertificateManager] Step 1 (Mach-O): Checking \(machOURL.path)...")
+            if let binaryCert = readBinaryCertificate(at: machOURL) {
+                debugLog("[CertificateManager] getSigningCertificate: Loaded signing certificate from main bundle Mach-O (serial: \(binaryCert.serialNumber)).")
+                let appGroupDir = InstalledApp.appsDirectoryURL.appendingPathComponent(bundleID)
+                if FileManager.default.fileExists(atPath: appGroupDir.path) {
+                    let appGroupCertURL = appGroupDir.appendingPathComponent("signing_certificate.der")
+                    if let derData = getDERData(from: binaryCert.data) ?? binaryCert.data {
+                        try? derData.write(to: appGroupCertURL, options: .atomic)
+                    }
+                }
                 return binaryCert
+            } else {
+                self.verboseLog("[CertificateManager] Step 1 (Mach-O): No valid leaf certificate extracted from Mach-O.")
             }
-            
-            // Re-target to SideStore's App Group directory for fallback check
-            let bundleID = Bundle.main.bundleIdentifier ?? "com.SideStore.SideStore"
-            targetURL = InstalledApp.appsDirectoryURL.appendingPathComponent(bundleID).appendingPathComponent("SideStore.app")
+        } else {
+            self.verboseLog("[CertificateManager] Step 1 (Mach-O): Skipped (not self).")
         }
-        
-        // Common check: Look for cached signing_certificate.der in the target app directory
-        let appDirectory = targetURL.pathExtension == "app" ? targetURL.deletingLastPathComponent() : targetURL
+
+        // STEP 2: Cached signing_certificate.der Check (If self, target App Group directory)
+        let appDirectory: URL
+        if isSelf {
+            appDirectory = InstalledApp.appsDirectoryURL.appendingPathComponent(bundleID)
+        } else {
+            appDirectory = url.pathExtension == "app" ? url.deletingLastPathComponent() : url
+        }
         let certURL = appDirectory.appendingPathComponent("signing_certificate.der")
-        
+        self.verboseLog("[CertificateManager] Step 2 signing_certificate.der: Checking \(certURL.path)...")
+
         if FileManager.default.fileExists(atPath: certURL.path) {
             if let derData = try? Data(contentsOf: certURL), let cert = ALTCertificate(data: derData) {
-                debugLog("[CertificateManager] getSigningCertificate: Loaded cached signing certificate from \(certURL.path)")
+                debugLog("[CertificateManager] getSigningCertificate: Loaded cached signing certificate from \(certURL.path) (serial: \(cert.serialNumber))")
                 return cert
+            } else {
+                self.verboseLog("[CertificateManager] Step 2 signing_certificate.der: File exists at \(certURL.path) but failed to parse.")
             }
+        } else {
+            self.verboseLog("[CertificateManager] Step 2 signing_certificate.der: File not found at \(certURL.path).")
         }
-        
-        // Try to load embedded certificate from app bundle (certificate.p12)
-        if let targetBundle = Bundle(url: targetURL),
+
+        // STEP 3: Embedded certificate (ALTCertificate.p12) Check (If self, target main bundle)
+        let bundleURL: URL
+        if isSelf {
+            bundleURL = Bundle.main.bundleURL
+        } else {
+            bundleURL = url.pathExtension == "app" ? url : url.appendingPathComponent("App.app")
+        }
+        self.verboseLog("[CertificateManager] Step 3 (Embedded p12): Checking \(bundleURL.path)...")
+
+        if let targetBundle = Bundle(url: bundleURL),
            FileManager.default.fileExists(atPath: targetBundle.certificateURL.path),
            let data = try? Data(contentsOf: targetBundle.certificateURL) 
         {
+            self.verboseLog("[CertificateManager] Step 3 (Embedded p12): Found ALTCertificate.p12 at \(targetBundle.certificateURL.path). Attempting decryption...")
             let possiblePasswords: [(name: String, value: String?)] = [
                 ("externalPassword", externalPassword),
                 ("machineIdentifier", activeCertificate?.certificate.machineIdentifier),
@@ -330,7 +363,7 @@ public final class CertificateManager: @unchecked Sendable {
             for (pwdName, password) in possiblePasswords {
                 if let cert = try? ALTCertificate(p12Data: data, password: password) {
                     localCertificate = cert
-                    debugLog("[CertificateManager] getSigningCertificate: Successfully decrypted embedded p12 using password source '\(pwdName)'.")
+                    debugLog("[CertificateManager] getSigningCertificate: Successfully decrypted embedded p12 using password source '\(pwdName)' (serial: \(cert.serialNumber)).")
                     break
                 }
             }
@@ -338,19 +371,22 @@ public final class CertificateManager: @unchecked Sendable {
             if localCertificate == nil {
                 localCertificate = ALTCertificate(data: data)
                 if localCertificate != nil {
-                    debugLog("[CertificateManager] getSigningCertificate: Successfully loaded embedded certificate using raw DER data format.")
+                    debugLog("[CertificateManager] getSigningCertificate: Successfully loaded embedded certificate using raw DER data format (serial: \(localCertificate?.serialNumber ?? "nil")).")
                 }
             }
             
             if let cert = localCertificate {
-                debugLog("[CertificateManager] getSigningCertificate: Loaded embedded certificate from \(targetBundle.certificateURL.path)")
+                debugLog("[CertificateManager] getSigningCertificate: Loaded embedded certificate from \(targetBundle.certificateURL.path) (serial: \(cert.serialNumber))")
                 return cert
             }
+        } else {
+            self.verboseLog("[CertificateManager] Step 3 (Embedded p12): No embedded ALTCertificate.p12 found at \(bundleURL.path).")
         }
-        
-        // Fall back to active signing certificate
-        debugLog("[CertificateManager] getSigningCertificate: Cached certificate not found. Falling back to active certificate.")
-        return activeCertificate?.certificate
+
+        let active = activeCertificate?.certificate
+        // STEP 4: Fall back to active signing certificate from Keychain
+        debugLog("[CertificateManager] getSigningCertificate: Falling back to activeCertificate: \(active?.serialNumber ?? "nil")")
+        return active
     }
 
     public func loadAllSignableLocalCertificates() -> [ALTCertificate] {
