@@ -232,12 +232,12 @@ final class PipelineRunner: Sendable
             debugLog("[AppManager] performOperation: completed successfully. progress was reset for installedApp: \(result.bundleIdentifier)")
             
             // persist the result
-            if let context = result.managedObjectContext {
+            if let dbContext = group.context.dbBackgroundContext {
                 do {
-                    try context.performAndWait {
-                        let hasChanges = context.hasChanges
+                    try dbContext.performAndWait {
+                        let hasChanges = dbContext.hasChanges
                         if hasChanges {
-                            try context.save()
+                            try dbContext.save()
                         }
                         debugLog("[AppManager] performOperation: Context changes were saved for installedApp: \(result.bundleIdentifier)")
                     }
