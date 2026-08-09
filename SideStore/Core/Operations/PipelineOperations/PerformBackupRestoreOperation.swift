@@ -53,13 +53,14 @@ final class PerformBackupRestoreOperation: BasePipelineOperation<InstallAppOpera
         self.appName = name
         
         guard let appGroupBundleID = Bundle.main.bundleIdentifier,
-              let altstoreOpenURL = URL(string: "sidestore-\(appGroupBundleID)://")
+              let altstoreOpenURL = URL(string: "sidestore://")
         else {
             throw OperationError.openAppFailed(name: name)
         }
 
         var returnURLComponents = URLComponents(url: altstoreOpenURL, resolvingAgainstBaseURL: false)
         returnURLComponents?.host = "appBackupResponse"
+        returnURLComponents?.queryItems = [URLQueryItem(name: "targetBundleID", value: appGroupBundleID)]
         guard let returnURL = returnURLComponents?.url else { throw OperationError.openAppFailed(name: name) }
 
         var queryItems = [URLQueryItem(name: "returnURL", value: returnURL.absoluteString)]

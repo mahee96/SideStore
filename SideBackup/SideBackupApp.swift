@@ -107,25 +107,52 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         
         guard let responseURL = components.url else { return }
         
+        guard let scheme = responseURL.scheme, scheme.hasPrefix("sidestore") else {
+            if let logger = try? ConsoleLog.getConsoleLog() {
+                debugLog(logger, "[SideBackup]: Error: responseURL scheme '\(responseURL.scheme ?? "nil")' does not start with 'sidestore'. Aborting launch.")
+            }
+            return
+        }
+        
+        guard let bundleID = Bundle.main.bundleIdentifier else {
+            if let logger = try? ConsoleLog.getConsoleLog() {
+                debugLog(logger, "[SideBackup]: Error: Bundle.main.bundleIdentifier is nil. Aborting launch.")
+            }
+            return
+        }
+        
+        let queryItems = components.queryItems?.reduce(into: [String: String]()) { $0[$1.name] = $1.value } ?? [:]
+        
+        let targetSideStoreBundleID: String
+        if let queryTargetBundleID = queryItems["targetBundleID"] {
+            targetSideStoreBundleID = queryTargetBundleID
+        } else if scheme.hasPrefix("sidestore-") {
+            targetSideStoreBundleID = String(scheme.dropFirst("sidestore-".count))
+        } else {
+            targetSideStoreBundleID = bundleID.hasSuffix(".SideBackup") 
+                    ? (bundleID as NSString).deletingPathExtension 
+                    : bundleID
+        }
+        
         Task { @MainActor in
-            do {
-                let logger = try ConsoleLog.getConsoleLog()
-                debugLog(logger, "[SideBackup]: Attempting to open return URL: \(responseURL.absoluteString), scheme: \(responseURL.scheme ?? "nil")")
-                UIApplication.shared.open(responseURL, options: [:]) { success in
-                    debugLog(logger, "[SideBackup]: Sent response to app with success: \(success)")
-                    if !success {
-                        debugLog(logger, "[SideBackup]: WARNING - Failed to open SideStore return URL. Scheme '\(responseURL.scheme ?? "nil")' may not be registered or SideStore is not installed.")
-                    }
+            let logger = try? ConsoleLog.getConsoleLog()
+            if let logger = logger {
+                debugLog(logger, "[SideBackup]: Attempting to open target SideStore app '\(targetSideStoreBundleID)' via LSApplicationWorkspace with return URL: \(responseURL.absoluteString)")
+            }
+            
+            SideBackupAppLauncher.openApplication(withBundleIdentifier: targetSideStoreBundleID, url: responseURL) { success, error in
+                if let logger = logger {
+                    debugLog(logger, "[SideBackup]: LSApplicationWorkspace launch completed with success: \(success)")
                 }
-            } catch {
-                var failureComponents = components
-                failureComponents.path = "/failure"
-                let nsError = error as NSError
-                failureComponents.queryItems = ["errorDomain": nsError.domain,
-                                                "errorCode": String(nsError.code),
-                                                "errorDescription": nsError.localizedDescription].map { URLQueryItem(name: $0, value: $1) }
-                if let failureURL = failureComponents.url {
-                    UIApplication.shared.open(failureURL, options: [:])
+                if !success {
+                    if let logger = logger {
+                        debugLog(logger, "[SideBackup]: LSApplicationWorkspace launch failed. Falling back to UIApplication.shared.open...")
+                    }
+                    UIApplication.shared.open(responseURL, options: [:]) { fallbackSuccess in
+                        if let logger = logger {
+                            debugLog(logger, "[SideBackup]: Fallback UIApplication.shared.open success: \(fallbackSuccess)")
+                        }
+                    }
                 }
             }
         }
