@@ -79,7 +79,8 @@ public struct OCSPValidator {
         }
         
         guard let data = certificate.data,
-              let secCert = SecCertificateCreateWithData(nil, data as CFData) else {
+              let derData = getDERData(from: data) ?? certificate.data as Data?,
+              let secCert = SecCertificateCreateWithData(nil, derData as CFData) else {
             debugLog("[OCSPValidator] Failed to parse SecCertificate for serial \(certificate.serialNumber).")
             throw OCSPValidationError.invalidCertificate
         }
