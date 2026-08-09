@@ -73,7 +73,7 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
                     throw OperationError.invalidApp
                 }
                 
-                let result = validateCertificate(binaryCert, portalCertificateSerials: portalCertificateSerials, signingCertificateSerial: signingCertificateSerial)
+                let result = await validateCertificate(binaryCert, portalCertificateSerials: portalCertificateSerials, signingCertificateSerial: signingCertificateSerial)
                 finalStatus = result
                 self.context.targetCertStatus = result
                 try processValidationResult(result, description: "Target bundle binary certificate", appName: appName)
@@ -90,7 +90,7 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
                     throw OperationError.invalidParameters("\(certType) certificate lacks a private key.")
                 }
                 
-                let result = validateCertificate(target, portalCertificateSerials: portalCertificateSerials, signingCertificateSerial: signingCertificateSerial)
+                let result = await validateCertificate(target, portalCertificateSerials: portalCertificateSerials, signingCertificateSerial: signingCertificateSerial)
                 finalStatus = result
                 self.context.targetCertStatus = result
                 try processValidationResult(result, description: "Target signing certificate", appName: appName)
@@ -106,7 +106,7 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
 
     private func validateCertificate(_ certificate: ALTCertificate,
                                      portalCertificateSerials: Set<String>,
-                                     signingCertificateSerial: String?) -> CertificateStatus {
+                                     signingCertificateSerial: String?) async -> CertificateStatus {
         if portalCheck(certificate, portalCertificateSerials: portalCertificateSerials) 
         {
             let isCrossSigned = (signingCertificateSerial != nil && !signingCertificateSerial!.isEmpty && certificate.serialNumber != signingCertificateSerial)
@@ -115,65 +115,28 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
         }
         
         debugLog("[VerifyCertificateOperation] validateCertificate: Not in portal active list. Falling back to OCSP check...")
-        return OcspCheck(certificate)
+        return await ocspCheck(certificate)
     }
-    
 
     private func portalCheck(_ certificate: ALTCertificate, portalCertificateSerials: Set<String>) -> Bool {
         return portalCertificateSerials.contains(certificate.serialNumber)
     }
 
-    private func OcspCheck(_ certificate: ALTCertificate) -> CertificateStatus {
-        if certificate.expiryDate <= Date() {
-            debugLog("[VerifyCertificateOperation] OcspCheck: Certificate \(certificate.serialNumber) is EXPIRED.")
+    private func ocspCheck(_ certificate: ALTCertificate) async -> CertificateStatus {
+        do {
+            try await OCSPValidator.validate(certificate)
+            debugLog("[VerifyCertificateOperation] ocspCheck: Certificate \(certificate.serialNumber) is valid (assuming cross-signed).")
+            return .valid(isCrossSigned: true)
+        } catch OCSPValidationError.expired {
+            debugLog("[VerifyCertificateOperation] ocspCheck: Certificate \(certificate.serialNumber) is EXPIRED.")
             return .expired
-        }
-        if checkRevocationWithOCSP(certificate: certificate) {
-            debugLog("[VerifyCertificateOperation] OcspCheck: Certificate \(certificate.serialNumber) is REVOKED.")
+        } catch OCSPValidationError.revoked {
+            debugLog("[VerifyCertificateOperation] ocspCheck: Certificate \(certificate.serialNumber) is REVOKED.")
             return .revoked
+        } catch {
+            debugLog("[VerifyCertificateOperation] ocspCheck: OCSP validation error (\(error)). Assuming cross-signed.")
+            return .valid(isCrossSigned: true)
         }
-        debugLog("[VerifyCertificateOperation] OcspCheck: Certificate \(certificate.serialNumber) is valid (assuming cross-signed).")
-        return .valid(isCrossSigned: true)
-    }
-    
-
-
-    private func checkRevocationWithOCSP(certificate: ALTCertificate) -> Bool {
-        verboseLog("[VerifyCertificateOperation] checkRevocationWithOCSP started for cert serial: \(certificate.serialNumber)")
-        
-        guard let data = certificate.data,
-              let secCert = SecCertificateCreateWithData(nil, data as CFData) else {
-            verboseLog("[VerifyCertificateOperation] checkRevocationWithOCSP: Failed to parse SecCertificate from certificate data.")
-            return false
-        }
-        
-        let policy = SecPolicyCreateBasicX509()
-        var optionalTrust: SecTrust?
-        let status = SecTrustCreateWithCertificates(secCert, policy, &optionalTrust)
-        guard status == errSecSuccess, let trust = optionalTrust else {
-            verboseLog("[VerifyCertificateOperation] checkRevocationWithOCSP: SecTrustCreateWithCertificates failed with status: \(status)")
-            return false
-        }
-        
-        if let revocationPolicy = SecPolicyCreateRevocation(CFOptionFlags(kSecRevocationOCSPMethod | kSecRevocationCRLMethod)) {
-            SecTrustSetPolicies(trust, revocationPolicy)
-            verboseLog("[VerifyCertificateOperation] checkRevocationWithOCSP: Configured SecTrust with OCSP & CRL revocation policies.")
-        }
-        
-        var error: CFError?
-        let isValid = SecTrustEvaluateWithError(trust, &error)
-        verboseLog("[VerifyCertificateOperation] checkRevocationWithOCSP: SecTrustEvaluateWithError returned isValid: \(isValid)")
-        
-        if !isValid, let err = error as Error? as NSError? {
-            verboseLog("[VerifyCertificateOperation] checkRevocationWithOCSP error: code \(err.code), domain: \(err.domain), description: '\(err.localizedDescription)'")
-            if err.code == -67820 || err.localizedDescription.lowercased().contains("revoked") {
-                debugLog("[VerifyCertificateOperation] checkRevocationWithOCSP: Certificate serial \(certificate.serialNumber) is CONFIRMED REVOKED by Apple OCSP!")
-                return true
-            }
-        }
-        
-        verboseLog("[VerifyCertificateOperation] checkRevocationWithOCSP: Certificate serial \(certificate.serialNumber) is valid or unconfirmed.")
-        return false
     }
     
     private func fetchInstalledAppInitialState(bundleID: String) async -> (name: String, serial: String?, status: CertificateStatus) {
