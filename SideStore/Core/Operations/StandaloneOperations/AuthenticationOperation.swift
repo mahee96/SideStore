@@ -607,10 +607,11 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         
         if let bundleCertSerial = bundleCertSerial,
            let certificate = certificates.first(where: { $0.serialNumber.lowercased() == bundleCertSerial.lowercased() }),
-           let cert = CertificateManager.shared.getSigningCertificate(at: Bundle.main.bundleURL, externalPassword: bundleCertSerial) 
+           let cert = CertificateManager.shared.getSigningCertificate(at: Bundle.main.bundleURL, externalPassword: bundleCertSerial),
+           cert.privateKey != nil
         {
             cert.machineIdentifier = certificate.machineIdentifier
-            self.debugLog("[Authentication] Using running bundle certificate (\(cert.serialNumber)) decrypted with serial number.")
+            self.debugLog("[Authentication] Using running bundle certificate (\(cert.serialNumber)) with valid private key.")
             return cert
         }
         
