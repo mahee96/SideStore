@@ -24,12 +24,14 @@ fileprivate struct OperationStepItem {
     let step: any OperationStep
     let weight: Int64
     let maxReuse: Int
+    let resetProgress: Bool
 }
 
 protocol WeightedOperationContext: AnyObject {
     func weightForFirstOccurrence(of step: some OperationStep) -> Int64?
     func weight(for step: some OperationStep, occurrenceNumber: Int) -> Int64?
-    func consumeWeight(for step: some OperationStep) -> Int64?
+    func consumeWeight(for step: some OperationStep) throws -> Int64
+    func attachProgressSlot(for step: some OperationStep, childProgress: Progress, parentProgress: Progress) throws -> Bool
 }
 
 class OperationContext: WeightedOperationContext
@@ -40,6 +42,7 @@ class OperationContext: WeightedOperationContext
     private var stepItems: [OperationStepItem]
     private var currentIndex = 0
     private var remainingReuses: [Int: Int] = [:]
+    private var stepProgressSlots: [Int: Progress] = [:]
 
     fileprivate init(stepItems: [OperationStepItem] = [], error: Error? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
     {
@@ -54,6 +57,8 @@ class OperationContext: WeightedOperationContext
         self.currentIndex = context.currentIndex
         self.error = context.error
         self.dbBackgroundContext = context.dbBackgroundContext
+        self.remainingReuses = context.remainingReuses
+        self.stepProgressSlots = context.stepProgressSlots
     }
 
     func weightForFirstOccurrence(of step: some OperationStep) -> Int64? {
@@ -78,20 +83,26 @@ class OperationContext: WeightedOperationContext
         return nil
     }
 
-    func consumeWeight(for step: some OperationStep) -> Int64? {
-        guard let target = (step as Any) as? AnyHashable else {
-            debugLog("[OperationContext] Failed to cast step '\(step)' to AnyHashable during consumeWeight")
-            return nil
-        }
-        guard let index = stepItems.indices[currentIndex...].first(where: {
+    private func findIndex(for step: some OperationStep) -> Int? {
+        guard let target = (step as Any) as? AnyHashable else { return nil }
+        return stepItems.indices[currentIndex...].first(where: {
             guard let itemTarget = (stepItems[$0].step as Any) as? AnyHashable else { return false }
             return itemTarget == target
-        }) else {
+        })
+    }
+
+    @discardableResult
+    func consumeWeight(for step: some OperationStep) throws -> Int64 {
+        guard let index = findIndex(for: step) else {
             debugLog("[OperationContext] Failed to consume weight for step '\(step)' from index \(currentIndex)")
-            return nil
+            throw OperationError.invalidParameters("Missing progress weight for step '\(step)' in steps list")
         }
         
         let item = stepItems[index]
+        guard item.maxReuse > 0 else {
+            debugLog("[OperationContext] Invalid maxReuse (\(item.maxReuse)) for step '\(step)'")
+            throw OperationError.invalidParameters("Invalid maxReuse (\(item.maxReuse)) for step '\(step)' in steps list")
+        }
         
         let remaining: Int
         if let existing = remainingReuses[index] {
@@ -108,7 +119,34 @@ class OperationContext: WeightedOperationContext
             // remaining is 1. Clear it completely from the map and advance currentIndex.
             remainingReuses[index] = nil
             currentIndex = index + 1
+            purgeCompletedProgressSlots()
             return item.weight
+        }
+    }
+
+    func attachProgressSlot(for step: some OperationStep, childProgress: Progress, parentProgress: Progress) throws -> Bool {
+        guard let index = findIndex(for: step) else { return false }
+        let item = stepItems[index]
+        guard item.resetProgress else { return false }
+        
+        let slot: Progress
+        if let existing = stepProgressSlots[index] {
+            slot = existing
+        } else {
+            slot = Progress.discreteProgress(totalUnitCount: childProgress.totalUnitCount)
+            parentProgress.addChild(slot, withPendingUnitCount: item.weight)
+            stepProgressSlots[index] = slot
+        }
+        
+        slot.completedUnitCount = 0
+        slot.addChild(childProgress, withPendingUnitCount: childProgress.totalUnitCount)
+        try consumeWeight(for: step)
+        return true
+    }
+
+    private func purgeCompletedProgressSlots() {
+        for slotIndex in stepProgressSlots.keys where slotIndex < currentIndex {
+            stepProgressSlots[slotIndex] = nil
         }
     }
 }
@@ -120,7 +158,17 @@ class StandaloneOperationContext: OperationContext
     init(steps: [StandaloneExecutionStep], error: Error? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
     {
         self.steps = steps
-        super.init(stepItems: steps.map { OperationStepItem(step: $0.step, weight: $0.weight, maxReuse: $0.maxReuse) }, error: error, dbBackgroundContext: dbBackgroundContext)
+        super.init(stepItems: steps.map { 
+                OperationStepItem(
+                    step: $0.step, 
+                    weight: $0.weight, 
+                    maxReuse: $0.maxReuse, 
+                    resetProgress: $0.resetProgress
+                ) 
+            }, 
+            error: error, 
+            dbBackgroundContext: dbBackgroundContext
+        )
     }
 
     init(context: StandaloneOperationContext)
@@ -200,7 +248,17 @@ class PipelineOperationContext: OperationContext
     ) {
         self.pipelineSteps = pipelineSteps
         self.handler = handler
-        super.init(stepItems: pipelineSteps.map { OperationStepItem(step: $0.step, weight: $0.weight, maxReuse: 1) }, error: error, dbBackgroundContext: dbBackgroundContext)
+        super.init(stepItems: pipelineSteps.map { 
+                OperationStepItem(
+                    step: $0.step, 
+                    weight: $0.weight, 
+                    maxReuse: 1, 
+                    resetProgress: false
+                ) 
+            }, 
+            error: error, 
+            dbBackgroundContext: dbBackgroundContext
+        )
     }
 
     init(context: PipelineOperationContext)

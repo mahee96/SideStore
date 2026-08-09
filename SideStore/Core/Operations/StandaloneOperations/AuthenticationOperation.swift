@@ -138,7 +138,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         // Update anisette data if expired and provisioning is required
         if !self.skipCertificateProvisioning && cache.session.anisetteData.date.timeIntervalSinceNow < -40.0 {
             do {
-                let anisetteData = try await FetchAnisetteDataOperation(context: self.context).execute(parentProgress: self.progress)
+                let anisetteData = try await self.anisetteProvider.getAnisetteData()
                 cache.session.anisetteData = anisetteData
             } catch {
                 self.verboseLog("[Authentication] Failed to update anisette data for cached session: \(error)")

@@ -60,16 +60,14 @@ class BaseOperation<Context: OperationContext, Result>: NSObject, AsyncOperation
         debugLog("[\(className)] executePreconditionCheck() started")
         defer { debugLog("[\(className)] executePreconditionCheck() completed") }
         
-        let unitCount: Int64
         if let parentProgress = parentProgress {
             let step = try self.operationStep()
-            guard let weight = self.context.consumeWeight(for: step) else {
-                throw OperationError.invalidParameters("Missing progress weight for \(className) in steps list")
-            }
-            unitCount = weight
-            if unitCount > 0 {
-                verboseLog("[\(className)] Adding child progress to parent with weight: \(unitCount) (parent total: \(parentProgress.totalUnitCount))")
-                parentProgress.addChild(self.progress, withPendingUnitCount: unitCount)
+            if try !self.context.attachProgressSlot(for: step, childProgress: self.progress, parentProgress: parentProgress) {
+                let unitCount = try self.context.consumeWeight(for: step)
+                if unitCount > 0 {
+                    verboseLog("[\(className)] Adding child progress to parent with weight: \(unitCount) (parent total: \(parentProgress.totalUnitCount))")
+                    parentProgress.addChild(self.progress, withPendingUnitCount: unitCount)
+                }
             }
         }
         if self.isCancelled {
