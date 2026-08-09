@@ -74,10 +74,6 @@ public final class CertificateManager: @unchecked Sendable {
     /// Sets active signing certificate in memory cache, encrypts and persists to Keychain.
     public func setActiveCertificate(_ cert: ALTCertificate?) throws {
         if let cert = cert {
-            guard cert.privateKey != nil else {
-                debugLog("[CertificateManager] setActiveCertificate failed: Certificate \(cert.serialNumber) lacks a private key.")
-                throw ALTCertificateError.invalidFormat(cause: "Target Certificate lacks a private key. Cannot be used as active signing certificate")
-            }
             do {
                 let password = getPassword(for: cert)
                 let p12Data = try CertificateStore.export(cert, password: password)
@@ -121,20 +117,14 @@ public final class CertificateManager: @unchecked Sendable {
         debugLog("[CertificateManager] saveCertificate started for serial: \(cert.serialNumber)")
         defer { debugLog("[CertificateManager] saveCertificate completed for serial: \(cert.serialNumber)") }
         
-        if cert.privateKey != nil {
-            do {
-                let password = getPassword(for: cert)
-                let p12Data = try CertificateStore.export(cert, password: password)
-                debugLog("[CertificateManager] p12Data generated, size: \(p12Data.count)")
-                Keychain.shared[certificateSerial: cert.serialNumber] = p12Data
-                debugLog("[CertificateManager] Successfully saved p12 to keychain")
-            } catch {
-                debugLog("[CertificateManager] Failed to export/save p12 to keychain: \(error)")
-            }
-        } else if let derData = cert.data {
-            debugLog("[CertificateManager] derData exists, size: \(derData.count)")
-            Keychain.shared[certificateSerial: cert.serialNumber] = derData
-            debugLog("[CertificateManager] Successfully saved der to keychain")
+        do {
+            let password = getPassword(for: cert)
+            let p12Data = try CertificateStore.export(cert, password: password)
+            debugLog("[CertificateManager] p12Data generated, size: \(p12Data.count)")
+            Keychain.shared[certificateSerial: cert.serialNumber] = p12Data
+            debugLog("[CertificateManager] Successfully saved p12 to keychain")
+        } catch {
+            debugLog("[CertificateManager] Failed to export/save p12 to keychain: \(error)")
         }
         
         let serials = getImportedCertificateSerials()
@@ -147,11 +137,36 @@ public final class CertificateManager: @unchecked Sendable {
         var metadataDict: [String: String] = getCertificateMetadata(for: cert.serialNumber) ?? [:]
         metadataDict["name"] = cert.name
         metadataDict["serialNumber"] = cert.serialNumber
-        metadataDict["hasPrivateKey"] = cert.privateKey != nil ? "true" : "false"
         if let v = cert.machineIdentifier { metadataDict["machineIdentifier"] = v }
         if let v = cert.machineName { metadataDict["machineName"] = v }
         if let v = cert.requesterEmail { metadataDict["requesterEmail"] = v }
         setCertificateMetadata(metadataDict, for: cert.serialNumber)
+    }
+
+    public func saveX509Certificate(_ x509: ALTX509Certificate) {
+        debugLog("[CertificateManager] saveX509Certificate started for serial: \(x509.serialNumber)")
+        defer { debugLog("[CertificateManager] saveX509Certificate completed for serial: \(x509.serialNumber)") }
+        
+        if let derData = x509.data {
+            debugLog("[CertificateManager] derData exists, size: \(derData.count)")
+            Keychain.shared[certificateSerial: x509.serialNumber] = derData
+            debugLog("[CertificateManager] Successfully saved der to keychain")
+        }
+        
+        let serials = getImportedCertificateSerials()
+        if !serials.contains(x509.serialNumber) {
+            var updatedSerials = serials
+            updatedSerials.append(x509.serialNumber)
+            setImportedCertificateSerials(updatedSerials)
+        }
+        
+        var metadataDict: [String: String] = getCertificateMetadata(for: x509.serialNumber) ?? [:]
+        metadataDict["name"] = x509.name
+        metadataDict["serialNumber"] = x509.serialNumber
+        if let v = x509.machineIdentifier { metadataDict["machineIdentifier"] = v }
+        if let v = x509.machineName { metadataDict["machineName"] = v }
+        if let v = x509.requesterEmail { metadataDict["requesterEmail"] = v }
+        setCertificateMetadata(metadataDict, for: x509.serialNumber)
     }
     
     public func getLocalCertificate(serialNumber: String) -> ALTCertificate? {
@@ -169,15 +184,26 @@ public final class CertificateManager: @unchecked Sendable {
                     }
                     return cert
                 }
-            } else {
-                if let cert = ALTCertificate(data: data) {
-                    if let metadata = getCertificateMetadata(for: serialNumber) {
-                        cert.machineIdentifier = metadata["machineIdentifier"]
-                        cert.machineName = metadata["machineName"]
-                        cert.requesterEmail = metadata["requesterEmail"]
-                    }
-                    return cert
+            }
+        }
+        return nil
+    }
+
+    public func getLocalX509Certificate(serialNumber: String) -> ALTX509Certificate? {
+        if let cert = getLocalCertificate(serialNumber: serialNumber) {
+            return cert.x509
+        }
+        if let data = Keychain.shared[certificateSerial: serialNumber] {
+            let x509: ALTX509Certificate? = data.isPKCS12
+                ? (try? CertificateStore.load(data, password: getPassword(for: serialNumber)))?.x509
+                : ALTX509Certificate(data: data)
+            if let x509 {
+                if let metadata = getCertificateMetadata(for: serialNumber) {
+                    x509.machineIdentifier = metadata["machineIdentifier"]
+                    x509.machineName = metadata["machineName"]
+                    x509.requesterEmail = metadata["requesterEmail"]
                 }
+                return x509
             }
         }
         return nil
@@ -194,9 +220,20 @@ public final class CertificateManager: @unchecked Sendable {
         }
         return certs
     }
+
+    public func getAllLocalX509Certificates() -> [ALTX509Certificate] {
+        let serials = getImportedCertificateSerials()
+        var certs: [ALTX509Certificate] = []
+        for serial in serials {
+            if let x509 = getLocalX509Certificate(serialNumber: serial) {
+                certs.append(x509)
+            }
+        }
+        return certs
+    }
     
-    public func deleteLocalCertificate(serialNumber: String) {
-        debugLog("[CertificateManager] deleteLocalCertificate: \(serialNumber)")
+    public func deleteCertificate(serialNumber: String) {
+        debugLog("[CertificateManager] deleteCertificate: \(serialNumber)")
         if self.activeCertificate?.serialNumber == serialNumber {
             clearActiveCertificate()
         }
@@ -206,42 +243,36 @@ public final class CertificateManager: @unchecked Sendable {
         serials.removeAll { $0 == serialNumber }
         setImportedCertificateSerials(serials)
     }
-    
-    // MARK: - Compatibility Helper Aliases
-    
-    public func loadCertificate(for serialNumber: String) -> ALTCertificate? {
-        return getLocalCertificate(serialNumber: serialNumber)
-    }
 
-    public func loadCertificate(fromProvisioningProfileAt url: URL) -> ALTCertificate? {
-        // Try to get the exact signing certificate from the bundle binary first
-        let appURL = url.deletingLastPathComponent()
-        if appURL.pathExtension == "app", let binaryCert = getSigningCertificate(at: appURL) {
-            return binaryCert
+    public func getSignableCertificate(for serialNumber: String, externalPassword: String? = nil) -> ALTCertificate? {
+        if let cert = getLocalCertificate(serialNumber: serialNumber) {
+            return cert
         }
         
-        guard let profile = ALTProvisioningProfile(url: url), let cert = profile.certificates.first else {
-            return nil
+        let targetBundle = Bundle.main
+        if FileManager.default.fileExists(atPath: targetBundle.certificateURL.path),
+           let data = try? Data(contentsOf: targetBundle.certificateURL)
+        {
+            let possiblePasswords: [(name: String, value: String?)] = [
+                ("externalPassword", externalPassword),
+                ("activeCertPassword", activeCertificate?.password),
+                ("serialNumber", activeCertificate?.certificate.serialNumber),
+                ("machineIdentifier", activeCertificate?.certificate.machineIdentifier),
+                ("keychainPassword", Keychain.shared.signingCertificatePassword),
+                ("nil", nil)
+            ]
+            for (pwdName, password) in possiblePasswords {
+                if let cert = try? ALTCertificate(p12Data: data, password: password),
+                   cert.serialNumber.lowercased() == serialNumber.lowercased() || serialNumber.isEmpty
+                {
+                    debugLog("[CertificateManager] getSignableCertificate: Decrypted embedded p12 using password source '\(pwdName)' (serial: \(cert.serialNumber)).")
+                    return cert
+                }
+            }
         }
-        if let localCopy = getLocalCertificate(serialNumber: cert.serialNumber) {
-            if cert.machineName == nil { cert.machineName = localCopy.machineName }
-            if cert.machineIdentifier == nil { cert.machineIdentifier = localCopy.machineIdentifier }
-            if cert.requesterEmail == nil { cert.requesterEmail = localCopy.requesterEmail }
-        }
-        return cert
-    }
-
-    public func loadAllLocalCertificates() -> [ALTCertificate] {
-        return getAllLocalCertificates()
-    }
-
-    public func getSignableCertificate(for serialNumber: String) -> ALTCertificate? {
-        guard let cert = getLocalCertificate(serialNumber: serialNumber) else { return nil }
-        guard cert.privateKey != nil else {
-            debugLog("[CertificateManager] getSignableCertificate: Certificate \(serialNumber) found in cache, but lacks local private key (only public key/DER is available).")
-            return nil
-        }
-        return cert
+        
+        debugLog("[CertificateManager] getSignableCertificate: No signable certificate found for serial \(serialNumber).")
+        return nil
     }
 
     /// Reads the Mach-O binary contents of an app bundle to extract its leaf signing certificate.
@@ -297,13 +328,11 @@ public final class CertificateManager: @unchecked Sendable {
         return nil
     }
 
-    public func getSigningCertificate(at url: URL, externalPassword: String? = nil, withPlistFallback: Bool = true) -> ALTCertificate? {
+    public func getSigningCertificate(at url: URL, withPlistFallback: Bool = true) -> ALTX509Certificate? {
         guard let bundleID = ALTApplication(fileURL: url)?.bundleIdentifier else 
         {
             verboseLog("[CertificateManager] Could not resolve bundleIdentifier for \(url.path)")
-            let active = activeCertificate?.certificate
-            debugLog("[CertificateManager] getSigningCertificate: Falling back to activeCertificate: \(active?.serialNumber ?? "nil")")
-            return active
+            return nil
         }
 
         let isSelf = bundleID == Bundle.main.bundleIdentifier || 
@@ -317,102 +346,37 @@ public final class CertificateManager: @unchecked Sendable {
             let bundleURL = Bundle.main.bundleURL
             verboseLog("[CertificateManager] Step 1 (Mach-O): Checking \(bundleURL.path)...")
             if let binaryX509 = readBinaryCertificate(at: bundleURL) {
-                if let localSignableCert = getSignableCertificate(for: binaryX509.serialNumber) {
-                    debugLog("[CertificateManager] getSigningCertificate: Matched main bundle Mach-O (serial: \(binaryX509.serialNumber)) with local signable certificate.")
-                    return localSignableCert
-                }
                 debugLog("[CertificateManager] getSigningCertificate: Loaded signing certificate from main bundle Mach-O (serial: \(binaryX509.serialNumber)).")
-                return ALTCertificate(x509: binaryX509)
+                return binaryX509
             } else {
                 verboseLog("[CertificateManager] Step 1 (Mach-O): No valid leaf certificate extracted from Mach-O.")
             }
-
-            // STEP 2: Embedded ALTCertificate.p12 Check (With private key decryption)
-            verboseLog("[CertificateManager] Step 2 (Embedded p12): Checking \(bundleURL.path)...")
-
-            if let targetBundle = Bundle(url: bundleURL),
-               FileManager.default.fileExists(atPath: targetBundle.certificateURL.path),
-               let data = try? Data(contentsOf: targetBundle.certificateURL) 
-            {
-                verboseLog("[CertificateManager] Step 2 (Embedded p12): Found ALTCertificate.p12 at \(targetBundle.certificateURL.path). Attempting decryption...")
-                let possiblePasswords: [(name: String, value: String?)] = [
-                    ("externalPassword", externalPassword),
-                    ("activeCertPassword", activeCertificate?.password),
-                    ("serialNumber", activeCertificate?.certificate.serialNumber),
-                    ("machineIdentifier", activeCertificate?.certificate.machineIdentifier),
-                    ("keychainPassword", Keychain.shared.signingCertificatePassword),
-                    ("nil", nil)
-                ]
-                
-                for (pwdName, password) in possiblePasswords {
-                    if let cert = try? ALTCertificate(p12Data: data, password: password) {
-                        debugLog("[CertificateManager] getSigningCertificate: Successfully decrypted embedded p12 using password source '\(pwdName)' (serial: \(cert.serialNumber)).")
-                        return cert
-                    }
-                }
-                verboseLog("[CertificateManager] Step 2 (Embedded p12): Failed to decrypt ALTCertificate.p12 with available passwords.")
-            } else {
-                verboseLog("[CertificateManager] Step 2 (Embedded p12): No ALTCertificate.p12 found at \(bundleURL.path).")
-            }
-
-            // STEP 3: Embedded DER Check (Diagnostic logging only - NEVER returned for signing)
-            let embeddedDerURL = bundleURL.appendingPathComponent("ALTCertificate.der")
-            if FileManager.default.fileExists(atPath: embeddedDerURL.path) {
-                if let derData = try? Data(contentsOf: embeddedDerURL), let cert = ALTCertificate(data: derData) {
-                    verboseLog("[CertificateManager] Step 3 (Embedded DER): Found ALTCertificate.der at \(embeddedDerURL.path) (serial: \(cert.serialNumber)). (Diagnostic log only; DER lacks private key).")
-                } else {
-                    verboseLog("[CertificateManager] Step 3 (Embedded DER): File exists at \(embeddedDerURL.path) but failed to parse.")
-                }
-            } else {
-                verboseLog("[CertificateManager] Step 3 (Embedded DER): No embedded ALTCertificate.der found at \(embeddedDerURL.path).")
-            }
         } else {
-            // STEP 2b: App Group Cached Certificate Check (For third-party apps)
+            // STEP 2: App Group Cached Certificate Check (For third-party apps)
             let appDirectory = InstalledApp.appsDirectoryURL.appendingPathComponent(bundleID)
             let certURL = appDirectory.appendingPathComponent("signing_certificate.der")
-            verboseLog("[CertificateManager] Step 2b (App Group Cached Cert): Checking \(appDirectory.path)...")
+            verboseLog("[CertificateManager] Step 2 (App Group Cached Cert): Checking \(appDirectory.path)...")
 
             if FileManager.default.fileExists(atPath: certURL.path) {
-                if let derData = try? Data(contentsOf: certURL), let cert = ALTCertificate(data: derData) {
+                if let derData = try? Data(contentsOf: certURL), let cert = ALTX509Certificate(data: derData) {
                     debugLog("[CertificateManager] getSigningCertificate: Loaded cached signing certificate from App Group \(certURL.path) (serial: \(cert.serialNumber))")
                     return cert
                 } else {
-                    verboseLog("[CertificateManager] Step 2b (App Group Cached Cert): File exists at \(certURL.path) but failed to parse.")
+                    verboseLog("[CertificateManager] Step 2 (App Group Cached Cert): File exists at \(certURL.path) but failed to parse.")
                 }
             }
-            verboseLog("[CertificateManager] Step 2b (App Group Cached Cert): No cached certificate found in App Group at \(appDirectory.path).")
+            verboseLog("[CertificateManager] Step 2 (App Group Cached Cert): No cached certificate found in App Group at \(appDirectory.path).")
         }
 
-        let active = activeCertificate?.certificate
-        // STEP 4: Fall back to active signing certificate from Keychain
-        debugLog("[CertificateManager] getSigningCertificate: Falling back to activeCertificate: \(active?.serialNumber ?? "nil")")
-        return active
+        verboseLog("[CertificateManager] getSigningCertificate: No signing certificate found for \(url.path)")
+        return nil
     }
 
-    public func loadAllSignableLocalCertificates() -> [ALTCertificate] {
-        return getAllLocalCertificates().filter { $0.privateKey != nil }
-    }
-
-    public func deleteCertificate(serialNumber: String) {
-        deleteLocalCertificate(serialNumber: serialNumber)
-    }
-    
     public func isCertificateLocallyCached(serialNumber: String) -> Bool {
         if let activeCert = self.activeCertificate, activeCert.serialNumber == serialNumber {
             return true
         }
         return getImportedCertificateSerials().contains(serialNumber)
-    }
-    
-    public func isCertificateLocallyCached(cert: ALTCertificate) -> Bool {
-        if let activeCert = self.activeCertificate, activeCert.serialNumber == cert.serialNumber {
-            return true
-        }
-        let serials = getImportedCertificateSerials()
-        if serials.contains(cert.serialNumber) {
-            return true
-        }
-        return false
     }
 }
 
