@@ -64,6 +64,13 @@ public struct OCSPValidator {
         return await wwdrFetchTask.value
     }
     
+    // Validates an ALTCertificate against expiration and direct live un-cached Apple OCSP queries over HTTP.
+    // NOTE: Newly submitted revocation requests on Apple Developer Portal may take time to propagate to Apple's public OCSP servers, 
+    //       but are typically synchronized within 10 to 30 minutes from revocation time so this is a warning for anyone relying on this api 
+    //       to confirm the revocation status, to expect waiting for a period of time before assuming anything about the result.
+    //
+    // NOTE: SecTrust reports might be delayed coz that is exactly what OS sees before AMFI flags the cert as revoked and doesn't let app opens
+    //       so we still check that first just in case our live reporting wasn't good.
     public static func validate(_ certificate: ALTCertificate) async throws {
         // 1. Expiration check
         if certificate.expiryDate <= Date() {
@@ -82,19 +89,26 @@ public struct OCSPValidator {
             throw OCSPValidationError.missingIntermediateCertificate
         }
         
-        // 2. Direct un-cached HTTP OCSP Live Query
-        let liveStatus = await fetchDirectLiveOCSPStatus(cert: secCert, issuerCert: wwdrCert)
-        debugLog("[OCSPValidator] Direct Live HTTP OCSP status for \(certificate.serialNumber): \(liveStatus)")
-        if liveStatus == .revoked {
-            debugLog("[OCSPValidator] Certificate \(certificate.serialNumber) confirmed REVOKED by direct live OCSP query!")
-            throw OCSPValidationError.revoked
-        }
-        
-        // 3. Apple SecTrust Evaluation
+        // 2. Apple SecTrust Evaluation (Fast local OS check)
         let isSecTrustRevoked = checkRevocationWithSecTrust(secCert: secCert, wwdrCert: wwdrCert)
         if isSecTrustRevoked {
             debugLog("[OCSPValidator] Certificate \(certificate.serialNumber) confirmed REVOKED by SecTrust evaluation!")
             throw OCSPValidationError.revoked
+        }
+        
+        // 3. Direct un-cached HTTP OCSP Live Query
+        let liveStatus = await fetchDirectLiveOCSPStatus(cert: secCert, issuerCert: wwdrCert)
+        debugLog("[OCSPValidator] Direct Live HTTP OCSP status for \(certificate.serialNumber): \(liveStatus)")
+        
+        switch liveStatus {
+        case .revoked:
+            debugLog("[OCSPValidator] Certificate \(certificate.serialNumber) confirmed REVOKED by direct live OCSP query!")
+            throw OCSPValidationError.revoked
+        case .error(let message):
+            debugLog("[OCSPValidator] Direct Live HTTP OCSP query error for \(certificate.serialNumber): \(message)")
+            throw OCSPValidationError.ocspServerError(message)
+        case .valid, .unknown:
+            break
         }
     }
     
