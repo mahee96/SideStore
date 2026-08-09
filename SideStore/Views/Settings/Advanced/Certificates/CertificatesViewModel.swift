@@ -115,6 +115,10 @@ class CertificatesViewModel: ObservableObject {
     }
     
     func saveLocalCertificate(_ cert: ALTCertificate) {
+        if let existing = self.certificates.first(where: { $0.serialNumber == cert.serialNumber }) {
+            if cert.machineName == nil { cert.machineName = existing.machineName }
+            if cert.machineIdentifier == nil { cert.machineIdentifier = existing.machineIdentifier }
+        }
         CertificateManager.shared.saveCertificate(cert)
     }
     
