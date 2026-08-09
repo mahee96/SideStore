@@ -1278,24 +1278,16 @@ extension SettingsViewController
             case .backupAndRestore:
                 let backupView = BackupAndRestoreView()
                 let vc = UIHostingController(rootView: backupView)
-                
-                let appearance = UINavigationBarAppearance()
-                appearance.configureWithDefaultBackground()
-                vc.navigationItem.scrollEdgeAppearance = appearance
-                vc.navigationItem.standardAppearance = appearance
-                
-                navigationController?.pushViewController(vc, animated: true)
+                vc.view.backgroundColor = .settingsBackground
+                vc.title = NSLocalizedString("Backup & Restore", comment: "")
+                self.prepare(for: UIStoryboardSegue(identifier: "diagnostics", source: self, destination: vc), sender: nil)
                 
             case .userCustomizations:
                 let userCustomizationsView = UserCustomizationsView()
                 let vc = UIHostingController(rootView: userCustomizationsView)
-                
-                let appearance = UINavigationBarAppearance()
-                appearance.configureWithDefaultBackground()
-                vc.navigationItem.scrollEdgeAppearance = appearance
-                vc.navigationItem.standardAppearance = appearance
-                
-                navigationController?.pushViewController(vc, animated: true)
+                vc.view.backgroundColor = .settingsBackground
+                vc.title = NSLocalizedString("User Customizations", comment: "")
+                self.prepare(for: UIStoryboardSegue(identifier: "diagnostics", source: self, destination: vc), sender: nil)
                 
             case .refreshAttempts: break
             }
