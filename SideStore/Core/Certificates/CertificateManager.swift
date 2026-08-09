@@ -290,7 +290,7 @@ public final class CertificateManager: @unchecked Sendable {
     public func getSigningCertificate(at url: URL, externalPassword: String? = nil, withPlistFallback: Bool = true) -> ALTCertificate? {
         guard let bundleID = ALTApplication(fileURL: url)?.bundleIdentifier else 
         {
-            self.verboseLog("[CertificateManager] Could not resolve bundleIdentifier for \(url.path)")
+            verboseLog("[CertificateManager] Could not resolve bundleIdentifier for \(url.path)")
             let active = activeCertificate?.certificate
             debugLog("[CertificateManager] getSigningCertificate: Falling back to activeCertificate: \(active?.serialNumber ?? "nil")")
             return active
@@ -300,27 +300,27 @@ public final class CertificateManager: @unchecked Sendable {
                      bundleID == Bundle.Info.appbundleIdentifier ||
                      url.standardizedFileURL == Bundle.main.bundleURL.standardizedFileURL
 
-        self.verboseLog("[CertificateManager] getSigningCertificate started for url: \(url.path), isSelf: \(isSelf), bundleID: \(bundleID)")
+        verboseLog("[CertificateManager] getSigningCertificate started for url: \(url.path), isSelf: \(isSelf), bundleID: \(bundleID)")
 
         // STEP 1: Mach-O Binary Check (Only for SideStore itself)
         if isSelf {
             let bundleURL = Bundle.main.bundleURL
-            self.verboseLog("[CertificateManager] Step 1 (Mach-O): Checking \(bundleURL.path)...")
+            verboseLog("[CertificateManager] Step 1 (Mach-O): Checking \(bundleURL.path)...")
             if let binaryCert = readBinaryCertificate(at: bundleURL) {
                 debugLog("[CertificateManager] getSigningCertificate: Loaded signing certificate from main bundle Mach-O (serial: \(binaryCert.serialNumber)).")
                 return binaryCert
             } else {
-                self.verboseLog("[CertificateManager] Step 1 (Mach-O): No valid leaf certificate extracted from Mach-O.")
+                verboseLog("[CertificateManager] Step 1 (Mach-O): No valid leaf certificate extracted from Mach-O.")
             }
 
             // STEP 2: Embedded ALTCertificate.p12 Check (With private key decryption)
-            self.verboseLog("[CertificateManager] Step 2 (Embedded p12): Checking \(bundleURL.path)...")
+            verboseLog("[CertificateManager] Step 2 (Embedded p12): Checking \(bundleURL.path)...")
 
             if let targetBundle = Bundle(url: bundleURL),
                FileManager.default.fileExists(atPath: targetBundle.certificateURL.path),
                let data = try? Data(contentsOf: targetBundle.certificateURL) 
             {
-                self.verboseLog("[CertificateManager] Step 2 (Embedded p12): Found ALTCertificate.p12 at \(targetBundle.certificateURL.path). Attempting decryption...")
+                verboseLog("[CertificateManager] Step 2 (Embedded p12): Found ALTCertificate.p12 at \(targetBundle.certificateURL.path). Attempting decryption...")
                 let possiblePasswords: [(name: String, value: String?)] = [
                     ("externalPassword", externalPassword),
                     ("machineIdentifier", activeCertificate?.certificate.machineIdentifier),
@@ -335,37 +335,37 @@ public final class CertificateManager: @unchecked Sendable {
                         return cert
                     }
                 }
-                self.verboseLog("[CertificateManager] Step 2 (Embedded p12): Failed to decrypt ALTCertificate.p12 with available passwords.")
+                verboseLog("[CertificateManager] Step 2 (Embedded p12): Failed to decrypt ALTCertificate.p12 with available passwords.")
             } else {
-                self.verboseLog("[CertificateManager] Step 2 (Embedded p12): No ALTCertificate.p12 found at \(bundleURL.path).")
+                verboseLog("[CertificateManager] Step 2 (Embedded p12): No ALTCertificate.p12 found at \(bundleURL.path).")
             }
 
             // STEP 3: Embedded DER Check (Diagnostic logging only - NEVER returned for signing)
             let embeddedDerURL = bundleURL.appendingPathComponent("ALTCertificate.der")
             if FileManager.default.fileExists(atPath: embeddedDerURL.path) {
                 if let derData = try? Data(contentsOf: embeddedDerURL), let cert = ALTCertificate(data: derData) {
-                    self.verboseLog("[CertificateManager] Step 3 (Embedded DER): Found ALTCertificate.der at \(embeddedDerURL.path) (serial: \(cert.serialNumber)). (Diagnostic log only; DER lacks private key).")
+                    verboseLog("[CertificateManager] Step 3 (Embedded DER): Found ALTCertificate.der at \(embeddedDerURL.path) (serial: \(cert.serialNumber)). (Diagnostic log only; DER lacks private key).")
                 } else {
-                    self.verboseLog("[CertificateManager] Step 3 (Embedded DER): File exists at \(embeddedDerURL.path) but failed to parse.")
+                    verboseLog("[CertificateManager] Step 3 (Embedded DER): File exists at \(embeddedDerURL.path) but failed to parse.")
                 }
             } else {
-                self.verboseLog("[CertificateManager] Step 3 (Embedded DER): No embedded ALTCertificate.der found at \(embeddedDerURL.path).")
+                verboseLog("[CertificateManager] Step 3 (Embedded DER): No embedded ALTCertificate.der found at \(embeddedDerURL.path).")
             }
         } else {
             // STEP 2b: App Group Cached Certificate Check (For third-party apps)
             let appDirectory = InstalledApp.appsDirectoryURL.appendingPathComponent(bundleID)
             let certURL = appDirectory.appendingPathComponent("signing_certificate.der")
-            self.verboseLog("[CertificateManager] Step 2b (App Group Cached Cert): Checking \(appDirectory.path)...")
+            verboseLog("[CertificateManager] Step 2b (App Group Cached Cert): Checking \(appDirectory.path)...")
 
             if FileManager.default.fileExists(atPath: certURL.path) {
                 if let derData = try? Data(contentsOf: certURL), let cert = ALTCertificate(data: derData) {
                     debugLog("[CertificateManager] getSigningCertificate: Loaded cached signing certificate from App Group \(certURL.path) (serial: \(cert.serialNumber))")
                     return cert
                 } else {
-                    self.verboseLog("[CertificateManager] Step 2b (App Group Cached Cert): File exists at \(certURL.path) but failed to parse.")
+                    verboseLog("[CertificateManager] Step 2b (App Group Cached Cert): File exists at \(certURL.path) but failed to parse.")
                 }
             }
-            self.verboseLog("[CertificateManager] Step 2b (App Group Cached Cert): No cached certificate found in App Group at \(appDirectory.path).")
+            verboseLog("[CertificateManager] Step 2b (App Group Cached Cert): No cached certificate found in App Group at \(appDirectory.path).")
         }
 
         let active = activeCertificate?.certificate
