@@ -220,6 +220,7 @@
 				Core/Auth/DeveloperPortalService.swift,
 				Core/Certificates/CertificateASN1Parser.swift,
 				Core/Certificates/CodeSignValidator.swift,
+				Core/Certificates/OCSPValidator.swift,
 				Core/DeviceApi/EMProxyWrapper.swift,
 				Core/DeviceApi/MinimuxerWrapper.swift,
 				Core/Logging/OperationLogging.swift,
