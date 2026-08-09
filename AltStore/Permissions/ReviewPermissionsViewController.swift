@@ -29,7 +29,7 @@ class ReviewPermissionsViewController: UICollectionViewController
     let app: AppProtocol
     let permissions: [ALTEntitlement]
     
-    let permissionsMode: VerifyAppOperation.PermissionReviewMode
+    let permissionsMode: PermissionReviewMode
     
     var completionHandler: ((Result<Void, Error>) -> Void)?
     
@@ -42,7 +42,7 @@ class ReviewPermissionsViewController: UICollectionViewController
     
     private var headerRegistration: UICollectionView.SupplementaryRegistration<UICollectionViewListCell>!
     
-    init(app: AppProtocol, permissions: [ALTEntitlement], mode: VerifyAppOperation.PermissionReviewMode)
+    init(app: AppProtocol, permissions: [ALTEntitlement], mode: PermissionReviewMode)
     {
         self.app = app
         self.permissions = permissions

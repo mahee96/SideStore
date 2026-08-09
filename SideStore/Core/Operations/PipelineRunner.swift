@@ -46,8 +46,8 @@ final class PipelineRunner: Sendable
     
     @discardableResult
     func performSingleOperation(_ operation: AppOperation,
-                                presentingViewController: UIViewController?,
-                                context: AuthenticatedOperationContext = AuthenticatedOperationContext(),
+                                handler: PipelineExecutionHandler,
+                                context: AuthenticatedOperationContext,
                                 completionHandler: @escaping (Result<InstalledApp, Error>) -> Void) -> RefreshGroup
     {
         let group = RefreshGroup(context: context)
@@ -67,7 +67,7 @@ final class PipelineRunner: Sendable
         group.activeTask = Task.detached {
             do {
                 debugLog("[AppManager] performSingleOperation executing task for: \(operation.bundleIdentifier)")
-                try await self.perform([operation], presentingViewController: presentingViewController, group: group)
+                try await self.perform([operation], handler: handler, group: group)
             } catch {
                 debugLog("[AppManager] performSingleOperation task failed for: \(operation.bundleIdentifier) with error: \(error)")
                 completionHandler(.failure(error))
@@ -78,10 +78,11 @@ final class PipelineRunner: Sendable
     }
     
     func performVoidOperation(_ operation: AppOperation,
-                                      presentingViewController: UIViewController?,
-                                      completionHandler: @escaping (Result<Void, Error>) -> Void)
+                              handler: PipelineExecutionHandler,
+                              context: AuthenticatedOperationContext,
+                              completionHandler: @escaping (Result<Void, Error>) -> Void)
     {
-        self.performSingleOperation(operation, presentingViewController: presentingViewController) { (result) in
+        self.performSingleOperation(operation, handler: handler, context: context) { (result) in
             switch result {
             case .success:
                 completionHandler(.success(()))
@@ -93,8 +94,8 @@ final class PipelineRunner: Sendable
     
     @discardableResult
     func perform(_ operations: [AppOperation],
-                         presentingViewController: UIViewController?,
-                         group: RefreshGroup) async throws -> RefreshGroup
+                 handler: PipelineExecutionHandler,
+                 group: RefreshGroup) async throws -> RefreshGroup
     {
         let operations = operations.filter { progress.progress(for: $0) == nil || progress.progress(for: $0)?.isCancelled == true }
         guard !operations.isEmpty else { throw OperationError.cancelled }
@@ -156,21 +157,19 @@ final class PipelineRunner: Sendable
                 group.progress.addChild(progress, withPendingUnitCount: 100 / Int64(operations.count))
             }
             
-            // take whatever it is - valid or nil, both works
-            group.context.presentingViewController = presentingViewController
+            // Remove pipelineProvider assignment on group.context (which is AuthenticatedOperationContext and doesn't hold it anymore)
             
             /* Authenticate (if necessary) */
             if group.context.session == nil
             {
                 do {
-                    let (team, cert, session) = try await AuthManager.shared.performAuthenticationOperation(
+                    let result = try await AuthManager.shared.performAuthenticationOperation(
                         context: group.context,
-                        presentingViewController: presentingViewController,
                         skipDeviceRegistration: false
                     )
-                    group.context.team = team
-                    group.context.signingCertificate = cert
-                    group.context.session = session
+                    group.context.team = result.team
+                    group.context.signingCertificate = result.certificate
+                    group.context.session = result.session
                 } catch {
                     group.context.error = error
                     throw error
@@ -184,7 +183,7 @@ final class PipelineRunner: Sendable
                 operation.bundleIdentifier == StoreApp.altstoreAppID
                 
                 if isSideStore {
-                    return presentingViewController is ResignAltStoreViewController
+                    return handler.preflightChecksHandler.isResignActive == true
                 }
                 return true
             }
@@ -192,7 +191,7 @@ final class PipelineRunner: Sendable
             do {
                 let validateOp = try PreflightChecksOperation(
                     operations: unhandledOperations,
-                    presentingViewController: presentingViewController,
+                    handler: handler.preflightChecksHandler,
                     context: group.context
                 )
                 try await validateOp.execute()
@@ -206,7 +205,7 @@ final class PipelineRunner: Sendable
             try await withThrowingTaskGroup(of: Void.self) { taskGroup in
                 for operation in operations {
                     taskGroup.addTask {
-                        try await self.performOperation(for: operation, group: group)
+                        try await self.performOperation(for: operation, handler: handler, group: group)
                     }
                 }
                 while let _ = try await taskGroup.next() {}
@@ -219,7 +218,7 @@ final class PipelineRunner: Sendable
         return group
     }
     
-    func performOperation(for operation: AppOperation, group: RefreshGroup) async throws {
+    func performOperation(for operation: AppOperation, handler: PipelineExecutionHandler, group: RefreshGroup) async throws {
         debugLog("[AppManager] performOperation: Starting execution for app: \(operation.bundleIdentifier)")
         defer{
             // request update view context's in-mem coredata caches (coz we worked so far on bg context)
@@ -228,7 +227,7 @@ final class PipelineRunner: Sendable
             }
         }
         do {
-            let result = try await self.performPipeline(for: operation, group: group)
+            let result = try await self.performPipeline(for: operation, handler: handler, group: group)
             progress.set(nil, for: operation)
             debugLog("[AppManager] performOperation: completed successfully. progress was reset for installedApp: \(result.bundleIdentifier)")
             
@@ -281,14 +280,15 @@ final class PipelineRunner: Sendable
         }
     }
     
-    private func performPipeline(for operation: AppOperation, group: RefreshGroup) async throws -> InstalledApp
+    private func performPipeline(for operation: AppOperation, handler: PipelineExecutionHandler, group: RefreshGroup) async throws -> InstalledApp
     {
         let pipelineSteps = PipelineStepDefinition.steps(for: operation)
         let context = InstallAppOperationContext(
             pipelineSteps: pipelineSteps,
             bundleIdentifier: operation.bundleIdentifier,
             authenticatedContext: group.context,
-            additionalEntitlements: defaultEntitlements,
+            handler: handler,
+            additionalEntitlements: defaultEntitlements
         )
         
         if case .install(_, let customID) = operation { context.customBundleIdentifier  = customID }
@@ -314,12 +314,13 @@ final class PipelineRunner: Sendable
             }
         }
         
-        let permissionReviewMode: VerifyAppOperation.PermissionReviewMode
+        let permissionReviewMode: PermissionReviewMode
         switch operation {
-        case .install: permissionReviewMode = .all
-        case .update: permissionReviewMode = .added
-        default: permissionReviewMode = .none
+            case .install: permissionReviewMode = .all
+            case .update: permissionReviewMode = .added
+            default: permissionReviewMode = .none
         }
+        
         let permissionsMode = UserDefaults.shared.permissionCheckingDisabled ? .none : permissionReviewMode
         let operationProgress = progress.progress(for: operation)
         return try await PipelineExecutor.shared.executePipeline(

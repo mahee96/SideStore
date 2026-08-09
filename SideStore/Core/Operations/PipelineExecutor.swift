@@ -26,7 +26,7 @@ final class PipelineExecutor: @unchecked Sendable {
         operation: AppOperation,
         group: RefreshGroup,
         downloadingApp: AppProtocol,
-        permissionsMode: VerifyAppOperation.PermissionReviewMode,
+        permissionsMode: PermissionReviewMode,
         operationProgress: Progress?
     ) async throws -> InstalledApp {
         var finalApp: InstalledApp?
@@ -57,7 +57,7 @@ final class PipelineExecutor: @unchecked Sendable {
         appOperation: AppOperation,
         group: RefreshGroup,
         downloadingApp: AppProtocol,
-        permissionsMode: VerifyAppOperation.PermissionReviewMode,
+        permissionsMode: PermissionReviewMode,
         progress: Progress?
     ) async throws -> InstalledApp? {
         var result: Any? = "()"
@@ -71,9 +71,9 @@ final class PipelineExecutor: @unchecked Sendable {
             switch step {
             case .preflightChecks:
                 loggerType = PreflightChecksOperation.self
-                let presentingViewController = group.context.presentingViewController
+                let handler = context.handler.preflightChecksHandler
                 let step = try PreflightChecksOperation(operations: [appOperation],
-                                                        presentingViewController: presentingViewController,
+                                                        handler: handler,
                                                         context: group.context)
                 result = try await step.execute(parentProgress: progress)
                 return nil

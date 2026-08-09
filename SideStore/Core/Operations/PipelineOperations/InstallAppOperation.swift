@@ -5,7 +5,7 @@
 //  Created by Riley Testut on 6/19/19.
 //  Copyright © 2019 Riley Testut. All rights reserved.
 //
-@preconcurrency import UIKit
+
 import UserNotifications
 import Foundation
 import Network
@@ -353,16 +353,8 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
     }
         
     private func suspendToHomeScreen() {
-        // using GCD on main queue for determinism
-        DispatchQueue.main.async {
-            self.debugLog("[InstallAppOperation] Going home")
-            if self.context.shouldTurnOffData {
-                UIApplication.shared.open(shortcutURLonDelay, options: [:]) { _ in
-                    self.debugLog("[InstallAppOperation] Cell OFF Shortcut finished execution.")
-                }
-            }
-            UIApplication.shared.perform(#selector(NSXPCConnection.suspend))
-        }
+        let handler = self.context.handler.installAppHandler
+        handler.suspendToHomeScreen(shouldTurnOffData: self.context.shouldTurnOffData)
     }
 
     private func handleSelfReinstallation(for installedApp: InstalledApp) {
@@ -370,8 +362,8 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
         Task.detached {
             try? await Task.sleep(nanoseconds: Self.selfInstallSuspendDelayNs)
 
-            let state = await MainActor.run { UIApplication.shared.applicationState }
-            guard state == .active else {
+            let handler = self.context.handler.installAppHandler
+            guard handler.isAppInForeground else {
                 self.debugLog("[InstallAppOperation] We are not in the foreground, let's not do anything")
                 return
             }
@@ -395,32 +387,8 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
                 default:
                     self.verboseLog("[InstallAppOperation] Notifications are not enabled")
 
-                    await MainActor.run {
-                        let alert = UIAlertController(
-                            title: "Finish Refresh",
-                            message: """
-                            To finish refreshing, SideStore must be moved to the background. To do this, you can either go to the Home Screen manually or by hitting Continue. Please reopen SideStore after doing this.
-                            """,
-                            preferredStyle: .alert
-                        )
-                        alert.addAction(UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .default, handler: { _ in
-                            self.suspendToHomeScreen()
-                        }))
-
-                        let presenter = self.context.authenticatedContext.presentingViewController
-                                        ?? UIApplication.shared.connectedScenes
-                                            .compactMap { ($0 as? UIWindowScene)?.keyWindow }
-                                            .first?.rootViewController
-
-                        if var topVC = presenter {
-                            while let presented = topVC.presentedViewController {
-                                topVC = presented
-                            }
-                            topVC.present(alert, animated: true)
-                        } else {
-                            self.debugLog("[InstallAppOperation] No view controller available, suspending directly")
-                            self.suspendToHomeScreen()
-                        }
+                    handler.requestBackgroundSuspension {
+                        self.suspendToHomeScreen()
                     }
                 }
         }

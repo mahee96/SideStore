@@ -6,7 +6,7 @@
 //  Copyright © 2020 Riley Testut. All rights reserved.
 //
 
-@preconcurrency import UIKit
+
 import Foundation
 import CryptoKit
 @preconcurrency import AltStoreCore
@@ -21,12 +21,10 @@ private extension ALTEntitlement {
     ]
 }
 
-extension VerifyAppOperation {
-    enum PermissionReviewMode {
-        case none
-        case all
-        case added
-    }
+enum PermissionReviewMode {
+    case none
+    case all
+    case added
 }
 
 final class VerifyAppOperation: BasePipelineOperation<InstallAppOperationContext, Bool>, @unchecked Sendable {
@@ -126,14 +124,13 @@ final class VerifyAppOperation: BasePipelineOperation<InstallAppOperationContext
             return
         }
         
+        let handler = self.context.handler.entitlementsReviewHandler
         switch self.permissionsMode {
         case .none: break
         case .all:
-            guard let presentingViewController = self.context.presentingViewController else { break } // Don't fail just because we can't show permissions.
-            
             let allEntitlements = allPermissions.compactMap { $0 as? ALTEntitlement }
             if !allEntitlements.isEmpty {
-                try await self.review(allEntitlements, for: appBundle, mode: .all, presentingViewController: presentingViewController)
+                try await handler.reviewPermissions(allEntitlements, for: appBundle, mode: .all)
             }
             
         case .added:
@@ -148,10 +145,7 @@ final class VerifyAppOperation: BasePipelineOperation<InstallAppOperationContext
             // Make sure all entitlements already exist in previousApp.
             let addedEntitlements = Array(allPermissions.lazy.compactMap { $0 as? ALTEntitlement }.filter { !previousEntitlements.contains($0) })
             if !addedEntitlements.isEmpty {
-                // _DO_ throw error if there isn't a presentingViewController.
-                guard let presentingViewController = self.context.presentingViewController else { throw VerificationError.addedPermissions(addedEntitlements, appVersion: appVersion) }
-                
-                try await self.review(addedEntitlements, for: appBundle, mode: .added, presentingViewController: presentingViewController)
+                try await handler.reviewPermissions(addedEntitlements, for: appBundle, mode: .added)
             }
         }
     }
@@ -238,24 +232,6 @@ final class VerifyAppOperation: BasePipelineOperation<InstallAppOperationContext
             }
             
             throw error
-        }
-    }
-    
-    @MainActor @available(iOS 15, *)
-    private func review(_ permissions: [ALTEntitlement], for app: AppProtocol, mode: PermissionReviewMode, presentingViewController: UIViewController) async throws {
-        let reviewPermissionsViewController = ReviewPermissionsViewController(app: app, permissions: permissions, mode: mode)
-        let navigationController = UINavigationController(rootViewController: reviewPermissionsViewController)
-        
-        defer {
-            navigationController.dismiss(animated: true)
-        }
-        
-        try await withCheckedThrowingContinuation { continuation in
-            reviewPermissionsViewController.completionHandler = { result in
-                continuation.resume(with: result)
-            }
-            
-            presentingViewController.present(navigationController, animated: true)
         }
     }
 }

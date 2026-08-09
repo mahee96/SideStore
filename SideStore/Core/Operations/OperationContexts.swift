@@ -6,7 +6,7 @@
 //  Copyright © 2019 Riley Testut. All rights reserved.
 //
 
-@preconcurrency import UIKit
+
 import Foundation
 import CoreData
 import Network
@@ -35,18 +35,16 @@ protocol WeightedOperationContext: AnyObject {
 class OperationContext: WeightedOperationContext
 {
     var error: Error?
-    var presentingViewController: UIViewController?
     var dbBackgroundContext: NSManagedObjectContext?
 
     private var stepItems: [OperationStepItem]
     private var currentIndex = 0
     private var remainingReuses: [Int: Int] = [:]
 
-    fileprivate init(stepItems: [OperationStepItem] = [], error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
+    fileprivate init(stepItems: [OperationStepItem] = [], error: Error? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
     {
         self.stepItems = stepItems
         self.error = error
-        self.presentingViewController = presentingViewController
         self.dbBackgroundContext = dbBackgroundContext
     }
 
@@ -55,7 +53,6 @@ class OperationContext: WeightedOperationContext
         self.stepItems = context.stepItems
         self.currentIndex = context.currentIndex
         self.error = context.error
-        self.presentingViewController = context.presentingViewController
         self.dbBackgroundContext = context.dbBackgroundContext
     }
 
@@ -120,10 +117,10 @@ class StandaloneOperationContext: OperationContext
 {
     let steps: [StandaloneExecutionStep]
 
-    init(steps: [StandaloneExecutionStep], error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
+    init(steps: [StandaloneExecutionStep], error: Error? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
     {
         self.steps = steps
-        super.init(stepItems: steps.map { OperationStepItem(step: $0.step, weight: $0.weight, maxReuse: $0.maxReuse) }, error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
+        super.init(stepItems: steps.map { OperationStepItem(step: $0.step, weight: $0.weight, maxReuse: $0.maxReuse) }, error: error, dbBackgroundContext: dbBackgroundContext)
     }
 
     init(context: StandaloneOperationContext)
@@ -138,9 +135,9 @@ class CachedOperationContext: StandaloneOperationContext
     var appIDs: [ALTAppID]?
     var appGroups: [ALTAppGroup]?
 
-    override init(steps: [StandaloneExecutionStep] = [], error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
+    override init(steps: [StandaloneExecutionStep] = [], error: Error? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
     {
-        super.init(steps: steps, error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
+        super.init(steps: steps, error: error, dbBackgroundContext: dbBackgroundContext)
     }
 
     override init(context: StandaloneOperationContext)
@@ -164,12 +161,23 @@ final class AuthenticatedOperationContext: CachedOperationContext
     
     var isSideStoreResignDismissed: Bool = false
 
-    init(error: Error? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
-    {
+    let authenticationHandler: AuthenticationHandler
+    let anisetteServerHandler: AnisetteServerHandler
+
+    init(
+        authenticationHandler: AuthenticationHandler,
+        anisetteServerHandler: AnisetteServerHandler,
+        error: Error? = nil,
+        dbBackgroundContext: NSManagedObjectContext? = nil
+    ) {
+        self.authenticationHandler = authenticationHandler
+        self.anisetteServerHandler = anisetteServerHandler
         super.init(steps: .authenticate, error: error, dbBackgroundContext: dbBackgroundContext)
     }
 
     init(context: AuthenticatedOperationContext) {
+        self.authenticationHandler = context.authenticationHandler
+        self.anisetteServerHandler = context.anisetteServerHandler
         super.init(context: context)
         self.session = context.session
         self.team = context.team
@@ -182,16 +190,23 @@ final class AuthenticatedOperationContext: CachedOperationContext
 class PipelineOperationContext: OperationContext
 {
     let pipelineSteps: [PipelineExecutionStep]
+    let handler: PipelineExecutionHandler
 
-    init(pipelineSteps: [PipelineExecutionStep], error: Error? = nil, presentingViewController: UIViewController? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
-    {
+    init(
+        pipelineSteps: [PipelineExecutionStep],
+        handler: PipelineExecutionHandler,
+        error: Error? = nil,
+        dbBackgroundContext: NSManagedObjectContext? = nil
+    ) {
         self.pipelineSteps = pipelineSteps
-        super.init(stepItems: pipelineSteps.map { OperationStepItem(step: $0.step, weight: $0.weight, maxReuse: 1) }, error: error, presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
+        self.handler = handler
+        super.init(stepItems: pipelineSteps.map { OperationStepItem(step: $0.step, weight: $0.weight, maxReuse: 1) }, error: error, dbBackgroundContext: dbBackgroundContext)
     }
 
     init(context: PipelineOperationContext)
     {
         self.pipelineSteps = context.pipelineSteps
+        self.handler = context.handler
         super.init(context: context)
     }
 }
@@ -226,14 +241,18 @@ class AppOperationContext: PipelineOperationContext
     }
     private var _error: Error?
 
-    init(pipelineSteps: [PipelineExecutionStep], bundleIdentifier: String, authenticatedContext: AuthenticatedOperationContext)
-    {
+    init(
+        pipelineSteps: [PipelineExecutionStep],
+        bundleIdentifier: String,
+        authenticatedContext: AuthenticatedOperationContext,
+        handler: PipelineExecutionHandler
+    ) {
         self.bundleIdentifier = bundleIdentifier
         self.authenticatedContext = authenticatedContext
         super.init(
             pipelineSteps: pipelineSteps,
+            handler: handler,
             error: nil,
-            presentingViewController: authenticatedContext.presentingViewController,
             dbBackgroundContext: authenticatedContext.dbBackgroundContext
         )
     }
@@ -286,9 +305,10 @@ class InstallAppOperationContext: AppOperationContext
         pipelineSteps: [PipelineExecutionStep],
         bundleIdentifier: String,
         authenticatedContext: AuthenticatedOperationContext,
+        handler: PipelineExecutionHandler,
         additionalEntitlements: [ALTEntitlement: any Sendable] = [:]
     ){
-        super.init(pipelineSteps: pipelineSteps, bundleIdentifier: bundleIdentifier, authenticatedContext: authenticatedContext)
+        super.init(pipelineSteps: pipelineSteps, bundleIdentifier: bundleIdentifier, authenticatedContext: authenticatedContext, handler: handler)
     }
 
 }

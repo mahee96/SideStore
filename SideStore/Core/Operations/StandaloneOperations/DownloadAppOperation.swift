@@ -80,8 +80,8 @@ final class DownloadAppOperation: BasePipelineOperation<InstallAppOperationConte
             return try await self.download(appVersion ?? app)
             
         } catch let error as VerificationError where error.code == .iOSVersionNotSupported {
-            guard let presentingViewController = self.context.presentingViewController,
-                  let storeApp = app.storeApp,
+            let handler = self.context.handler.unsupportedVersionHandler
+            guard let storeApp = app.storeApp,
                   let latestSupportedVersion = storeApp.latestSupportedVersion,
                   case let version = latestSupportedVersion.version,
                   version != storeApp.installedApp?.version
@@ -96,28 +96,17 @@ final class DownloadAppOperation: BasePipelineOperation<InstallAppOperationConte
                 }
             }
 
-            let title = NSLocalizedString("Unsupported iOS Version", comment: "")
-            let message = error.localizedDescription + "\n\n" + NSLocalizedString("Would you like to download the last version compatible with this device instead?", comment: "")
             let localizedVersion = latestSupportedVersion.localizedVersion
+            let shouldDownload = try await handler.resolveUnsupportediOSVersion(
+                errorDescription: error.localizedDescription,
+                appName: self.appName,
+                compatibleVersion: localizedVersion
+            )
 
-            return try await withCheckedThrowingContinuation { continuation in
-                Task { @MainActor in
-                    let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
-                    alertController.addAction(UIAlertAction(title: UIAlertAction.cancel.title, style: UIAlertAction.cancel.style) { _ in
-                        continuation.resume(throwing: OperationError.cancelled)
-                    })
-                    alertController.addAction(UIAlertAction(title: String(format: NSLocalizedString("Download %@ %@", comment: ""), self.appName, localizedVersion), style: .default) { _ in
-                        Task {
-                            do {
-                                let downloadedApp = try await self.download(latestSupportedVersion)
-                                continuation.resume(returning: downloadedApp)
-                            } catch let downloadError {
-                                continuation.resume(throwing: downloadError)
-                            }
-                        }
-                    })
-                    presentingViewController.present(alertController, animated: true)
-                }
+            if shouldDownload {
+                return try await self.download(latestSupportedVersion)
+            } else {
+                throw OperationError.cancelled
             }
         }
     }

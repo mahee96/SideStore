@@ -1,15 +1,22 @@
+//
+//  StandaloneExecutionHandler.swift
+//  SideStore
+//
 //  Created by Magesh K on 8/9/26.
 //  Copyright © 2026 SideStore. All rights reserved.
+//
 
 import UIKit
 import AltSign
 import AltStoreCore
 
-class AuthenticationUIHandler: AuthenticationHandler {
+class StandaloneHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
+    
     private weak var presentingViewController: UIViewController?
     private weak var presentedAuthVC: AuthenticationViewController?
+    
     private var credentialsContinuation: CheckedContinuation<(String, String), Error>?
-    private var activeAuthCompletionHandler: ((Result<(ALTAccount, ALTAppleAPISession, ALTTeam, ALTCertificate?), Error>) -> Void)?
+    private var activeAuthCompletionHandler: ((Result<(ALTAccount, ALTAppleAPISession), Error>) -> Void)?
     
     private lazy var navigationController: UINavigationController = {
         let storyboard = UIStoryboard(name: "Authentication", bundle: nil)
@@ -80,8 +87,8 @@ class AuthenticationUIHandler: AuthenticationHandler {
         if let completionHandler = self.activeAuthCompletionHandler {
             self.activeAuthCompletionHandler = nil
             switch result {
-            case .success((let account, let session, let team, let certificate)):
-                completionHandler(.success((account, session, team, certificate)))
+            case .success((let account, let session, _, _)):
+                completionHandler(.success((account, session)))
             case .failure(let error):
                 completionHandler(.failure(error))
             }
@@ -226,6 +233,27 @@ class AuthenticationUIHandler: AuthenticationHandler {
         } else {
             let anchorVC = self.presentingViewController?.presentedViewController ?? self.presentingViewController
             anchorVC?.present(viewController, animated: true)
+        }
+    }
+
+
+
+    @MainActor
+    func warnOutdatedAnisetteServer() async throws -> Bool {
+        guard let presenter = self.presentingViewController else {
+            return false
+        }
+        
+        return await withCheckedContinuation { continuation in
+            let alert = UIAlertController(title: "WARNING: Outdated anisette server", message: "We've detected you are using an older anisette server. Using this server has a higher likelihood of locking your account and causing other issues. Are you sure you want to continue?", preferredStyle: UIAlertController.Style.alert)
+            alert.addAction(UIAlertAction(title: "Continue", style: UIAlertAction.Style.destructive, handler: { action in
+                continuation.resume(returning: true)
+            }))
+            alert.addAction(UIAlertAction(title: "Cancel", style: UIAlertAction.Style.cancel, handler: { action in
+                continuation.resume(returning: false)
+            }))
+            
+            presenter.present(alert, animated: true)
         }
     }
 }

@@ -6,18 +6,18 @@
 //  Copyright © 2026 AltStore. All rights reserved.
 //
 
-@preconcurrency import UIKit
+
 import Foundation
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
 final class PreflightChecksOperation: BasePipelineOperation<AuthenticatedOperationContext, Bool>, @unchecked Sendable {
     let operations: [AppOperation]
-    let presentingViewController: UIViewController?
+    let handler: PreflightChecksHandler?
 
-    init(operations: [AppOperation], presentingViewController: UIViewController?, context: AuthenticatedOperationContext) throws {
+    init(operations: [AppOperation], handler: PreflightChecksHandler?, context: AuthenticatedOperationContext) throws {
         self.operations = operations
-        self.presentingViewController = presentingViewController
+        self.handler = handler
         try super.init(context: context)
     }
 
@@ -79,19 +79,11 @@ final class PreflightChecksOperation: BasePipelineOperation<AuthenticatedOperati
 
             switch operation {
                 case .resign, .install:
-                    var presenter = await MainActor.run{
-                        var presenter = presentingViewController ?? UIApplication.shared.connectedScenes
-                            .compactMap({ $0 as? UIWindowScene })
-                            .flatMap({ $0.windows })
-                            .first(where: { $0.isKeyWindow })?.rootViewController
-                        while let presented = presenter?.presentedViewController, !presented.isBeingDismissed {
-                            presenter = presented
-                        }
-                        return presenter
+                    guard let handler = self.handler else {
+                        throw OperationError.cancelled
                     }
                     
-                    let shouldContinue = await presentAlertDialog(
-                        presenter: presenter,
+                    let shouldContinue = await handler.resolveBundleIDMismatch(
                         targetID: targetID,
                         activeEffectiveID: activeEffectiveID
                     )
@@ -106,31 +98,5 @@ final class PreflightChecksOperation: BasePipelineOperation<AuthenticatedOperati
         }
         self.setProgress(100)
         return true
-    }
-    
-    @MainActor
-    private func presentAlertDialog(presenter: UIViewController?, targetID: String, activeEffectiveID: String) async -> Bool {
-        guard let presenter = presenter else {
-            return false
-        }
-        
-        debugLog("[ValidateSideStoreBundleIDOperation] Presenting SideStore bundle ID mismatch alert modal (target='\(targetID)', active='\(activeEffectiveID)')...")
-        
-        return await withCheckedContinuation { continuation in
-            let alert = UIAlertController(
-                title: NSLocalizedString("Bundle ID Mismatch Detected", comment: ""),
-                message: String(format: NSLocalizedString("The target bundle ID '%@' does not match the active SideStore instance ('%@').\n\nProceeding will install a new instance of SideStore instead of updating the current instance.", comment: ""), targetID, activeEffectiveID),
-                preferredStyle: .alert
-            )
-            alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { _ in
-                self.debugLog("[ValidateSideStoreBundleIDOperation] User tapped Cancel on SideStore bundle ID mismatch alert modal.")
-                continuation.resume(returning: false)
-            })
-            alert.addAction(UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .destructive) { _ in
-                self.debugLog("[ValidateSideStoreBundleIDOperation] User tapped Continue on SideStore bundle ID mismatch alert modal.")
-                continuation.resume(returning: true)
-            })
-            presenter.present(alert, animated: true)
-        }
     }
 }

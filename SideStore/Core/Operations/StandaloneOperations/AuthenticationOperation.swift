@@ -88,10 +88,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         AnisetteProvider(context: context, progress: self.progress)
     }()
 
-    private weak var authenticationHandler: AuthenticationHandler?
-
-    init(context: AuthenticatedOperationContext, handler: AuthenticationHandler, skipDeviceRegistration: Bool = false, skipCertificateProvisioning: Bool = false) throws {
-        self.authenticationHandler = handler
+    init(context: AuthenticatedOperationContext, skipDeviceRegistration: Bool = false, skipCertificateProvisioning: Bool = false) throws {
         self.skipDeviceRegistration = skipDeviceRegistration
         self.skipCertificateProvisioning = skipCertificateProvisioning
 
@@ -340,9 +337,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             self.verboseLog("[AuthenticationOperation] Failed to authenticate account. \(error.localizedDescription)")
             
             self.verboseLog("[Authentication] postAuthenticationCleanup: Completing session (failure case)...")
-            if let handler = self.authenticationHandler {
-                await handler.complete()
-            }
+            await self.context.authenticationHandler.complete()
             return
             
         case .success(let authResult):
@@ -388,9 +383,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         }
         
         self.verboseLog("[Authentication] postAuthenticationCleanup: Completing session...")
-        if let handler = self.authenticationHandler {
-            await handler.complete()
-        }
+        await self.context.authenticationHandler.complete()
     }
     
     private func postAuthenticationCleanup(result: Result<AuthenticationResult, Error>, in context: NSManagedObjectContext) throws {
@@ -478,9 +471,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     }
     
     private func presentSignInUI() async throws -> (account: ALTAccount, session: ALTAppleAPISession, team: ALTTeam, certificate: ALTCertificate?) {
-        guard let handler = self.authenticationHandler else {
-            throw OperationError.notAuthenticated
-        }
+        let handler = self.context.authenticationHandler
         
         self.verboseLog("[Authentication] presentSignInUI: Requesting credentials...")
         while true {
@@ -540,19 +531,16 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         let anisetteData = try await self.anisetteProvider.getAnisetteData()
         
         let verificationHandler: ((@escaping (String?) -> Void) -> Void)?
-        if let handler = self.authenticationHandler {
-            verificationHandler = { (completionHandler) in
-                Task {
-                    do {
-                        let code = try await handler.verificationCode()
-                        completionHandler(code)
-                    } catch {
-                        completionHandler(nil)
-                    }
+        let handler = self.context.authenticationHandler
+        verificationHandler = { (completionHandler) in
+            Task {
+                do {
+                    let code = try await handler.verificationCode()
+                    completionHandler(code)
+                } catch {
+                    completionHandler(nil)
                 }
             }
-        } else {
-            verificationHandler = nil
         }
         
         let xcodeVersion = await AnisetteConfigManager.shared.resolvedXcodeVersion()
@@ -594,10 +582,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             }
         }
         
-        guard let handler = self.authenticationHandler else {
-            throw AuthenticationError(.noTeam)
-        }
-        return try await handler.resolveTeam(teams)
+        return try await self.context.authenticationHandler.resolveTeam(teams)
     }
     
     private func fetchCertificate(for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTCertificate {
@@ -742,10 +727,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     }
 
     private func showRevokeAlert(certsText: String, teamType: ALTTeamType) async throws -> RevokeDecision {
-        guard let handler = self.authenticationHandler else {
-            return .keepExisting
-        }
-        return try await handler.resolveRevocation(certsText: certsText, teamType: teamType)
+        return try await self.context.authenticationHandler.resolveRevocation(certsText: certsText, teamType: teamType)
     }
     
     private func registerCurrentDevice(for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTDevice {
@@ -773,8 +755,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             return false
         }
         
-        guard let handler = self.authenticationHandler else { return false }
-        await handler.instructionsViewed()
+        await self.context.authenticationHandler.instructionsViewed()
         return true
     }
     
@@ -808,7 +789,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                 return false
             }
             
-            guard let handler = self.authenticationHandler else { return false }
+            let handler = self.context.authenticationHandler
             let context = AuthenticatedOperationContext(context: self.context)
             do {
                 let confirmed = try await handler.resolveResign(mismatchReason: reason, context: context)
@@ -946,18 +927,18 @@ extension ALTAppleAPI {
 }
 
 private class AnisetteProvider {
-    private let context: OperationContext
+    private let context: AuthenticatedOperationContext
     private let progress: Progress?
     
     private var lastFetchedData: ALTAnisetteData?
     private var lastFetchTime: Date?
     
-    init(context: OperationContext, progress: Progress?) {
+    init(context: AuthenticatedOperationContext, progress: Progress?) {
         self.context = context
         self.progress = progress
         
-        if let authContext = context as? AuthenticatedOperationContext,
-           let session = authContext.session {
+        let authContext = context
+        if let session = authContext.session {
             self.lastFetchedData = session.anisetteData
             self.lastFetchTime = session.anisetteData.date
         }

@@ -28,10 +28,9 @@ final class RefreshGroup: NSObject
     var activeTask: Task<Void, Never>?
     private let lock = NSLock()
     
-    init(context: AuthenticatedOperationContext = AuthenticatedOperationContext())
+    init(context: AuthenticatedOperationContext)
     {
         self.context = context
-        
         super.init()
     }
     

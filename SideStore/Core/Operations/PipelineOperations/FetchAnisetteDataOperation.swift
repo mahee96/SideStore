@@ -6,14 +6,14 @@
 //  Copyright © 2020 Riley Testut. All rights reserved.
 //
 
-@preconcurrency import UIKit
+
 import Foundation
 import CommonCrypto
 import Starscream
 @preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
-final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext, ALTAnisetteData>, @unchecked Sendable {
+final class FetchAnisetteDataOperation: BaseStandaloneOperation<AuthenticatedOperationContext, ALTAnisetteData>, @unchecked Sendable {
     public static let defaultClientInfo = "<MacBookPro18,3> <macOS;26.6;25F84> <com.apple.AuthKit/1 (com.apple.dt.Xcode/26.0)>"
     public static let defaultUserAgent = "AuthKit/1 (Macintosh; OS X 26.6) (com.apple.dt.Xcode/26.0)"
 
@@ -147,10 +147,8 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext
             throw error
         }
         
-        // TODO: Pass in proper view context to show the Toast messages
-        let viewContext = self.context.presentingViewController
         self.setProgress(30)
-        let urlString = try await self.getAnisetteServerUrl(viewContext, excluding: excluding)
+        let urlString = try await self.getAnisetteServerUrl(excluding: excluding)
 
         // set as preferred
         UserDefaults.standard.menuAnisetteURL = urlString
@@ -167,7 +165,7 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext
         }
     }
 
-    private func getAnisetteServerUrl(_ viewContext: UIViewController?, excluding: Set<String> = []) async throws -> String {
+    private func getAnisetteServerUrl(excluding: Set<String> = []) async throws -> String {
         let serverUrls = await AnisetteServersManager.shared.getActiveServerURLs()
         let filteredUrls = serverUrls.filter { !excluding.contains($0) }
         guard !filteredUrls.isEmpty else {
@@ -199,7 +197,6 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext
             guard let url = URL(string: currentServerUrlString) else {
                 let errmsg = "[FetchAnisetteDataOperation] Skipping invalid URL: \(currentServerUrlString)"
                 self.verboseLog(errmsg)
-                self.showToast(viewContext: viewContext, message: errmsg)
                 continue
             }
 
@@ -208,19 +205,14 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext
                 if success {
                     let okmsg = "[FetchAnisetteDataOperation] Found working server: \(url.absoluteString)"
                     self.verboseLog(okmsg)
-                    if triedCount > 0 {
-                        self.showToast(viewContext: viewContext, message: okmsg)
-                    }
                     return currentServerUrlString
                 } else {
                     let errmsg = "[FetchAnisetteDataOperation] Server ping failed: \(url.absoluteString)"
                     self.verboseLog(errmsg)
-                    self.showToast(viewContext: viewContext, message: errmsg)
                 }
             } catch {
                 let errmsg = "[FetchAnisetteDataOperation] Server connection failed: \(url.absoluteString) with error: \(error.localizedDescription)"
                 self.verboseLog(errmsg)
-                self.showToast(viewContext: viewContext, message: errmsg)
             }
         }
 
@@ -253,12 +245,6 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext
             return true
         }
         return false
-    }
-
-    private func showToast(viewContext: UIViewController?, message: String) {
-        #if DEBUG
-        debugLog("\(message.hasPrefix("[FetchAnisetteDataOperation]") ? message : "[FetchAnisetteDataOperation] \(message)")")
-        #endif
     }
     
     // MARK: - COMMON
@@ -346,34 +332,16 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<OperationContext
         
         self.debugLog("[FetchAnisetteDataOperation] Alerting user about outdated server")
         
-        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<ALTAnisetteData, Error>) in
-            let alert = UIAlertController(title: "WARNING: Outdated anisette server", message: "We've detected you are using an older anisette server. Using this server has a higher likelihood of locking your account and causing other issues. Are you sure you want to continue?", preferredStyle: UIAlertController.Style.alert)
-            alert.addAction(UIAlertAction(title: "Continue", style: UIAlertAction.Style.destructive, handler: { action in
-                self.verboseLog("[FetchAnisetteDataOperation] Fetching anisette via V1")
-                UserDefaults.shared.trustedServerURL = AnisetteManager.currentURLString
-                Task {
-                    do {
-                        let anisette = try await self.fetchAnisetteV1()
-                        continuation.resume(returning: anisette)
-                    } catch {
-                        continuation.resume(throwing: error)
-                    }
-                }
-            }))
-            alert.addAction(UIAlertAction(title: "Cancel", style: UIAlertAction.Style.cancel, handler: { action in
-                self.debugLog("[FetchAnisetteDataOperation] Cancelled anisette operation")
-                continuation.resume(throwing: OperationError.cancelled)
-            }))
-      
-            let keyWindow = UIApplication.shared.windows.filter { $0.isKeyWindow }.first
-      
-            Task { @MainActor in
-                if let presentingController = keyWindow?.rootViewController?.presentedViewController {
-                    presentingController.present(alert, animated: true)
-                } else {
-                    keyWindow?.rootViewController?.present(alert, animated: true)
-                }
-            }
+        let handler = self.context.anisetteServerHandler
+        
+        let shouldContinue = try await handler.warnOutdatedAnisetteServer()
+        if shouldContinue {
+            self.verboseLog("[FetchAnisetteDataOperation] Fetching anisette via V1")
+            UserDefaults.shared.trustedServerURL = AnisetteManager.currentURLString
+            return try await self.fetchAnisetteV1()
+        } else {
+            self.debugLog("[FetchAnisetteDataOperation] Cancelled anisette operation")
+            throw OperationError.cancelled
         }
     }
     
