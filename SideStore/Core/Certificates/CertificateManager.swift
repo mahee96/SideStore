@@ -234,7 +234,7 @@ public final class CertificateManager: @unchecked Sendable {
         return cert
     }
 
-    public func getSigningCertificate(at url: URL, withPlistFallback: Bool = true) -> ALTCertificate? {
+    public func getSigningCertificate(at url: URL, externalPassword: String? = nil, withPlistFallback: Bool = true) -> ALTCertificate? {
         let appDirectory = url.pathExtension == "app" ? url.deletingLastPathComponent() : url
         let certURL = appDirectory.appendingPathComponent("signing_certificate.der")
         
@@ -247,12 +247,12 @@ public final class CertificateManager: @unchecked Sendable {
         }
         
         // 2. Try to load embedded certificate from app bundle (usually placed by external signers/installers)
-        
-        if let targetBundle = Bundle(url: url), 
+        if let targetBundle = Bundle(url: url),
            FileManager.default.fileExists(atPath: targetBundle.certificateURL.path),
            let data = try? Data(contentsOf: targetBundle.certificateURL) 
         {
             let possiblePasswords: [(name: String, value: String?)] = [
+                ("externalPassword", externalPassword),
                 ("machineIdentifier", activeCertificate?.certificate.machineIdentifier),
                 ("activeCertPassword", activeCertificate?.password),
                 ("keychainPassword", Keychain.shared.signingCertificatePassword),

@@ -598,8 +598,6 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         
         let bundleCertID = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String
         
-        let binaryCert = CertificateManager.shared.getSigningCertificate(at: Bundle.main.bundleURL)
-        
         if let activeCert = CertificateManager.shared.activeCertificate,
            let certificate = certificates.first(where: { $0.serialNumber == activeCert.serialNumber })
         {
@@ -610,12 +608,14 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             return activeCert.certificate
         }
         
-        if let binaryCert = binaryCert,
-           let localCert = CertificateManager.shared.getLocalCertificate(serialNumber: binaryCert.serialNumber),
-           let certificate = certificates.first(where: { $0.serialNumber == binaryCert.serialNumber }) {
-            localCert.machineIdentifier = certificate.machineIdentifier
-            self.debugLog("[Authentication] Using running bundle certificate (\(binaryCert.serialNumber)) found in binary and active on portal.")
-            return localCert
+        if let bundleCertID = bundleCertID,
+           let certificate = certificates.first(where: { $0.serialNumber.lowercased() == bundleCertID.lowercased() }),
+           let machineIdentifier = certificate.machineIdentifier,
+           let cert = CertificateManager.shared.getSigningCertificate(at: Bundle.main.bundleURL, externalPassword: machineIdentifier) 
+        {
+            cert.machineIdentifier = machineIdentifier
+            self.debugLog("[Authentication] Using running bundle certificate (\(cert.serialNumber)) decrypted with portal machineIdentifier.")
+            return cert
         }
         
         if certificates.isEmpty {
