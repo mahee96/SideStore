@@ -316,34 +316,41 @@ public final class CertificateManager: @unchecked Sendable {
             self.verboseLog("[CertificateManager] Step 1 (Mach-O): Skipped (not self).")
         }
 
-        // STEP 2: Cached signing_certificate.der Check (If self, target App Group directory)
-        let appDirectory: URL
-        if isSelf {
-            appDirectory = InstalledApp.appsDirectoryURL.appendingPathComponent(bundleID)
+        // STEP 2: Embedded / Cached signing_certificate.der Check
+        let bundleURL: URL = isSelf ? Bundle.main.bundleURL : (url.pathExtension == "app" ? url : url.appendingPathComponent("App.app"))
+        
+        // 2a. Check inside target .app bundle first (embedded cert)
+        let embeddedDerURL = bundleURL.appendingPathComponent("signing_certificate.der")
+        self.verboseLog("[CertificateManager] Step 2 embedded signing_certificate.der: Checking \(embeddedDerURL.path)...")
+
+        if FileManager.default.fileExists(atPath: embeddedDerURL.path) {
+            if let derData = try? Data(contentsOf: embeddedDerURL), let cert = ALTCertificate(data: derData) {
+                debugLog("[CertificateManager] getSigningCertificate: Loaded embedded signing certificate from \(embeddedDerURL.path) (serial: \(cert.serialNumber))")
+                return cert
+            } else {
+                self.verboseLog("[CertificateManager] Step 2 embedded signing_certificate.der: File exists at \(embeddedDerURL.path) but failed to parse.")
+            }
         } else {
-            appDirectory = url.pathExtension == "app" ? url.deletingLastPathComponent() : url
+            self.verboseLog("[CertificateManager] Step 2 embedded signing_certificate.der: File not found at \(embeddedDerURL.path).")
         }
+
+        // 2b. Check App Group directory (legacy fallback)
+        let appDirectory: URL = isSelf ? InstalledApp.appsDirectoryURL.appendingPathComponent(bundleID) : (url.pathExtension == "app" ? url.deletingLastPathComponent() : url)
         let certURL = appDirectory.appendingPathComponent("signing_certificate.der")
-        self.verboseLog("[CertificateManager] Step 2 signing_certificate.der: Checking \(certURL.path)...")
+        self.verboseLog("[CertificateManager] Step 2 App Group signing_certificate.der: Checking \(certURL.path)...")
 
         if FileManager.default.fileExists(atPath: certURL.path) {
             if let derData = try? Data(contentsOf: certURL), let cert = ALTCertificate(data: derData) {
                 debugLog("[CertificateManager] getSigningCertificate: Loaded cached signing certificate from \(certURL.path) (serial: \(cert.serialNumber))")
                 return cert
             } else {
-                self.verboseLog("[CertificateManager] Step 2 signing_certificate.der: File exists at \(certURL.path) but failed to parse.")
+                self.verboseLog("[CertificateManager] Step 2 App Group signing_certificate.der: File exists at \(certURL.path) but failed to parse.")
             }
         } else {
-            self.verboseLog("[CertificateManager] Step 2 signing_certificate.der: File not found at \(certURL.path).")
+            self.verboseLog("[CertificateManager] Step 2 App Group signing_certificate.der: File not found at \(certURL.path).")
         }
 
-        // STEP 3: Embedded certificate (ALTCertificate.p12) Check (If self, target main bundle)
-        let bundleURL: URL
-        if isSelf {
-            bundleURL = Bundle.main.bundleURL
-        } else {
-            bundleURL = url.pathExtension == "app" ? url : url.appendingPathComponent("App.app")
-        }
+        // STEP 3: Embedded certificate (ALTCertificate.p12) Check
         self.verboseLog("[CertificateManager] Step 3 (Embedded p12): Checking \(bundleURL.path)...")
 
         if let targetBundle = Bundle(url: bundleURL),
