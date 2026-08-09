@@ -648,6 +648,7 @@ private extension MyAppsViewController
     func update()
     {
         self.updateUnsupportedUpdates()
+        self.reconfigureVisibleCells()
         
         if self.updatesDataSource.itemCount > 0
         {
@@ -1129,6 +1130,21 @@ private extension MyAppsViewController
         self.dataSource.cellConfigurationHandler(cell, installedApp, indexPath)
         
         cell.bannerView.iconImageView.isIndicatingActivity = false
+    }
+    
+    func reconfigureVisibleCells()
+    {
+        for indexPath in self.collectionView.indexPathsForVisibleItems
+        {
+            guard let section = Section(rawValue: indexPath.section) else { continue }
+            switch section
+            {
+            case .activeApps, .inactiveApps:
+                self.updateCell(at: indexPath)
+            default:
+                break
+            }
+        }
     }
     
     @objc func showHiddenUpdatesAlert(_ sender: UIButton)
@@ -2571,7 +2587,9 @@ extension MyAppsViewController: NSFetchedResultsControllerDelegate
             case self.activeAppsDataSource, self.inactiveAppsDataSource:
                 DispatchQueue.main.async {
                     self.collectionView.collectionViewLayout.invalidateLayout()
-                    self.collectionView.performBatchUpdates(nil, completion: nil)
+                    self.collectionView.performBatchUpdates(nil) { _ in
+                        self.reconfigureVisibleCells()
+                    }
                     
                     let inactiveAppsCount = self.inactiveAppsDataSource.itemCount
                     if (inactiveAppsCount == 0) != (self.previousInactiveAppsCount == 0)
