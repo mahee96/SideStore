@@ -1,5 +1,5 @@
 //
-//  CacheSigningCertOperation.swift
+//  EmbedSigningCertOperation.swift
 //  SideStore
 //
 //  Created by Magesh K on 8/5/26.
@@ -10,10 +10,10 @@ import Foundation
 import AltStoreCore
 import AltSign
 
-final class CacheSigningCertOperation: BasePipelineOperation<AppOperationContext, Void>, @unchecked Sendable {
+final class EmbedSigningCertOperation: BasePipelineOperation<AppOperationContext, Void>, @unchecked Sendable {
     override func execute(parentProgress: Progress?) async throws {
-        debugLog("[CacheSigningCertOperation] execute() started")
-        defer { debugLog("[CacheSigningCertOperation] execute() completed") }
+        debugLog("[EmbedSigningCertOperation] execute() started")
+        defer { debugLog("[EmbedSigningCertOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         
         let bundleID = self.context.targetBundleIdentifier
@@ -21,25 +21,25 @@ final class CacheSigningCertOperation: BasePipelineOperation<AppOperationContext
         // 1. Resolve the certificate used for signing this app
         guard let cert = self.context.overrideCertificate ?? self.context.authenticatedContext.signingCertificate else
         {
-            throw OperationError.invalidParameters("CacheSigningCertOperation: No signing certificate found in context.")
+            throw OperationError.invalidParameters("EmbedSigningCertOperation: No signing certificate found in context.")
         }
         
         guard let certData = cert.data else {
-            debugLog("[CacheSigningCertOperation] WARNING: Certificate has no data to cache.")
+            debugLog("[EmbedSigningCertOperation] WARNING: Certificate has no data to embed.")
             return
         }
         
-        // 2. Resolve target App directory
-        let appsDirectory = InstalledApp.appsDirectoryURL
-        let appDirectory = appsDirectory.appendingPathComponent(bundleID)
+        // 2. Write signing_certificate.der directly inside the target app bundle
+        guard let appBundle = self.context.targetAppBundle else {
+            throw OperationError.invalidParameters("EmbedSigningCertOperation: targetAppBundle is missing in context.")
+        }
         
+        let bundleCertURL = appBundle.fileURL.appendingPathComponent("signing_certificate.der")
         do {
-            try FileManager.default.createDirectory(at: appDirectory, withIntermediateDirectories: true, attributes: nil)
-            let certURL = appDirectory.appendingPathComponent("signing_certificate.der")
-            try certData.write(to: certURL, options: .atomic)
-            debugLog("[CacheSigningCertOperation] Successfully cached signing certificate to \(certURL.path)")
+            try certData.write(to: bundleCertURL, options: .atomic)
+            debugLog("[EmbedSigningCertOperation] Successfully embedded signing certificate in app bundle: \(bundleCertURL.path)")
         } catch {
-            debugLog("[CacheSigningCertOperation] ERROR: Failed to write signing certificate to disk: \(error)")
+            debugLog("[EmbedSigningCertOperation] ERROR: Failed to embed signing certificate into app bundle: \(error)")
             throw error
         }
     }
