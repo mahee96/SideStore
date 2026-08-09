@@ -325,8 +325,8 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<AuthenticatedOpe
     private func handleV1() async throws -> ALTAnisetteData {
         self.verboseLog("[FetchAnisetteDataOperation] Server is V1")
         
-        if UserDefaults.standard.trustedServerURL == AnisetteManager.currentURLString {
-            self.verboseLog("[FetchAnisetteDataOperation] Server has already been trusted, fetching anisette")
+        if UserDefaults.standard.defaultServerURL == AnisetteManager.currentURLString {
+            self.verboseLog("[FetchAnisetteDataOperation] Server has already been set, fetching anisette")
             return try await self.fetchAnisetteV1()
         }
         
@@ -337,7 +337,7 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<AuthenticatedOpe
         let shouldContinue = try await handler.warnOutdatedAnisetteServer()
         if shouldContinue {
             self.verboseLog("[FetchAnisetteDataOperation] Fetching anisette via V1")
-            UserDefaults.shared.trustedServerURL = AnisetteManager.currentURLString
+            UserDefaults.shared.defaultServerURL = AnisetteManager.currentURLString
             return try await self.fetchAnisetteV1()
         } else {
             self.debugLog("[FetchAnisetteDataOperation] Cancelled anisette operation")

@@ -722,10 +722,10 @@ private extension AddSourceViewController
             switch result
             {
             case .failure(let error): finish(.failure(error))
-            case .success((let trustedSources, _)):
+            case .success((let defaultSources, _)):
                 
                 // Don't show sources without a sourceURL.
-                let featuredSourceURLs = trustedSources.compactMap { $0.sourceURL }
+                let featuredSourceURLs = defaultSources.compactMap { $0.sourceURL }
                 
                 // This context is never saved, but keeps the managed sources alive.
                 let context = DatabaseManager.shared.persistentContainer.newBackgroundSavingViewContext()

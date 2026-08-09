@@ -197,13 +197,13 @@ public extension UserDefaults
         set { self.set(newValue, forKey: #function) }
     }
     
-    @objc var trustedSourceIDs: [String]? {
-        get { self.stringArray(forKey: #function) }
-        set { self.set(newValue, forKey: #function) }
+    @objc var defaultSourceIDs: [String]? {
+        get { self.stringArray(forKey: "defaultSourceIDs") }
+        set { self.set(newValue, forKey: "defaultSourceIDs") }
     }
-    @objc var trustedServerURL: String? {
-        get { self.string(forKey: #function) }
-        set { self.set(newValue, forKey: #function) }
+    @objc var defaultServerURL: String? {
+        get { self.string(forKey: "defaultServerURL") }
+        set { self.set(newValue, forKey: "defaultServerURL") }
     }
     
     @objc var betaUdpatesTrack: String? {

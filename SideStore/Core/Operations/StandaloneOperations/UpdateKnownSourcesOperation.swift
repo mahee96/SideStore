@@ -11,7 +11,7 @@ import Foundation
 
 private extension URL
 {
-   static let sources = URL(string: "https://sidestore.io/trusted-sources")!
+   static let sources = URL(string: "https://sidestore.io/default-sources")!
 }
 
 extension UpdateKnownSourcesOperation
@@ -20,8 +20,14 @@ extension UpdateKnownSourcesOperation
     {
         var version: Int
         
-        var trusted: [KnownSource]?
+        var defaultSources: [KnownSource]?
         var blocked: [KnownSource]?
+
+        private enum CodingKeys: String, CodingKey {
+            case version
+            case defaultSources = "default"
+            case blocked
+        }
     }
 }
 
@@ -53,14 +59,14 @@ class UpdateKnownSourcesOperation: OperationLogging
         }
         
         let decoded = try Foundation.JSONDecoder().decode(Response.self, from: data)
-        let sources = (trusted: decoded.trusted ?? [], blocked: decoded.blocked ?? [])
+        let sources = (defaultSources: decoded.defaultSources ?? [], blocked: decoded.blocked ?? [])
         
         // Cache sources
-        UserDefaults.shared.recommendedSources = sources.trusted
+        UserDefaults.shared.recommendedSources = sources.defaultSources
         UserDefaults.shared.blockedSources = sources.blocked
         
-        // Cache trusted source IDs.
-        UserDefaults.shared.trustedSourceIDs = sources.trusted.map { $0.identifier }
+        // Cache default source IDs.
+        UserDefaults.shared.defaultSourceIDs = sources.defaultSources.map { $0.identifier }
         
         return sources
     }
