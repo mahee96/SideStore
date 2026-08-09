@@ -375,6 +375,11 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                 if !didShowResignAlert {
                     try? CertificateManager.shared.setActiveCertificate(altCertificate)
                     self.verboseLog("[Authentication] postAuthenticationCleanup: Cached signing certificate in Keychain.")
+                    
+                    if self.context.isSideStoreResignDismissed && !didShowInstructions {
+                        self.verboseLog("[Authentication] postAuthenticationCleanup: Resign was skipped. Showing instructions now.")
+                        await self.context.authenticationHandler.instructionsViewed()
+                    }
                 }
             }
         } catch {
@@ -508,6 +513,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                 let result = (account, session, team, certificate)
                 await handler.handleVerificationResult(.success(result))
                 
+                self.shouldShowInstructions = true
                 return (account, session, team, certificate)
             } catch {
                 self.debugLog("[Authentication] presentSignInUI: Attempt failed with error: \(error)")
