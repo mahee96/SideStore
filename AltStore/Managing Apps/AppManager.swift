@@ -228,10 +228,10 @@ extension AppManager
 
     private func makeAuthenticatedContext(presentingViewController: UIViewController?, baseContext: AuthenticatedOperationContext? = nil, dbBackgroundContext: NSManagedObjectContext? = nil) -> AuthenticatedOperationContext {
         if let baseContext = baseContext { return baseContext }
-        let standaloneHandler = StandaloneHandler(presentingViewController: presentingViewController)
+        let authFlowHandler = AuthFlowHandler(presentingViewController: presentingViewController)
         return AuthenticatedOperationContext(
-            authenticationHandler: standaloneHandler,
-            anisetteServerHandler: standaloneHandler,
+            authenticationHandler: authFlowHandler,
+            anisetteServerHandler: authFlowHandler,
             dbBackgroundContext: dbBackgroundContext
         )
     }

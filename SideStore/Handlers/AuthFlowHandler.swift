@@ -1,5 +1,5 @@
 //
-//  StandaloneExecutionHandler.swift
+//  AuthFlowHandler.swift
 //  SideStore
 //
 //  Created by Magesh K on 8/9/26.
@@ -10,7 +10,7 @@ import UIKit
 import AltSign
 import AltStoreCore
 
-class StandaloneHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
+class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
     
     private weak var presentingViewController: UIViewController?
     private weak var presentedAuthVC: AuthenticationViewController?
