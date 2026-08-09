@@ -617,24 +617,12 @@ private extension AppDelegate {
             return
         }
         
-        let stagedUUID = stagedData["lastRunningProfileUUID"] as? String
+        let lastBundlePath = stagedData["lastBundlePath"] as? String
+        let currBundlePath = Bundle.main.bundlePath
+        debugLog("[AppDelegate] reconcileSelfReinstallation: Current BundlePath: '\(currBundlePath)', Last BundlePath: '\(lastBundlePath ?? "nil")'")
         
-        let profileURL = Bundle.main.bundleURL.appendingPathComponent("embedded.mobileprovision")
-        guard FileManager.default.fileExists(atPath: profileURL.path) else {
-            debugLog("[AppDelegate] reconcileSelfReinstallation: embedded.mobileprovision not found.")
-            return
-        }
-        
-        guard let profile = ALTProvisioningProfile(url: profileURL) else {
-            debugLog("[AppDelegate] reconcileSelfReinstallation: Failed to parse embedded.mobileprovision.")
-            return
-        }
-        
-        let currentUUID = profile.UUID.uuidString
-        debugLog("[AppDelegate] reconcileSelfReinstallation: Current UUID: \(currentUUID), Staged UUID: \(stagedUUID ?? "nil")")
-        
-        if currentUUID == stagedUUID {
-            debugLog("[AppDelegate] reconcileSelfReinstallation: UUID matches! Applying staged updates to SideStore app in database.")
+        if let lastBundlePath, currBundlePath != lastBundlePath {
+            debugLog("[AppDelegate] reconcileSelfReinstallation: App reinstallation confirmed (BundlePath changed)! Applying staged updates to SideStore app in database.")
             let context = DatabaseManager.shared.persistentContainer.newBackgroundContext()
             context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
             
@@ -653,7 +641,7 @@ private extension AppDelegate {
                 }
             }
         } else {
-            debugLog("[AppDelegate] reconcileSelfReinstallation: UUID mismatch. Reinstallation was not completed or failed.")
+            debugLog("[AppDelegate] reconcileSelfReinstallation: BundlePath matched pre-installation path. Reinstallation was not completed or failed.")
         }
     }
 }

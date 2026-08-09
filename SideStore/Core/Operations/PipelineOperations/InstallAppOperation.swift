@@ -149,7 +149,7 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
                     // Serialize the entire InstalledApp entity with all its composition relations
                     if let stagedData = installedApp.serialize(format: .json),
                        var dict = (try? JSONSerialization.jsonObject(with: stagedData, options: [])) as? [String: Any] {
-                        dict["lastRunningProfileUUID"] = newProfile.UUID.uuidString
+                        dict["lastBundlePath"] = Bundle.main.bundlePath
                         
                         if let finalData = try? JSONSerialization.data(withJSONObject: dict, options: [.prettyPrinted, .sortedKeys]) {
                             try? finalData.write(to: jsonURL)
