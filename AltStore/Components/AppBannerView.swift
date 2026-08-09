@@ -247,7 +247,9 @@ extension AppBannerView
         }
         
         UIView.performWithoutAnimation {
-            self.button.resetDisplayState()
+            if case .custom = buttonAction {} else {
+                self.button.resetDisplayState()
+            }
             
             switch buttonAction
             {

@@ -218,6 +218,8 @@ extension PillButton {
         let expirationDate = installedApp.expirationDate
         let isExpired = currentDate > expirationDate
         
+        // verboseLog("[PillButton] configure for app '\(installedApp.name)': status=\(installedApp.certificateStatus), certSerial=\(installedApp.certificateSerialNumber ?? "nil"), isExpired=\(isExpired)")
+        
         if installedApp.certificateStatus == .revoked {
             self.setDisplayState(.revoked)
         } else if isExpired || installedApp.certificateStatus == .expired {
@@ -239,6 +241,7 @@ extension PillButton {
     }
 
     func resetDisplayState() {
+        // verboseLog("[PillButton] resetDisplayState called")
         self.countdownDate = nil
         self.borderColor = nil
         self.borderWidth = 0
@@ -247,6 +250,7 @@ extension PillButton {
     }
 
     func setDisplayState(_ state: DisplayState) {
+        // verboseLog("[PillButton] setDisplayState called: \(state)")
         switch state {
         case .revoked:
             self.countdownDate = nil
@@ -309,6 +313,8 @@ private extension PillButton
             self.layer.borderColor = nil
             self.layer.borderWidth = 0
         }
+        
+        debugLog("[PillButton] update() applied: title='\(self.title(for: .normal) ?? "")', borderWidth=\(self.layer.borderWidth), hasBorderColor=\(self.layer.borderColor != nil), progressNil=\(self.progress == nil)")
         
         // Update font after init because the original titleLabel is replaced.
         let size = self.fontSize ?? self.storyboardFontSize ?? 14

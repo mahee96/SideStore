@@ -79,7 +79,7 @@ public class InstalledApp: BaseEntity, InstalledAppProtocol
             switch raw {
             case "valid":
                 return .valid(isCrossSigned: false)
-            case "valid-crossSigned":
+            case "validCrossSigned":
                 return .valid(isCrossSigned: true)
             case "revoked":
                 return .revoked
