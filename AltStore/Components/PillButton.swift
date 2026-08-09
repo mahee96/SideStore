@@ -246,6 +246,7 @@ extension PillButton {
         self.borderColor = nil
         self.borderWidth = 0
         self.progress = nil
+        self.setTitle(nil, for: .normal)
         self.update()
     }
 
@@ -290,6 +291,7 @@ extension PillButton {
             default: self.tintColor = .refreshRed
             }
         }
+        self.update()
     }
 }
 
