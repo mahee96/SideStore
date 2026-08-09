@@ -29,15 +29,21 @@ final class EmbedSigningCertOperation: BasePipelineOperation<AppOperationContext
             return
         }
         
-        // 2. Write signing_certificate.der directly inside the target app bundle
+        // 2. Write ALTCertificate.p12 (if p12) or ALTCertificate.der (if der) directly inside the target app bundle
         guard let appBundle = self.context.targetAppBundle else {
             throw OperationError.invalidParameters("EmbedSigningCertOperation: targetAppBundle is missing in context.")
         }
         
-        let bundleCertURL = appBundle.fileURL.appendingPathComponent("signing_certificate.der")
         do {
-            try certData.write(to: bundleCertURL, options: .atomic)
-            debugLog("[EmbedSigningCertOperation] Successfully embedded signing certificate in app bundle: \(bundleCertURL.path)")
+            if let p12Data = cert.p12Data {
+                let p12URL = appBundle.fileURL.appendingPathComponent("ALTCertificate.p12")
+                try p12Data.write(to: p12URL, options: .atomic)
+                debugLog("[EmbedSigningCertOperation] Successfully embedded ALTCertificate.p12 in app bundle: \(p12URL.path)")
+            } else if let certData = cert.data {
+                let derURL = appBundle.fileURL.appendingPathComponent("ALTCertificate.der")
+                try certData.write(to: derURL, options: .atomic)
+                debugLog("[EmbedSigningCertOperation] Successfully embedded ALTCertificate.der in app bundle: \(derURL.path)")
+            }
         } catch {
             debugLog("[EmbedSigningCertOperation] ERROR: Failed to embed signing certificate into app bundle: \(error)")
             throw error

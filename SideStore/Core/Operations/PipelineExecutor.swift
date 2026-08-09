@@ -278,6 +278,12 @@ final class PipelineExecutor: @unchecked Sendable {
                 let step = try EmbedSigningCertOperation(context: context)
                 result = try await step.execute(parentProgress: progress)
                 return nil
+
+            case .cacheSigningCert:
+                loggerType = CacheSigningCertOperation.self
+                let step = try CacheSigningCertOperation(context: context)
+                result = try await step.execute(parentProgress: progress)
+                return nil
             }
         } catch {
             result = error
