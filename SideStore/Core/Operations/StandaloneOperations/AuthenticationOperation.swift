@@ -17,19 +17,36 @@ enum RevokeDecision: Sendable {
     case revokeAll
     case keepExisting
 }
-
-protocol AuthenticationHandler: AnyObject {
-    func credentials() async throws -> (String, String)
-    func verificationCode() async throws -> String?
-    func handleVerificationResult(_ result: Result<(ALTAccount, ALTAppleAPISession, ALTTeam, ALTCertificate?), Error>) async
+private class AnisetteProvider {
+    private let context: AuthenticatedOperationContext
+    private let progress: Progress?
     
-    func resolveTeam(_ teams: [ALTTeam]) async throws -> ALTTeam
-    func instructionsViewed() async
+    private var lastFetchedData: ALTAnisetteData?
+    private var lastFetchTime: Date?
     
-    func resolveRevocation(certsText: String, teamType: ALTTeamType) async throws -> RevokeDecision
-    func resolveResign(mismatchReason: CodeSignValidationReason, context: AuthenticatedOperationContext) async throws -> Bool
+    init(context: AuthenticatedOperationContext, progress: Progress?) {
+        self.context = context
+        self.progress = progress
+        
+        let authContext = context
+        if let session = authContext.session {
+            self.lastFetchedData = session.anisetteData
+            self.lastFetchTime = session.anisetteData.date
+        }
+    }
     
-    func complete() async
+    func getAnisetteData() async throws -> ALTAnisetteData {
+        if let lastFetchedData = lastFetchedData,
+           let lastFetchTime = lastFetchTime,
+           lastFetchTime.timeIntervalSinceNow >= -40.0 {
+            return lastFetchedData
+        }
+        
+        let data = try await FetchAnisetteDataOperation(context: self.context).execute(parentProgress: self.progress)
+        self.lastFetchedData = data
+        self.lastFetchTime = Date()
+        return data
+    }
 }
 
 
@@ -145,7 +162,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         }
 
         do {
-            let certificates = try await ALTAppleAPI.shared.fetchCertificates(for: cache.team, session: cache.session)
+            let certificates = try await AuthManager.shared.fetchCertificates(for: cache.team, session: cache.session)
             self.context.activeCertificates = certificates
             
             var certToUse: ALTCertificate?
@@ -524,9 +541,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     private func authenticateWithToken(adsid: String, xcodeToken: String) async throws -> (ALTAccount, ALTAppleAPISession) {
         let anisetteData = try await self.anisetteProvider.getAnisetteData()
         let xcodeVersion = await AnisetteConfigManager.shared.resolvedXcodeVersion()
-        let session = ALTAppleAPISession(dsid: adsid, authToken: xcodeToken, anisetteData: anisetteData, xcodeVersion: xcodeVersion)
-        let account = try await ALTAppleAPI.shared.fetchAccount2(session: session)
-        return (account, session)
+        return try await AuthManager.shared.authenticateWithToken(adsid: adsid, xcodeToken: xcodeToken, anisetteData: anisetteData, xcodeVersion: xcodeVersion)
     }
     
     private func authenticate(appleID: String, password: String) async throws -> (ALTAccount, ALTAppleAPISession) {
@@ -549,7 +564,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         
         let xcodeVersion = await AnisetteConfigManager.shared.resolvedXcodeVersion()
 
-        let (account, session) = try await ALTAppleAPI.shared.authenticate(
+        let (account, session) = try await AuthManager.shared.authenticate(
             appleID: appleID,
             password: password,
             anisetteData: anisetteData,
@@ -564,7 +579,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     }
     
     private func fetchTeam(for account: ALTAccount, session: ALTAppleAPISession) async throws -> ALTTeam {
-        let teams = try await ALTAppleAPI.shared.fetchTeams(for: account, session: session)
+        let teams = try await AuthManager.shared.fetchTeams(for: account, session: session)
         
         let activeTeamFromDB = await DatabaseManager.shared.persistentContainer.performBackgroundTask { context in
             DatabaseManager.shared.activeTeam(in: context)
@@ -590,7 +605,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     }
     
     private func fetchCertificate(for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTCertificate {
-        let certificates = try await ALTAppleAPI.shared.fetchCertificates(for: team, session: session)
+        let certificates = try await AuthManager.shared.fetchCertificates(for: team, session: session)
         self.context.activeCertificates = certificates
         
         let mainBundleCertSerial = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String
@@ -630,11 +645,11 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         self.debugLog("[Authentication] requestCertificate: Starting request...")
         self.verboseLog("[Authentication] requestCertificate: Starting request for machineName '\(machineName)'...")
         do {
-            self.verboseLog("[Authentication] requestCertificate: Calling ALTAppleAPI.shared.addCertificate...")
-            let certificate = try await ALTAppleAPI.shared.addCertificate(machineName: machineName, to: team, session: session)
+            self.verboseLog("[Authentication] requestCertificate: Calling AuthManager.shared.addCertificate...")
+            let certificate = try await AuthManager.shared.addCertificate(machineName: machineName, to: team, session: session)
             self.verboseLog("[Authentication] requestCertificate: addCertificate succeeded. Serial: \(certificate.serialNumber)")
             self.verboseLog("[Authentication] requestCertificate: Fetching certificates to match...")
-            let certificates = try await ALTAppleAPI.shared.fetchCertificates(for: team, session: session)
+            let certificates = try await AuthManager.shared.fetchCertificates(for: team, session: session)
             self.context.activeCertificates = certificates
             self.verboseLog("[Authentication] requestCertificate: fetchCertificates returned \(certificates.count) certificates.")
             self.verboseLog("[Authentication] requestCertificate: Successfully retrieved certificate with private key.")
@@ -700,7 +715,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             for certificate in filteredCertificates {
                 do {
                     self.verboseLog("[Authentication] replaceCertificate: Revoking certificate '\(certificate.machineName ?? "nil")' (Serial: \(certificate.serialNumber))...")
-                    try await ALTAppleAPI.shared.revoke(certificate, for: team, session: session)
+                    try await AuthManager.shared.revokeCertificate(certificate, for: team, session: session)
                     self.verboseLog("[Authentication] replaceCertificate: Revoke succeeded.")
                 } catch {
                     self.debugLog("[Authentication] replaceCertificate: Revoke failed with error: \(error)")
@@ -728,11 +743,11 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             throw OperationError.unknownUDID
         }
         
-        let devices = try await ALTAppleAPI.shared.fetchDevices(for: team, types: [.iphone, .ipad], session: session)
+        let devices = try await AuthManager.shared.fetchDevices(for: team, types: [.iphone, .ipad], session: session)
         if let device = devices.first(where: { $0.identifier == udid }) {
             return device
         } else {
-            return try await ALTAppleAPI.shared.registerDevice(name: UIDevice.current.name, identifier: udid, type: .iphone, team: team, session: session)
+            return try await AuthManager.shared.registerDevice(name: UIDevice.current.name, identifier: udid, type: .iphone, team: team, session: session)
         }
     }
     
@@ -798,155 +813,3 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     }
 }
 
-
-
-
-extension ALTAppleAPI {
-    func fetchAccount2(session: ALTAppleAPISession, completionHandler: @escaping (Result<ALTAccount, Error>) -> Void) {
-        let url = URL(string: "viewDeveloper.action", relativeTo: self.baseURL)!
-
-        self.sendRequest(with: url, additionalParameters: nil, session: session, team: nil) { (responseDictionary, requestError) in
-            do {
-                guard let responseDictionary = responseDictionary else { throw requestError ?? ALTAppleAPIError.unknown() }
-
-                guard let account = try self.processResponse(responseDictionary, parseHandler: { () -> Any? in
-                    guard let dictionary = responseDictionary["developer"] as? [String: Any] else { return nil }
-                    let account = ALTAccount(responseDictionary: dictionary)
-                    return account
-                }, resultCodeHandler: nil) as? ALTAccount else {
-                    throw ALTAppleAPIError.unknown()
-                }
-
-                completionHandler(.success(account))
-            } catch {
-                completionHandler(.failure(error))
-            }
-        }
-    }
-
-    func fetchAccount2(session: ALTAppleAPISession) async throws -> ALTAccount {
-        try await withCheckedThrowingContinuation { continuation in
-            self.fetchAccount2(session: session) { result in
-                continuation.resume(with: result)
-            }
-        }
-    }
-}
-
-extension ALTAppleAPI {
-    func fetchCertificates(for team: ALTTeam, session: ALTAppleAPISession) async throws -> [ALTX509Certificate] {
-        try await withCheckedThrowingContinuation { continuation in
-            self.fetchCertificates(for: team, session: session) { (certs, err) in
-                if let certs = certs {
-                    continuation.resume(returning: certs)
-                } else {
-                    continuation.resume(throwing: err ?? OperationError.unknown())
-                }
-            }
-        }
-    }
-
-    func addCertificate(machineName: String, to team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTCertificate {
-        try await withCheckedThrowingContinuation { continuation in
-            self.addCertificate(machineName: machineName, to: team, session: session) { (cert, err) in
-                if let cert = cert {
-                    continuation.resume(returning: cert)
-                } else {
-                    continuation.resume(throwing: err ?? OperationError.unknown())
-                }
-            }
-        }
-    }
-
-    func revoke(_ certificate: ALTX509Certificate, for team: ALTTeam, session: ALTAppleAPISession) async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            self.revoke(certificate, for: team, session: session) { (success, err) in
-                if success {
-                    continuation.resume()
-                } else {
-                    continuation.resume(throwing: err ?? OperationError.unknown())
-                }
-            }
-        }
-    }
-
-    func fetchDevices(for team: ALTTeam, types: ALTDeviceType, session: ALTAppleAPISession) async throws -> [ALTDevice] {
-        try await withCheckedThrowingContinuation { continuation in
-            self.fetchDevices(for: team, types: types, session: session) { (devices, err) in
-                if let devices = devices {
-                    continuation.resume(returning: devices)
-                } else {
-                    continuation.resume(throwing: err ?? OperationError.unknown())
-                }
-            }
-        }
-    }
-
-    func registerDevice(name: String, identifier: String, type: ALTDeviceType, team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTDevice {
-        try await withCheckedThrowingContinuation { continuation in
-            self.registerDevice(name: name, identifier: identifier, type: type, team: team, session: session) { (device, err) in
-                if let device = device {
-                    continuation.resume(returning: device)
-                } else {
-                    continuation.resume(throwing: err ?? OperationError.unknown())
-                }
-            }
-        }
-    }
-
-    func fetchTeams(for account: ALTAccount, session: ALTAppleAPISession) async throws -> [ALTTeam] {
-        try await withCheckedThrowingContinuation { continuation in
-            self.fetchTeams(for: account, session: session) { (teams, err) in
-                if let teams = teams {
-                    continuation.resume(returning: teams)
-                } else {
-                    continuation.resume(throwing: err ?? OperationError.unknown())
-                }
-            }
-        }
-    }
-
-    func authenticate(appleID: String, password: String, anisetteData: ALTAnisetteData, xcodeVersion: String, verificationHandler: ((@escaping (String?) -> Void) -> Void)?) async throws -> (ALTAccount, ALTAppleAPISession) {
-        try await withCheckedThrowingContinuation { continuation in
-            self.authenticate(appleID: appleID, password: password, anisetteData: anisetteData, xcodeVersion: xcodeVersion, verificationHandler: verificationHandler) { (account, session, error) in
-                if let account = account, let session = session {
-                    continuation.resume(returning: (account, session))
-                } else {
-                    continuation.resume(throwing: error ?? OperationError.unknown())
-                }
-            }
-        }
-    }
-}
-
-private class AnisetteProvider {
-    private let context: AuthenticatedOperationContext
-    private let progress: Progress?
-    
-    private var lastFetchedData: ALTAnisetteData?
-    private var lastFetchTime: Date?
-    
-    init(context: AuthenticatedOperationContext, progress: Progress?) {
-        self.context = context
-        self.progress = progress
-        
-        let authContext = context
-        if let session = authContext.session {
-            self.lastFetchedData = session.anisetteData
-            self.lastFetchTime = session.anisetteData.date
-        }
-    }
-    
-    func getAnisetteData() async throws -> ALTAnisetteData {
-        if let lastFetchedData = lastFetchedData,
-           let lastFetchTime = lastFetchTime,
-           lastFetchTime.timeIntervalSinceNow >= -40.0 {
-            return lastFetchedData
-        }
-        
-        let data = try await FetchAnisetteDataOperation(context: self.context).execute(parentProgress: self.progress)
-        self.lastFetchedData = data
-        self.lastFetchTime = Date()
-        return data
-    }
-}

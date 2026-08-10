@@ -163,7 +163,7 @@ final class PipelineRunner: Sendable
             if group.context.session == nil
             {
                 do {
-                    let result = try await AuthManager.shared.performAuthenticationOperation(
+                    let result = try await AuthManager.shared.authenticate(
                         context: group.context,
                         skipDeviceRegistration: false
                     )

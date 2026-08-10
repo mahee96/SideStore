@@ -58,7 +58,3 @@ protocol InstallAppHandler: AnyObject {
 protocol UserCustomizationHandler: AnyObject {
     func resolveBundleIDOverride(initialBundleID: String) async throws -> String?
 }
-
-protocol AnisetteServerHandler: AnyObject {
-    func warnOutdatedAnisetteServer() async throws -> Bool
-}

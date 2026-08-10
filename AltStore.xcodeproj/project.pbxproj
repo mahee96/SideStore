@@ -265,6 +265,7 @@
 				Core/Operations/PipelineOperations/VerifyCertificateOperation.swift,
 				Core/Operations/PipelineRunner.swift,
 				Core/Operations/RefreshGroup.swift,
+				Core/Operations/StandaloneExecutionHandler.swift,
 				Core/Operations/StandaloneOperations/AuthenticationOperation.swift,
 				Core/Operations/StandaloneOperations/BackgroundRefreshAppsOperation.swift,
 				Core/Operations/StandaloneOperations/ClearAppCacheOperation.swift,

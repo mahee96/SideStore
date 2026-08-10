@@ -150,11 +150,11 @@ class CertificatesViewModel: ObservableObject {
                 return
             }
             do {
-                let (team, session) = try await DeveloperPortalService.shared.authenticate(presentingViewController: presentingViewController)
-                self.team    = team
-                self.session = session
+                let authResult = try await AuthManager.shared.authenticate(presentingViewController: presentingViewController)
+                self.team    = authResult.team
+                self.session = authResult.session
                 
-                let remoteCerts = try await DeveloperPortalService.shared.fetchCertificates(team: team, session: session)
+                let remoteCerts = try await DeveloperPortalService.shared.fetchCertificates(team: authResult.team, session: authResult.session)
                 var merged = [ALTX509Certificate]()
                 var matchedRemoteSerials = Set<String>()
                 
@@ -338,11 +338,11 @@ class CertificatesViewModel: ObservableObject {
         Task { @MainActor in
             defer { self.isLoading = false }
             do {
-                let (team, session) = try await DeveloperPortalService.shared.authenticate(presentingViewController: presentingViewController)
-                self.team    = team
-                self.session = session
+                let authResult = try await AuthManager.shared.authenticate(presentingViewController: presentingViewController)
+                self.team    = authResult.team
+                self.session = authResult.session
                 
-                let newCert = try await DeveloperPortalService.shared.createCertificate(machineName: machineName, team: team, session: session)
+                let newCert = try await DeveloperPortalService.shared.createCertificate(machineName: machineName, team: authResult.team, session: authResult.session)
                 self.saveLocalCertificate(newCert)
                 self.alertMessage = "Certificate created successfully."
                 self.showAlert    = true
@@ -363,11 +363,11 @@ class CertificatesViewModel: ObservableObject {
         Task { @MainActor in
             defer { self.isLoading = false }
             do {
-                let (team, session) = try await DeveloperPortalService.shared.authenticate(presentingViewController: presentingViewController)
-                self.team    = team
-                self.session = session
+                let authResult = try await AuthManager.shared.authenticate(presentingViewController: presentingViewController)
+                self.team    = authResult.team
+                self.session = authResult.session
                 
-                let success = try await DeveloperPortalService.shared.revokeCertificate(certificate, team: team, session: session)
+                let success = try await DeveloperPortalService.shared.revokeCertificate(certificate, team: authResult.team, session: authResult.session)
                 if success {
                     self.remoteSerials.remove(certificate.serialNumber)
                     if !keepLocal {

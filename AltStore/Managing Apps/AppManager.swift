@@ -241,19 +241,15 @@ extension AppManager
                       skipCertificateProvisioning: Bool = false,
                       completionHandler: @escaping (Result<(ALTTeam, ALTCertificate?, ALTAppleAPISession), Error>) -> Void)
     {
-        let dbBackgroundContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
-        let context = self.makeAuthenticatedContext(presentingViewController: presentingViewController, dbBackgroundContext: dbBackgroundContext)
-        
         Task.detached {
             do {
-                let result = try await AuthManager.shared.performAuthenticationOperation(
-                    context: context,
+                let result = try await AuthManager.shared.authenticate(
+                    presentingViewController: presentingViewController,
                     skipDeviceRegistration: skipDeviceRegistration,
                     skipCertificateProvisioning: skipCertificateProvisioning
                 )
                 completionHandler(.success((result.team, result.certificate, result.session)))
             } catch {
-                context.error = error
                 completionHandler(.failure(error))
             }
         }
@@ -640,7 +636,7 @@ extension AppManager
             do {
                 let managedObjectContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
                 let context = self.makeAuthenticatedContext(presentingViewController: effectivePresentingVC, dbBackgroundContext: managedObjectContext)
-                try await AuthManager.shared.performAuthenticationOperation(
+                try await AuthManager.shared.authenticate(
                     context: context,
                     skipDeviceRegistration: true,
                     skipCertificateProvisioning: true

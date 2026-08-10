@@ -75,11 +75,36 @@ public final class AuthManager: @unchecked Sendable {
         clearSession()
     }
     
-    // MARK: - Developer Portal API Operations
-    
-    public func authenticate(presentingViewController: UIViewController?) async throws -> (ALTTeam, ALTAppleAPISession) {
-        return try await DeveloperPortalService.shared.authenticate(presentingViewController: presentingViewController)
+    @discardableResult
+    func authenticate(
+        presentingViewController: UIViewController? = nil,
+        context: AuthenticatedOperationContext? = nil,
+        skipDeviceRegistration: Bool = true,
+        skipCertificateProvisioning: Bool = true
+    ) async throws -> AuthenticationResult {
+        let effectiveContext: AuthenticatedOperationContext
+        if let context = context {
+            effectiveContext = context
+        } else {
+            let dbBackgroundContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
+            let authFlowHandler = AuthFlowHandler(presentingViewController: presentingViewController)
+            effectiveContext = AuthenticatedOperationContext(
+                authenticationHandler: authFlowHandler,
+                anisetteServerHandler: authFlowHandler,
+                dbBackgroundContext: dbBackgroundContext
+            )
+        }
+        
+        let authOperation = try AuthenticationOperation(
+            context: effectiveContext,
+            skipDeviceRegistration: skipDeviceRegistration,
+            skipCertificateProvisioning: skipCertificateProvisioning
+        )
+        return try await authOperation.execute()
     }
+    
+    
+    // MARK: - Developer Portal API Operations
     
     public func fetchCertificates(team: ALTTeam, session: ALTAppleAPISession) async throws -> [ALTX509Certificate] {
         return try await DeveloperPortalService.shared.fetchCertificates(team: team, session: session)
@@ -93,17 +118,41 @@ public final class AuthManager: @unchecked Sendable {
         return try await DeveloperPortalService.shared.revokeCertificate(certificate, team: team, session: session)
     }
     
-    @discardableResult
-    func performAuthenticationOperation(
-        context: AuthenticatedOperationContext,
-        skipDeviceRegistration: Bool = false,
-        skipCertificateProvisioning: Bool = false
-    ) async throws -> AuthenticationResult {
-        let authOperation = try AuthenticationOperation(
-            context: context,
-            skipDeviceRegistration: skipDeviceRegistration,
-            skipCertificateProvisioning: skipCertificateProvisioning
-        )
-        return try await authOperation.execute()
+    // MARK: - Apple Developer Portal API Operations (Delegated to DeveloperPortalService)
+    
+    public func authenticate(appleID: String, password: String, anisetteData: ALTAnisetteData, xcodeVersion: String, verificationHandler: ((@escaping (String?) -> Void) -> Void)?) async throws -> (ALTAccount, ALTAppleAPISession) {
+        return try await DeveloperPortalService.shared.authenticate(appleID: appleID, password: password, anisetteData: anisetteData, xcodeVersion: xcodeVersion, verificationHandler: verificationHandler)
+    }
+    
+    public func authenticateWithToken(adsid: String, xcodeToken: String, anisetteData: ALTAnisetteData, xcodeVersion: String) async throws -> (ALTAccount, ALTAppleAPISession) {
+        return try await DeveloperPortalService.shared.authenticateWithToken(adsid: adsid, xcodeToken: xcodeToken, anisetteData: anisetteData, xcodeVersion: xcodeVersion)
+    }
+    
+    public func fetchAccount(session: ALTAppleAPISession) async throws -> ALTAccount {
+        return try await DeveloperPortalService.shared.fetchAccount(session: session)
+    }
+    
+    public func fetchTeams(for account: ALTAccount, session: ALTAppleAPISession) async throws -> [ALTTeam] {
+        return try await DeveloperPortalService.shared.fetchTeams(for: account, session: session)
+    }
+    
+    public func fetchCertificates(for team: ALTTeam, session: ALTAppleAPISession) async throws -> [ALTX509Certificate] {
+        return try await DeveloperPortalService.shared.fetchCertificates(team: team, session: session)
+    }
+    
+    public func addCertificate(machineName: String, to team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTCertificate {
+        return try await DeveloperPortalService.shared.createCertificate(machineName: machineName, team: team, session: session)
+    }
+    
+    public func revokeCertificate(_ certificate: ALTX509Certificate, for team: ALTTeam, session: ALTAppleAPISession) async throws {
+        _ = try await DeveloperPortalService.shared.revokeCertificate(certificate, team: team, session: session)
+    }
+    
+    public func fetchDevices(for team: ALTTeam, types: ALTDeviceType, session: ALTAppleAPISession) async throws -> [ALTDevice] {
+        return try await DeveloperPortalService.shared.fetchDevices(for: team, types: types, session: session)
+    }
+    
+    public func registerDevice(name: String, identifier: String, type: ALTDeviceType, team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTDevice {
+        return try await DeveloperPortalService.shared.registerDevice(name: name, identifier: identifier, type: type, team: team, session: session)
     }
 }

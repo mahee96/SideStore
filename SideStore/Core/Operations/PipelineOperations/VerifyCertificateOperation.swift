@@ -44,7 +44,7 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
                 self.debugLog("[VerifyCertificateOperation] Utilizing \(activeCertificates.count) active certificates cached from Auth context.")
             } else {
                 self.debugLog("[VerifyCertificateOperation] Active certificates not found in Auth context. Fetching live from Apple Developer Portal...")
-                activeCertificates = try await ALTAppleAPI.shared.fetchCertificates(for: team, session: session)
+                activeCertificates = try await AuthManager.shared.fetchCertificates(for: team, session: session)
                 self.context.authenticatedContext.activeCertificates = activeCertificates
             }
             
