@@ -517,22 +517,16 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             let authResult = try result.get()
             let (altTeam, altCertificate, session) = (authResult.team, authResult.certificate, authResult.session)
             if let altCertificate = altCertificate, !self.skipCertificateProvisioning {
-                self.verboseLog("[Authentication] postAuthenticationCleanup: Checking instructions and resign alerts...")
-                let didHandlePostAuth = await self.handlePostAuth()
-                self.verboseLog("[Authentication] postAuthenticationCleanup: didHandlePostAuth = \(didHandlePostAuth)")
-                
                 let signer = ALTSigner(team: altTeam, certificate: altCertificate)
-                // Resign screen must go last since a successful resign/reinstall will cause the app to quit.
                 let didResign = await self.validateCodeSigning(signer: signer, session: session)
                 self.verboseLog("[Authentication] postAuthenticationCleanup: didResign = \(didResign)")
+                
                 if !didResign {
                     try? CertificateManager.shared.setActiveCertificate(altCertificate)
                     self.verboseLog("[Authentication] postAuthenticationCleanup: Cached signing certificate in Keychain.")
                     
-                    if self.context.isSideStoreResignDismissed && !didHandlePostAuth && self.requiresPostAuthFlow {
-                        self.verboseLog("[Authentication] postAuthenticationCleanup: Resign was skipped during interactive auth. Showing instructions now.")
-                        await self.context.authenticationHandler.resolvePostAuth()
-                    }
+                    let didHandlePostAuth = await self.handlePostAuth()
+                    self.verboseLog("[Authentication] postAuthenticationCleanup: didHandlePostAuth = \(didHandlePostAuth)")
                 }
             }
         } catch {
