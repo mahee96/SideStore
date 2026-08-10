@@ -105,8 +105,6 @@ public final class AuthManager: @unchecked Sendable {
         return try await DeveloperPortalService.shared.revokeCertificate(certificate, team: team, session: session)
     }
     
-    // Apple Developer Portal API Operations (Delegated to DeveloperPortalService)
-    
     public func authenticate(appleID: String, password: String, anisetteData: ALTAnisetteData, xcodeVersion: String, verificationHandler: ((@escaping (String?) -> Void) -> Void)?) async throws -> (ALTAccount, ALTAppleAPISession) {
         return try await DeveloperPortalService.shared.authenticate(appleID: appleID, password: password, anisetteData: anisetteData, xcodeVersion: xcodeVersion, verificationHandler: verificationHandler)
     }
@@ -146,19 +144,25 @@ public final class AuthManager: @unchecked Sendable {
 }
 
 fileprivate extension DatabaseManager {
+    //TODO: this is not clean, but for now this should be fine, ie we should later make this proper async instead of blocking
     func deactivateActiveAccountAndTeam() {
-        self.persistentContainer.performBackgroundTask { context in
-            if let account = self.activeAccount(in: context) {
+        let bgContext = self.persistentContainer.newBackgroundContext()
+        bgContext.performAndWait {
+            if let account = self.activeAccount(in: bgContext) {
                 account.isActiveAccount = false
             }
-            if let team = self.activeTeam(in: context) {
+            if let team = self.activeTeam(in: bgContext) {
                 team.isActiveTeam = false
             }
             do {
-                try context.save()
+                try bgContext.save()
             } catch {
                 debugLog("[AuthManager] Failed to save CoreData context when deactivating active account and team: \(error)")
             }
+        }
+        
+        self.viewContext.performAndWait {
+            self.viewContext.processPendingChanges()
         }
     }
 }
