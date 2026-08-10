@@ -48,8 +48,10 @@ final class ResignAltStoreViewController: UIViewController
                 reasonText = NSLocalizedString("The private key for the active signing certificate is missing from this device's keychain.", comment: "")
             case .externalSigner:
                 reasonText = NSLocalizedString("SideStore was installed by a different signing tool (like Xcode or AltStore).", comment: "")
-            case .corruptProfile:
-                reasonText = NSLocalizedString("The provisioning profile for SideStore is corrupt or missing.", comment: "")
+            case .missingProfile:
+                reasonText = NSLocalizedString("The provisioning profile for SideStore is missing or invalid.", comment: "")
+            case .missingCertificate:
+                reasonText = NSLocalizedString("The signing certificate could not be extracted from SideStore's binary.", comment: "")
         }
         
         let isRevocationExpected = (reason == .privateKeyLost || reason == .freeAccountLimitRevoked)

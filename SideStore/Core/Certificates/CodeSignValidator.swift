@@ -32,8 +32,11 @@ public enum CodeSignValidationReason: Error {
     /// SideStore was installed by an external tool (e.g., Xcode or AltStore) using a different certificate.
     case externalSigner
     
-    /// The current installation's provisioning profile is corrupt or contains no certificates.
-    case corruptProfile
+    /// The current installation's provisioning profile is missing or invalid.
+    case missingProfile
+    
+    /// Could not extract the leaf signing certificate from the app binary.
+    case missingCertificate
 }
 
 public struct CodeSignValidator {
@@ -46,14 +49,14 @@ public struct CodeSignValidator {
     ) -> Result<Void, CodeSignValidationReason> {
         
         guard let runningProfile = runningProfile else {
-            debugLog("[CodeSignValidator] Validation failed: corruptProfile (runningProfile is nil)")
-            return .failure(.corruptProfile)
+            debugLog("[CodeSignValidator] Validation failed: missingProfile (runningProfile is nil)")
+            return .failure(.missingProfile)
         }
         
         let runningCert = CertificateManager.shared.getSigningCertificate(at: Bundle.main.bundleURL)
         guard let runningCert = runningCert else {
-            debugLog("[CodeSignValidator] Validation failed: corruptProfile (failed to parse runningCert from binary)")
-            return .failure(.corruptProfile)
+            debugLog("[CodeSignValidator] Validation failed: missingCertificate (failed to parse runningCert from binary)")
+            return .failure(.missingCertificate)
         }
         
         // 1. Expired Certificate / Profile
