@@ -440,17 +440,15 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     private func requestCertificate(for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTCertificate {
         let deviceName = await UIDevice.current.name
         let machineName: String = "SideStore - \(team.account.firstName)'s \(deviceName)"
-        self.debugLog("[Authentication] requestCertificate: Starting request...")
-        self.verboseLog("[Authentication] requestCertificate: Starting request for machineName '\(machineName)'...")
+        self.verboseLog("[Authentication] Requesting certificate for machineName '\(machineName)'...")
         do {
-            self.verboseLog("[Authentication] requestCertificate: Calling AuthManager.shared.addCertificate...")
             let certificate = try await AuthManager.shared.addCertificate(machineName: machineName, to: team, session: session)
-            self.verboseLog("[Authentication] requestCertificate: addCertificate succeeded. Serial: \(certificate.serialNumber)")
-            self.verboseLog("[Authentication] requestCertificate: Fetching certificates to match...")
-            let certificates = try await AuthManager.shared.fetchCertificates(for: team, session: session)
-            self.context.activeCertificates = certificates
-            self.verboseLog("[Authentication] requestCertificate: fetchCertificates returned \(certificates.count) certificates.")
-            self.verboseLog("[Authentication] requestCertificate: Successfully retrieved certificate with private key.")
+            self.debugLog("[Authentication] Successfully requested certificate (Serial: \(certificate.serialNumber)).")
+            if self.context.activeCertificates != nil {
+                self.context.activeCertificates?.append(certificate.x509)
+            } else {
+                self.context.activeCertificates = [certificate.x509]
+            }
             return certificate
         } catch {
             self.debugLog("[Authentication] requestCertificate: Failed with error: \(error)")
@@ -541,9 +539,8 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             if self.isCancelled { throw OperationError.cancelled }
             
             if !self.skipDeviceRegistration {
-                self.verboseLog("[Authentication] execute: Invoking registerCurrentDevice...")
+                self.verboseLog("[Authentication] Registering current device...")
                 _ = try await self.registerCurrentDevice(for: team, session: session)
-                self.debugLog("[Authentication] execute: registerCurrentDevice completed successfully.")
                 self.setProgress(stepWeight * 4)
                 if self.isCancelled { throw OperationError.cancelled }
             }
@@ -551,13 +548,8 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             self.setProgress(100)
             if self.isCancelled { throw OperationError.cancelled }
             
-            self.verboseLog("[Authentication] execute: Invoking cacheAppIDs...")
             try await SyncAppIDsOperation(context: self.context).execute(parentProgress: progress)
-            self.debugLog("[Authentication] execute: cacheAppIDs completed successfully.")
-            
-            self.verboseLog("[Authentication] execute: Invoking postAuthenticationCleanup with success...")
             try await self.postAuthenticationCleanup(result: .success(result))
-            self.debugLog("[Authentication] execute: postAuthenticationCleanup completed successfully.")
             return result
         } catch {
             self.debugLog("[Authentication] execute: Caught error in post-auth flow: \(error). Cleaning up...")
