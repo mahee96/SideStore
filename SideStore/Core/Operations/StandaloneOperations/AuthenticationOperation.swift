@@ -102,6 +102,11 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         self.skipCertificateProvisioning = skipCertificateProvisioning
 
         try super.init(context: context)
+        self.debugLog("""
+        [AuthenticationOperation] Initialized with options:
+          • skipDeviceRegistration: \(skipDeviceRegistration)
+          • skipCertificateProvisioning: \(skipCertificateProvisioning)
+        """)
     }
     
     // Main Pipeline Execution
