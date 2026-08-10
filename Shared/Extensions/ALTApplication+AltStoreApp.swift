@@ -9,12 +9,17 @@
 import Foundation
 @preconcurrency import AltSign
 
-extension ALTApplication
-{
-    static let altstoreBundleID = Bundle.Info.appbundleIdentifier
+extension ALTApplication {
+    static let altstoreBundleID: String = Bundle.Info.appbundleIdentifier
+    static var activeBundleID: String   { Bundle.Info.activeBundleIdentifier }
     
     var isAltStoreApp: Bool {
-        let isAltStoreApp = self.bundleIdentifier.contains(ALTApplication.altstoreBundleID)
-        return isAltStoreApp
+        if self.fileURL.standardizedFileURL == Bundle.Info.activeBundleURL.standardizedFileURL {
+            return true
+        }
+        let matchesActiveBundle   = !Self.activeBundleID.isEmpty && self.bundleIdentifier.contains(Self.activeBundleID)
+        let matchesAltStoreBundle = !Self.altstoreBundleID.isEmpty && self.bundleIdentifier.contains(Self.altstoreBundleID)
+        
+        return matchesActiveBundle || matchesAltStoreBundle
     }
 }

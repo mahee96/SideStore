@@ -118,7 +118,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                 session.anisetteData = try await self.anisetteDataProvider.getAnisetteData(for: session)
                 let certToUse = CertificateManager.shared.activeCertificate?.certificate
                 
-                // auth session doesn't expire soon, and since this isn't retained on restart this should be fine.
+                // auth session doesn't expire soon, and since this isn't retained on restart, this should be fine.
                 self.debugLog("[Authentication] Using cached session, team, certificate")
                 return AuthenticationResult(
                     team: team, 
@@ -136,7 +136,6 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         self.context.session            = authResult.session
         self.context.activeCertificates = authResult.activeCertificates
 
-        // PHASE 2: Post-Authentication Work
         let result = try await self.finalizeAuthentication(result: authResult)
 
         self.setProgress(100)

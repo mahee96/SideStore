@@ -12,15 +12,19 @@ public extension Bundle
 {
     struct Info
     {
+        public static var activeBundle: Bundle { Bundle.main }
+        public static var activeBundleURL: URL { activeBundle.bundleURL }
+        
+        public static var activeBundleIdentifier: String { activeBundle.bundleIdentifier ?? appbundleIdentifier }
+        public static let storeAppBundleIdentifier =  "com.SideStore.SideStore"
+        public static let appbundleIdentifier = "com.SideStore.SideStore"
+ 
         public static let deviceID = "ALTDeviceID"
         public static let serverID = "ALTServerID"
         public static let certificateID = "ALTCertificateID"
         public static let appGroups = "ALTAppGroups"
         public static let altBundleID = "ALTBundleIdentifier"
-        public static let storeAppBundleIdentifier =  "com.SideStore.SideStore"
-        // public static var appbundleIdentifier = Bundle.main.bundleIdentifier
-        public static let appbundleIdentifier = "com.SideStore.SideStore"   // for now lets use what we had so far 
-
+     
         public static let devicePairingString = "ALTPairingFile"
         public static let urlTypes = "CFBundleURLTypes"
         public static let exportedUTIs = "UTExportedTypeDeclarations"

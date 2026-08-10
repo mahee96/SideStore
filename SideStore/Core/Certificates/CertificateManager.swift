@@ -350,15 +350,13 @@ public final class CertificateManager: @unchecked Sendable {
     }
 
     public func getSigningCertificate(at url: URL, withPlistFallback: Bool = true) -> ALTX509Certificate? {
-        guard let bundleID = ALTApplication(fileURL: url)?.bundleIdentifier else 
-        {
-            verboseLog("[CertificateManager] Could not resolve bundleIdentifier for \(url.path)")
+        guard let appBundle = ALTApplication(fileURL: url) else {
+            verboseLog("[CertificateManager] Could not resolve app bundle for \(url.path)")
             return nil
         }
 
-        let isSelf = bundleID == Bundle.main.bundleIdentifier || 
-                     bundleID == Bundle.Info.appbundleIdentifier ||
-                     url.standardizedFileURL == Bundle.main.bundleURL.standardizedFileURL
+        let bundleID = appBundle.bundleIdentifier
+        let isSelf = appBundle.isAltStoreApp
 
         verboseLog("[CertificateManager] getSigningCertificate started for url: \(url.path), isSelf: \(isSelf), bundleID: \(bundleID)")
 

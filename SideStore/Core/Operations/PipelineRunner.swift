@@ -157,7 +157,6 @@ final class PipelineRunner: Sendable
                 group.progress.addChild(progress, withPendingUnitCount: 100 / Int64(operations.count))
             }
             
-            // Remove pipelineProvider assignment on group.context (which is AuthenticatedOperationContext and doesn't hold it anymore)
             
             /* Authenticate (if necessary) */
             if group.context.session == nil
