@@ -88,7 +88,6 @@ private struct SessionCache {
 final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperationContext, AuthenticationResult>, @unchecked Sendable {
     
     private var appleIDEmailAddress: String?
-    private var appleIDPassword: String?
     private var requiresPostAuthFlow = false
     
     let skipDeviceRegistration: Bool
@@ -123,7 +122,8 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                 let result: AuthenticationResult
 
                 if let session = AuthManager.shared.session,
-                   let team = AuthManager.shared.team 
+                   let team = AuthManager.shared.team,
+                   (self.skipCertificateProvisioning || CertificateManager.shared.activeCertificate != nil)
                 {
                     session.anisetteData = try await self.anisetteDataProvider.getAnisetteData(for: session)
                     let certToUse = CertificateManager.shared.activeCertificate?.certificate
@@ -144,8 +144,13 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                 return result
             } catch {
                 self.debugLog("[AuthenticationOperation] execute caught error during authentication: \(error). Cleaning up...")
+                // if auth was good, but certs and others had errors don't signOut ourselves.
+                if !AuthManager.shared.hasStoredPassword &&
+                   !AuthManager.shared.hasStoredXcodeToken
+                {
+                    AuthManager.shared.signOut()
+                }
                 try? await self.finalizeAuthentication(result: .failure(error))
-                AuthManager.shared.signOut()
                 throw error
             }
         }
@@ -166,16 +171,19 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             try await self.authenticationLoop()
         }
         
-        let stepWeight: Int64 = self.skipDeviceRegistration ? 33 : 25
         self.context.session = session
+        AuthManager.shared.session = session
+
+        let stepWeight: Int64 = self.skipDeviceRegistration ? 33 : 25
         reportProgress(stepWeight)
         if self.isCancelled { throw OperationError.cancelled }
 
         // 2. Resolve Team & Save State
         let team = try await self.fetchTeam(for: account, session: session)
+
         self.context.team = team
         AuthManager.shared.team = team
-        AuthManager.shared.session = session
+
         try await self.saveTeamAndAccount(team)
         reportProgress(stepWeight * 2)
 
@@ -185,22 +193,19 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             let details = parseCertificate(derData: data)
             return !details.subject.contains(team.identifier) && !details.issuer.contains(team.identifier)
         } ?? false
-
         if isCustomCert {
             self.debugLog("[Authentication] Custom active certificate detected (Subject OU mismatch with Team ID '\(team.identifier)'). Bypassing portal fetch.")
         }
-
         let certificate: ALTCertificate? = if self.skipCertificateProvisioning || isCustomCert {
             activeCert
         } else {
             try await self.fetchCertificate(for: team, session: session)
         }
-        
         if !self.skipCertificateProvisioning && !isCustomCert {
             try? CertificateManager.shared.setActiveCertificate(certificate)
         }
-
         self.context.signingCertificate = certificate
+        
         
         // 4. Register Current Device
         if !self.skipDeviceRegistration {
@@ -211,7 +216,13 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             if self.isCancelled { throw OperationError.cancelled }
         }
 
-        return AuthenticationResult(team: team, certificate: certificate, session: session, portalCertificates: self.context.portalCertificates)
+        
+        return AuthenticationResult(
+            team: team,
+            certificate: certificate,
+            session: session,
+            portalCertificates: self.context.portalCertificates
+        )
     }
     
     private func silentSignIn() async throws -> (ALTAccount, ALTAppleAPISession)? {
@@ -225,13 +236,12 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                 let anisetteData = try await self.anisetteDataProvider.getAnisetteData()
                 let xcodeVersion = await AnisetteConfigManager.shared.resolvedXcodeVersion()
 
-                let (account, session) = try await AuthManager.shared.authenticateWithToken(
-                    adsid: adsid, 
+                return try await AuthManager.shared.authenticateWithToken(
+                    adsid: adsid,
                     xcodeToken: xcodeToken, 
                     anisetteData: anisetteData, 
                     xcodeVersion: xcodeVersion
                 )
-                return (account, session)
             } catch {
                 self.debugLog("[AuthenticationOperation] Token authentication failed: \(error)")
             }
@@ -243,9 +253,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         {
             self.debugLog("[AuthenticationOperation] Authenticating Apple ID with saved password...")
             do {
-                let (account, session) = try await self.authenticate(appleID: appleID, password: password)
-                self.appleIDPassword = password
-                return (account, session)
+                return try await self.authenticate(appleID: appleID, password: password)
             } catch {
                 self.debugLog("[AuthenticationOperation] Saved password authentication failed: \(error)")
             }
@@ -304,6 +312,8 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         
         AuthManager.shared.adsid = session.dsid
         AuthManager.shared.xcodeToken = session.authToken
+        AuthManager.shared.currentAppleID = appleID
+        AuthManager.shared.password = password
         
         return (account, session)
     }
@@ -411,14 +421,6 @@ private extension AuthenticationOperation {
                     {
                         UserDefaults.standard.activeAppsLimit = InstalledApp.freeAccountActiveAppsLimit
                     }
-                }
-                
-                // Update keychain via AuthManager
-
-                // Prefer the user's provided email address over the one associated with their account (which may be outdated).
-                AuthManager.shared.currentAppleID = self.appleIDEmailAddress ?? altTeam.account.appleID 
-                if let appleIDPassword = self.appleIDPassword {
-                    AuthManager.shared.password = appleIDPassword
                 }
             }
             
