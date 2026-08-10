@@ -294,53 +294,10 @@ private extension SettingsViewController
 {
     
     private func getVersionLabel() -> String {
-        let buildInfo = BuildInfo()
-        
-        func getXcodeVersion() -> String {
-            var xcodeVersion =  buildInfo.xcode.map { version in
-                "Xcode \(version)" + (buildInfo.xcode_revision.map { revision in " - \(revision)" } ?? "")       // Ex: "0.6.0 - Xcode 16.2 - 21ac1ef"
-            } ?? ""
-
-            if let pairing = Bundle.main.object(forInfoDictionaryKey: "ALTPairingFile") as? String,
-                pairing != "<insert pairing file here>"{
-                xcodeVersion += " - true"
-            }
-            return xcodeVersion
-        }
-
-        
-        var versionLabel: String = ""
-        let installedApp = InstalledApp.fetchAltStore(in: DatabaseManager.shared.viewContext)
-        // first check if there is installed app entity, if so, get version info from that
-        if let installedApp
-        {
-            var localizedVersion = installedApp.version
-            // Only show build version for non stable builds.
-            localizedVersion += buildInfo.project_version.map{ version in
-                version.isEmpty  ? "" : " (\(version))"
-            } ?? installedApp.localizedVersion
-        
-            versionLabel = NSLocalizedString(String(format: "Version %@", localizedVersion), comment: "SideStore Version")
-        }
-        else if let version = buildInfo.marketing_version
-        {
-            versionLabel = NSLocalizedString(String(format: "Version %@", version), comment: "SideStore Version")
-        }
-        else
-        {
-            var version = "SideStore\t"
-            version += "\n\(Bundle.Info.appbundleIdentifier)"
-            versionLabel = NSLocalizedString(version, comment: "SideStore Version")
-        }
-        
-        // add xcode build version for local builds
-        if let installedApp,
-           SemanticVersion(installedApp.version)?.preRelease == "local"
-        {
-            versionLabel += "\n\(getXcodeVersion())"
-        }
-        
-        return versionLabel
+        let app = ALTApplication(fileURL: Bundle.Info.activeBundleURL)
+        let version = app?.version ?? "?.?.?"
+        let build = app?.buildVersion.map { " (\($0))" } ?? "(????)"
+        return NSLocalizedString(String(format: "Version %@%@", version, build), comment: "SideStore Version")
     }
     
     @objc private func copyVersionLabelTapped() {
