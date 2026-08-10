@@ -183,13 +183,13 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
                                team: ALTTeam,
                                session: ALTAppleAPISession) async throws -> ALTAppID {
         let appIDs: [ALTAppID]
-        if let cachedAppIDs = self.context.authenticatedContext.appIDs {
+        if let cachedAppIDs = self.context.sharedContext?.appIDs {
             self.debugLog("[FetchProvisioningProfiles] Using cached App IDs from shared context.")
             appIDs = cachedAppIDs
         } else {
             self.debugLog("[FetchProvisioningProfiles] Fetching existing App IDs from Apple for team \(team.identifier)...")
             let fetchedAppIDs = try await ALTAppleAPI.shared.fetchAppIDs(for: team, session: session)
-            self.context.authenticatedContext.appIDs = fetchedAppIDs
+            self.context.sharedContext?.appIDs = fetchedAppIDs
             appIDs = fetchedAppIDs
             self.verboseLog("[FetchProvisioningProfiles] Found \(appIDs.count) existing App IDs on portal for team \(team.identifier): \(appIDs.map { $0.bundleIdentifier })")
         }
@@ -217,7 +217,7 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
             do {
                 self.debugLog("[FetchProvisioningProfiles] Calling ALTAppleAPI.shared.addAppID with name '\(appIDName)' and identifier '\(bundleIdentifier)'...")
                 let appID = try await ALTAppleAPI.shared.addAppID(withName: appIDName, bundleIdentifier: bundleIdentifier, team: team, session: session)
-                self.context.authenticatedContext.appIDs?.append(appID)
+                self.context.sharedContext?.appendAppID(appID)
                 self.debugLog("[FetchProvisioningProfiles] Successfully registered new App ID '\(appID.bundleIdentifier)' on Apple portal.")
                 return appID
             } catch ALTAppleAPIError.maximumAppIDLimitReached {
@@ -230,7 +230,7 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
             } catch ALTAppleAPIError.bundleIdentifierUnavailable {
                 self.debugLog("[FetchProvisioningProfiles] addAppID failed: bundleIdentifierUnavailable for '\(bundleIdentifier)'. Re-checking portal...")
                 let appIDs = try await ALTAppleAPI.shared.fetchAppIDs(for: team, session: session)
-                self.context.authenticatedContext.appIDs = appIDs
+                self.context.sharedContext?.appIDs = appIDs
                 if let appID = appIDs.first(where: { $0.bundleIdentifier == bundleIdentifier }) {
                     self.debugLog("[FetchProvisioningProfiles] Found App ID on secondary fetch after bundleIdentifierUnavailable: \(appID.bundleIdentifier)")
                     return appID
@@ -375,13 +375,13 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
         
         do {
             let fetchedGroups: [ALTAppGroup]
-            if let cachedGroups = self.context.authenticatedContext.appGroups {
+            if let cachedGroups = self.context.sharedContext?.appGroups {
                 self.debugLog("[FetchProvisioningProfiles] Using cached App Groups from shared context.")
                 fetchedGroups = cachedGroups
             } else {
                 self.debugLog("[FetchProvisioningProfiles] Fetching existing App Groups from Apple for team \(team.identifier)...")
                 let groups = try await ALTAppleAPI.shared.fetchAppGroups(for: team, session: session)
-                self.context.authenticatedContext.appGroups = groups
+                self.context.sharedContext?.appGroups = groups
                 fetchedGroups = groups
             }
             
@@ -399,7 +399,7 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
                     let name = "AltStore " + groupIdentifier.replacingOccurrences(of: ".", with: " ")
                     do {
                         let group = try await ALTAppleAPI.shared.addAppGroup(withName: name, groupIdentifier: adjustedGroupIdentifier, team: team, session: session)
-                        self.context.authenticatedContext.appGroups?.append(group)
+                        self.context.sharedContext?.appendAppGroup(group)
                         self.verboseLog("[FetchProvisioningProfiles] Created new App Group \(group.groupIdentifier).")
                         groups.append(group)
                     } catch {

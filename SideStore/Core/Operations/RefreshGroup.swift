@@ -14,6 +14,7 @@ import CoreData
 final class RefreshGroup: NSObject
 {
     let context: AuthenticatedOperationContext
+    let sharedContext: SharedPipelineContext
     let progress = Progress.discreteProgress(totalUnitCount: 100)
     
     var completionHandler: (([String: Result<InstalledApp, Error>]) -> Void)?
@@ -28,9 +29,10 @@ final class RefreshGroup: NSObject
     var activeTask: Task<Void, Never>?
     private let lock = NSLock()
     
-    init(context: AuthenticatedOperationContext)
+    init(context: AuthenticatedOperationContext, sharedContext: SharedPipelineContext = SharedPipelineContext())
     {
         self.context = context
+        self.sharedContext = sharedContext
         super.init()
     }
     

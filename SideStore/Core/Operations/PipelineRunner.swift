@@ -287,6 +287,7 @@ final class PipelineRunner: Sendable
             pipelineSteps: pipelineSteps,
             bundleIdentifier: operation.bundleIdentifier,
             authenticatedContext: group.context,
+            sharedContext: group.sharedContext,
             handler: handler,
             additionalEntitlements: defaultEntitlements
         )

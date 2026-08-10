@@ -178,29 +178,7 @@ class StandaloneOperationContext: OperationContext
     }
 }
 
-class CachedOperationContext: StandaloneOperationContext
-{
-    var appIDs: [ALTAppID]?
-    var appGroups: [ALTAppGroup]?
-
-    override init(steps: [StandaloneExecutionStep] = [], error: Error? = nil, dbBackgroundContext: NSManagedObjectContext? = nil)
-    {
-        super.init(steps: steps, error: error, dbBackgroundContext: dbBackgroundContext)
-    }
-
-    override init(context: StandaloneOperationContext)
-    {
-        super.init(context: context)
-    }
-
-    init(context: CachedOperationContext) {
-        self.appIDs = context.appIDs
-        self.appGroups = context.appGroups
-        super.init(context: context)
-    }
-}
-
-final class AuthenticatedOperationContext: CachedOperationContext
+final class AuthenticatedOperationContext: StandaloneOperationContext
 {
     var session: ALTAppleAPISession?
     var team: ALTTeam?
@@ -266,6 +244,31 @@ class PipelineOperationContext: OperationContext
     }
 }
 
+final class SharedPipelineContext: @unchecked Sendable
+{
+    private let lock = NSLock()
+    private var _appIDs: [ALTAppID]?
+    private var _appGroups: [ALTAppGroup]?
+
+    var appIDs: [ALTAppID]? {
+        get { lock.withLock { _appIDs } }
+        set { lock.withLock { _appIDs = newValue } }
+    }
+
+    var appGroups: [ALTAppGroup]? {
+        get { lock.withLock { _appGroups } }
+        set { lock.withLock { _appGroups = newValue } }
+    }
+
+    func appendAppID(_ appID: ALTAppID) {
+        lock.withLock { _appIDs = (_appIDs ?? []) + [appID] }
+    }
+
+    func appendAppGroup(_ appGroup: ALTAppGroup) {
+        lock.withLock { _appGroups = (_appGroups ?? []) + [appGroup] }
+    }
+}
+
 class AppOperationContext: PipelineOperationContext
 {
     let bundleIdentifier: String
@@ -278,6 +281,8 @@ class AppOperationContext: PipelineOperationContext
     var isFinished = false
 
     let authenticatedContext: AuthenticatedOperationContext
+    var sharedContext: SharedPipelineContext?
+
     var overrideCertificate: ALTCertificate?
     var targetCertStatus: CertificateStatus?
 
@@ -300,10 +305,12 @@ class AppOperationContext: PipelineOperationContext
         pipelineSteps: [PipelineExecutionStep],
         bundleIdentifier: String,
         authenticatedContext: AuthenticatedOperationContext,
+        sharedContext: SharedPipelineContext? = nil,
         handler: PipelineExecutionHandler
     ) {
         self.bundleIdentifier = bundleIdentifier
         self.authenticatedContext = authenticatedContext
+        self.sharedContext = sharedContext
         super.init(
             pipelineSteps: pipelineSteps,
             handler: handler,
@@ -360,10 +367,17 @@ class InstallAppOperationContext: AppOperationContext
         pipelineSteps: [PipelineExecutionStep],
         bundleIdentifier: String,
         authenticatedContext: AuthenticatedOperationContext,
+        sharedContext: SharedPipelineContext? = nil,
         handler: PipelineExecutionHandler,
         additionalEntitlements: [ALTEntitlement: any Sendable] = [:]
     ){
-        super.init(pipelineSteps: pipelineSteps, bundleIdentifier: bundleIdentifier, authenticatedContext: authenticatedContext, handler: handler)
+        super.init(
+            pipelineSteps: pipelineSteps,
+            bundleIdentifier: bundleIdentifier,
+            authenticatedContext: authenticatedContext,
+            sharedContext: sharedContext,
+            handler: handler
+        )
     }
 
 }
