@@ -237,7 +237,7 @@ extension AppManager
     }
 
     func authenticate(presentingViewController: UIViewController?,
-                      skipDeviceRegistration: Bool = true,
+                      skipDeviceRegistration: Bool = false,
                       skipCertificateProvisioning: Bool = false,
                       completionHandler: @escaping (Result<(ALTTeam, ALTCertificate?, ALTAppleAPISession), Error>) -> Void)
     {

@@ -712,7 +712,8 @@ private extension AuthenticationOperation {
             self.debugLog("[Authentication] Device '\(device.name)' (UDID: \(udid)) is registered on team.")
             return device
         } else {
-            self.debugLog("[Authentication] Registering new device '\(UIDevice.current.name)' (UDID: \(udid))...")
+            let deviceName = await MainActor.run { UIDevice.current.name }
+            self.debugLog("[Authentication] Registering new device '\(deviceName)' (UDID: \(udid))...")
             let device = try await AuthManager.shared.registerDevice(name: UIDevice.current.name, identifier: udid, type: .iphone, team: team, session: session)
             self.debugLog("[Authentication] Device '\(device.name)' (UDID: \(udid)) successfully registered.")
             return device
