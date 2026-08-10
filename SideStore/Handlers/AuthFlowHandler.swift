@@ -83,7 +83,7 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
     }
     
     @MainActor
-    func handleVerificationResult(_ result: Result<(ALTAccount, ALTAppleAPISession, ALTTeam, ALTCertificate?), Error>) async {
+    func handleSignInResult(_ result: Result<(ALTAccount, ALTAppleAPISession, ALTTeam, ALTCertificate?), Error>) async {
         if let completionHandler = self.activeAuthCompletionHandler {
             self.activeAuthCompletionHandler = nil
             switch result {
@@ -183,7 +183,7 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
     }
     
     @MainActor
-    func instructionsViewed() async {
+    func resolvePostAuth() async {
         await withCheckedContinuation { continuation in
             var hasResumed = false
             let storyboard = UIStoryboard(name: "Authentication", bundle: nil)
@@ -191,7 +191,7 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
             instructionsViewController.showsBottomButton = true
             instructionsViewController.completionHandler = {
                 guard !hasResumed else {
-                    debugLog("[AuthFlowHandler] instructionsViewed completionHandler invoked more than once. Ignoring.")
+                    debugLog("[AuthFlowHandler] resolvePostAuth completionHandler invoked more than once. Ignoring.")
                     return
                 }
                 hasResumed = true

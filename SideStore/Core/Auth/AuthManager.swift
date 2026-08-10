@@ -104,7 +104,7 @@ public final class AuthManager: @unchecked Sendable {
     }
     
     
-    // MARK: - Developer Portal API Operations
+    // Developer Portal API Operations
     
     public func fetchCertificates(team: ALTTeam, session: ALTAppleAPISession) async throws -> [ALTX509Certificate] {
         return try await DeveloperPortalService.shared.fetchCertificates(team: team, session: session)
@@ -118,7 +118,7 @@ public final class AuthManager: @unchecked Sendable {
         return try await DeveloperPortalService.shared.revokeCertificate(certificate, team: team, session: session)
     }
     
-    // MARK: - Apple Developer Portal API Operations (Delegated to DeveloperPortalService)
+    // Apple Developer Portal API Operations (Delegated to DeveloperPortalService)
     
     public func authenticate(appleID: String, password: String, anisetteData: ALTAnisetteData, xcodeVersion: String, verificationHandler: ((@escaping (String?) -> Void) -> Void)?) async throws -> (ALTAccount, ALTAppleAPISession) {
         return try await DeveloperPortalService.shared.authenticate(appleID: appleID, password: password, anisetteData: anisetteData, xcodeVersion: xcodeVersion, verificationHandler: verificationHandler)

@@ -205,7 +205,7 @@ final class AuthenticatedOperationContext: CachedOperationContext
     var session: ALTAppleAPISession?
     var team: ALTTeam?
     var signingCertificate: ALTCertificate?
-    var activeCertificates: [ALTX509Certificate]?
+    var activeCertificates: [ALTX509Certificate] = []
     
     var isSideStoreResignDismissed: Bool = false
 
