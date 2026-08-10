@@ -249,6 +249,15 @@ public final class CertificateManager: @unchecked Sendable {
             return cert
         }
         
+        if let cert = loadEmbeddedCertificate(for: serialNumber, fallbackPassword: fallbackPassword) {
+            return cert
+        }
+        
+        debugLog("[CertificateManager] getSignableCertificate: No signable certificate found for serial \(serialNumber).")
+        return nil
+    }
+
+    private func loadEmbeddedCertificate(for serialNumber: String, fallbackPassword: String?) -> ALTCertificate? {
         let targetBundle = Bundle.main
         if FileManager.default.fileExists(atPath: targetBundle.certificateURL.path),
            let data = try? Data(contentsOf: targetBundle.certificateURL)
@@ -284,12 +293,10 @@ public final class CertificateManager: @unchecked Sendable {
                 return signableCert
             }
         }
-        
-        debugLog("[CertificateManager] getSignableCertificate: No signable certificate found for serial \(serialNumber).")
         return nil
     }
 
-    /// Reads the Mach-O binary contents of an app bundle to extract its leaf signing certificate.
+    // Reads the Mach-O binary contents of an app bundle to extract its leaf signing certificate.
     public func readBinaryCertificate(at url: URL) -> ALTX509Certificate? {
         let executableURL: URL
         if url.pathExtension == "app" {

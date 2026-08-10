@@ -67,10 +67,10 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
                 debugLog("[VerifyCertificateOperation] Running in verification-only mode (!willResign) for '\(appName)'...")
                 
                 guard let appBundle = self.context.targetAppBundle else {
-                    throw OperationError.invalidApp
+                    throw OperationError.invalidParameters("VerifyCertificateOperation: targetAppBundle is missing in context.")
                 }
                 guard let binaryCert = CertificateManager.shared.getSigningCertificate(at: appBundle.fileURL) else {
-                    throw OperationError.invalidApp
+                    throw OperationError.invalidParameters("Could not locate signing certificate for '\(appName)'.")
                 }
                 
                 let result = await validateCertificate(binaryCert, portalCertificateSerials: portalCertificateSerials, signingCertificateSerial: signingCertificateSerial)
