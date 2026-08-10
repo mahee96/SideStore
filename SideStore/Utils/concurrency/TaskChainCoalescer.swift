@@ -32,13 +32,80 @@ actor TaskChainCoalescer {
         activeTasks[key] = newTask
         
         defer {
-            Task {
-                await self.removeTask(key: key)
-            }
+            self.removeTask(key: key)
         }
         
         let result = try await newTask.value
         return result as! T
+    }
+    
+    private func removeTask(key: String) {
+        activeTasks.removeValue(forKey: key)
+    }
+}
+
+
+
+
+
+
+actor TaskChainCoalescerWithProgress {
+    static let shared = TaskChainCoalescerWithProgress()
+    
+    private class CoalescedEntry {
+        let task: Task<Any, Error>
+        var progressHandlers: [@Sendable (Int64) -> Void]
+        
+        init(task: Task<Any, Error>, progressHandlers: [@Sendable (Int64) -> Void]) {
+            self.task = task
+            self.progressHandlers = progressHandlers
+        }
+    }
+    
+    private var activeTasks = [String: CoalescedEntry]()
+    
+    func coalesce<T: Sendable>(
+        key: String,
+        onProgress: (@Sendable (Int64) -> Void)? = nil,
+        _ operation: @escaping @Sendable (_ reportProgress: @escaping @Sendable (Int64) -> Void) async throws -> T
+    ) async throws -> T {
+        if let existing = activeTasks[key] {
+            if let onProgress = onProgress {
+                existing.progressHandlers.append(onProgress)
+            }
+            let result = try await existing.task.value
+            return result as! T
+        }
+        
+        var initialHandlers = [@Sendable (Int64) -> Void]()
+        if let onProgress = onProgress {
+            initialHandlers.append(onProgress)
+        }
+        
+        let newTask = Task<Any, Error> {
+            let result = try await operation { progress in
+                Task {
+                    await self.broadcastProgress(key: key, progress: progress)
+                }
+            }
+            return result
+        }
+        
+        activeTasks[key] = CoalescedEntry(task: newTask, progressHandlers: initialHandlers)
+        
+        defer {
+            self.removeTask(key: key)
+        }
+        
+        let result = try await newTask.value
+        return result as! T
+    }
+    
+    func broadcastProgress(key: String, progress: Int64) {
+        guard let entry = activeTasks[key] else { return }
+        for handler in entry.progressHandlers {
+            handler(progress)
+        }
     }
     
     private func removeTask(key: String) {

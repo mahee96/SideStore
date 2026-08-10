@@ -111,24 +111,43 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         defer { debugLog("[AuthenticationOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress)
 
-        let authResult = try await TaskChainCoalescer.shared.coalesce(key: "apple_auth") { () -> AuthenticationResult in
-            if let session = AuthManager.shared.session,
-               let team = AuthManager.shared.team 
-            {
-                session.anisetteData = try await self.anisetteDataProvider.getAnisetteData(for: session)
-                let certToUse = CertificateManager.shared.activeCertificate?.certificate
-                
-                // auth session doesn't expire soon, and since this isn't retained on restart, this should be fine.
-                self.debugLog("[Authentication] Using cached session, team, certificate")
-                return AuthenticationResult(
-                    team: team, 
-                    certificate: certToUse, 
-                    session: session, 
-                    portalCertificates: self.context.portalCertificates
-                )
+        let authResult = try await TaskChainCoalescerWithProgress.shared.coalesce(
+            key: "apple_auth",
+            onProgress: { [weak self] progress in
+                self?.setProgress(progress)
             }
+        ) { [weak self] reportProgress -> AuthenticationResult in
+            guard let self = self else { throw OperationError.cancelled }
             
-            return try await self.startAuthentication()
+            do {
+                let result: AuthenticationResult
+
+                if let session = AuthManager.shared.session,
+                   let team = AuthManager.shared.team 
+                {
+                    session.anisetteData = try await self.anisetteDataProvider.getAnisetteData(for: session)
+                    let certToUse = CertificateManager.shared.activeCertificate?.certificate
+                    
+                    self.debugLog("[Authentication] Using cached session, team, certificate")
+                    result = AuthenticationResult(
+                        team: team, 
+                        certificate: certToUse, 
+                        session: session, 
+                        portalCertificates: self.context.portalCertificates
+                    )
+                } else {
+                    result = try await self.startAuthentication(reportProgress: reportProgress)
+                }
+                
+                try await self.finalizeAuthentication(result: .success(result))
+                reportProgress(100)
+                return result
+            } catch {
+                self.debugLog("[AuthenticationOperation] execute caught error during authentication: \(error). Cleaning up...")
+                try? await self.finalizeAuthentication(result: .failure(error))
+                AuthManager.shared.signOut()
+                throw error
+            }
         }
         
         self.context.team               = authResult.team
@@ -136,21 +155,20 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         self.context.session            = authResult.session
         self.context.portalCertificates = authResult.portalCertificates
 
-        let result = try await self.finalizeAuthentication(result: authResult)
-
         self.setProgress(100)
-        return result
+        return authResult
     }
     
-    private func startAuthentication() async throws -> AuthenticationResult {
+    private func startAuthentication(reportProgress: @escaping @Sendable (Int64) -> Void) async throws -> AuthenticationResult {
         let (account, session) = if let silentResult = try await self.silentSignIn() {
             silentResult
         } else {
             try await self.authenticationLoop()
         }
         
+        let stepWeight: Int64 = self.skipDeviceRegistration ? 33 : 25
         self.context.session = session
-        self.setProgress(self.skipDeviceRegistration ? 33 : 25)
+        reportProgress(stepWeight)
         if self.isCancelled { throw OperationError.cancelled }
 
         // 2. Resolve Team & Save State
@@ -159,6 +177,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         AuthManager.shared.team = team
         AuthManager.shared.session = session
         try await self.saveTeamAndAccount(team)
+        reportProgress(stepWeight * 2)
 
         // 3. Resolve Certificate (Custom vs Developer Portal)
         let activeCert = CertificateManager.shared.activeCertificate?.certificate
@@ -182,6 +201,16 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         }
 
         self.context.signingCertificate = certificate
+        
+        // 4. Register Current Device
+        if !self.skipDeviceRegistration {
+            self.verboseLog("[Authentication] Registering current device...")
+            let device = try await self.registerCurrentDevice(for: team, session: session)
+            self.debugLog("[Authentication] Registered current device UDID: \(device.identifier).")
+            reportProgress(stepWeight * 3)
+            if self.isCancelled { throw OperationError.cancelled }
+        }
+
         return AuthenticationResult(team: team, certificate: certificate, session: session, portalCertificates: self.context.portalCertificates)
     }
     
@@ -279,68 +308,43 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         return (account, session)
     }
 
-    private func finalizeAuthentication(result: AuthenticationResult) async throws -> AuthenticationResult {
-        let (team, certificate, session) = (result.team, result.certificate, result.session)
-        let stepWeight: Int64 = self.skipDeviceRegistration ? 33 : 25
-        
-        do {
-            if self.isCancelled { throw OperationError.cancelled }
-            
-            if !self.skipDeviceRegistration {
-                self.verboseLog("[Authentication] Registering current device...")
-               
-                let device = try await self.registerCurrentDevice(for: team, session: session)
-                self.debugLog("[Authentication] Registered current device UDID: \(device.identifier).")
-                
-                self.setProgress(stepWeight * 3)
-                if self.isCancelled { throw OperationError.cancelled }
-            }
-            
-            try await self.postAuthenticationCleanup(result: .success(result))
-            return result
-        } catch {
-            self.debugLog("[Authentication] execute: Caught error in post-auth flow: \(error). Cleaning up...")
-            try? await self.postAuthenticationCleanup(result: .failure(error))
-            throw error
-        }
-    }
 
-    private func postAuthenticationCleanup(result: Result<AuthenticationResult, Error>) async throws {
-        self.verboseLog("[Authentication] postAuthenticationCleanup: Starting cleanup...")
+    private func finalizeAuthentication(result: Result<AuthenticationResult, Error>) async throws {
+        self.verboseLog("[Authentication] finalizeAuthentication: Starting cleanup...")
         
         switch result {
             case .failure(let error):
-                self.debugLog("[Authentication] postAuthenticationCleanup: Failure result - \(error.localizedDescription)")
+                self.debugLog("[Authentication] finalizeAuthentication: Failure result - \(error.localizedDescription)")
                 await self.context.authenticationHandler.complete()
-                self.verboseLog("[Authentication] postAuthenticationCleanup: invoked auth complete for .failure case...")
+                self.verboseLog("[Authentication] finalizeAuthentication: invoked auth complete for .failure case...")
                 
             case .success(let result):
                 let team = result.team
                 let certificate = result.certificate
                 let session = result.session
 
-                self.verboseLog("[Authentication] postAuthenticationCleanup: Authentication Success for team \(team.identifier) account.")
+                self.verboseLog("[Authentication] finalizeAuthentication: Authentication Success for team \(team.identifier) account.")
                 do {
                     try await self.saveTeamAndAccount(team, makeActive: true)
                 } catch {
-                    self.debugLog("[Authentication] postAuthenticationCleanup: error occured when performing cleanup: \(error)")
+                    self.debugLog("[Authentication] finalizeAuthentication: error occured when performing cleanup: \(error)")
                 }
-                self.verboseLog("[Authentication] postAuthenticationCleanup: Database updates completed.")
+                self.verboseLog("[Authentication] finalizeAuthentication: Database updates completed.")
                 
                 if let signingCertificate = certificate, !self.skipCertificateProvisioning
                 {
                     let signer = ALTSigner(team: team, certificate: signingCertificate)
                     let didResign = await self.validateCodeSign(signer: signer, session: session)
-                    self.verboseLog("[Authentication] postAuthenticationCleanup: didResign = \(didResign)")
+                    self.verboseLog("[Authentication] finalizeAuthentication: didResign = \(didResign)")
                     
                     if !didResign && self.requiresPostAuthFlow {
                         await self.context.authenticationHandler.resolvePostAuth()
-                        self.verboseLog("[Authentication] postAuthenticationCleanup: post auth flow completed...")
+                        self.verboseLog("[Authentication] finalizeAuthentication: post auth flow completed...")
                     }
                 }
                 
                 await self.context.authenticationHandler.complete()
-                self.verboseLog("[Authentication] postAuthenticationCleanup: invoked auth complete for .success case...")
+                self.verboseLog("[Authentication] finalizeAuthentication: invoked auth complete for .success case...")
         }
     }
 }

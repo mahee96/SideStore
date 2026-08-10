@@ -4,13 +4,13 @@
 
 ```mermaid
 graph TD
-    Start([Start AuthenticationOperation]) --> Coalesce[TaskChainCoalescer: apple_auth]
+    Start([Start AuthenticationOperation]) --> Coalesce[TaskChainCoalescerWithProgress: apple_auth]
     Coalesce --> CheckL1Cache{Session & Team in AuthManager?}
 
     %% Fast Path (In-Memory Cached Session & Team)
     CheckL1Cache -- Yes --> FetchAnisette[anisetteDataProvider.getAnisetteData for: session]
     FetchAnisette --> GetActiveCert[Use CertificateManager.activeCertificate]
-    GetActiveCert --> ReturnCachedResult([Return Cached AuthenticationResult])
+    GetActiveCert --> ReturnCachedResult([Obtained Cached AuthenticationResult])
 
     %% Full Auth Path (startAuthentication)
     CheckL1Cache -- No --> StartAuth[startAuthentication]
@@ -59,21 +59,25 @@ graph TD
     CheckSkipCert -- No --> FetchCert[fetchCertificate from Developer Portal]
     FetchCert --> SaveActiveCert[CertificateManager.setActiveCertificate]
 
-    ReuseCert --> ReturnAuthResult([Return AuthenticationResult])
-    SaveActiveCert --> ReturnAuthResult
-
-    ReturnCachedResult --> FinalizeResult[finalizeAuthentication]
-    ReturnAuthResult --> FinalizeResult
-
-    %% Phase 2: Post-Authentication Work & Cleanup
-    FinalizeResult --> CheckSkipReg{skipDeviceRegistration?}
+    %% Step 4: Device Registration
+    ReuseCert --> CheckSkipReg{skipDeviceRegistration?}
+    SaveActiveCert --> CheckSkipReg
     CheckSkipReg -- No --> RegisterDevice[registerCurrentDevice for team & session]
-    CheckSkipReg -- Yes --> PostCleanup[postAuthenticationCleanup]
-    RegisterDevice --> PostCleanup
+    CheckSkipReg -- Yes --> ReturnAuthResult([Return AuthenticationResult])
+    RegisterDevice --> ReturnAuthResult
 
-    PostCleanup --> CodeSignCheck{validateCodeSign: didResign?}
+    %% Finalize & Error Recovery (Both Paths)
+    ReturnCachedResult --> FinalizeSuccess[finalizeAuthentication .success]
+    ReturnAuthResult --> FinalizeSuccess
+
+    StartAuth -- "On Error / Exception" --> FinalizeFailure[finalizeAuthentication .failure]
+    FinalizeSuccess --> CodeSignCheck{validateCodeSign: didResign?}
     CodeSignCheck -- "No & requiresPostAuthFlow" --> ResolvePostAuth[handler.resolvePostAuth]
     CodeSignCheck -- "Yes or no post-auth required" --> CompleteHandler[handler.complete]
     ResolvePostAuth --> CompleteHandler
     CompleteHandler --> EndAuth([Complete Operation])
+
+    FinalizeFailure --> CompleteFailure[handler.complete]
+    CompleteFailure --> SignOutCleanup[AuthManager.shared.signOut]
+    SignOutCleanup --> ThrowError([Rethrow Error])
 ```
