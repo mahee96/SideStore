@@ -695,15 +695,22 @@ private extension AuthenticationOperation {
     
     @discardableResult
     private func registerCurrentDevice(for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTDevice {
+        self.debugLog("[Authentication] registerCurrentDevice starting...")
         guard let udid = try await fetchUDID() else {
+            self.debugLog("[Authentication] Failed to fetch device UDID.")
             throw OperationError.unknownUDID
         }
+        self.debugLog("[Authentication] Fetched device UDID: \(udid). Fetching team devices...")
         
         let devices = try await AuthManager.shared.fetchDevices(for: team, types: [.iphone, .ipad], session: session)
         if let device = devices.first(where: { $0.identifier == udid }) {
+            self.debugLog("[Authentication] Device '\(device.name)' (UDID: \(udid)) is registered on team.")
             return device
         } else {
-            return try await AuthManager.shared.registerDevice(name: UIDevice.current.name, identifier: udid, type: .iphone, team: team, session: session)
+            self.debugLog("[Authentication] Registering new device '\(UIDevice.current.name)' (UDID: \(udid))...")
+            let device = try await AuthManager.shared.registerDevice(name: UIDevice.current.name, identifier: udid, type: .iphone, team: team, session: session)
+            self.debugLog("[Authentication] Device '\(device.name)' (UDID: \(udid)) successfully registered.")
+            return device
         }
     }
 }
