@@ -43,7 +43,7 @@ public struct CodeSignValidator {
     
     public static func validate(
         runningProfile: ALTProvisioningProfile?,
-        activeCertificates: [ALTX509Certificate],
+        portalCertificates: [ALTX509Certificate]?,
         signerCertificate: ALTX509Certificate,
         signerTeam: ALTTeam
     ) -> Result<Void, CodeSignValidationReason> {
@@ -82,15 +82,17 @@ public struct CodeSignValidator {
             }
         }
         
-        // 3. Revoked Certificate
-        let isRunningCertActive = activeCertificates.contains { $0.serialNumber == runningCert.serialNumber }
-        if !isRunningCertActive {
-            if signerTeam.type == .free {
-                debugLog("[CodeSignValidator] Validation failed: freeAccountLimitRevoked (certificate is no longer active on portal for free account)")
-                return .failure(.freeAccountLimitRevoked)
-            } else {
-                debugLog("[CodeSignValidator] Validation failed: revoked (certificate is no longer active on portal)")
-                return .failure(.revoked)
+        // 3. Revoked Certificate (Only checked if portal certificates were fetched)
+        if let portalCertificates = portalCertificates {
+            let isRunningCertActive = portalCertificates.contains { $0.serialNumber == runningCert.serialNumber }
+            if !isRunningCertActive {
+                if signerTeam.type == .free {
+                    debugLog("[CodeSignValidator] Validation failed: freeAccountLimitRevoked (certificate is no longer active on portal for free account)")
+                    return .failure(.freeAccountLimitRevoked)
+                } else {
+                    debugLog("[CodeSignValidator] Validation failed: revoked (certificate is no longer active on portal)")
+                    return .failure(.revoked)
+                }
             }
         }
         

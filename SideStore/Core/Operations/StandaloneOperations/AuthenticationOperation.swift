@@ -77,7 +77,7 @@ struct AuthenticationResult {
     let team: ALTTeam
     let certificate: ALTCertificate?
     let session: ALTAppleAPISession
-    let activeCertificates: [ALTX509Certificate]
+    let portalCertificates: [ALTX509Certificate]?
 }
 
 private struct SessionCache {
@@ -124,7 +124,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                     team: team, 
                     certificate: certToUse, 
                     session: session, 
-                    activeCertificates: []
+                    portalCertificates: self.context.portalCertificates
                 )
             }
             
@@ -134,7 +134,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         self.context.team               = authResult.team
         self.context.signingCertificate = authResult.certificate
         self.context.session            = authResult.session
-        self.context.activeCertificates = authResult.activeCertificates
+        self.context.portalCertificates = authResult.portalCertificates
 
         let result = try await self.finalizeAuthentication(result: authResult)
 
@@ -182,7 +182,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         }
 
         self.context.signingCertificate = certificate
-        return AuthenticationResult(team: team, certificate: certificate, session: session, activeCertificates: self.context.activeCertificates)
+        return AuthenticationResult(team: team, certificate: certificate, session: session, portalCertificates: self.context.portalCertificates)
     }
     
     private func silentSignIn() async throws -> (ALTAccount, ALTAppleAPISession)? {
@@ -433,7 +433,7 @@ private extension AuthenticationOperation {
         
         let result = CodeSignValidator.validate(
             runningProfile: provisioningProfile,
-            activeCertificates: self.context.activeCertificates,
+            portalCertificates: self.context.portalCertificates,
             signerCertificate: signer.certificate.x509,
             signerTeam: signer.team
         )
@@ -499,7 +499,7 @@ private extension AuthenticationOperation {
 
     private func fetchCertificate(for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTCertificate {
         let portalCertificates = try await AuthManager.shared.fetchCertificates(for: team, session: session)
-        self.context.activeCertificates = portalCertificates
+        self.context.portalCertificates = portalCertificates
         
         let mainBundleCertSerial = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String
         
@@ -546,7 +546,10 @@ private extension AuthenticationOperation {
             let newPortalCertificate = try await AuthManager.shared.addCertificate(machineName: machineName, to: team, session: session)
             self.debugLog("[Authentication] Successfully requested new portal certificate (Serial: \(newPortalCertificate.serialNumber)).")
             
-            self.context.activeCertificates.append(newPortalCertificate.x509)
+            if self.context.portalCertificates == nil {
+                self.context.portalCertificates = []
+            }
+            self.context.portalCertificates?.append(newPortalCertificate.x509)
             return newPortalCertificate
         } catch {
             self.debugLog("[Authentication] requestCertificate: Failed with error: \(error)")

@@ -183,7 +183,7 @@ final class AuthenticatedOperationContext: StandaloneOperationContext
     var session: ALTAppleAPISession?
     var team: ALTTeam?
     var signingCertificate: ALTCertificate?
-    var activeCertificates: [ALTX509Certificate] = []
+    var portalCertificates: [ALTX509Certificate]?
 
     let authenticationHandler: AuthenticationHandler
     let anisetteServerHandler: AnisetteServerHandler
@@ -206,7 +206,7 @@ final class AuthenticatedOperationContext: StandaloneOperationContext
         self.session = context.session
         self.team = context.team
         self.signingCertificate = context.signingCertificate
-        self.activeCertificates = context.activeCertificates
+        self.portalCertificates = context.portalCertificates
     }
 }
 

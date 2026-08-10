@@ -38,19 +38,19 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
         
         do {
             // 2. Obtain active portal certificates (auth context or direct fetch as fallback)
-            let activeCertificates: [ALTX509Certificate]
-            if !self.context.authenticatedContext.activeCertificates.isEmpty {
-                activeCertificates = self.context.authenticatedContext.activeCertificates
-                self.debugLog("[VerifyCertificateOperation] Utilizing \(activeCertificates.count) active certificates cached from Auth context.")
+            let portalCertificates: [ALTX509Certificate]
+            if let cachedPortalCerts = self.context.authenticatedContext.portalCertificates, !cachedPortalCerts.isEmpty {
+                portalCertificates = cachedPortalCerts
+                self.debugLog("[VerifyCertificateOperation] Utilizing \(portalCertificates.count) active certificates cached from Auth context.")
             } else {
                 self.debugLog("[VerifyCertificateOperation] Active certificates not found in Auth context. Fetching live from Apple Developer Portal...")
-                activeCertificates = try await AuthManager.shared.fetchCertificates(for: team, session: session)
-                self.context.authenticatedContext.activeCertificates = activeCertificates
+                portalCertificates = try await AuthManager.shared.fetchCertificates(for: team, session: session)
+                self.context.authenticatedContext.portalCertificates = portalCertificates
             }
             
             self.setProgress(30)
             
-            let portalCertificateSerials = Set(activeCertificates.compactMap { $0.serialNumber })
+            let portalCertificateSerials = Set(portalCertificates.compactMap { $0.serialNumber })
             let signingCertificateSerial = self.context.overrideCertificate?.serialNumber ?? CertificateManager.shared.activeCertificate?.serialNumber
             
             debugLog("""
