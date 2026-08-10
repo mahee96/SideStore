@@ -83,11 +83,11 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
     }
     
     @MainActor
-    func handleSignInResult(_ result: Result<(ALTAccount, ALTAppleAPISession, ALTTeam, ALTCertificate?), Error>) async {
+    func handleSignInResult(_ result: Result<(ALTAccount, ALTAppleAPISession), Error>) async {
         if let completionHandler = self.activeAuthCompletionHandler {
             self.activeAuthCompletionHandler = nil
             switch result {
-            case .success((let account, let session, _, _)):
+            case .success((let account, let session)):
                 completionHandler(.success((account, session)))
             case .failure(let error):
                 completionHandler(.failure(error))

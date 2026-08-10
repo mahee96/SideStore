@@ -136,7 +136,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             }
             
             // L2: Sign-in (Silent credentials sign-in or fallback to full auth flow)
-            return try await self.performNewSignIn()
+            return try await self.startAuthentication()
         }
         
         self.context.team               = authResult.team
@@ -181,165 +181,112 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     }
     
     // Phase 1B: New Sign-In Flow
-    
-    private func performNewSignIn() async throws -> AuthenticationResult {
-        let stepWeight: Int64 = self.skipDeviceRegistration ? 33 : 25
-        
-        self.verboseLog("[Authentication] execute: Invoking signIn...")
-        let (account, session, signInTeam, signInCert) = try await self.signIn()
-        self.debugLog("[Authentication] execute: signIn completed successfully.")
-        self.context.session = session
-        self.setProgress(stepWeight)
-        if self.isCancelled { throw OperationError.cancelled }
-        
-        // Resolve Team
-        let team: ALTTeam
-        if let signInTeam = signInTeam {
-            team = signInTeam
-            self.context.team = team
-            self.debugLog("[Authentication] execute: Using validated team '\(team.name)' from interactive auth.")
+    private func startAuthentication() async throws -> AuthenticationResult {
+        // 1. Authenticate (Silent or Interactive UI)
+        let (account, session) = if let silentResult = try await self.silentSignIn() {
+            silentResult
         } else {
-            self.verboseLog("[Authentication] execute: Invoking fetchTeam...")
-            team = try await self.fetchTeam(for: account, session: session)
-            self.debugLog("[Authentication] execute: fetchTeam completed successfully.")
-            self.context.team = team
+            try await self.authenticationLoop()
         }
         
-        self.debugLog("[Authentication] Saving team & account immediately after fetchTeam")
+        self.context.session = session
+        self.setProgress(self.skipDeviceRegistration ? 33 : 25)
+        if self.isCancelled { throw OperationError.cancelled }
+
+        // 2. Resolve Team & Save State
+        let team = try await self.fetchTeam(for: account, session: session)
+        self.context.team = team
         AuthManager.shared.team = team
         AuthManager.shared.session = session
         try await self.saveTeamAndAccount(team)
-        
-        // Check if custom/third-party certificate is active
-        var isCustomCertActive = false
-        if let activeCert = CertificateManager.shared.activeCertificate?.certificate,
-           let data = activeCert.data {
+
+        // 3. Resolve Certificate (Custom vs Developer Portal)
+        let activeCert = CertificateManager.shared.activeCertificate?.certificate
+        let isCustomCert = activeCert?.data.map { data in
             let details = parseCertificate(derData: data)
-            let belongsToAuthenticatedTeam = details.subject.contains(team.identifier) || details.issuer.contains(team.identifier)
-            if !belongsToAuthenticatedTeam {
-                self.debugLog("[Authentication] Custom/third-party active certificate detected (Subject OU does not match Team ID '\(team.identifier)').")
-                isCustomCertActive = true
-            }
+            return !details.subject.contains(team.identifier) && !details.issuer.contains(team.identifier)
+        } ?? false
+
+        if isCustomCert {
+            self.debugLog("[Authentication] Custom active certificate detected (Subject OU mismatch with Team ID '\(team.identifier)'). Bypassing portal fetch.")
         }
-        
-        // Resolve Certificate
-        let certificate: ALTCertificate?
-        if self.skipCertificateProvisioning || isCustomCertActive {
-            if isCustomCertActive {
-                self.debugLog("[Authentication] Using custom active certificate '\(CertificateManager.shared.activeCertificate?.certificate.serialNumber ?? "nil")' for signing. Bypassing portal fetch.")
-            } else {
-                self.verboseLog("[Authentication] execute: Skipping certificate provisioning.")
-            }
-            certificate = CertificateManager.shared.activeCertificate?.certificate
-            self.context.signingCertificate = certificate
+
+        let certificate: ALTCertificate? = if self.skipCertificateProvisioning || isCustomCert {
+            activeCert
         } else {
-            if let signInCert = signInCert {
-                certificate = signInCert
-                self.context.signingCertificate = certificate
-                self.debugLog("[Authentication] execute: Using validated certificate '\(certificate?.serialNumber ?? "nil")' from interactive auth.")
-            } else {
-                self.verboseLog("[Authentication] execute: Invoking fetchCertificate...")
-                certificate = try await self.fetchCertificate(for: team, session: session)
-                self.debugLog("[Authentication] execute: fetchCertificate completed successfully. Serial: \(certificate?.serialNumber ?? "nil")")
-                self.context.signingCertificate = certificate
-            }
+            try await self.fetchCertificate(for: team, session: session)
         }
         
-        // Update active certificate if not using custom third-party cert
-        if !isCustomCertActive {
-            self.debugLog("[Authentication] Saving certificate after fetching certificate")
+        if !self.skipCertificateProvisioning && !isCustomCert {
             try? CertificateManager.shared.setActiveCertificate(certificate)
         }
-        
+
+        self.context.signingCertificate = certificate
         return AuthenticationResult(team: team, certificate: certificate, session: session, activeCertificates: self.context.activeCertificates)
     }
     
-    private func signIn() async throws -> (ALTAccount, ALTAppleAPISession, ALTTeam?, ALTCertificate?) {
-        // Try Keychain Token Authentication
-        if let adsid = AuthManager.shared.adsid, let xcodeToken = AuthManager.shared.xcodeToken {
+    private func silentSignIn() async throws -> (ALTAccount, ALTAppleAPISession)? {
+        // Try silent auth using Keychain Token
+        if let adsid = AuthManager.shared.adsid, 
+           let xcodeToken = AuthManager.shared.xcodeToken 
+        {
             self.verboseLog("[AuthenticationOperation] Authenticating Apple ID with tokens...")
+
             do {
                 let anisetteData = try await self.anisetteDataProvider.getAnisetteData()
                 let xcodeVersion = await AnisetteConfigManager.shared.resolvedXcodeVersion()
-                let (account, session) = try await AuthManager.shared.authenticateWithToken(adsid: adsid, 
-                                                                                            xcodeToken: xcodeToken, 
-                                                                                            anisetteData: anisetteData, 
-                                                                                            xcodeVersion: xcodeVersion)
-                return (account, session, nil, nil)
+
+                let (account, session) = try await AuthManager.shared.authenticateWithToken(
+                    adsid: adsid, 
+                    xcodeToken: xcodeToken, 
+                    anisetteData: anisetteData, 
+                    xcodeVersion: xcodeVersion
+                )
+                return (account, session)
             } catch {
-                self.debugLog("[AuthenticationOperation] Authentication failed with token. Fall back to email and password login: \(error)")
+                self.debugLog("[AuthenticationOperation] Token authentication failed: \(error)")
             }
         }
         
-        // Try Keychain Password Authentication
-        if let appleID = AuthManager.shared.currentAppleID, let password = AuthManager.shared.password {
-            self.debugLog("Authenticating Apple ID...")
+        // Try silent auth using Keychain Password
+        if let appleID = AuthManager.shared.currentAppleID, 
+           let password = AuthManager.shared.password 
+        {
+            self.debugLog("[AuthenticationOperation] Authenticating Apple ID with saved password...")
             do {
                 let (account, session) = try await self.authenticate(appleID: appleID, password: password)
                 self.appleIDPassword = password
-                return (account, session, nil, nil)
-            } catch ALTAppleAPIError.incorrectCredentials, ALTAppleAPIError.appSpecificPasswordRequired {
-                let result = try await self.performFullAuthentication()
-                return (result.account, result.session, result.team, result.certificate)
+                return (account, session)
             } catch {
-                throw error
+                self.debugLog("[AuthenticationOperation] Saved password authentication failed: \(error)")
             }
-        } else {
-            // Present Interactive UI Prompt
-            let result = try await self.performFullAuthentication()
-            return (result.account, result.session, result.team, result.certificate)
         }
+
+        return nil
     }
-    
-    private func performFullAuthentication() async throws -> (account: ALTAccount, session: ALTAppleAPISession, team: ALTTeam, certificate: ALTCertificate?) {
+
+    private func authenticationLoop() async throws -> (account: ALTAccount, session: ALTAppleAPISession) {
+        self.verboseLog("[Authentication] authenticationLoop: Requesting credentials...")
         let handler = self.context.authenticationHandler
         
-        self.verboseLog("[Authentication] performFullAuthentication: Requesting credentials...")
         while true {
             let (appleID, password) = try await handler.credentials()
             if self.isCancelled { throw OperationError.cancelled }
             
             do {
                 let (account, session) = try await self.authenticate(appleID: appleID, password: password)
-                self.debugLog("[Authentication] performFullAuthentication: authenticate succeeded.")
+                self.debugLog("[Authentication] authenticationLoop: authenticate succeeded.")
                 
-                let team = try await self.fetchTeam(for: account, session: session)
-                self.debugLog("[Authentication] performFullAuthentication: fetchTeam completed.")
-                
-                let certificate: ALTCertificate?
-                var isCustomCertActive = false
-
-                if let activeCert = CertificateManager.shared.activeCertificate?.certificate,
-                   let data = activeCert.data 
-                {
-                    let details = parseCertificate(derData: data)
-                    let belongsToAuthenticatedTeam = details.subject.contains(team.identifier) || details.issuer.contains(team.identifier)
-                    if !belongsToAuthenticatedTeam {
-                        isCustomCertActive = true
-                    }
-                }
-                
-                if self.skipCertificateProvisioning || isCustomCertActive {
-                    certificate = CertificateManager.shared.activeCertificate?.certificate
-                } else {
-                    self.verboseLog("[Authentication] performFullAuthentication: Fetching certificate...")
-                    certificate = try await self.fetchCertificate(for: team, session: session)
-                    self.debugLog("[Authentication] performFullAuthentication: fetchCertificate completed.")
-                }
-                
-                let result = (account, session, team, certificate)
-                await handler.handleSignInResult(.success(result))
+                await handler.handleSignInResult(.success((account, session)))
                 
                 self.requiresPostAuthFlow = true
-                return (account, session, team, certificate)
+                return (account, session)
             } catch {
-                self.debugLog("[Authentication] performFullAuthentication: Attempt failed with error: \(error)")
+                self.debugLog("[Authentication] authenticationLoop: Attempt failed with error: \(error)")
                 await handler.handleSignInResult(.failure(error))
             }
         }
     }
-    
-
     
     private func authenticate(appleID: String, password: String) async throws -> (ALTAccount, ALTAppleAPISession) {
         self.appleIDEmailAddress = appleID
@@ -347,8 +294,16 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         let anisetteData = try await self.anisetteDataProvider.getAnisetteData()
         let handler = self.context.authenticationHandler
         
-        let verificationHandler: ((@escaping (String?) -> Void) -> Void)? = { completionHandler in
-            Task {
+        let xcodeVersion = await AnisetteConfigManager.shared.resolvedXcodeVersion()
+
+        let (account, session) = try await AuthManager.shared.authenticate(
+            appleID: appleID,
+            password: password,
+            anisetteData: anisetteData,
+            xcodeVersion: xcodeVersion
+        ) { completionHandler in
+
+            Task.detached {
                 do {
                     let code = try await handler.verificationCode()
                     completionHandler(code)
@@ -358,21 +313,11 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             }
         }
         
-        let xcodeVersion = await AnisetteConfigManager.shared.resolvedXcodeVersion()
-        let (account, session) = try await AuthManager.shared.authenticate(
-            appleID: appleID,
-            password: password,
-            anisetteData: anisetteData,
-            xcodeVersion: xcodeVersion,
-            verificationHandler: verificationHandler
-        )
-        
         AuthManager.shared.adsid = session.dsid
         AuthManager.shared.xcodeToken = session.authToken
         
         return (account, session)
     }
-
     // Phase 2: Post-Authentication Operations & Cleanup
     private func finalizeAuthentication(result: AuthenticationResult) async throws -> AuthenticationResult {
         let (team, certificate, session) = (result.team, result.certificate, result.session)
@@ -398,82 +343,6 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         }
     }
 
-
-
-
-
-    
-    private func saveTeamAndAccount(_ altTeam: ALTTeam, makeActive: Bool = false) async throws {
-        guard let context = self.context.dbBackgroundContext else {
-            throw OperationError.invalidParameters("AuthenticationOperation: context.dbBackgroundContext is nil")
-        }
-        try await context.perform {
-            let account: Account
-            let team: Team
-            
-            if let tempAccount = Account.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(Account.identifier), altTeam.account.identifier), in: context) {
-                account = tempAccount
-            } else {
-                account = Account(altTeam.account, context: context)
-            }
-            
-            if let tempTeam = Team.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(Team.identifier), altTeam.identifier), in: context) {
-                team = tempTeam
-            } else {
-                team = Team(altTeam, account: account, context: context)
-            }
-            
-            account.update(account: altTeam.account)
-            if let providedEmailAddress = self.appleIDEmailAddress {
-                account.appleID = providedEmailAddress
-            }
-            
-            team.update(team: altTeam)
-            
-            if makeActive {
-                // Account
-                account.isActiveAccount = true
-                let otherAccountsFetchRequest = Account.fetchRequest() as NSFetchRequest<Account>
-                otherAccountsFetchRequest.predicate = NSPredicate(format: "%K != %@", #keyPath(Account.identifier), account.identifier)
-                let otherAccounts = try context.fetch(otherAccountsFetchRequest)
-                for otherAccount in otherAccounts {
-                    otherAccount.isActiveAccount = false
-                }
-
-                // Team
-                team.isActiveTeam = true
-                let otherTeamsFetchRequest = Team.fetchRequest() as NSFetchRequest<Team>
-                otherTeamsFetchRequest.predicate = NSPredicate(format: "%K != %@", #keyPath(Team.identifier), team.identifier)
-                let otherTeams = try context.fetch(otherTeamsFetchRequest)
-                for otherTeam in otherTeams {
-                    otherTeam.isActiveTeam = false
-                }
-
-                let isSparseRestorePatched   = ProcessInfo().sparseRestorePatched
-                let isAppLimitDisabled       = UserDefaults.standard.isAppLimitDisabled
-
-                UserDefaults.standard.activeAppsLimit = nil
-                // TODO: @mahee96: is the minimum ver match for ios 13.3.1 check required?
-                //                 if so what is the app limit? As nil app limit specifies unlimited apps?!
-                if team.type == .free {
-                    if !isAppLimitDisabled && isSparseRestorePatched ||
-                        isAppLimitDisabled && !isSparseRestorePatched 
-                    {
-                            UserDefaults.standard.activeAppsLimit = InstalledApp.freeAccountActiveAppsLimit
-                    }
-                }
-                
-                // Update keychain via AuthManager
-                AuthManager.shared.currentAppleID = self.appleIDEmailAddress ?? altTeam.account.appleID // Prefer the user's provided email address over the one associated with their account (which may be outdated).
-                if let appleIDPassword = self.appleIDPassword {
-                    AuthManager.shared.password = appleIDPassword
-                }
-            }
-            
-            try context.save()
-        }
-    }
-    
     private func postAuthenticationCleanup(result: Result<AuthenticationResult, Error>) async throws {
         self.verboseLog("[Authentication] postAuthenticationCleanup: Starting cleanup...")
         
@@ -516,8 +385,81 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                 self.verboseLog("[Authentication] postAuthenticationCleanup: invoked auth complete for .success case...")
         }
     }
+    
+    private func saveTeamAndAccount(_ altTeam: ALTTeam, makeActive: Bool = false) async throws {
+        guard let context = self.context.dbBackgroundContext else {
+            throw OperationError.invalidParameters("AuthenticationOperation: context.dbBackgroundContext is nil")
+        }
+        try await context.perform {
+            let account: Account
+            let team: Team
+            
+            if let tempAccount = Account.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(Account.identifier), altTeam.account.identifier), in: context) {
+                account = tempAccount
+            } else {
+                account = Account(altTeam.account, context: context)
+            }
+            
+            if let tempTeam = Team.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(Team.identifier), altTeam.identifier), in: context) {
+                team = tempTeam
+            } else {
+                team = Team(altTeam, account: account, context: context)
+            }
+            
+            account.update(account: altTeam.account)
 
+            if let providedEmailAddress = self.appleIDEmailAddress {
+                account.appleID = providedEmailAddress
+            }
+            
+            team.update(team: altTeam)
+            
+            if makeActive {
+                // Account
+                account.isActiveAccount = true
+                let otherAccountsFetchRequest = Account.fetchRequest() as NSFetchRequest<Account>
+                otherAccountsFetchRequest.predicate = NSPredicate(format: "%K != %@", #keyPath(Account.identifier), account.identifier)
+                let otherAccounts = try context.fetch(otherAccountsFetchRequest)
+                for otherAccount in otherAccounts {
+                    otherAccount.isActiveAccount = false
+                }
 
+                // Team
+                team.isActiveTeam = true
+                let otherTeamsFetchRequest = Team.fetchRequest() as NSFetchRequest<Team>
+                otherTeamsFetchRequest.predicate = NSPredicate(format: "%K != %@", #keyPath(Team.identifier), team.identifier)
+                let otherTeams = try context.fetch(otherTeamsFetchRequest)
+                for otherTeam in otherTeams {
+                    otherTeam.isActiveTeam = false
+                }
+
+                let isSparseRestorePatched   = ProcessInfo().sparseRestorePatched
+                let isAppLimitDisabled       = UserDefaults.standard.isAppLimitDisabled
+
+                UserDefaults.standard.activeAppsLimit = nil
+                // TODO: @mahee96: is the minimum ver match for ios 13.3.1 check required?
+                //                 if so what is the app limit? As nil app limit specifies unlimited apps?!
+                if team.type == .free {
+                    if !isAppLimitDisabled && isSparseRestorePatched ||
+                        isAppLimitDisabled && !isSparseRestorePatched 
+                    {
+                        UserDefaults.standard.activeAppsLimit = InstalledApp.freeAccountActiveAppsLimit
+                    }
+                }
+                
+                // Update keychain via AuthManager
+
+                // Prefer the user's provided email address over the one associated with their account (which may be outdated).
+                AuthManager.shared.currentAppleID = self.appleIDEmailAddress ?? altTeam.account.appleID 
+                if let appleIDPassword = self.appleIDPassword {
+                    AuthManager.shared.password = appleIDPassword
+                }
+            }
+            
+            try context.save()
+        }
+    }
+    
     private func validateCodeSign(signer: ALTSigner, session: ALTAppleAPISession) async -> Bool {
         self.verboseLog("[Authentication] validateCodeSign: entering method")
         guard let appBundle = ALTApplication(fileURL: Bundle.main.bundleURL), 
@@ -566,6 +508,7 @@ private extension AuthenticationOperation {
 
     // Team, Certificate Resolution & Device Registration Helpers
     private func fetchTeam(for account: ALTAccount, session: ALTAppleAPISession) async throws -> ALTTeam {
+        self.verboseLog("[Authentication] fetchTeam: Requesting teams from Apple...")
         let teams = try await AuthManager.shared.fetchTeams(for: account, session: session)
         
         var activeTeamFromDB: Team?
@@ -575,19 +518,21 @@ private extension AuthenticationOperation {
             }
         }
         
+        let selectedTeam: ALTTeam
         if let activeTeam = activeTeamFromDB, let altTeam = teams.first(where: { $0.identifier == activeTeam.identifier }) {
-            return altTeam
-        }
-        
-        if teams.count <= 1 {
+            selectedTeam = altTeam
+        } else if teams.count <= 1 {
             if let team = teams.first {
-                return team
+                selectedTeam = team
             } else {
                 throw AuthenticationError(.noTeam)
             }
+        } else {
+            selectedTeam = try await self.context.authenticationHandler.resolveTeam(teams)
         }
         
-        return try await self.context.authenticationHandler.resolveTeam(teams)
+        self.debugLog("[Authentication] fetchTeam completed successfully ('\(selectedTeam.name)').")
+        return selectedTeam
     }
 
     private func fetchCertificate(for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTCertificate {
