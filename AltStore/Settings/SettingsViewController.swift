@@ -294,10 +294,7 @@ private extension SettingsViewController
 {
     
     private func getVersionLabel() -> String {
-        let app = ALTApplication(fileURL: Bundle.Info.activeBundleURL)
-        let version = app?.version ?? "?.?.?"
-        let build = app?.buildVersion.map { " (\($0))" } ?? "(????)"
-        return NSLocalizedString(String(format: "Version %@%@", version, build), comment: "SideStore Version")
+        Bundle.Info.activeBundleVersion
     }
     
     @objc private func copyVersionLabelTapped() {

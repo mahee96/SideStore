@@ -12,10 +12,15 @@ public extension Bundle
 {
     struct Info
     {
-        public static var activeBundle: Bundle { Bundle.main }
-        public static var activeBundleURL: URL { activeBundle.bundleURL }
-        
-        public static var activeBundleIdentifier: String { activeBundle.bundleIdentifier! }
+        public static let activeBundle: Bundle = Bundle.main
+        public static let activeBundleURL: URL = activeBundle.bundleURL
+        public static let activeBundleVersion: String = {
+            let info = activeBundle.infoDictionary
+            let version = (info?["CFBundleShortVersionString"] as? String) ?? "?.?.?"
+            let build = (info?["CFBundleVersion"] as? String).map { " (\($0))" } ?? "(????)"
+            return NSLocalizedString(String(format: "Version %@%@", version, build), comment: "SideStore Version")
+        }()
+        public static let activeBundleIdentifier: String = activeBundle.bundleIdentifier!
         public static let storeAppBundleIdentifier =  "com.SideStore.SideStore"
         public static let appbundleIdentifier = "com.SideStore.SideStore"
  
