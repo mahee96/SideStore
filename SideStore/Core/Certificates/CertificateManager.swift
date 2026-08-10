@@ -244,7 +244,7 @@ public final class CertificateManager: @unchecked Sendable {
         setImportedCertificateSerials(serials)
     }
 
-    public func getSignableCertificate(for serialNumber: String, externalPassword: String? = nil) -> ALTCertificate? {
+    public func getSignableCertificate(for serialNumber: String = "", fallbackPassword: String? = nil) -> ALTCertificate? {
         if let cert = getLocalCertificate(serialNumber: serialNumber) {
             return cert
         }
@@ -254,20 +254,34 @@ public final class CertificateManager: @unchecked Sendable {
            let data = try? Data(contentsOf: targetBundle.certificateURL)
         {
             let possiblePasswords: [(name: String, value: String?)] = [
-                ("externalPassword", externalPassword),
-                ("activeCertPassword", activeCertificate?.password),
-                ("serialNumber", activeCertificate?.certificate.serialNumber),
+                ("incomingCertSerial", serialNumber),
+                ("fallbackPassword", fallbackPassword),
+                ("activeCertSerial", activeCertificate?.certificate.serialNumber),
                 ("machineIdentifier", activeCertificate?.certificate.machineIdentifier),
+                ("activeCertPassword", activeCertificate?.password),
                 ("keychainPassword", Keychain.shared.signingCertificatePassword),
                 ("nil", nil)
             ]
+
+            var signableCert: ALTCertificate?
             for (pwdName, password) in possiblePasswords {
-                if let cert = try? ALTCertificate(p12Data: data, password: password),
-                   cert.serialNumber.lowercased() == serialNumber.lowercased() || serialNumber.isEmpty
-                {
-                    debugLog("[CertificateManager] getSignableCertificate: Decrypted embedded p12 using password source '\(pwdName)' (serial: \(cert.serialNumber)).")
-                    return cert
+                self.verboseLog("[CertificateManager] getSignableCertificate: Attempting decryption with password source '\(pwdName)'...")
+                if let cert = try? ALTCertificate(p12Data: data, password: password) {
+                    signableCert = cert
+                    if cert.serialNumber.lowercased() == serialNumber.lowercased() {
+                        self.debugLog("[CertificateManager] getSignableCertificate: Decrypted embedded p12 using '\(pwdName)' with matching serial '\(cert.serialNumber)'.")
+                        break
+                    } else {
+                        self.verboseLog("[CertificateManager] getSignableCertificate: Decrypted embedded p12 using '\(pwdName)', but serial mismatch (certSerial: \(cert.serialNumber), targetSerial: \(serialNumber)).")
+                    }
+                } else {
+                    self.verboseLog("[CertificateManager] getSignableCertificate: Failed to decrypt embedded p12 using password source '\(pwdName)'.")
                 }
+            }
+
+            if signableCert != nil || serialNumber.isEmpty {
+                self.debugLog("[CertificateManager] getSignableCertificate: Returning certificate (serial: '\(signableCert?.serialNumber ?? "nil")', targetSerial: '\(serialNumber)').")
+                return signableCert
             }
         }
         

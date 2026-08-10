@@ -554,9 +554,11 @@ private extension AuthenticationOperation {
             return activeCert.certificate
         }
         
+        // TODO: @mahee96: we have moved away from machineID as password for certs, but external/thirdparty like iloader might not have, 
+        //                 so we still support the machineId as fallback for now 
         if let mainBundleCertSerial = mainBundleCertSerial,
            let certificate = portalCertificates.first(where: { $0.serialNumber.lowercased() == mainBundleCertSerial.lowercased() }),
-           let cert = CertificateManager.shared.getSignableCertificate(for: mainBundleCertSerial, externalPassword: mainBundleCertSerial) 
+           let cert = CertificateManager.shared.getSignableCertificate(for: mainBundleCertSerial, fallbackPassword: certificate.machineIdentifier) 
         {
             cert.machineIdentifier = certificate.machineIdentifier
             self.debugLog("[Authentication] Using running bundle certificate (\(cert.serialNumber)) with valid private key from signable cache.")
