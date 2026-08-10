@@ -284,10 +284,13 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
                 let resignedBundleID = appExtension.bundleIdentifier
                 let appExBundleID = resignedBundleID.replacingOccurrences(of: resignedParentBundleID, with: parentBundleID)
                 
-                self.debugLog("`InstalledAppOperation: parentBundleID`: \(parentBundleID)")
-                self.debugLog("`InstalledAppOperation: resignedParentBundleID`: \(resignedParentBundleID)")
-                self.debugLog("`InstalledAppOperation: appExBundleID`: \(appExBundleID)")
-                self.debugLog("`InstalledAppOperation: resignedAppExBundleID`: \(resignedBundleID)")
+                self.debugLog("""
+                [InstallAppOperation] Extension Bundle Mapping:
+                  • parentBundleID         : \(parentBundleID)
+                  • resignedParentBundleID : \(resignedParentBundleID)
+                  • appExBundleID          : \(appExBundleID)
+                  • resignedAppExBundleID  : \(resignedBundleID)
+                """)
                 
                 let installedExtension = try installedApp.appExtensions
                                                 .first(where: { $0.bundleIdentifier == appExBundleID })
