@@ -78,7 +78,7 @@ class RevokeCertificatesAlertViewController: UIViewController {
             titleLabel.numberOfLines = 1
 
             let serialLabel = UILabel()
-            serialLabel.text = "Serial: \(cert.serialNumber.prefix(8))..."
+            serialLabel.text = "Serial: \(cert.serialNumber)"
             serialLabel.font = .systemFont(ofSize: 11, weight: .regular)
             serialLabel.textColor = .secondaryLabel
             serialLabel.numberOfLines = 1

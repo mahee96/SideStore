@@ -68,7 +68,21 @@ public struct CodeSignValidator {
             return .failure(.expired)
         }
         
-        // 2. Revoked Certificate (Only checked if portal certificates were fetched)
+        // 2. Different Account / Team
+        let runningTeamID = runningProfile.teamIdentifier
+        if runningTeamID != signerTeam.identifier {
+            // Check if the Apple ID email matches.
+            if let requesterEmail = runningCert.requesterEmail, !requesterEmail.isEmpty,
+               requesterEmail.lowercased() != signerTeam.account.appleID.lowercased() {
+                debugLog("[CodeSignValidator] Validation failed: differentAccount (running profile email '\(requesterEmail)' != active account Apple ID '\(signerTeam.account.appleID)')")
+                return .failure(.differentAccount)
+            } else {
+                debugLog("[CodeSignValidator] Validation failed: differentTeam (running profile team '\(runningTeamID)' != active team '\(signerTeam.identifier)')")
+                return .failure(.differentTeam)
+            }
+        }
+        
+        // 3. Revoked Certificate (Only checked if portal certificates were fetched)
         if let portalCertificates = portalCertificates {
             let isRunningCertActive = portalCertificates.contains { $0.serialNumber == runningCert.serialNumber }
             if !isRunningCertActive {
@@ -81,8 +95,8 @@ public struct CodeSignValidator {
                 }
             }
         }
-
-        // 3. Mismatch / Private Key Lost / External Signer
+        
+        // 4. Mismatch / Private Key Lost / External Signer
         let hasCurrentSignerCert = runningProfile.certificates.contains { $0.serialNumber == signerCertificate.serialNumber }
         if !hasCurrentSignerCert {
             if let machineName = runningCert.machineName, (machineName.starts(with: "SideStore") || machineName.starts(with: "AltStore")) {
@@ -91,20 +105,6 @@ public struct CodeSignValidator {
             } else {
                 debugLog("[CodeSignValidator] Validation failed: externalSigner (running profile cert mismatch, cert not created by SideStore/AltStore: \(runningCert.machineName ?? "N/A"))")
                 return .failure(.externalSigner)
-            }
-        }
-
-        // 4. Different Account / Team
-        let runningTeamID = runningProfile.teamIdentifier
-        if runningTeamID != signerTeam.identifier {
-            // Check if the Apple ID email matches.
-            if let requesterEmail = runningCert.requesterEmail, !requesterEmail.isEmpty,
-               requesterEmail.lowercased() != signerTeam.account.appleID.lowercased() {
-                debugLog("[CodeSignValidator] Validation failed: differentAccount (running profile email '\(requesterEmail)' != active account Apple ID '\(signerTeam.account.appleID)')")
-                return .failure(.differentAccount)
-            } else {
-                debugLog("[CodeSignValidator] Validation failed: differentTeam (running profile team '\(runningTeamID)' != active team '\(signerTeam.identifier)')")
-                return .failure(.differentTeam)
             }
         }
         
