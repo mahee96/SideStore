@@ -202,6 +202,34 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
     }
     
     @MainActor
+    func resolveProvisioningError(_ error: Error) async -> ProvisioningErrorDecision {
+        return await withCheckedContinuation { continuation in
+            let alertController = UIAlertController(
+                title: NSLocalizedString("Developer Portal Error", comment: ""),
+                message: error.localizedDescription,
+                preferredStyle: .alert
+            )
+            
+            let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { _ in
+                alertController.dismiss(animated: true) {
+                    continuation.resume(returning: .cancel)
+                }
+            }
+            
+            let retryAction = UIAlertAction(title: NSLocalizedString("Retry", comment: ""), style: .default) { _ in
+                alertController.dismiss(animated: true) {
+                    continuation.resume(returning: .retry)
+                }
+            }
+            
+            alertController.addAction(cancelAction)
+            alertController.addAction(retryAction)
+            
+            self.present(alertController)
+        }
+    }
+    
+    @MainActor
     func resolveResign(mismatchReason: CodeSignValidationReason, context: AuthenticatedOperationContext) async throws -> Bool {
         return try await withCheckedThrowingContinuation { continuation in
             var hasResumed = false

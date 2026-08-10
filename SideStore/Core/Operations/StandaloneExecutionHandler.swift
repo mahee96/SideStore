@@ -14,12 +14,18 @@ protocol AnisetteServerHandler: AnyObject {
     func warnOutdatedAnisetteServer() async throws -> Bool
 }
 
+enum ProvisioningErrorDecision {
+    case retry
+    case cancel
+}
+
 protocol AuthenticationHandler: AnyObject {
     func credentials() async throws -> (String, String)
     func verificationCode() async throws -> String?
     func handleSignInResult(_ result: Result<(ALTAccount, ALTAppleAPISession), Error>) async
     
     func resolveTeam(_ teams: [ALTTeam]) async throws -> ALTTeam
+    func resolveProvisioningError(_ error: Error) async -> ProvisioningErrorDecision
     func resolvePostAuth() async
     
     func resolveRevocation(certsText: String, teamType: ALTTeamType) async throws -> RevokeDecision

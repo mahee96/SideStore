@@ -170,59 +170,106 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         } else {
             try await self.authenticationLoop()
         }
-        
         self.context.session = session
         AuthManager.shared.session = session
 
+        let authResult = try await self.provisioningLoop(
+            account: account,
+            session: session,
+            reportProgress: reportProgress
+        )
+        
+        return authResult
+    }
+
+    private func provisioningLoop(account: ALTAccount,
+                                  session: ALTAppleAPISession,
+                                  reportProgress: @escaping @Sendable (Int64) -> Void) async throws -> AuthenticationResult
+    {
+        
         let stepWeight: Int64 = self.skipDeviceRegistration ? 33 : 25
         reportProgress(stepWeight)
-        if self.isCancelled { throw OperationError.cancelled }
 
-        // 2. Resolve Team & Save State
-        let team = try await self.fetchTeam(for: account, session: session)
+        var resolvedTeam: ALTTeam?
+        var resolvedCertificate: ALTCertificate?
 
-        self.context.team = team
-        AuthManager.shared.team = team
+        var isCertificateResolved = false
+        var isDeviceRegistered = false
 
-        try await self.saveTeamAndAccount(team)
-        reportProgress(stepWeight * 2)
-
-        // 3. Resolve Certificate (Custom vs Developer Portal)
-        let activeCert = CertificateManager.shared.activeCertificate?.certificate
-        let isCustomCert = activeCert?.data.map { data in
-            let details = parseCertificate(derData: data)
-            return !details.subject.contains(team.identifier) && !details.issuer.contains(team.identifier)
-        } ?? false
-        if isCustomCert {
-            self.debugLog("[Authentication] Custom active certificate detected (Subject OU mismatch with Team ID '\(team.identifier)'). Bypassing portal fetch.")
-        }
-        let certificate: ALTCertificate? = if self.skipCertificateProvisioning || isCustomCert {
-            activeCert
-        } else {
-            try await self.fetchCertificate(for: team, session: session)
-        }
-        if !self.skipCertificateProvisioning && !isCustomCert {
-            try? CertificateManager.shared.setActiveCertificate(certificate)
-        }
-        self.context.signingCertificate = certificate
-        
-        
-        // 4. Register Current Device
-        if !self.skipDeviceRegistration {
-            self.verboseLog("[Authentication] Registering current device...")
-            let device = try await self.registerCurrentDevice(for: team, session: session)
-            self.debugLog("[Authentication] Registered current device UDID: \(device.identifier).")
-            reportProgress(stepWeight * 3)
+        while true {
             if self.isCancelled { throw OperationError.cancelled }
-        }
 
-        
-        return AuthenticationResult(
-            team: team,
-            certificate: certificate,
-            session: session,
-            portalCertificates: self.context.portalCertificates
-        )
+            do {
+                // 1. Resolve Team & Save State
+                if resolvedTeam == nil {
+                    let team = try await self.fetchTeam(for: account, session: session)
+
+                    self.context.team = team
+                    AuthManager.shared.team = team
+
+                    try await self.saveTeamAndAccount(team)
+                    reportProgress(stepWeight * 2)
+                    resolvedTeam = team
+                }
+
+                guard let team = resolvedTeam else { continue }
+
+                // 2. Resolve Certificate (Custom vs Developer Portal)
+                if !isCertificateResolved {
+                    let activeCert = CertificateManager.shared.activeCertificate?.certificate
+                    let isCustomCert = activeCert?.data.map { data in
+                        let details = parseCertificate(derData: data)
+                        return !details.subject.contains(team.identifier) && !details.issuer.contains(team.identifier)
+                    } ?? false
+                    if isCustomCert {
+                        self.debugLog("[Authentication] Custom active certificate detected (Subject OU mismatch with Team ID '\(team.identifier)'). Bypassing portal fetch.")
+                        resolvedCertificate = activeCert
+                    } else if self.skipCertificateProvisioning {
+                        resolvedCertificate = activeCert
+                    } else {
+                        let certificate = try await self.fetchCertificate(for: team, session: session)
+                        try CertificateManager.shared.setActiveCertificate(certificate)
+                        self.context.signingCertificate = certificate
+                        resolvedCertificate = certificate
+                    }
+                    isCertificateResolved = true
+                }
+
+                guard isCertificateResolved else { continue }
+
+                // 3. Register Current Device
+                if !isDeviceRegistered {
+                    if !self.skipDeviceRegistration {
+                        self.verboseLog("[Authentication] Registering current device...")
+                        let device = try await self.registerCurrentDevice(for: team, session: session)
+                        self.debugLog("[Authentication] Registered current device UDID: \(device.identifier).")
+                        reportProgress(stepWeight * 3)
+                    }
+                    isDeviceRegistered = true
+                }
+
+                return AuthenticationResult(
+                    team: team,
+                    certificate: resolvedCertificate,
+                    session: session,
+                    portalCertificates: self.context.portalCertificates
+                )
+                
+            } catch {
+                if self.isCancelled { throw OperationError.cancelled }
+
+                self.debugLog("[AuthenticationOperation] provisioningLoop caught error: \(error)")
+                let decision = await self.context.authenticationHandler.resolveProvisioningError(error)
+                switch decision {
+                    case .retry:
+                        self.debugLog("[AuthenticationOperation] User chose retry in provisioningLoop")
+                        continue
+                    case .cancel:
+                        self.debugLog("[AuthenticationOperation] User cancelled in provisioningLoop")
+                        throw OperationError.cancelled
+                }
+            }
+        }
     }
     
     private func silentSignIn() async throws -> (ALTAccount, ALTAppleAPISession)? {
