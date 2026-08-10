@@ -599,11 +599,19 @@ private extension AuthenticationOperation {
             let newPortalCertificate = try await AuthManager.shared.addCertificate(machineName: machineName, to: team, session: session)
             self.debugLog("[Authentication] Successfully requested new portal certificate (Serial: \(newPortalCertificate.serialNumber)).")
             
-            if self.context.portalCertificates == nil {
-                self.context.portalCertificates = []
+            // Apple's submitDevelopmentCSR response does not include raw certContent.
+            // Fetch updated certificates list from portal to populate X509 certificate PEM data.
+            let portalCertificates = try await AuthManager.shared.fetchCertificates(for: team, session: session)
+            self.context.portalCertificates = portalCertificates
+
+            let finalCert: ALTCertificate
+            if let fullX509 = portalCertificates.first(where: { $0.serialNumber.lowercased() == newPortalCertificate.serialNumber.lowercased() }) {
+                finalCert = ALTCertificate(x509: fullX509, privateKey: newPortalCertificate.privateKey)
+            } else {
+                finalCert = newPortalCertificate
             }
-            self.context.portalCertificates?.append(newPortalCertificate.x509)
-            return newPortalCertificate
+
+            return finalCert
         } catch {
             self.debugLog("[Authentication] requestCertificate: Failed with error: \(error)")
             let underlying = error as NSError
