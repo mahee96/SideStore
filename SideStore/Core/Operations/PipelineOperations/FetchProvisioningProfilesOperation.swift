@@ -188,7 +188,9 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
             appIDs = cachedAppIDs
         } else {
             self.debugLog("[FetchProvisioningProfiles] Fetching existing App IDs from Apple for team \(team.identifier)...")
-            let fetchedAppIDs = try await ALTAppleAPI.shared.fetchAppIDs(for: team, session: session)
+            let fetchedAppIDs = try await TaskChainCoalescer.shared.coalesce(key: "fetch_app_ids_\(team.identifier)") {
+                try await ALTAppleAPI.shared.fetchAppIDs(for: team, session: session)
+            }
             self.context.sharedContext?.appIDs = fetchedAppIDs
             appIDs = fetchedAppIDs
             self.verboseLog("[FetchProvisioningProfiles] Found \(appIDs.count) existing App IDs on portal for team \(team.identifier): \(appIDs.map { $0.bundleIdentifier })")
@@ -229,7 +231,9 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
                 }
             } catch ALTAppleAPIError.bundleIdentifierUnavailable {
                 self.debugLog("[FetchProvisioningProfiles] addAppID failed: bundleIdentifierUnavailable for '\(bundleIdentifier)'. Re-checking portal...")
-                let appIDs = try await ALTAppleAPI.shared.fetchAppIDs(for: team, session: session)
+                let appIDs = try await TaskChainCoalescer.shared.coalesce(key: "fetch_app_ids_\(team.identifier)") {
+                    try await ALTAppleAPI.shared.fetchAppIDs(for: team, session: session)
+                }
                 self.context.sharedContext?.appIDs = appIDs
                 if let appID = appIDs.first(where: { $0.bundleIdentifier == bundleIdentifier }) {
                     self.debugLog("[FetchProvisioningProfiles] Found App ID on secondary fetch after bundleIdentifierUnavailable: \(appID.bundleIdentifier)")

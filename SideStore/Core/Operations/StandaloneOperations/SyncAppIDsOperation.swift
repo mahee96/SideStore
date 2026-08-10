@@ -30,7 +30,9 @@ final class SyncAppIDsOperation: BaseStandaloneOperation<AuthenticatedOperationC
             throw OperationError.invalidParameters("SyncAppIDsOperation: context.dbBackgroundContext is nil")
         }
         
-        let fetchedAppIDs = try await ALTAppleAPI.shared.fetchAppIDs(for: team, session: session)
+        let fetchedAppIDs = try await TaskChainCoalescer.shared.coalesce(key: "fetch_app_ids_\(team.identifier)") {
+            try await ALTAppleAPI.shared.fetchAppIDs(for: team, session: session)
+        }
         self.setProgress(50)
         
         try await dbContext.perform {
