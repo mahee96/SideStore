@@ -362,7 +362,7 @@ public final class CertificateManager: @unchecked Sendable {
 
         // STEP 1: Mach-O Binary Check (Only for SideStore itself)
         if isSelf {
-            let bundleURL = Bundle.main.bundleURL
+            let bundleURL = Bundle.Info.activeBundleURL
             verboseLog("[CertificateManager] Step 1 (Mach-O): Checking \(bundleURL.path)...")
             if let binaryX509 = readBinaryCertificate(at: bundleURL) {
                 debugLog("[CertificateManager] getSigningCertificate: Loaded signing certificate from main bundle Mach-O (serial: \(binaryX509.serialNumber)).")

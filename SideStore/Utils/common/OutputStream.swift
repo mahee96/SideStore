@@ -21,7 +21,7 @@ public protocol OutputStream {
 // handler recursively and leading to an infinite logging loop or a deadlock.
 // Apple's os_log writes directly to the logging daemon (bypassing file descriptors) so it is safe to use.
 public class SyslogOutputStream: OutputStream {
-    private let log = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "com.sidestore.SideStore", category: "console")
+    private let log = OSLog(subsystem: Bundle.Info.activeBundleIdentifier, category: "console")
     
     public init() {}
     

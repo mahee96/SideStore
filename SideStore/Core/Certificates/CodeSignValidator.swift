@@ -53,7 +53,7 @@ public struct CodeSignValidator {
             return .failure(.missingProfile)
         }
         
-        let runningCert = CertificateManager.shared.getSigningCertificate(at: Bundle.main.bundleURL)
+        let runningCert = CertificateManager.shared.getSigningCertificate(at: Bundle.Info.activeBundleURL)
         guard let runningCert = runningCert else {
             debugLog("[CodeSignValidator] Validation failed: missingCertificate (failed to parse runningCert from binary)")
             return .failure(.missingCertificate)

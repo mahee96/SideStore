@@ -52,8 +52,8 @@ final class PerformBackupRestoreOperation: BasePipelineOperation<InstallAppOpera
     private func constructBackupURLs(bundleIdentifier: String, name: String, openAppURL: URL) throws -> (openURL: URL, returnURL: URL) {
         self.appName = name
         
-        guard let appGroupBundleID = Bundle.main.bundleIdentifier,
-              let altstoreOpenURL = URL(string: "sidestore://")
+        let appGroupBundleID = Bundle.Info.activeBundleIdentifier
+        guard let altstoreOpenURL = URL(string: "sidestore://")
         else {
             throw OperationError.openAppFailed(name: name)
         }

@@ -2065,7 +2065,7 @@ extension MyAppsViewController
         }
         let certificateMenu = UIMenu(title: NSLocalizedString("Certificate", comment: ""), image: UIImage(systemName: "key"), children: certSubmenuActions)
         
-        if installedApp.resignedBundleIdentifier == Bundle.main.bundleIdentifier
+        if installedApp.resignedBundleIdentifier.isAltStoreAppID
         {
             actions = [refreshAction, resignAction, certificateMenu, changeIconMenu]
         }

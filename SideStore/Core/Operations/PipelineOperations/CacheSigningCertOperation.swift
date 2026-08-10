@@ -17,7 +17,7 @@ final class CacheSigningCertOperation: BasePipelineOperation<AppOperationContext
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         
         let bundleID = self.context.targetBundleIdentifier
-        if bundleID == Bundle.main.bundleIdentifier || bundleID == Bundle.Info.appbundleIdentifier {
+        if bundleID.isAltStoreAppID {
             debugLog("[CacheSigningCertOperation] Skipping caching of signing cert for self (\(bundleID)) in favor of embedded certificate.")
             return
         }

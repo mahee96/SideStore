@@ -140,7 +140,8 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
             if isSelfReinstall {
                 if let newProfile = provisioningProfiles[installedApp.bundleIdentifier],
                    let appGroup = Bundle.main.altstoreAppGroup,
-                   let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup) {
+                   let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup) 
+                {
                     let jsonURL = containerURL.appendingPathComponent("StagedSelfReinstall.json")
                     
                     // Update refreshedDate inside the transient model context

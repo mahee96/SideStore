@@ -424,7 +424,7 @@ private extension AuthenticationOperation {
     
     private func validateCodeSign(signer: ALTSigner, session: ALTAppleAPISession) async -> Bool {
         self.verboseLog("[Authentication] validateCodeSign: entering method")
-        guard let appBundle = ALTApplication(fileURL: Bundle.main.bundleURL), 
+        guard let appBundle = ALTApplication(fileURL: Bundle.Info.activeBundleURL), 
               let provisioningProfile = appBundle.provisioningProfile else 
         {
             self.verboseLog("[Authentication] validateCodeSign: Application bundle or provisioning profile nil, returning false")

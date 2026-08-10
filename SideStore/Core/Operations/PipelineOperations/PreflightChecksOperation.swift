@@ -42,8 +42,7 @@ final class PreflightChecksOperation: BasePipelineOperation<AuthenticatedOperati
             }
             
             let isSideStore = (operation.app as? ALTApplication)?.isAltStoreApp == true ||
-                               operation.bundleIdentifier.contains(ALTApplication.altstoreBundleID) ||
-                               operation.bundleIdentifier == StoreApp.altstoreAppID
+                               operation.bundleIdentifier.isAltStoreAppID
             guard isSideStore else { continue }
             guard let installedApp = operation.app as? InstalledApp else { continue }
 

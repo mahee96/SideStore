@@ -19,8 +19,8 @@ struct AppInfoView: View {
     @State private var toastMessage: String = ""
     
     private var appBundleURL: URL {
-        if installedApp.resignedBundleIdentifier == Bundle.main.bundleIdentifier {
-            return Bundle.main.bundleURL
+        if installedApp.resignedBundleIdentifier.isAltStoreAppID {
+            return Bundle.Info.activeBundleURL
         } else {
             return installedApp.fileURL
         }

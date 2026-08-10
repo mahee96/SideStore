@@ -177,9 +177,8 @@ final class PipelineRunner: Sendable
             
             /* Preflight SideStore specific validations */
             let unhandledOperations = operations.filter { operation in
-                let isSideStore = (operation.app as? ALTApplication)?.isAltStoreApp == true                 ||
-                operation.bundleIdentifier.contains(ALTApplication.altstoreBundleID)     ||
-                operation.bundleIdentifier == StoreApp.altstoreAppID
+                let isSideStore = (operation.app as? ALTApplication)?.isAltStoreApp == true ||
+                                   operation.bundleIdentifier.isAltStoreAppID
                 
                 if isSideStore {
                     return handler.preflightChecksHandler.isResignActive == true

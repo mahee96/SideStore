@@ -15,7 +15,7 @@ public extension Bundle
         public static var activeBundle: Bundle { Bundle.main }
         public static var activeBundleURL: URL { activeBundle.bundleURL }
         
-        public static var activeBundleIdentifier: String { activeBundle.bundleIdentifier ?? appbundleIdentifier }
+        public static var activeBundleIdentifier: String { activeBundle.bundleIdentifier! }
         public static let storeAppBundleIdentifier =  "com.SideStore.SideStore"
         public static let appbundleIdentifier = "com.SideStore.SideStore"
  
@@ -76,5 +76,17 @@ public extension Bundle
     var completeInfoDictionary: [String : Any]? {
         let infoPlistURL = self.infoPlistURL
         return NSDictionary(contentsOf: infoPlistURL) as? [String : Any]
+    }
+}
+
+public extension String {
+    var isAltStoreAppID: Bool {
+        let activeID   = Bundle.Info.activeBundleIdentifier
+        let altstoreID = Bundle.Info.appbundleIdentifier
+        
+        let matchesActiveBundle   = !activeID.isEmpty && self.contains(activeID)
+        let matchesAltStoreBundle = !altstoreID.isEmpty && self.contains(altstoreID)
+        
+        return matchesActiveBundle || matchesAltStoreBundle
     }
 }
