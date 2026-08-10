@@ -19,34 +19,32 @@ enum RevokeDecision: Sendable {
 }
 
 private class AnisetteDataProvider {
+    private static let ANISETTE_VALID_DURATION: TimeInterval = 40.0
+
     private let context: AuthenticatedOperationContext
     private let progress: Progress?
     
     private var lastFetchedData: ALTAnisetteData?
-    private var lastFetchTime: Date?
     
     init(context: AuthenticatedOperationContext, progress: Progress?) {
         self.context = context
         self.progress = progress
-        
-        let authContext = context
-        if let session = authContext.session {
-            self.lastFetchedData = session.anisetteData
-            self.lastFetchTime = session.anisetteData.date
-        }
     }
     
-    func getAnisetteData() async throws -> ALTAnisetteData {
-        if let lastFetchedData = lastFetchedData,
-           let lastFetchTime = lastFetchTime,
-           lastFetchTime.timeIntervalSinceNow >= -40.0 {
-            return lastFetchedData
+    func getAnisetteData(for session: ALTAppleAPISession? = nil) async throws -> ALTAnisetteData {
+        let currentAnisette = session?.anisetteData ?? self.lastFetchedData
+        
+        if let currentAnisette = currentAnisette,
+           currentAnisette.date.timeIntervalSinceNow >= -Self.ANISETTE_VALID_DURATION 
+        {
+            return currentAnisette
         }
         
-        let data = try await FetchAnisetteDataOperation(context: self.context).execute(parentProgress: self.progress)
-        self.lastFetchedData = data
-        self.lastFetchTime = Date()
-        return data
+        let anisetteData = try await FetchAnisetteDataOperation(context: self.context)
+                                        .execute(parentProgress: self.progress)
+
+        self.lastFetchedData = anisetteData
+        return anisetteData
     }
 }
 
@@ -108,34 +106,28 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     }
     
     // Main Pipeline Execution
-    
     override func execute(parentProgress: Progress?) async throws -> AuthenticationResult {
         debugLog("[AuthenticationOperation] execute() started")
         defer { debugLog("[AuthenticationOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress)
 
-        // Reset Keychain if email address changed
-        if let newEmail = self.appleIDEmailAddress,
-           let currentEmail = AuthManager.shared.currentAppleID,
-           newEmail.lowercased() != currentEmail.lowercased() 
-        {
-            self.verboseLog("[Authentication] Email address changed. Clearing cached session.")
-            AuthManager.shared.clearSession()
-        }
-
-        // PHASE 1: Resolve valid session (Coalesced)
         let authResult = try await TaskChainCoalescer.shared.coalesce(key: "apple_auth") { () -> AuthenticationResult in
-            // Check L1 - Session Cache
             if let session = AuthManager.shared.session,
                let team = AuthManager.shared.team 
             {
-                let cache = SessionCache(team: team, session: session)
-                if let validatedResult = try await self.validateSessionCache(cache) {
-                    return validatedResult
-                }
+                session.anisetteData = try await self.anisetteDataProvider.getAnisetteData(for: session)
+                let certToUse = CertificateManager.shared.activeCertificate?.certificate
+                
+                // auth session doesn't expire soon, and since this isn't retained on restart this should be fine.
+                self.debugLog("[Authentication] Using cached session, team, certificate")
+                return AuthenticationResult(
+                    team: team, 
+                    certificate: certToUse, 
+                    session: session, 
+                    activeCertificates: []
+                )
             }
             
-            // L2: Sign-in (Silent credentials sign-in or fallback to full auth flow)
             return try await self.startAuthentication()
         }
         
@@ -151,38 +143,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         return result
     }
     
-    // Phase 1A: Session Cache Validation
-    private func validateSessionCache(_ cache: SessionCache) async throws -> AuthenticationResult? {
-        guard !self.skipCertificateProvisioning else {
-            let certToUse = CertificateManager.shared.activeCertificate?.certificate
-            self.debugLog("[Authentication] SessionCache is valid (bypassing portal fetch, skipCertificateProvisioning = true).")
-            return AuthenticationResult(team: cache.team, certificate: certToUse, session: cache.session, activeCertificates: [])
-        }
-
-        do {
-            let anisetteData = try await self.anisetteDataProvider.getAnisetteData()
-            cache.session.anisetteData = anisetteData
-
-            let portalCertificates = try await AuthManager.shared.fetchCertificates(for: cache.team, session: cache.session)
-            
-            if let keychainCert = CertificateManager.shared.activeCertificate,
-               portalCertificates.contains(where: { $0.serialNumber == keychainCert.serialNumber }) 
-            {
-                let certToUse = keychainCert.certificate
-                self.debugLog("[Authentication] SessionCache is valid. (using certificate: \(certToUse.serialNumber))")
-                return AuthenticationResult(team: cache.team, certificate: certToUse, session: cache.session, activeCertificates: portalCertificates)
-            } else {
-                self.debugLog("[Authentication] Cached/active certificate is no longer active on developer portal.")
-            }
-        } catch {
-            self.debugLog("[Authentication] Failed to validate SessionCache: \(error)")
-        }
-        return nil
-    }
-    
-    // Phase 1B: New Sign-In Flow
     private func startAuthentication() async throws -> AuthenticationResult {
-        // 1. Authenticate (Silent or Interactive UI)
         let (account, session) = if let silentResult = try await self.silentSignIn() {
             silentResult
         } else {
@@ -318,7 +279,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         
         return (account, session)
     }
-    // Phase 2: Post-Authentication Operations & Cleanup
+
     private func finalizeAuthentication(result: AuthenticationResult) async throws -> AuthenticationResult {
         let (team, certificate, session) = (result.team, result.certificate, result.session)
         let stepWeight: Int64 = self.skipDeviceRegistration ? 33 : 25
@@ -328,8 +289,10 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             
             if !self.skipDeviceRegistration {
                 self.verboseLog("[Authentication] Registering current device...")
+               
                 let device = try await self.registerCurrentDevice(for: team, session: session)
                 self.debugLog("[Authentication] Registered current device UDID: \(device.identifier).")
+                
                 self.setProgress(stepWeight * 3)
                 if self.isCancelled { throw OperationError.cancelled }
             }
@@ -365,27 +328,27 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                 }
                 self.verboseLog("[Authentication] postAuthenticationCleanup: Database updates completed.")
                 
-                do {
-                    if let signingCertificate = certificate, !self.skipCertificateProvisioning 
-                    {
-                        let signer = ALTSigner(team: team, certificate: signingCertificate)
-                        let didResign = await self.validateCodeSign(signer: signer, session: session)
-                        self.verboseLog("[Authentication] postAuthenticationCleanup: didResign = \(didResign)")
-                        
-                        if !didResign && self.requiresPostAuthFlow {
-                            await self.context.authenticationHandler.resolvePostAuth()
-                            self.verboseLog("[Authentication] postAuthenticationCleanup: post auth flow completed...")
-                        }
+                if let signingCertificate = certificate, !self.skipCertificateProvisioning
+                {
+                    let signer = ALTSigner(team: team, certificate: signingCertificate)
+                    let didResign = await self.validateCodeSign(signer: signer, session: session)
+                    self.verboseLog("[Authentication] postAuthenticationCleanup: didResign = \(didResign)")
+                    
+                    if !didResign && self.requiresPostAuthFlow {
+                        await self.context.authenticationHandler.resolvePostAuth()
+                        self.verboseLog("[Authentication] postAuthenticationCleanup: post auth flow completed...")
                     }
-                } catch {
-                    self.debugLog("[AuthenticationOperation] postAuthenticationCleanup encountered an error: \(error.localizedDescription)")
                 }
                 
                 await self.context.authenticationHandler.complete()
                 self.verboseLog("[Authentication] postAuthenticationCleanup: invoked auth complete for .success case...")
         }
     }
-    
+}
+
+// Persistence and Codesign Validity Check Helpers
+private extension AuthenticationOperation {
+
     private func saveTeamAndAccount(_ altTeam: ALTTeam, makeActive: Bool = false) async throws {
         guard let context = self.context.dbBackgroundContext else {
             throw OperationError.invalidParameters("AuthenticationOperation: context.dbBackgroundContext is nil")
@@ -504,9 +467,9 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
 }
 
 
+// Team, Certificate Resolution & Device Registration Helpers
 private extension AuthenticationOperation {
 
-    // Team, Certificate Resolution & Device Registration Helpers
     private func fetchTeam(for account: ALTAccount, session: ALTAppleAPISession) async throws -> ALTTeam {
         self.verboseLog("[Authentication] fetchTeam: Requesting teams from Apple...")
         let teams = try await AuthManager.shared.fetchTeams(for: account, session: session)

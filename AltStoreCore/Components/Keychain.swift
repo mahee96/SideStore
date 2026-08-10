@@ -64,12 +64,12 @@ public class Keychain
     @KeychainItem(key: "signingCertificatePassword")
     public var signingCertificatePassword: String?
     
-    // TODO: mahee96: remove legacy keys in later versions coz by now our migrations should be effectively moved all
+    // TODO: mahee96: remove legacy keys in later versions after 0.6.4 coz by now our migrations should be effectively moved all
     // Legacy
     @KeychainItem(key: "signingCertificatePrivateKey")
     public var signingCertificatePrivateKey: Data?
     
-    // TODO: mahee96: remove legacy keys in later versions coz by now our migrations should be effectively moved all
+    // TODO: mahee96: remove legacy keys in later versions after 0.6.4 coz by now our migrations should be effectively moved all
     // Legacy
     @KeychainItem(key: "signingCertificateSerialNumber")
     public var signingCertificateSerialNumber: String?
@@ -92,9 +92,6 @@ public class Keychain
             }
         }
     }
-
-    public var session: ALTAppleAPISession? = nil
-    public var team: ALTTeam? = nil
     
     private init()
     {
@@ -163,8 +160,6 @@ public class Keychain
             debugLog("[Keychain] Preserved Anisette ADI data (adiPb).")
         }
         
-        self.session = nil
-        self.team = nil
         debugLog("[Keychain] Cleared in-memory session, certificate, and team instances.")
     }
 
@@ -172,8 +167,6 @@ public class Keychain
     {
         debugLog("[Keychain] Clearing all Keychain items related to this instance...")
         try? self.keychain.removeAll()
-        self.session = nil
-        self.team = nil
         debugLog("[Keychain] All Keychain items and in-memory session/team cleared.")
     }
 }

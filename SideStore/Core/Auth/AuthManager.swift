@@ -16,6 +16,9 @@ public final class AuthManager: @unchecked Sendable {
     
     private init() {}
     
+    public var team: ALTTeam?
+    public var session: ALTAppleAPISession?
+
     public var isAuthenticated: Bool {
         let hasEmail = Keychain.shared.appleIDEmailAddress != nil
         let hasPassword = Keychain.shared.appleIDPassword != nil
@@ -31,16 +34,6 @@ public final class AuthManager: @unchecked Sendable {
     public var password: String? {
         get { Keychain.shared.appleIDPassword }
         set { Keychain.shared.appleIDPassword = newValue }
-    }
-    
-    public var team: ALTTeam? {
-        get { Keychain.shared.team }
-        set { Keychain.shared.team = newValue }
-    }
-    
-    public var session: ALTAppleAPISession? {
-        get { Keychain.shared.session }
-        set { Keychain.shared.session = newValue }
     }
     
     public var adsid: String? {
@@ -62,8 +55,7 @@ public final class AuthManager: @unchecked Sendable {
     }
     
     public func clearSession() {
-        Keychain.shared.team = nil
-        Keychain.shared.session = nil
+        self.session = nil
         CertificateManager.shared.clearActiveCertificate()
     }
     
@@ -79,8 +71,8 @@ public final class AuthManager: @unchecked Sendable {
     func authenticate(
         presentingViewController: UIViewController? = nil,
         context: AuthenticatedOperationContext? = nil,
-        skipDeviceRegistration: Bool = true,
-        skipCertificateProvisioning: Bool = true
+        skipDeviceRegistration: Bool = false,
+        skipCertificateProvisioning: Bool = false
     ) async throws -> AuthenticationResult {
         let effectiveContext: AuthenticatedOperationContext
         if let context = context {
@@ -128,6 +120,7 @@ public final class AuthManager: @unchecked Sendable {
         return try await DeveloperPortalService.shared.authenticateWithToken(adsid: adsid, xcodeToken: xcodeToken, anisetteData: anisetteData, xcodeVersion: xcodeVersion)
     }
     
+    @discardableResult
     public func fetchAccount(session: ALTAppleAPISession) async throws -> ALTAccount {
         return try await DeveloperPortalService.shared.fetchAccount(session: session)
     }
