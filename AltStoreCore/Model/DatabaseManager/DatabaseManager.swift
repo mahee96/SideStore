@@ -233,7 +233,7 @@ public extension DatabaseManager
             {
                 try context.save()
                 
-                Keychain.shared.reset(keepCertificate: keepCertificate, keepAnisetteData: keepAnisetteData)
+                AuthManager.shared.signOut(keepCertificate: keepCertificate, keepAnisetteData: keepAnisetteData)
                 
                 completionHandler(nil)
             }

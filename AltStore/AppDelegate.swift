@@ -179,7 +179,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         
         if UserDefaults.standard.firstLaunch == nil
         {
-            Keychain.shared.reset()
+            AuthManager.shared.signOut()
             UserDefaults.standard.firstLaunch = Date()
         }
         

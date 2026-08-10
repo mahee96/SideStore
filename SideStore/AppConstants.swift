@@ -19,4 +19,6 @@ public enum AppConstants {
         public static let defaultOverrideIP = "10.7.0.1"
         public static let defaultRemoteServerIP = "10.7.0.1"
     }
+    
+    public static let accountConfigurationFileName = "Account.sideconf"
 }

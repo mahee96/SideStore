@@ -200,7 +200,7 @@ struct BackupAndRestoreView: View {
                 guard let email = AuthManager.shared.currentAppleID else { return }
                 
                 let tempDir = FileManager.default.temporaryDirectory
-                let fileURL = tempDir.appendingPathComponent("\(email).sideconf")
+                let fileURL = tempDir.appendingPathComponent(AppConstants.accountConfigurationFileName)
                 try encryptedData.write(to: fileURL)
                 
                 let activityVC = UIActivityViewController(activityItems: [fileURL], applicationActivities: nil)
@@ -221,7 +221,7 @@ struct BackupAndRestoreView: View {
     private func performImportDecrypt() {
         guard let data = importedData, !importFilePassword.isEmpty else { return }
         do {
-            let account = try ImportExport.importAccountData(data, filePassword: importFilePassword)
+            let account = try ImportExport.importAccount(data, filePassword: importFilePassword)
             self.importedAccount = account
             
             if let pass = account.password, !pass.isEmpty {

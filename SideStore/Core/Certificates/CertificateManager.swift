@@ -39,6 +39,22 @@ public final class CertificateManager: @unchecked Sendable {
         _ = try? loadActiveCertificate()
     }
     
+    public static func parse(_ data: Data, password: String?) throws -> ALTCertificate {
+        if let password = password {
+            return try ALTCertificate(p12Data: data, password: password)
+        } else {
+            return try ALTCertificate(p12Data: data)
+        }
+    }
+
+    public static func convert(_ cert: ALTCertificate, password: String?) throws -> Data {
+        if let password = password {
+            return try cert.encryptedP12Data(password: password)
+        } else {
+            return try cert.unencryptedP12Data()
+        }
+    }
+
     // MARK: - Active Keychain Certificate Encapsulation
     
     /// Loads active signing certificate from Keychain into memory.
@@ -51,7 +67,7 @@ public final class CertificateManager: @unchecked Sendable {
         }
         let password = Keychain.shared.signingCertificatePassword
         do {
-            let cert = try CertificateStore.load(data, password: password)
+            let cert = try Self.parse(data, password: password)
             let active = ActiveSigningCertificate(certificate: cert, p12Data: data, password: password)
             self.activeCertificate = active
             debugLog("[CertificateManager] loadActiveCertificate: Successfully loaded certificate (serial: \(cert.serialNumber)).")
@@ -76,7 +92,7 @@ public final class CertificateManager: @unchecked Sendable {
         if let cert = cert {
             do {
                 let password = getPassword(for: cert)
-                let p12Data = try CertificateStore.export(cert, password: password)
+                let p12Data = try Self.convert(cert, password: password)
                 Keychain.shared.signingCertificate = p12Data
                 Keychain.shared.signingCertificatePassword = password
                 saveCertificate(cert)
@@ -119,7 +135,7 @@ public final class CertificateManager: @unchecked Sendable {
         
         do {
             let password = getPassword(for: cert)
-            let p12Data = try CertificateStore.export(cert, password: password)
+            let p12Data = try Self.convert(cert, password: password)
             debugLog("[CertificateManager] p12Data generated, size: \(p12Data.count)")
             Keychain.shared[certificateSerial: cert.serialNumber] = p12Data
             debugLog("[CertificateManager] Successfully saved p12 to keychain")
@@ -176,7 +192,7 @@ public final class CertificateManager: @unchecked Sendable {
         if let data = Keychain.shared[certificateSerial: serialNumber] {
             if data.isPKCS12 {
                 let savedPassword = getPassword(for: serialNumber)
-                if let cert = try? CertificateStore.load(data, password: savedPassword) {
+                if let cert = try? Self.parse(data, password: savedPassword) {
                     if let metadata = getCertificateMetadata(for: serialNumber) {
                         cert.machineIdentifier = metadata["machineIdentifier"]
                         cert.machineName = metadata["machineName"]
@@ -195,7 +211,7 @@ public final class CertificateManager: @unchecked Sendable {
         }
         if let data = Keychain.shared[certificateSerial: serialNumber] {
             let x509: ALTX509Certificate? = data.isPKCS12
-                ? (try? CertificateStore.load(data, password: getPassword(for: serialNumber)))?.x509
+                ? (try? Self.parse(data, password: getPassword(for: serialNumber)))?.x509
                 : ALTX509Certificate(data: data)
             if let x509 {
                 if let metadata = getCertificateMetadata(for: serialNumber) {

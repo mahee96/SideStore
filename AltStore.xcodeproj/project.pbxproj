@@ -144,7 +144,6 @@
 			membershipExceptions = (
 				Core/Certificates/CertificateASN1Parser.swift,
 				Core/Certificates/CertificateManager.swift,
-				Core/Certificates/CertificateStore.swift,
 				Core/Logging/SideStoreLogging.swift,
 				Core/Theme/ThemeManager.swift,
 			);
@@ -332,6 +331,7 @@
 				Views/Settings/Advanced/WirelessPair/WirelessPairManager.swift,
 				Views/Settings/Advanced/WirelessPair/WirelessPairView.swift,
 				Views/Settings/Auth/ExportAccountAlertViewController.swift,
+				Views/Settings/Auth/ImportAccountAlertController.swift,
 				Views/Settings/Auth/SignOutAlertViewController.swift,
 				Views/Settings/Diagnostics/DeveloperOptionsView.swift,
 				Views/Settings/Diagnostics/ExperimentalFeaturesView.swift,

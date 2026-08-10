@@ -37,7 +37,7 @@ final class EmbedSigningCertOperation: BasePipelineOperation<AppOperationContext
         let p12Password = CertificateManager.shared.getPassword(for: cert)
         
         do {
-            if let p12Data = try? CertificateStore.export(cert, password: p12Password) {
+            if let p12Data = try? CertificateManager.convert(cert, password: p12Password) {
                 let p12URL = appBundle.fileURL.appendingPathComponent("ALTCertificate.p12")
                 try p12Data.write(to: p12URL, options: .atomic)
                 debugLog("[EmbedSigningCertOperation] Successfully embedded ALTCertificate.p12 in app bundle: \(p12URL.path)")

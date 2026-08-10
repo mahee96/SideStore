@@ -54,17 +54,11 @@ public final class AuthManager: @unchecked Sendable {
         return Keychain.shared.appleIDXcodeToken != nil
     }
     
-    public func clearSession() {
+    public func signOut(keepCertificate: Bool = false, keepAnisetteData: Bool = true) {
         self.session = nil
+        self.team = nil
         CertificateManager.shared.clearActiveCertificate()
-    }
-    
-    public func signOut() {
-        Keychain.shared.appleIDEmailAddress = nil
-        Keychain.shared.appleIDPassword = nil
-        Keychain.shared.appleIDXcodeToken = nil
-        Keychain.shared.appleIDAdsid = nil
-        clearSession()
+        Keychain.shared.reset(keepCertificate: keepCertificate, keepAnisetteData: keepAnisetteData)
     }
     
     @discardableResult
