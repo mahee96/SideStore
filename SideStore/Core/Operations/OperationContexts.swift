@@ -206,8 +206,6 @@ final class AuthenticatedOperationContext: CachedOperationContext
     var team: ALTTeam?
     var signingCertificate: ALTCertificate?
     var activeCertificates: [ALTX509Certificate] = []
-    
-    var isSideStoreResignDismissed: Bool = false
 
     let authenticationHandler: AuthenticationHandler
     let anisetteServerHandler: AnisetteServerHandler
@@ -231,7 +229,6 @@ final class AuthenticatedOperationContext: CachedOperationContext
         self.team = context.team
         self.signingCertificate = context.signingCertificate
         self.activeCertificates = context.activeCertificates
-        self.isSideStoreResignDismissed = context.isSideStoreResignDismissed
     }
 }
 
