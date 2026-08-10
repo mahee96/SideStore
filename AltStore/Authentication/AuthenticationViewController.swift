@@ -134,6 +134,16 @@ private extension AuthenticationViewController
                 }
                 
             case .success((let account, let session)):
+                DispatchQueue.main.async {
+                    UIView.performWithoutAnimation {
+                        let title = NSLocalizedString("Authenticated", comment: "")
+                        let image = UIImage(systemName: "checkmark.circle.fill")
+                        self.signInButton.setTitle(title, for: .normal)
+                        self.signInButton.setImage(image, for: .normal)
+                        self.signInButton.isIndicatingActivity = false
+                        self.signInButton.layoutIfNeeded()
+                    }
+                }
                 self.completionHandler?((account, session, password))
             }
             

@@ -163,6 +163,7 @@ fileprivate extension DatabaseManager {
         
         self.viewContext.performAndWait {
             self.viewContext.processPendingChanges()
+            self.viewContext.refreshAllObjects()
         }
     }
 }

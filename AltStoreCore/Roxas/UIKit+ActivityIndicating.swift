@@ -191,11 +191,13 @@ extension UIButton: _ActivityIndicating, RSTActivityIndicating {
     func stopIndicatingActivity() {
         activityIndicatingHelper.activityIndicatorView.removeFromSuperview()
         
-        let title = activityIndicatingHelper.userInfo["title"] as? String
-        self.setTitle(title, for: .normal)
+        if self.title(for: .normal) == nil, let title = activityIndicatingHelper.userInfo["title"] as? String {
+            self.setTitle(title, for: .normal)
+        }
         
-        let image = activityIndicatingHelper.userInfo["image"] as? UIImage
-        self.setImage(image, for: .normal)
+        if self.image(for: .normal) == nil, let image = activityIndicatingHelper.userInfo["image"] as? UIImage {
+            self.setImage(image, for: .normal)
+        }
         
         let enabled = activityIndicatingHelper.userInfo["enabled"] as? Bool ?? true
         self.isUserInteractionEnabled = enabled

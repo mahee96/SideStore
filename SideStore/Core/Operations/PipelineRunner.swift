@@ -222,6 +222,7 @@ final class PipelineRunner: Sendable
             // request update view context's in-mem coredata caches (coz we worked so far on bg context)
             DatabaseManager.shared.viewContext.performAndWait {
                 DatabaseManager.shared.viewContext.processPendingChanges()
+                DatabaseManager.shared.viewContext.refreshAllObjects()
             }
         }
         do {
