@@ -389,9 +389,6 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
                 if self.isCancelled { throw OperationError.cancelled }
             }
             
-            try await SyncAppIDsOperation(context: self.context)
-                        .execute(parentProgress: progress)
-                        
             try await self.postAuthenticationCleanup(result: .success(result))
             return result
         } catch {
