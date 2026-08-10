@@ -215,35 +215,7 @@ public extension DatabaseManager
             }
         }
     }
-    
-    func signOut(keepCertificate: Bool = false, keepAnisetteData: Bool = true, completionHandler: @escaping (Error?) -> Void)
-    {
-        self.persistentContainer.performBackgroundTask { (context) in
-            if let account = self.activeAccount(in: context)
-            {
-                account.isActiveAccount = false
-            }
-            
-            if let team = self.activeTeam(in: context)
-            {
-                team.isActiveTeam = false
-            }
-            
-            do
-            {
-                try context.save()
-                
-                AuthManager.shared.signOut(keepCertificate: keepCertificate, keepAnisetteData: keepAnisetteData)
-                
-                completionHandler(nil)
-            }
-            catch
-            {
-                debugLog("Failed to save when signing out. \(error)")
-                completionHandler(error)
-            }
-        }
-    }
+
     
     func purgeLoggedErrors(before date: Date? = nil, completion: @escaping (Result<Void, Error>) -> Void)
     {

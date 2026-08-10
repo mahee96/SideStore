@@ -536,17 +536,8 @@ private extension SettingsViewController
         let signOutAction = UIAlertAction(title: NSLocalizedString("Sign Out", comment: ""), style: .destructive) { _ in
             let keepCert = contentVC.isChecked
             let keepAnisette = contentVC.isKeepAnisetteChecked
-            DatabaseManager.shared.signOut(keepCertificate: keepCert, keepAnisetteData: keepAnisette) { (error) in
-                DispatchQueue.main.async {
-                    if let error = error
-                    {
-                        let toastView = ToastView(error: error)
-                        toastView.show(in: self)
-                    }
-                    
-                    self.update()
-                }
-            }
+            AuthManager.shared.signOut(keepCertificate: keepCert, keepAnisetteData: keepAnisette)
+            self.update()
         }
         
         alertController.addAction(cancelAction)

@@ -58,6 +58,7 @@ public final class AuthManager: @unchecked Sendable {
         self.session = nil
         self.team = nil
         CertificateManager.shared.clearActiveCertificate()
+        DatabaseManager.shared.deactivateActiveAccountAndTeam()
         Keychain.shared.reset(keepCertificate: keepCertificate, keepAnisetteData: keepAnisetteData)
     }
     
@@ -141,5 +142,23 @@ public final class AuthManager: @unchecked Sendable {
     
     public func registerDevice(name: String, identifier: String, type: ALTDeviceType, team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTDevice {
         return try await DeveloperPortalService.shared.registerDevice(name: name, identifier: identifier, type: type, team: team, session: session)
+    }
+}
+
+fileprivate extension DatabaseManager {
+    func deactivateActiveAccountAndTeam() {
+        self.persistentContainer.performBackgroundTask { context in
+            if let account = self.activeAccount(in: context) {
+                account.isActiveAccount = false
+            }
+            if let team = self.activeTeam(in: context) {
+                team.isActiveTeam = false
+            }
+            do {
+                try context.save()
+            } catch {
+                debugLog("[AuthManager] Failed to save CoreData context when deactivating active account and team: \(error)")
+            }
+        }
     }
 }
