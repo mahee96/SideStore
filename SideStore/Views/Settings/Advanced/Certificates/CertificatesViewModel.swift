@@ -95,7 +95,7 @@ class CertificatesViewModel: ObservableObject {
               let data = activeCert.data,
               let team = self.team else { return false }
         
-        let details = SideStore.parseCertificate(derData: data)
+        let details = parseCertificate(derData: data)
         let subjectContainsTeam = details.subject.contains(team.identifier)
         let issuerContainsTeam = details.issuer.contains(team.identifier)
         

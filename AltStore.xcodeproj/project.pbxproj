@@ -218,7 +218,6 @@
 				Core/Anisette/AnisetteServersManager.swift,
 				Core/Auth/AuthManager.swift,
 				Core/Auth/DeveloperPortalService.swift,
-				Core/Certificates/CertificateASN1Parser.swift,
 				Core/Certificates/CodeSignValidator.swift,
 				Core/Certificates/OCSPValidator.swift,
 				Core/DeviceApi/EMProxyWrapper.swift,

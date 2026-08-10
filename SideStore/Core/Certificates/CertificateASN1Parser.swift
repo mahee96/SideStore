@@ -11,22 +11,22 @@ import Foundation
 import CommonCrypto
 import Security
 
-struct ASN1Item {
-    let tag: UInt8
-    let data: Data
+public struct ASN1Item {
+    public let tag: UInt8
+    public let data: Data
 }
 
-struct CertificateBriefInfo {
-    let validFrom: String
-    let validUntil: String
-    let type: String
+public struct CertificateBriefInfo {
+    public let validFrom: String
+    public  let validUntil: String
+    public let type: String
 }
 
-struct ValidityStats {
-    let totalDays: Int
-    let elapsedDays: Int
-    let remainingDays: Int
-    let progress: Double
+public struct ValidityStats {
+    public let totalDays: Int
+    public let elapsedDays: Int
+    public let remainingDays: Int
+    public let progress: Double
 }
 
 public struct ParsedCertificateDetails {
@@ -43,7 +43,7 @@ public struct ParsedCertificateDetails {
     public var fingerprintSHA256: String = "N/A"
 }
 
-func getDERData(from pemOrDer: Data) -> Data? {
+public func getDERData(from pemOrDer: Data) -> Data? {
     guard let str = String(data: pemOrDer, encoding: .ascii) else {
         return pemOrDer
     }
@@ -61,7 +61,7 @@ func getDERData(from pemOrDer: Data) -> Data? {
     return pemOrDer
 }
 
-func parseASN1TLV(_ data: Data, offset: inout Int) -> ASN1Item? {
+public func parseASN1TLV(_ data: Data, offset: inout Int) -> ASN1Item? {
     guard offset < data.count else { return nil }
     
     let tag = data[offset]
@@ -90,7 +90,7 @@ func parseASN1TLV(_ data: Data, offset: inout Int) -> ASN1Item? {
     return ASN1Item(tag: tag, data: Data(valueData))
 }
 
-func getBriefInfo(for data: Data?) -> CertificateBriefInfo? {
+public func getBriefInfo(for data: Data?) -> CertificateBriefInfo? {
     guard let data, let cleanDer = getDERData(from: data) else { return nil }
     
     var offset = 0
@@ -138,7 +138,7 @@ func getBriefInfo(for data: Data?) -> CertificateBriefInfo? {
     return CertificateBriefInfo(validFrom: validFromStr, validUntil: validUntilStr, type: typeStr)
 }
 
-func computeValidityStats(from: Date, until: Date) -> ValidityStats {
+public func computeValidityStats(from: Date, until: Date) -> ValidityStats {
     let totalSecs = until.timeIntervalSince(from)
     let elapsedSecs = Date().timeIntervalSince(from)
     let remainingSecs = until.timeIntervalSinceNow
@@ -151,7 +151,7 @@ func computeValidityStats(from: Date, until: Date) -> ValidityStats {
     return ValidityStats(totalDays: totalDays, elapsedDays: elapsedDays, remainingDays: remainingDays, progress: progress)
 }
 
-func computeSHA1Fingerprint(data: Data) -> String {
+public func computeSHA1Fingerprint(data: Data) -> String {
     var hash = [UInt8](repeating: 0, count: Int(CC_SHA1_DIGEST_LENGTH))
     data.withUnsafeBytes {
         _ = CC_SHA1($0.baseAddress, CC_LONG(data.count), &hash)
@@ -159,7 +159,7 @@ func computeSHA1Fingerprint(data: Data) -> String {
     return hash.map { String(format: "%02X", $0) }.joined(separator: ":")
 }
 
-func computeSHA256Fingerprint(data: Data) -> String {
+public func computeSHA256Fingerprint(data: Data) -> String {
     var hash = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
     data.withUnsafeBytes {
         _ = CC_SHA256($0.baseAddress, CC_LONG(data.count), &hash)
@@ -167,7 +167,7 @@ func computeSHA256Fingerprint(data: Data) -> String {
     return hash.map { String(format: "%02X", $0) }.joined(separator: ":")
 }
 
-func parseDN(_ data: Data) -> String {
+public func parseDN(_ data: Data) -> String {
     var offset = 0
     var parts: [String] = []
     
@@ -195,7 +195,7 @@ func parseDN(_ data: Data) -> String {
     return parts.joined(separator: ", ")
 }
 
-func friendlyOIDLabel(_ oid: String) -> String {
+public func friendlyOIDLabel(_ oid: String) -> String {
     switch oid {
     case "85.4.3": return "Common Name"
     case "85.4.6": return "Country"
@@ -208,7 +208,7 @@ func friendlyOIDLabel(_ oid: String) -> String {
     }
 }
 
-func parseDate(from item: ASN1Item) -> Date? {
+public func parseDate(from item: ASN1Item) -> Date? {
     guard let str = String(data: item.data, encoding: .ascii) else { return nil }
     
     let formatter = DateFormatter()
@@ -229,7 +229,7 @@ func parseDate(from item: ASN1Item) -> Date? {
     return nil
 }
 
-func parsePublicKeyType(pubKeyInfoData: Data) -> String {
+public func parsePublicKeyType(pubKeyInfoData: Data) -> String {
     var offset = 0
     guard let algSeq = parseASN1TLV(pubKeyInfoData, offset: &offset), algSeq.tag == 0x30 else { return "RSA" }
     var algOffset = 0
@@ -244,7 +244,7 @@ func parsePublicKeyType(pubKeyInfoData: Data) -> String {
     return "RSA"
 }
 
-func parseSignatureAlgorithm(_ oidData: Data) -> String {
+public func parseSignatureAlgorithm(_ oidData: Data) -> String {
     let oidStr = oidData.map { String($0) }.joined(separator: ".")
     switch oidStr {
     case "42.134.72.134.247.13.1.1.11": return "SHA-256 with RSA"

@@ -182,7 +182,7 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
         if let team = self.context.authenticatedContext.team {
             if let activeCert = CertificateManager.shared.activeCertificate?.certificate,
                let data = activeCert.data {
-                let details = SideStore.parseCertificate(derData: data)
+                let details = parseCertificate(derData: data)
                 let belongsToAuthenticatedTeam = details.subject.contains(team.identifier) || details.issuer.contains(team.identifier)
                 if !belongsToAuthenticatedTeam {
                     isCustomCertActive = true
