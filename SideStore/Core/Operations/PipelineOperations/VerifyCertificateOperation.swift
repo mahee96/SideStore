@@ -38,7 +38,7 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
         
         do {
             // 2. Obtain active portal certificates (auth context or direct fetch as fallback)
-            let activeCertificates: [ALTCertificate]
+            let activeCertificates: [ALTX509Certificate]
             if let cachedActive = self.context.authenticatedContext.activeCertificates, !cachedActive.isEmpty {
                 activeCertificates = cachedActive
                 self.debugLog("[VerifyCertificateOperation] Utilizing \(activeCertificates.count) active certificates cached from Auth context.")
@@ -86,11 +86,8 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
                 guard let target = self.context.overrideCertificate ?? CertificateManager.shared.activeCertificate?.certificate else {
                     throw OperationError.invalidParameters("\(certType) certificate is missing.")
                 }
-                guard target.privateKey != nil else {
-                    throw OperationError.invalidParameters("\(certType) certificate lacks a private key.")
-                }
                 
-                let result = await validateCertificate(target, portalCertificateSerials: portalCertificateSerials, signingCertificateSerial: signingCertificateSerial)
+                let result = await validateCertificate(target.x509, portalCertificateSerials: portalCertificateSerials, signingCertificateSerial: signingCertificateSerial)
                 finalStatus = result
                 self.context.targetCertStatus = result
                 try processValidationResult(result, description: "Target signing certificate", appName: appName)
@@ -104,7 +101,7 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
         }
     }
 
-    private func validateCertificate(_ certificate: ALTCertificate,
+    private func validateCertificate(_ certificate: ALTX509Certificate,
                                      portalCertificateSerials: Set<String>,
                                      signingCertificateSerial: String?) async -> CertificateStatus {
         if portalCheck(certificate, portalCertificateSerials: portalCertificateSerials) 
@@ -118,11 +115,11 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
         return await ocspCheck(certificate)
     }
 
-    private func portalCheck(_ certificate: ALTCertificate, portalCertificateSerials: Set<String>) -> Bool {
+    private func portalCheck(_ certificate: ALTX509Certificate, portalCertificateSerials: Set<String>) -> Bool {
         return portalCertificateSerials.contains(certificate.serialNumber)
     }
 
-    private func ocspCheck(_ certificate: ALTCertificate) async -> CertificateStatus {
+    private func ocspCheck(_ certificate: ALTX509Certificate) async -> CertificateStatus {
         do {
             try await OCSPValidator.validate(certificate)
             debugLog("[VerifyCertificateOperation] ocspCheck: Certificate \(certificate.serialNumber) is valid (assuming cross-signed).")

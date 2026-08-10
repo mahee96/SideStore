@@ -71,7 +71,7 @@ public struct OCSPValidator {
     //
     // NOTE: SecTrust reports might be delayed coz that is exactly what OS sees before AMFI flags the cert as revoked and doesn't let app opens
     //       so we still check that first just in case our live reporting wasn't good.
-    public static func validate(_ certificate: ALTCertificate) async throws {
+    public static func validate(_ certificate: ALTX509Certificate) async throws {
         // 1. Expiration check
         if certificate.expiryDate <= Date() {
             debugLog("[OCSPValidator] Certificate \(certificate.serialNumber) is expired (\(certificate.expiryDate)).")

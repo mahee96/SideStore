@@ -40,11 +40,11 @@ struct CertificatesView: View {
     
     @State private var deleteLocalOnRevoke: Bool = true
     
-    @State private var certificateToRevoke:      ALTCertificate? = nil
-    @State private var certificateToDelete:      ALTCertificate? = nil
-    @State private var certificateToExport:      ALTCertificate? = nil
-    @State private var certificateToAddKeyFor:   ALTCertificate? = nil
-    @State private var certificateToClearKeyFor: ALTCertificate? = nil
+    @State private var certificateToRevoke:      ALTX509Certificate? = nil
+    @State private var certificateToDelete:      ALTX509Certificate? = nil
+    @State private var certificateToExport:      ALTX509Certificate? = nil
+    @State private var certificateToAddKeyFor:   ALTX509Certificate? = nil
+    @State private var certificateToClearKeyFor: ALTX509Certificate? = nil
     
     var body: some View {
         ZStack {
@@ -178,22 +178,17 @@ struct CertificatesView: View {
         .sheet(isPresented: $viewModel.showFailuresAlert) {
             NavigationView {
                 List {
-                    ForEach(Array(viewModel.failedImportsList.enumerated()), id: \.offset) { index, failure in
-                        HStack(alignment: .top, spacing: 8) {
-                            Text("\(index + 1).")
-                                .font(.system(size: 13, weight: .medium, design: .monospaced))
-                                .foregroundColor(.secondary)
-                            Text(failure)
-                                .font(.system(size: 13))
-                        }
-                        .padding(.vertical, 4)
+                    ForEach(viewModel.failedImportsList, id: \.self) { failure in
+                        Text(failure)
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundColor(.red)
                     }
                 }
                 .navigationTitle("Import Failures")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        SwiftUI.Button("OK") {
+                        SwiftUI.Button("Done") {
                             viewModel.showFailuresAlert = false
                         }
                     }
@@ -203,8 +198,8 @@ struct CertificatesView: View {
         .alert("Export Certificate Password", isPresented: $showExportPasswordPrompt) {
             SecureField("Password", text: $exportPasswordInput)
             SwiftUI.Button("Export") {
-                if let cert = certificateToExport {
-                    CertificateExporter.shareP12(cert, password: exportPasswordInput) { viewModel.errorMessage = $0 }
+                if let cert = certificateToExport, let signable = viewModel.getSignableCertificate(for: cert.serialNumber) {
+                    CertificateExporter.shareP12(signable, password: exportPasswordInput) { viewModel.errorMessage = $0 }
                 }
             }
             SwiftUI.Button("Cancel", role: .cancel) {}
@@ -264,14 +259,14 @@ struct CertificatesView: View {
         }
     }
     
-    private func pushDetailView(for cert: ALTCertificate) {
+    private func pushDetailView(for cert: ALTX509Certificate) {
         let metadata = DeveloperPortalMetadata(
             identifier: cert.identifier,
             machineName: cert.machineName,
             machineIdentifier: cert.machineIdentifier,
             requesterEmail: cert.requesterEmail
         )
-        let detailVC = UIHostingController(rootView: CertificateDetailView(certificate: cert, portalMetadata: metadata))
+        let detailVC = UIHostingController(rootView: CertificateDetailView(certificate: cert, portalMetadata: metadata, viewModel: viewModel))
         let appearance = UINavigationBarAppearance()
         appearance.configureWithDefaultBackground()
         detailVC.navigationItem.scrollEdgeAppearance = appearance
@@ -279,7 +274,7 @@ struct CertificatesView: View {
         presentingViewController?.navigationController?.pushViewController(detailVC, animated: true)
     }
     
-    private func presentRevokeAlert(for cert: ALTCertificate) {
+    private func presentRevokeAlert(for cert: ALTX509Certificate) {
         let contentVC = RevokeAlertViewController()
         
         let alertController = UIAlertController(

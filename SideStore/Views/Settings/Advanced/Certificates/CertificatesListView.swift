@@ -12,13 +12,13 @@ import SwiftUI
 struct CertificatesListView: View {
     @ObservedObject var viewModel: CertificatesViewModel
     
-    var onRowTap:     (ALTCertificate) -> Void
-    var onRevoke:     (ALTCertificate) -> Void
-    var onExportP12:  (ALTCertificate) -> Void
-    var onClearKey:   (ALTCertificate) -> Void
-    var onAddKeyBin:  (ALTCertificate) -> Void
-    var onAddKeyText: (ALTCertificate) -> Void
-    var onDelete:     (ALTCertificate) -> Void
+    var onRowTap:     (ALTX509Certificate) -> Void
+    var onRevoke:     (ALTX509Certificate) -> Void
+    var onExportP12:  (ALTX509Certificate) -> Void
+    var onClearKey:   (ALTX509Certificate) -> Void
+    var onAddKeyBin:  (ALTX509Certificate) -> Void
+    var onAddKeyText: (ALTX509Certificate) -> Void
+    var onDelete:     (ALTX509Certificate) -> Void
     
     var body: some View {
         if viewModel.certificates.isEmpty {

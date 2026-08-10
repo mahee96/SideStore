@@ -81,7 +81,7 @@ public final class AuthManager: @unchecked Sendable {
         return try await DeveloperPortalService.shared.authenticate(presentingViewController: presentingViewController)
     }
     
-    public func fetchCertificates(team: ALTTeam, session: ALTAppleAPISession) async throws -> [ALTCertificate] {
+    public func fetchCertificates(team: ALTTeam, session: ALTAppleAPISession) async throws -> [ALTX509Certificate] {
         return try await DeveloperPortalService.shared.fetchCertificates(team: team, session: session)
     }
     
@@ -89,7 +89,7 @@ public final class AuthManager: @unchecked Sendable {
         return try await DeveloperPortalService.shared.createCertificate(machineName: machineName, team: team, session: session)
     }
     
-    public func revokeCertificate(_ certificate: ALTCertificate, team: ALTTeam, session: ALTAppleAPISession) async throws -> Bool {
+    public func revokeCertificate(_ certificate: ALTX509Certificate, team: ALTTeam, session: ALTAppleAPISession) async throws -> Bool {
         return try await DeveloperPortalService.shared.revokeCertificate(certificate, team: team, session: session)
     }
     

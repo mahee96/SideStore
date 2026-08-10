@@ -16,16 +16,16 @@ struct SignableCertificateRowView: View {
     let cert: ALTCertificate
     let appName: String
     let appCertSerial: String?
+    @ObservedObject var viewModel: CertificatesViewModel
     
     private var isAppCert: Bool {
         guard let appCertSerial else { return false }
         return cert.serialNumber == appCertSerial
     }
     private var isActiveGlobal: Bool {
-        cert.serialNumber == CertificateManager.shared.activeCertificate?.serialNumber
+        cert.serialNumber == viewModel.activeSerialNumber
     }
     
-    private var hasPrivateKey: Bool { cert.privateKey != nil }
     private var briefInfo: CertificateBriefInfo? { getBriefInfo(for: cert.data) }
     
     private var statusText: String? {
@@ -93,7 +93,7 @@ struct SignableCertificateRowView: View {
                 
                 (
                     Text("Keys: ").font(.system(size: 10))
-                    + Text(hasPrivateKey ? "public + private" : "public").font(.system(size: 10))
+                    + Text("public + private").font(.system(size: 10))
                 )
                 .foregroundColor(Color(uiColor: .lightGray))
                 
@@ -120,12 +120,14 @@ struct SignableCertificateRowView: View {
 
 final class SignableCertificatesListViewController: UITableViewController {
     let installedApp: InstalledApp
+    let viewModel: CertificatesViewModel
     var onSelectCertificate: ((ALTCertificate) -> Void)?
     
     private var certificates: [ALTCertificate] = []
     
-    init(installedApp: InstalledApp) {
+    init(installedApp: InstalledApp, viewModel: CertificatesViewModel = CertificatesViewModel()) {
         self.installedApp = installedApp
+        self.viewModel = viewModel
         super.init(style: .insetGrouped)
     }
     
@@ -137,7 +139,7 @@ final class SignableCertificatesListViewController: UITableViewController {
         super.viewDidLoad()
         
         self.title = NSLocalizedString("Set Certificate", comment: "")
-        self.certificates = CertificateManager.shared.loadAllSignableLocalCertificates()
+        self.certificates = viewModel.loadAllSignableLocalCertificates()
         
         self.view.backgroundColor = .settingsBackground
         self.tableView.backgroundColor = .settingsBackground
@@ -160,7 +162,7 @@ final class SignableCertificatesListViewController: UITableViewController {
     }
     
     func present(from presentingViewController: UIViewController) {
-        let signableCerts = CertificateManager.shared.loadAllSignableLocalCertificates()
+        let signableCerts = viewModel.loadAllSignableLocalCertificates()
         
         guard !signableCerts.isEmpty else {
             let alert = UIAlertController(
@@ -196,7 +198,7 @@ final class SignableCertificatesListViewController: UITableViewController {
         
         if #available(iOS 16.0, *) {
             cell.contentConfiguration = UIHostingConfiguration {
-                SignableCertificateRowView(cert: cert, appName: installedApp.name, appCertSerial: installedApp.certificateSerialNumber)
+                SignableCertificateRowView(cert: cert, appName: installedApp.name, appCertSerial: installedApp.certificateSerialNumber, viewModel: viewModel)
             }
             .background(Color.white.opacity(0.15))
         } else {
@@ -214,7 +216,7 @@ final class SignableCertificatesListViewController: UITableViewController {
             Type: \(typeStr)
             Validity: \(validityStr)
             Requester: \(cert.requesterEmail ?? "N/A")
-            Keys: \(cert.privateKey != nil ? "public + private" : "public")
+            Keys: public + private
             """
             cell.textLabel?.textColor = .white
             cell.textLabel?.font = .systemFont(ofSize: 12, weight: .regular)
@@ -230,7 +232,7 @@ final class SignableCertificatesListViewController: UITableViewController {
         tableView.deselectRow(at: indexPath, animated: true)
         let cert = certificates[indexPath.row]
         
-        let contentVC = SetCertificateAlertViewController(installedApp: self.installedApp, certificate: cert)
+        let contentVC = SetCertificateAlertViewController(installedApp: self.installedApp, certificate: cert.x509)
         let confirmAlert = UIAlertController(
             title: NSLocalizedString("Set Certificate Confirmation", comment: ""),
             message: NSLocalizedString("Confirm applying this certificate:", comment: ""),

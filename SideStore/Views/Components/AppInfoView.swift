@@ -13,6 +13,7 @@ import SwiftUI
 struct AppInfoView: View {
     let installedApp: InstalledApp
     @Environment(\.presentationMode) var presentationMode
+    @StateObject private var certificatesViewModel = CertificatesViewModel()
     
     @State private var isShowingToast: Bool = false
     @State private var toastMessage: String = ""
@@ -151,6 +152,7 @@ struct ProvisioningProfileDetailView: View {
     let profile: ALTProvisioningProfile
     @State private var isShowingToast = false
     @State private var toastMessage = ""
+    @StateObject private var certificatesViewModel = CertificatesViewModel()
     
     var body: some View {
         List {
@@ -171,7 +173,7 @@ struct ProvisioningProfileDetailView: View {
             if !profile.certificates.isEmpty {
                 Section(header: Text("Developer Certificates (\(profile.certificates.count))")) {
                     ForEach(profile.certificates, id: \.serialNumber) { cert in
-                        NavigationLink(destination: CertificateDetailView(certificate: cert)) {
+                        NavigationLink(destination: CertificateDetailView(certificate: cert, viewModel: certificatesViewModel)) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(cert.name)
                                     .font(.subheadline)

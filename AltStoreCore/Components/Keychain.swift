@@ -103,9 +103,9 @@ public class Keychain
     
     private func migrateLegacyKeychainItems()
     {
-        let signingCertificateKey = "signingCertificate"
-        let privateKeyKey = "signingCertificatePrivateKey"
-        let serialNumberKey = "signingCertificateSerialNumber"
+        let signingCertificateKey   = "signingCertificate"
+        let privateKeyKey           = "signingCertificatePrivateKey"
+        let serialNumberKey         = "signingCertificateSerialNumber"
         
         // 1. Check if signingCertificate contains data and is NOT a PKCS#12 archive
         guard let certData = try? self.keychain.getData(signingCertificateKey), !certData.isPKCS12 else { return }
@@ -113,9 +113,9 @@ public class Keychain
         // 2. Check if we have the private key
         guard let privateKey = try? self.keychain.getData(privateKeyKey) else { return }
         
-        // 3. Load the raw certificate
-        guard let cert = ALTCertificate(data: certData) else { return }
-        cert.privateKey = privateKey
+        // 3. Load the raw certificate and pair with private key
+        guard let x509 = ALTX509Certificate(data: certData) else { return }
+        let cert = ALTCertificate(x509: x509, privateKey: privateKey)
         
         // 4. Create PKCS12 data structure
         do {

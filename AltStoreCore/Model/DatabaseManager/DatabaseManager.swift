@@ -594,7 +594,7 @@ private extension DatabaseManager
         var status: CertificateStatus = .valid(isCrossSigned: false)
         if let binaryCert = CertificateManager.shared.getSigningCertificate(at: localAppBundle.fileURL) {
             binaryCertSerial = binaryCert.serialNumber
-            CertificateManager.shared.saveCertificate(binaryCert)
+            CertificateManager.shared.saveX509Certificate(binaryCert)
             if binaryCert.expiryDate <= Date() {
                 status = .expired
             }

@@ -31,7 +31,7 @@ enum PrivateKeyImportError: LocalizedError {
 }
 
 class CertificatesViewModel: ObservableObject {
-    @Published var certificates: [ALTCertificate] = []
+    @Published var certificates: [ALTX509Certificate] = []
     @Published var isLoading = false
     @Published var errorMessage: String? = nil {
         didSet { showErrorAlert = errorMessage != nil }
@@ -56,13 +56,16 @@ class CertificatesViewModel: ObservableObject {
     
     @Published var pendingImports: [PendingImport] = []
     @Published var currentImportIndex = 0
-    @Published var showPasswordPromptForImport = false
-    @Published var importPasswordInput = ""
+    @Published var showImportProgressSheet = false
+    
     @Published var importSuccessCount = 0
     @Published var importFailedCount = 0
-    @Published var showImportSummary = false
-    @Published var showFailuresAlert = false
     @Published var failedImportsList: [String] = []
+    
+    @Published var importPasswordInput: String = ""
+    @Published var showPasswordPromptForImport: Bool = false
+    @Published var showImportSummary: Bool = false
+    @Published var showFailuresAlert: Bool = false
     
     var importSummaryMessage: String {
         "Certificate import completed.\nSuccess: \(importSuccessCount)\nFailed: \(importFailedCount)"
@@ -110,8 +113,8 @@ class CertificatesViewModel: ObservableObject {
         self.activeSerialNumber = activeLocalCert?.serialNumber
     }
     
-    func loadLocalCertificates() -> [ALTCertificate] {
-        return CertificateManager.shared.loadAllLocalCertificates()
+    func loadLocalCertificates() -> [ALTX509Certificate] {
+        return CertificateManager.shared.getAllLocalX509Certificates()
     }
     
     func saveLocalCertificate(_ cert: ALTCertificate) {
@@ -132,7 +135,7 @@ class CertificatesViewModel: ObservableObject {
         self.fetchActiveSerialNumber()
         
         let localCerts = self.loadLocalCertificates()
-        let activeCert = self.activeLocalCert
+        let activeCert = self.activeLocalCert?.x509
         
         var mergedLocal = localCerts
         if let active = activeCert, !mergedLocal.contains(where: { $0.serialNumber == active.serialNumber }) {
@@ -152,18 +155,15 @@ class CertificatesViewModel: ObservableObject {
                 self.session = session
                 
                 let remoteCerts = try await DeveloperPortalService.shared.fetchCertificates(team: team, session: session)
-                var merged = [ALTCertificate]()
+                var merged = [ALTX509Certificate]()
                 var matchedRemoteSerials = Set<String>()
                 
                 for remoteCert in remoteCerts {
-                    var resolvedPrivateKey: Data?
-                    if let active = activeCert, active.serialNumber == remoteCert.serialNumber, active.privateKey != nil {
-                        resolvedPrivateKey = active.privateKey
-                    } else if let localCopy = localCerts.first(where: { $0.serialNumber == remoteCert.serialNumber && $0.privateKey != nil }) {
-                        resolvedPrivateKey = localCopy.privateKey
+                    if let signable = CertificateManager.shared.getSignableCertificate(for: remoteCert.serialNumber) {
+                        self.saveLocalCertificate(signable)
+                    } else {
+                        CertificateManager.shared.saveX509Certificate(remoteCert)
                     }
-                    remoteCert.privateKey = resolvedPrivateKey
-                    self.saveLocalCertificate(remoteCert)
                     merged.append(remoteCert)
                     matchedRemoteSerials.insert(remoteCert.serialNumber)
                 }
@@ -214,13 +214,13 @@ class CertificatesViewModel: ObservableObject {
             return
         }
         
-        if let rawCert = ALTCertificate(data: certData) {
+        if let rawCert = ALTX509Certificate(data: certData) {
             if isDuplicate(cert: rawCert, importedSerials: importedSerialsThisBatch) {
                 failedImportsList.append("\(pending.filename): Duplicate certificate (already imported).")
                 importFailedCount += 1
             } else {
-                saveLocalCertificate(rawCert)
-                recordSuccessfulImport(serial: rawCert.serialNumber, hasPrivateKey: rawCert.privateKey != nil, filename: pending.filename)
+                CertificateManager.shared.saveX509Certificate(rawCert)
+                recordSuccessfulImport(serial: rawCert.serialNumber, hasPrivateKey: false, filename: pending.filename)
             }
             currentImportIndex += 1
             processNextImport()
@@ -236,7 +236,7 @@ class CertificatesViewModel: ObservableObject {
                         importFailedCount += 1
                     } else {
                         saveLocalCertificate(altCert)
-                        recordSuccessfulImport(serial: altCert.serialNumber, hasPrivateKey: altCert.privateKey != nil, filename: pending.filename)
+                        recordSuccessfulImport(serial: altCert.serialNumber, hasPrivateKey: true, filename: pending.filename)
                     }
                     currentImportIndex += 1
                     processNextImport()
@@ -258,7 +258,7 @@ class CertificatesViewModel: ObservableObject {
                     importFailedCount += 1
                 } else {
                     saveLocalCertificate(altCert)
-                    recordSuccessfulImport(serial: altCert.serialNumber, hasPrivateKey: altCert.privateKey != nil, filename: pending.filename)
+                    recordSuccessfulImport(serial: altCert.serialNumber, hasPrivateKey: true, filename: pending.filename)
                 }
                 currentImportIndex += 1
                 processNextImport()
@@ -276,24 +276,21 @@ class CertificatesViewModel: ObservableObject {
                 processNextImport()
                 return
             }
-        } else {
-            failedImportsList.append("\(pending.filename): Not a valid certificate format.")
-            importFailedCount += 1
-            currentImportIndex += 1
-            processNextImport()
-            return
         }
+        
+        failedImportsList.append("\(pending.filename): Unsupported certificate or key format.")
+        importFailedCount += 1
+        currentImportIndex += 1
+        processNextImport()
     }
     
     func submitImportPassword() {
-        let pending = pendingImports[currentImportIndex]
-        _ = pending.url.startAccessingSecurityScopedResource()
-        defer { pending.url.stopAccessingSecurityScopedResource() }
-        
+        guard currentImportIndex < pendingImports.count else { return }
+        let pending  = pendingImports[currentImportIndex]
         guard let certData = try? Data(contentsOf: pending.url) else {
-            self.showPasswordPromptForImport = false
-            failedImportsList.append("\(pending.filename): Read error.")
+            failedImportsList.append("\(pending.filename): Failed to read file data.")
             importFailedCount += 1
+            showPasswordPromptForImport = false
             currentImportIndex += 1
             processNextImport()
             return
@@ -306,7 +303,7 @@ class CertificatesViewModel: ObservableObject {
                 importFailedCount += 1
             } else {
                 saveLocalCertificate(altCert)
-                recordSuccessfulImport(serial: altCert.serialNumber, hasPrivateKey: altCert.privateKey != nil, filename: pending.filename)
+                recordSuccessfulImport(serial: altCert.serialNumber, hasPrivateKey: true, filename: pending.filename)
             }
             self.lastUsedPassword = importPasswordInput
             self.showPasswordPromptForImport = false
@@ -346,22 +343,17 @@ class CertificatesViewModel: ObservableObject {
                 self.session = session
                 
                 let newCert = try await DeveloperPortalService.shared.createCertificate(machineName: machineName, team: team, session: session)
-                guard let privateKey = newCert.privateKey else { self.errorMessage = "Missing private key from newly created certificate."; return }
-                let remoteCerts = try await DeveloperPortalService.shared.fetchCertificates(team: team, session: session)
-                if let certificate = remoteCerts.first(where: { $0.serialNumber == newCert.serialNumber }) {
-                    certificate.privateKey = privateKey
-                    self.saveLocalCertificate(certificate)
-                    self.alertMessage = "Certificate created successfully."
-                    self.showAlert    = true
-                    self.loadCertificates(presentingViewController: presentingViewController)
-                }
+                self.saveLocalCertificate(newCert)
+                self.alertMessage = "Certificate created successfully."
+                self.showAlert    = true
+                self.loadCertificates(presentingViewController: presentingViewController)
             } catch {
                 if !(error is CancellationError) { self.errorMessage = error.localizedDescription }
             }
         }
     }
     
-    func revokeCertificate(_ certificate: ALTCertificate, keepLocal: Bool = false, presentingViewController: UIViewController? = nil) {
+    func revokeCertificate(_ certificate: ALTX509Certificate, keepLocal: Bool = false, presentingViewController: UIViewController? = nil) {
         guard self.remoteSerials.contains(certificate.serialNumber) else {
             self.errorMessage = "This certificate is already revoked on Apple's servers."
             return
@@ -400,7 +392,7 @@ class CertificatesViewModel: ObservableObject {
         }
     }
     
-    func deleteCertificate(_ certificate: ALTCertificate) {
+    func deleteCertificate(_ certificate: ALTX509Certificate) {
         deleteLocalCertificate(serialNumber: certificate.serialNumber)
         self.certificates.removeAll { $0.serialNumber == certificate.serialNumber }
         if self.activeSerialNumber == certificate.serialNumber {
@@ -411,10 +403,13 @@ class CertificatesViewModel: ObservableObject {
         self.showAlert    = true
     }
     
-    func makeCertificateActive(_ certificate: ALTCertificate) {
-        guard certificate.privateKey != nil else { self.errorMessage = "Cannot activate certificate: private key missing."; return }
+    func makeCertificateActive(_ certificate: ALTX509Certificate) {
+        guard let signable = self.getSignableCertificate(for: certificate.serialNumber) else {
+            self.errorMessage = "Cannot activate certificate: private key missing."
+            return
+        }
         do {
-            try CertificateManager.shared.setActiveCertificate(certificate)
+            try CertificateManager.shared.setActiveCertificate(signable)
             self.fetchActiveSerialNumber()
             self.alertMessage = "Active signing certificate replaced successfully."
             self.showAlert    = true
@@ -422,7 +417,7 @@ class CertificatesViewModel: ObservableObject {
             self.errorMessage = "Failed to activate certificate: \(error.localizedDescription)"
         }
     }
-    
+
     func deactivateActiveCertificate() {
         CertificateManager.shared.clearActiveCertificate()
         self.activeSerialNumber = nil
@@ -430,11 +425,31 @@ class CertificatesViewModel: ObservableObject {
         self.showAlert    = true
     }
     
-    func isCertificateLocallyCached(_ certificate: ALTCertificate) -> Bool {
-        return CertificateManager.shared.isCertificateLocallyCached(cert: certificate)
+    func isCertificateLocallyCached(_ certificate: ALTX509Certificate) -> Bool {
+        return CertificateManager.shared.isCertificateLocallyCached(serialNumber: certificate.serialNumber)
+    }
+
+    func getSigningCertificate(at url: URL) -> ALTX509Certificate? {
+        CertificateManager.shared.getSigningCertificate(at: url)
     }
     
-    func sortCertificates(_ certs: [ALTCertificate]) -> [ALTCertificate] {
+    func getLocalX509Certificate(serialNumber: String) -> ALTX509Certificate? {
+        CertificateManager.shared.getLocalX509Certificate(serialNumber: serialNumber)
+    }
+
+    func getSignableCertificate(for serialNumber: String) -> ALTCertificate? {
+        CertificateManager.shared.getSignableCertificate(for: serialNumber)
+    }
+
+    func loadAllSignableLocalCertificates() -> [ALTCertificate] {
+        CertificateManager.shared.getAllLocalCertificates()
+    }
+
+    func hasPrivateKey(for cert: ALTX509Certificate) -> Bool {
+        CertificateManager.shared.getSignableCertificate(for: cert.serialNumber) != nil
+    }
+    
+    func sortCertificates(_ certs: [ALTX509Certificate]) -> [ALTX509Certificate] {
         switch currentSort {
         case .creationDate: return certs.sorted { isAscending ? $0.creationDate < $1.creationDate : $0.creationDate > $1.creationDate }
         case .expiryDate:   return certs.sorted { isAscending ? $0.expiryDate < $1.expiryDate : $0.expiryDate > $1.expiryDate }
@@ -445,8 +460,8 @@ class CertificatesViewModel: ObservableObject {
             }
         case .keys:
             return certs.sorted {
-                let v0 = $0.privateKey != nil ? 1 : 0
-                let v1 = $1.privateKey != nil ? 1 : 0
+                let v0 = self.hasPrivateKey(for: $0) ? 1 : 0
+                let v1 = self.hasPrivateKey(for: $1) ? 1 : 0
                 return isAscending ? v0 < v1 : v0 > v1
             }
         }
@@ -458,8 +473,8 @@ class CertificatesViewModel: ObservableObject {
         case .none:
             return [GroupedCertificates(name: "Certificates", certificates: sorted)]
         case .keys:
-            let withKeys    = sorted.filter { $0.privateKey != nil }
-            let withoutKeys = sorted.filter { $0.privateKey == nil }
+            let withKeys    = sorted.filter { self.hasPrivateKey(for: $0) }
+            let withoutKeys = sorted.filter { !self.hasPrivateKey(for: $0) }
             var groups = [GroupedCertificates]()
             if !withKeys.isEmpty    { groups.append(GroupedCertificates(name: "Public + Private Keys", certificates: withKeys)) }
             if !withoutKeys.isEmpty { groups.append(GroupedCertificates(name: "Public Keys Only",      certificates: withoutKeys)) }
@@ -499,7 +514,7 @@ class CertificatesViewModel: ObservableObject {
         return activeSerial
     }
     
-    func isSerialMasked(for cert: ALTCertificate, hasPrivateKey: Bool) -> Bool {
+    func isSerialMasked(for cert: ALTX509Certificate) -> Bool {
         let isRevealed      = revealedSerials.contains(cert.serialNumber)
         let isSectionHidden = isSectionHideActive
         if isGlobalHideActive || isSectionHidden {
@@ -518,33 +533,33 @@ class CertificatesViewModel: ObservableObject {
         }
     }
     
-    func displaySerial(for cert: ALTCertificate, hasPrivateKey: Bool) -> String {
-        if isSerialMasked(for: cert, hasPrivateKey: hasPrivateKey) {
+    func displaySerial(for cert: ALTX509Certificate) -> String {
+        if isSerialMasked(for: cert) {
             if isGlobalHideActive { return "••••••••••••••••" }
             return maskPartially(cert.serialNumber)
         }
         return cert.serialNumber
     }
     
-    func displayIdentifier(for cert: ALTCertificate, hasPrivateKey: Bool) -> String? {
+    func displayIdentifier(for cert: ALTX509Certificate) -> String? {
         guard let ident = cert.identifier else { return nil }
-        if isSerialMasked(for: cert, hasPrivateKey: hasPrivateKey) { return "••••••••••" }
+        if isSerialMasked(for: cert) { return "••••••••••" }
         return ident
     }
     
-    func displayRequester(for cert: ALTCertificate, hasPrivateKey: Bool) -> String? {
+    func displayRequester(for cert: ALTX509Certificate) -> String? {
         guard let req = cert.requesterEmail, !req.isEmpty else { return nil }
-        if isSerialMasked(for: cert, hasPrivateKey: hasPrivateKey) { return "••••••••••" }
+        if isSerialMasked(for: cert) { return "••••••••••" }
         return req
     }
     
-    func displayBriefType(for brief: CertificateBriefInfo, cert: ALTCertificate) -> String {
-        if isSerialMasked(for: cert, hasPrivateKey: cert.privateKey != nil) { return "••••••••••" }
+    func displayBriefType(for brief: CertificateBriefInfo, cert: ALTX509Certificate) -> String {
+        if isSerialMasked(for: cert) { return "••••••••••" }
         return brief.type
     }
     
-    func displayBriefValidity(for brief: CertificateBriefInfo, cert: ALTCertificate) -> String {
-        if isSerialMasked(for: cert, hasPrivateKey: cert.privateKey != nil) { return "••••••••••" }
+    func displayBriefValidity(for brief: CertificateBriefInfo, cert: ALTX509Certificate) -> String {
+        if isSerialMasked(for: cert) { return "••••••••••" }
         return "\(brief.validFrom) - \(brief.validUntil)"
     }
     
@@ -578,10 +593,11 @@ class CertificatesViewModel: ObservableObject {
         throw PrivateKeyImportError.invalidKey
     }
     
-    func importPrivateKey(data: Data, for cert: ALTCertificate) {
+    func importPrivateKey(data: Data, for cert: ALTX509Certificate) {
         do {
-            cert.privateKey = try validateAndFormatPrivateKey(data: data)
-            saveLocalCertificate(cert)
+            let key = try validateAndFormatPrivateKey(data: data)
+            let signable = ALTCertificate(x509: cert, privateKey: key)
+            saveLocalCertificate(signable)
             self.loadCertificates(presentingViewController: nil)
             self.alertMessage = "Successfully added private key to certificate \(cert.name)."
             self.showAlert    = true
@@ -590,9 +606,8 @@ class CertificatesViewModel: ObservableObject {
         }
     }
     
-    func clearPrivateKey(for cert: ALTCertificate) {
-        cert.privateKey = nil
-        saveLocalCertificate(cert)
+    func clearPrivateKey(for cert: ALTX509Certificate) {
+        CertificateManager.shared.saveX509Certificate(cert)
         self.loadCertificates(presentingViewController: nil)
         self.alertMessage = "Successfully removed private key from certificate \(cert.name)."
         self.showAlert    = true
@@ -609,15 +624,21 @@ class CertificatesViewModel: ObservableObject {
     }
     
     private func isDuplicate(cert: ALTCertificate, importedSerials: [String: (hasPrivateKey: Bool, filename: String)]) -> Bool {
-        if let imported = importedSerials[cert.serialNumber] {
-            if cert.privateKey == nil || imported.hasPrivateKey {
-                return true
-            }
+        if importedSerials[cert.serialNumber] != nil {
+            return true
         }
-        if let existing = self.certificates.first(where: { $0.serialNumber == cert.serialNumber }) {
-            if cert.privateKey == nil || existing.privateKey != nil {
-                return true
-            }
+        if self.certificates.contains(where: { $0.serialNumber == cert.serialNumber }) {
+            return true
+        }
+        return false
+    }
+
+    private func isDuplicate(cert: ALTX509Certificate, importedSerials: [String: (hasPrivateKey: Bool, filename: String)]) -> Bool {
+        if let imported = importedSerials[cert.serialNumber], imported.hasPrivateKey {
+            return true
+        }
+        if self.certificates.contains(where: { $0.serialNumber == cert.serialNumber }) {
+            return true
         }
         return false
     }

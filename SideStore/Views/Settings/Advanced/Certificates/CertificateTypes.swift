@@ -32,15 +32,11 @@ enum FileImportMode {
 
 struct KeyTextImportItem: Identifiable {
     let id: String
-    let cert: ALTCertificate
+    let cert: ALTX509Certificate
 }
 
 struct GroupedCertificates: Identifiable {
     var id: String { name }
     let name: String
-    let certificates: [ALTCertificate]
-}
-
-extension ALTCertificate: Identifiable {
-    public var id: String { serialNumber }
+    let certificates: [ALTX509Certificate]
 }

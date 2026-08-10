@@ -11,17 +11,17 @@
 
 enum CertificateExporter {
     
-    static func sharePublicCertAsDER(_ cert: ALTCertificate, onError: @escaping (String) -> Void) {
+    static func sharePublicCertAsDER(_ cert: ALTX509Certificate, onError: @escaping (String) -> Void) {
         guard let data = cert.data else { onError("Public certificate data is missing."); return }
         share(data: getDERData(from: data) ?? data, filename: (cert.machineName ?? cert.name) + ".der", onError: onError)
     }
     
-    static func sharePublicCertAsPEM(_ cert: ALTCertificate, onError: @escaping (String) -> Void) {
+    static func sharePublicCertAsPEM(_ cert: ALTX509Certificate, onError: @escaping (String) -> Void) {
         guard let data = cert.data else { onError("Public certificate data is missing."); return }
         share(data: data, filename: (cert.machineName ?? cert.name) + ".pem", onError: onError)
     }
     
-    static func copyPublicCertAsPEM(_ cert: ALTCertificate, onError: @escaping (String) -> Void) {
+    static func copyPublicCertAsPEM(_ cert: ALTX509Certificate, onError: @escaping (String) -> Void) {
         guard let data = cert.data else { onError("Public certificate data is missing."); return }
         UIPasteboard.general.string = String(data: data, encoding: .utf8) ?? data.base64EncodedString()
     }
@@ -37,17 +37,17 @@ enum CertificateExporter {
     }
     
     static func sharePrivateKeyAsPEM(_ cert: ALTCertificate, onError: @escaping (String) -> Void) {
-        guard let keyData = cert.privateKey else { onError("Private key is missing."); return }
+        let keyData = cert.privateKey
         share(data: keyData, filename: (cert.machineName ?? cert.name) + "_key.pem", onError: onError)
     }
     
     static func sharePrivateKeyAsDER(_ cert: ALTCertificate, onError: @escaping (String) -> Void) {
-        guard let keyData = cert.privateKey else { onError("Private key is missing."); return }
+        let keyData = cert.privateKey
         share(data: getDERData(from: keyData) ?? keyData, filename: (cert.machineName ?? cert.name) + "_key.der", onError: onError)
     }
     
     static func copyPrivateKey(_ cert: ALTCertificate) {
-        guard let keyData = cert.privateKey else { return }
+        let keyData = cert.privateKey
         UIPasteboard.general.string = String(data: keyData, encoding: .utf8) ?? keyData.base64EncodedString()
         UINotificationFeedbackGenerator().notificationOccurred(.success)
     }

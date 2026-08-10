@@ -318,17 +318,3 @@ public func parseCertificate(derData: Data) -> ParsedCertificateDetails {
     
     return details
 }
-
-extension ALTCertificate {
-    var creationDate: Date {
-        guard let data = self.data else { return Date.distantPast }
-        let details = parseCertificate(derData: data)
-        return details.validFrom ?? Date.distantPast
-    }
-    
-    var expiryDate: Date {
-        guard let data = self.data else { return Date.distantPast }
-        let details = parseCertificate(derData: data)
-        return details.validUntil ?? Date.distantPast
-    }
-}

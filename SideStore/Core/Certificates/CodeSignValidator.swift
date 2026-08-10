@@ -40,8 +40,8 @@ public struct CodeSignValidator {
     
     public static func validate(
         runningProfile: ALTProvisioningProfile?,
-        activeCertificates: [ALTCertificate],
-        signerCertificate: ALTCertificate,
+        activeCertificates: [ALTX509Certificate],
+        signerCertificate: ALTX509Certificate,
         signerTeam: ALTTeam
     ) -> Result<Void, CodeSignValidationReason> {
         

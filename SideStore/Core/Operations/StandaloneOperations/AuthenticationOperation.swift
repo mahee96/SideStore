@@ -593,25 +593,24 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         let certificates = try await ALTAppleAPI.shared.fetchCertificates(for: team, session: session)
         self.context.activeCertificates = certificates
         
-        let bundleCertSerial = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String
+        let mainBundleCertSerial = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String
         
         if let activeCert = CertificateManager.shared.activeCertificate,
            let certificate = certificates.first(where: { $0.serialNumber == activeCert.serialNumber })
         {
             activeCert.certificate.machineIdentifier = certificate.machineIdentifier
-            if let bundleCertSerial = bundleCertSerial, bundleCertSerial.lowercased() != activeCert.serialNumber.lowercased() {
-                self.debugLog("[Authentication] Active certificate (\(activeCert.serialNumber)) and running bundle certificate (\(bundleCertSerial)) mismatch detected. Running Bundle Certificate is still active on the Paid account portal. Using active Keychain certificate.")
+            if let mainBundleCertSerial = mainBundleCertSerial, mainBundleCertSerial.lowercased() != activeCert.serialNumber.lowercased() {
+                self.debugLog("[Authentication] Active certificate (\(activeCert.serialNumber)) and running bundle certificate (\(mainBundleCertSerial)) mismatch detected. Running Bundle Certificate is still active on the Paid account portal. Using active Keychain certificate.")
             }
             return activeCert.certificate
         }
         
-        if let bundleCertSerial = bundleCertSerial,
-           let certificate = certificates.first(where: { $0.serialNumber.lowercased() == bundleCertSerial.lowercased() }),
-           let cert = CertificateManager.shared.getSigningCertificate(at: Bundle.main.bundleURL, externalPassword: bundleCertSerial),
-           cert.privateKey != nil
+        if let mainBundleCertSerial = mainBundleCertSerial,
+           let certificate = certificates.first(where: { $0.serialNumber.lowercased() == mainBundleCertSerial.lowercased() }),
+           let cert = CertificateManager.shared.getSignableCertificate(for: mainBundleCertSerial, externalPassword: mainBundleCertSerial)
         {
             cert.machineIdentifier = certificate.machineIdentifier
-            self.debugLog("[Authentication] Using running bundle certificate (\(cert.serialNumber)) with valid private key.")
+            self.debugLog("[Authentication] Using running bundle certificate (\(cert.serialNumber)) with valid private key from signable cache.")
             return cert
         }
         
@@ -633,23 +632,13 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         do {
             self.verboseLog("[Authentication] requestCertificate: Calling ALTAppleAPI.shared.addCertificate...")
             let certificate = try await ALTAppleAPI.shared.addCertificate(machineName: machineName, to: team, session: session)
-            self.verboseLog("[Authentication] requestCertificate: addCertificate succeeded. Serial: \(certificate.serialNumber ?? "nil")")
-            guard let privateKey = certificate.privateKey else {
-                self.debugLog("[Authentication] requestCertificate: Error - missing private key!")
-                throw AuthenticationError(.missingPrivateKey)
-            }
+            self.verboseLog("[Authentication] requestCertificate: addCertificate succeeded. Serial: \(certificate.serialNumber)")
             self.verboseLog("[Authentication] requestCertificate: Fetching certificates to match...")
             let certificates = try await ALTAppleAPI.shared.fetchCertificates(for: team, session: session)
             self.context.activeCertificates = certificates
             self.verboseLog("[Authentication] requestCertificate: fetchCertificates returned \(certificates.count) certificates.")
-            guard let matchedCertificate = certificates.first(where: { $0.serialNumber == certificate.serialNumber }) else {
-                self.debugLog("[Authentication] requestCertificate: Error - missing matched certificate!")
-                throw AuthenticationError(.missingCertificate)
-            }
-            
-            matchedCertificate.privateKey = privateKey
-            self.verboseLog("[Authentication] requestCertificate: Successfully retrieved matched certificate with private key.")
-            return matchedCertificate
+            self.verboseLog("[Authentication] requestCertificate: Successfully retrieved certificate with private key.")
+            return certificate
         } catch {
             self.debugLog("[Authentication] requestCertificate: Failed with error: \(error)")
             let underlying = error as NSError
@@ -677,7 +666,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
     }
     
     @MainActor
-    private func replaceCertificate(ourCertificates: [ALTCertificate], for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTCertificate {
+    private func replaceCertificate(ourCertificates: [ALTX509Certificate], for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTCertificate {
         let filteredCertificates = ourCertificates.filter { a in
             a.machineName?.starts(with: "SideStore") == true || a.machineName?.starts(with: "AltStore") == true
         }
@@ -710,7 +699,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             var firstError: Error? = nil
             for certificate in filteredCertificates {
                 do {
-                    self.verboseLog("[Authentication] replaceCertificate: Revoking certificate '\(certificate.machineName ?? "nil")' (Serial: \(certificate.serialNumber ?? "nil"))...")
+                    self.verboseLog("[Authentication] replaceCertificate: Revoking certificate '\(certificate.machineName ?? "nil")' (Serial: \(certificate.serialNumber))...")
                     try await ALTAppleAPI.shared.revoke(certificate, for: team, session: session)
                     self.verboseLog("[Authentication] replaceCertificate: Revoke succeeded.")
                 } catch {
@@ -773,7 +762,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
         let result = CodeSignValidator.validate(
             runningProfile: provisioningProfile,
             activeCertificates: self.context.activeCertificates ?? [],
-            signerCertificate: signer.certificate,
+            signerCertificate: signer.certificate.x509,
             signerTeam: signer.team
         )
         
@@ -845,7 +834,7 @@ extension ALTAppleAPI {
 }
 
 extension ALTAppleAPI {
-    func fetchCertificates(for team: ALTTeam, session: ALTAppleAPISession) async throws -> [ALTCertificate] {
+    func fetchCertificates(for team: ALTTeam, session: ALTAppleAPISession) async throws -> [ALTX509Certificate] {
         try await withCheckedThrowingContinuation { continuation in
             self.fetchCertificates(for: team, session: session) { (certs, err) in
                 if let certs = certs {
@@ -869,7 +858,7 @@ extension ALTAppleAPI {
         }
     }
 
-    func revoke(_ certificate: ALTCertificate, for team: ALTTeam, session: ALTAppleAPISession) async throws {
+    func revoke(_ certificate: ALTX509Certificate, for team: ALTTeam, session: ALTAppleAPISession) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             self.revoke(certificate, for: team, session: session) { (success, err) in
                 if success {

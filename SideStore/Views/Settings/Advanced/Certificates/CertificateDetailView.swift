@@ -17,12 +17,18 @@ struct DeveloperPortalMetadata {
 }
 
 struct CertificateDetailView: View {
-    let certificate: ALTCertificate
+    let certificate: ALTX509Certificate
     let portalMetadata: DeveloperPortalMetadata?
+    @ObservedObject var viewModel: CertificatesViewModel
     
-    init(certificate: ALTCertificate, portalMetadata: DeveloperPortalMetadata? = nil) {
+    private var signableCert: ALTCertificate? {
+        viewModel.getSignableCertificate(for: certificate.serialNumber)
+    }
+    
+    init(certificate: ALTX509Certificate, portalMetadata: DeveloperPortalMetadata? = nil, viewModel: CertificatesViewModel) {
         self.certificate = certificate
         self.portalMetadata = portalMetadata
+        self.viewModel = viewModel
     }
     
     @State private var isRedacted = true
@@ -39,27 +45,14 @@ struct CertificateDetailView: View {
         let briefInfo = getBriefInfo(for: certificate.data)
         Form {
             Section {
-                detailRow(title: "Common Name", value: redactableValue(certificate.name))
-                if let machineName = portalMetadata?.machineName {
-                    detailRow(title: "Machine Name", value: redactableValue(machineName))
-                }
-                detailRow(title: "Type", value: briefInfo?.type ?? "Developer Certificate")
-                detailRow(title: "Valid From", value: briefInfo?.validFrom ?? "N/A")
-                detailRow(title: "Valid Until", value: briefInfo?.validUntil ?? "N/A")
-                detailRowWithCopy(title: "Serial Number", value: certificate.serialNumber, isCopied: $copiedSerialNumber)
-            } header: {
-                Text("Basic Information")
-            }
-            
-            if let metadata = portalMetadata {
                 Section {
-                    if let identifier = metadata.identifier {
+                    if let identifier = portalMetadata?.identifier {
                         detailRowWithCopy(title: "Certificate ID", value: identifier, isCopied: $copiedIdentifier)
                     }
-                    if let machineID = metadata.machineIdentifier {
+                    if let machineID = portalMetadata?.machineIdentifier {
                         detailRow(title: "Machine ID", value: machineID)
                     }
-                    if let email = metadata.requesterEmail {
+                    if let email = portalMetadata?.requesterEmail {
                         detailRow(title: "Requester Email", value: redactableValue(email))
                     }
                 } header: {
@@ -169,9 +162,9 @@ struct CertificateDetailView: View {
             }
             
             Section {
-                detailRow(title: "Has Private Key", value: certificate.privateKey != nil ? "Yes" : "No")
+                detailRow(title: "Has Private Key", value: signableCert != nil ? "Yes" : "No")
                 
-                if let privateKey = certificate.privateKey {
+                if let privateKey = signableCert?.privateKey {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("Private Key Data")

@@ -32,7 +32,7 @@ struct DeveloperPortalService {
         }
     }
     
-    func fetchCertificates(team: ALTTeam, session: ALTAppleAPISession) async throws -> [ALTCertificate] {
+    func fetchCertificates(team: ALTTeam, session: ALTAppleAPISession) async throws -> [ALTX509Certificate] {
         try await withCheckedThrowingContinuation { continuation in
             ALTAppleAPI.shared.fetchCertificates(for: team, session: session) { certs, error in
                 if let error = error {
@@ -60,7 +60,7 @@ struct DeveloperPortalService {
         }
     }
     
-    func revokeCertificate(_ certificate: ALTCertificate, team: ALTTeam, session: ALTAppleAPISession) async throws -> Bool {
+    func revokeCertificate(_ certificate: ALTX509Certificate, team: ALTTeam, session: ALTAppleAPISession) async throws -> Bool {
         try await withCheckedThrowingContinuation { continuation in
             ALTAppleAPI.shared.revoke(certificate, for: team, session: session) { success, error in
                 if let error = error {

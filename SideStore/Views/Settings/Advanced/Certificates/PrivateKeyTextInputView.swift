@@ -12,7 +12,7 @@ import UniformTypeIdentifiers
 
 struct PrivateKeyTextInputView: View {
     @Binding var text: String
-    let cert: ALTCertificate
+    let cert: ALTX509Certificate
     let viewModel: CertificatesViewModel
     let allowedKeyImportTypes: [UTType]
     var onCancel: () -> Void
@@ -59,8 +59,8 @@ struct PrivateKeyTextInputView: View {
                         if let keyData = text.data(using: .utf8) {
                             do {
                                 let formattedKey = try viewModel.validateAndFormatPrivateKey(data: keyData)
-                                cert.privateKey = formattedKey
-                                viewModel.saveLocalCertificate(cert)
+                                let signableCert = ALTCertificate(x509: cert, privateKey: formattedKey)
+                                viewModel.saveLocalCertificate(signableCert)
                                 viewModel.loadCertificates(presentingViewController: nil)
                                 showSuccessAlert = true
                             } catch {

@@ -13,11 +13,13 @@ import Foundation
 
 final class SetCertificateAlertViewController: UIViewController {
     let installedApp: InstalledApp
-    let newCertificate: ALTCertificate
+    let targetCertificate: ALTX509Certificate
+    let viewModel: CertificatesViewModel
     
-    init(installedApp: InstalledApp, certificate: ALTCertificate) {
+    init(installedApp: InstalledApp, certificate: ALTX509Certificate, viewModel: CertificatesViewModel = CertificatesViewModel()) {
         self.installedApp = installedApp
-        self.newCertificate = certificate
+        self.targetCertificate = certificate
+        self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -29,10 +31,10 @@ final class SetCertificateAlertViewController: UIViewController {
         super.viewDidLoad()
         
         let appCertSerial = installedApp.certificateSerialNumber
-        var currentCertObj = CertificateManager.shared.getSigningCertificate(at: installedApp.fileURL)
+        var currentCertObj = viewModel.getSigningCertificate(at: installedApp.fileURL)
         
         if currentCertObj == nil, let serial = appCertSerial {
-            currentCertObj = CertificateManager.shared.getLocalCertificate(serialNumber: serial)
+            currentCertObj = viewModel.getLocalX509Certificate(serialNumber: serial)
         }
         
         let currentName = currentCertObj?.name ?? "N/A"
@@ -43,11 +45,11 @@ final class SetCertificateAlertViewController: UIViewController {
         let currentType = currentBrief?.type ?? "N/A"
         let currentValidity = currentBrief != nil ? "\(currentBrief!.validFrom) - \(currentBrief!.validUntil)" : "N/A"
         
-        let targetName = newCertificate.name ?? "N/A"
-        let targetMachine = newCertificate.machineName ?? "N/A"
-        let targetSerial = newCertificate.serialNumber
-        let targetEmail = newCertificate.requesterEmail ?? "N/A"
-        let targetBrief = getBriefInfo(for: newCertificate.data)
+        let targetName = targetCertificate.name
+        let targetMachine = targetCertificate.machineName ?? "N/A"
+        let targetSerial = targetCertificate.serialNumber
+        let targetEmail = targetCertificate.requesterEmail ?? "N/A"
+        let targetBrief = getBriefInfo(for: targetCertificate.data)
         let targetType = targetBrief?.type ?? "N/A"
         let targetValidity = targetBrief != nil ? "\(targetBrief!.validFrom) - \(targetBrief!.validUntil)" : "N/A"
         
