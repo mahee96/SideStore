@@ -644,20 +644,17 @@ private extension AuthenticationOperation {
     }
 
     private func replaceCertificate(portalCertificates: [ALTX509Certificate], for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTCertificate {
-        let ourCertificates = portalCertificates.filter { a in
-            a.machineName?.starts(with: "SideStore") == true || a.machineName?.starts(with: "AltStore") == true
-        }
-        self.debugLog("[Authentication] replaceCertificate: Starting. Total certs: \(portalCertificates.count), filtered: \(ourCertificates.count)")
+        self.debugLog("[Authentication] replaceCertificate: Starting. Total certs on portal: \(portalCertificates.count)")
         
-        if ourCertificates.isEmpty {
-            self.verboseLog("[Authentication] replaceCertificate: None of filtered certificates are of machineName 'SideStore' or 'AltStore'. Requesting new...")
+        if portalCertificates.isEmpty {
+            self.verboseLog("[Authentication] replaceCertificate: No portal certificates found. Requesting new...")
             return try await self.requestCertificate(for: team, session: session)
         }
         
-        // We don't have private keys for any of the certificates,
-        // so we need to revoke one and create a new one.
+        // We don't have private keys for any of the portal certificates,
+        // so we present the revocation prompt for all active certificates on the portal.
         var certsText = ""
-        for certificate in ourCertificates {
+        for certificate in portalCertificates {
             if let name = certificate.machineName {
                 certsText.append("\(name)\n")
             }
@@ -672,10 +669,10 @@ private extension AuthenticationOperation {
                 return try await self.requestCertificate(for: team, session: session)
                 
             case .revokeAll:
-                self.debugLog("[Authentication] replaceCertificate: Revoking all our filtered certificates...")
+                self.debugLog("[Authentication] replaceCertificate: Revoking all portal certificates...")
                 var firstError: Error? = nil
 
-                for certificate in ourCertificates {
+                for certificate in portalCertificates {
                     do {
                         self.verboseLog("[Authentication] replaceCertificate: Revoking certificate '\(certificate.machineName ?? "nil")' (Serial: \(certificate.serialNumber))...")
                         try await AuthManager.shared.revokeCertificate(certificate, for: team, session: session)
