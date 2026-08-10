@@ -14,7 +14,7 @@ import CoreData
 @preconcurrency import AltSign
 
 enum RevokeDecision: Sendable {
-    case revokeAll
+    case revokeSelected([ALTX509Certificate])
     case keepExisting
 }
 
@@ -644,37 +644,34 @@ private extension AuthenticationOperation {
     }
 
     private func replaceCertificate(portalCertificates: [ALTX509Certificate], for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTCertificate {
-        self.debugLog("[Authentication] replaceCertificate: Starting. Total certs on portal: \(portalCertificates.count)")
+        // Filter strictly for iOS Development certificates so Mac/Apple Development certs are never touched
+        let iosCertificates = portalCertificates.filter { cert in
+            let nameLower = cert.name.lowercased()
+            return nameLower.contains("ios development") || nameLower.contains("iphone developer")
+        }
+
+        self.debugLog("[Authentication] replaceCertificate: Starting. Total certs on portal: \(portalCertificates.count), iOS Development certs: \(iosCertificates.count)")
         
-        if portalCertificates.isEmpty {
-            self.verboseLog("[Authentication] replaceCertificate: No portal certificates found. Requesting new...")
+        if iosCertificates.isEmpty {
+            self.verboseLog("[Authentication] replaceCertificate: No iOS Development certificates found on portal. Requesting new...")
             return try await self.requestCertificate(for: team, session: session)
         }
         
-        // We don't have private keys for any of the portal certificates,
-        // so we present the revocation prompt for all active certificates on the portal.
-        var certsText = ""
-        for certificate in portalCertificates {
-            if let name = certificate.machineName {
-                certsText.append("\(name)\n")
-            }
-        }
-        
-        self.debugLog("[Authentication] replaceCertificate: Presenting revoke alert...")
-        let action = try await self.context.authenticationHandler.resolveRevocation(certsText: certsText, teamType: team.type)
+        self.debugLog("[Authentication] replaceCertificate: Presenting revoke alert for \(iosCertificates.count) iOS Development cert(s)...")
+        let action = try await self.context.authenticationHandler.resolveRevocation(certificates: iosCertificates, teamType: team.type)
         self.debugLog("[Authentication] replaceCertificate: User action was \(action)")
         switch action {
             case .keepExisting:
                 self.verboseLog("[Authentication] replaceCertificate: Keeping existing, calling requestCertificate...")
                 return try await self.requestCertificate(for: team, session: session)
                 
-            case .revokeAll:
-                self.debugLog("[Authentication] replaceCertificate: Revoking all portal certificates...")
+            case .revokeSelected(let certsToRevoke):
+                self.debugLog("[Authentication] replaceCertificate: Revoking \(certsToRevoke.count) selected certificate(s)...")
                 var firstError: Error? = nil
 
-                for certificate in portalCertificates {
+                for certificate in certsToRevoke {
                     do {
-                        self.verboseLog("[Authentication] replaceCertificate: Revoking certificate '\(certificate.machineName ?? "nil")' (Serial: \(certificate.serialNumber))...")
+                        self.verboseLog("[Authentication] replaceCertificate: Revoking certificate '\(certificate.machineName ?? certificate.name)' (Serial: \(certificate.serialNumber))...")
                         try await AuthManager.shared.revokeCertificate(certificate, for: team, session: session)
                         self.verboseLog("[Authentication] replaceCertificate: Revoke succeeded.")
                     } catch {
@@ -689,7 +686,7 @@ private extension AuthenticationOperation {
                     self.debugLog("[Authentication] replaceCertificate: Error occurred during revocation, throwing...")
                     throw error
                 } else {
-                    self.debugLog("[Authentication] replaceCertificate: All certificates successfully revoked. Requesting new certificate...")
+                    self.debugLog("[Authentication] replaceCertificate: Selected certificates successfully revoked. Requesting new certificate...")
                     return try await self.requestCertificate(for: team, session: session)
                 }
         }

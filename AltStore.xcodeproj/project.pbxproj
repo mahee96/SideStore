@@ -332,6 +332,7 @@
 				Views/Settings/Advanced/WirelessPair/WirelessPairView.swift,
 				Views/Settings/Auth/ExportAccountAlertViewController.swift,
 				Views/Settings/Auth/ImportAccountAlertController.swift,
+				Views/Settings/Auth/RevokeCertificatesAlertViewController.swift,
 				Views/Settings/Auth/SignOutAlertViewController.swift,
 				Views/Settings/Diagnostics/DeveloperOptionsView.swift,
 				Views/Settings/Diagnostics/ExperimentalFeaturesView.swift,

@@ -28,7 +28,7 @@ protocol AuthenticationHandler: AnyObject {
     func resolveProvisioningError(_ error: Error) async -> ProvisioningErrorDecision
     func resolvePostAuth() async
     
-    func resolveRevocation(certsText: String, teamType: ALTTeamType) async throws -> RevokeDecision
+    func resolveRevocation(certificates: [ALTX509Certificate], teamType: ALTTeamType) async throws -> RevokeDecision
     func resolveResign(mismatchReason: CodeSignValidationReason, context: AuthenticatedOperationContext) async throws -> Bool
     
     func complete() async

@@ -261,8 +261,17 @@ struct DeveloperOptionsView: View {
                         divider
                         
                         SwiftUI.Button(action: {
-                            exportCertPassword = ""
-                            showExportPasswordPrompt = true
+                            if AuthManager.shared.currentAppleID == nil ||
+                               AuthManager.shared.password == nil ||
+                               CertificateManager.shared.activeCertificate == nil {
+                                if let top = topViewController() {
+                                    let toastView = ToastView(text: NSLocalizedString("Failed to export account!", comment: ""), detailText: "Account not found or missing credentials.")
+                                    toastView.show(in: top)
+                                }
+                            } else {
+                                exportCertPassword = ""
+                                showExportPasswordPrompt = true
+                            }
                         }) {
                             HStack(spacing: 12) {
                                 Image(systemName: "square.and.arrow.up")
@@ -306,6 +315,7 @@ struct DeveloperOptionsView: View {
         } message: {
             Text("Are you sure you want to clear all existing refresh attempt entries?")
         }
+        #if DEBUG
         .alert("Export Account", isPresented: $showExportPasswordPrompt) {
             SecureField("Certificate Password", text: $exportCertPassword)
             SwiftUI.Button("Export") {
@@ -315,6 +325,7 @@ struct DeveloperOptionsView: View {
         } message: {
             Text("Please enter a password for the certificate.")
         }
+        #endif
         .alert("Clear Keychain Items", isPresented: $showClearKeychainConfirmation) {
             SwiftUI.Button("Clear All", role: .destructive) {
                 Keychain.shared.clearAll()

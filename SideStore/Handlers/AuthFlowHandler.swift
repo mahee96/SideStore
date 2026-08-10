@@ -134,11 +134,18 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
     }
     
     @MainActor
-    func resolveRevocation(certsText: String, teamType: ALTTeamType) async throws -> RevokeDecision {
+    func resolveRevocation(certificates: [ALTX509Certificate], teamType: ALTTeamType) async throws -> RevokeDecision {
         return try await withCheckedThrowingContinuation { continuation in
-            let alertController = UIAlertController(title: NSLocalizedString("Would you like to revoke your previous certificates?\n\(certsText)", comment: ""), message: nil, preferredStyle: .alert)
+            let alertController = UIAlertController(
+                title: NSLocalizedString("Revoke Certificates", comment: ""),
+                message: NSLocalizedString("Select iOS Development certificate(s) to revoke:", comment: ""),
+                preferredStyle: .alert
+            )
             
-            let noAction = UIAlertAction(title: NSLocalizedString("No", comment: ""), style: .default) { _ in
+            let revokeVC = RevokeCertificatesAlertViewController(certificates: certificates, teamType: teamType)
+            alertController.setValue(revokeVC, forKey: "contentViewController")
+            
+            let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { _ in
                 if teamType == .free {
                     let warningAlert = UIAlertController(
                         title: NSLocalizedString("Warning", comment: ""),
@@ -156,14 +163,27 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
                 }
             }
             
-            let yesAction = UIAlertAction(title: NSLocalizedString("Yes", comment: ""), style: .default) { _ in
+            let isPaid = (teamType != .free)
+            let initialCount = revokeVC.getSelectedCertificates().count
+            let initialTitle = isPaid ? "Revoke Selected (\(initialCount))" : NSLocalizedString("Revoke", comment: "")
+            let revokeAction = UIAlertAction(title: initialTitle, style: .destructive) { _ in
                 alertController.dismiss(animated: true) {
-                    continuation.resume(returning: .revokeAll)
+                    let selected = revokeVC.getSelectedCertificates()
+                    continuation.resume(returning: .revokeSelected(selected))
                 }
             }
             
-            alertController.addAction(noAction)
-            alertController.addAction(yesAction)
+            if isPaid {
+                revokeAction.isEnabled = !revokeVC.getSelectedCertificates().isEmpty
+                revokeVC.onSelectionChanged = { selected in
+                    revokeAction.isEnabled = !selected.isEmpty
+                    let countText = selected.isEmpty ? "" : " (\(selected.count))"
+                    revokeAction.setValue("Revoke Selected\(countText)", forKey: "title")
+                }
+            }
+            
+            alertController.addAction(cancelAction)
+            alertController.addAction(revokeAction)
             
             self.present(alertController)
         }
