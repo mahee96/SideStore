@@ -337,6 +337,7 @@ struct DeveloperOptionsView: View {
         return top
     }
     
+    #if DEBUG
     private func showImportAccountPicker() {
         guard let top = topViewController() else { return }
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [UTType(filenameExtension: "sideconf")!, .json], asCopy: false)
@@ -380,6 +381,7 @@ struct DeveloperOptionsView: View {
             toastView.show(in: top)
         }
     }
+    #endif
     
     private func clearRefreshAttempts() {
         let context = DatabaseManager.shared.persistentContainer.newBackgroundContext()
