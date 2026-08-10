@@ -579,7 +579,7 @@ private extension DatabaseManager
               • buildVersion: '\(installedApp.buildVersion)'
               • refreshedDate: \(installedApp.refreshedDate)
               • expirationDate: \(installedApp.expirationDate)
-              • certSerial: '\(installedApp.certificateSerialNumber ?? "nil")'
+              • installCertSerial: '\(installedApp.certificateSerialNumber ?? "nil")'
               • binaryCertSerial: '\(binaryCertSerial ?? "nil")'
               • binaryCertStatus: \(installedApp.certificateStatus)
             
