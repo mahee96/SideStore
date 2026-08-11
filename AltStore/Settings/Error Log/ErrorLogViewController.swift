@@ -150,33 +150,9 @@ private extension ErrorLogViewController
             let displayScale = (self.traitCollection.displayScale == 0.0) ? 1.0 : self.traitCollection.displayScale // 0.0 == "unspecified"
             cell.appIconImageView.layer.borderWidth = 1.0 / displayScale
                         
-            let menu = UIMenu(title: "", children: [
-                UIAction(title: NSLocalizedString("Copy Error Message", comment: ""), image: UIImage(systemName: "doc.on.doc")) { [weak self] _ in
-                    self?.copyErrorMessage(for: loggedError)
-                },
-                UIAction(title: NSLocalizedString("Copy Error Code", comment: ""), image: UIImage(systemName: "doc.on.doc")) { [weak self] _ in
-                    self?.copyErrorCode(for: loggedError)
-                },
-                UIAction(title: NSLocalizedString("Search FAQ", comment: ""), image: UIImage(systemName: "magnifyingglass")) { [weak self] _ in
-                    self?.searchFAQ(for: loggedError)
-                },
-                UIAction(title: NSLocalizedString("View More Details", comment: ""), image: UIImage(systemName: "ellipsis.circle")) { [weak self] _ in
-                    self?.viewMoreDetails(for: loggedError)
-                },
-            ])
-
-                cell.menuButton.menu = menu
-
-            if self.isScrolling
-            {
-                cell.menuButton.showsMenuAsPrimaryAction = false
-            }
-            else
-            {
-                cell.menuButton.showsMenuAsPrimaryAction = true
-            }
-
-                cell.selectionStyle = .none
+            cell.menuButton.isHidden = true
+            cell.menuButton.menu = nil
+            cell.selectionStyle = .none
 
             // Include errorDescriptionTextView's text in cell summary.
             cell.accessibilityLabel = [cell.errorFailureLabel.text, cell.dateLabel.text, cell.errorCodeLabel.text, cell.errorDescriptionTextView.text].compactMap { $0 }.joined(separator: ". ")
@@ -390,101 +366,40 @@ private extension ErrorLogViewController
     func viewMoreDetails(for loggedError: LoggedError) {
         self.performSegue(withIdentifier: "showErrorDetails", sender: loggedError)
     }
-    
-    // @IBAction func showMinimuxerLogs(_ sender: UIBarButtonItem)
-    // {
-    //     // Show minimuxer.log
-    //     let previewController = LogView.minimuxerLog.getViewController(self)
-    //     let navigationController = UINavigationController(rootViewController: previewController)
-    //     present(navigationController, animated: true, completion: nil)
-    // }
-    
-//    @available(iOS 15, *)
-//    @IBAction func exportDetailedLog(_ sender: UIBarButtonItem)
-//    {
-//        self.exportLogButton.isIndicatingActivity = true
-//        
-//        Task.detached(priority: .userInitiated) {
-//            do
-//            {
-//                let store = try OSLogStore(scope: .currentProcessIdentifier)
-//                
-//                // All logs since the app launched.
-//                let position = store.position(timeIntervalSinceLatestBoot: 0)
-////                let predicate = NSPredicate(format: "subsystem == %@", Logger.altstoreSubsystem)
-////                
-////                let entries = try store.getEntries(at: position, matching: predicate)
-////                    .compactMap { $0 as? OSLogEntryLog }
-////                    .map { "[\($0.date.formatted())] [\($0.category)] [\($0.level.localizedName)] \($0.composedMessage)" }
-////
-//                // Remove the predicate to get all log entries
-////                let entries = try store.getEntries(at: position)
-////                    .compactMap { $0 as? OSLogEntryLog }
-////                    .map { "[\($0.date.formatted())] [\($0.category)] [\($0.level.localizedName)] \($0.composedMessage)" }
-//
-//                let entries = try store.getEntries(at: position)
-//
-////                let outputText = entries.joined(separator: "\n")
-//                let outputText = entries.map { $0.description }.joined(separator: "\n")
-//                
-//                let outputDirectory = FileManager.default.uniqueTemporaryURL()
-//                try FileManager.default.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
-//                
-//                let outputURL = outputDirectory.appendingPathComponent("altstore.log")
-//                try outputText.write(to: outputURL, atomically: true, encoding: .utf8)
-//                
-//                await MainActor.run {
-//                    self._exportedLogURL = outputURL
-//                    
-//                    let previewController = QLPreviewController()
-//                    previewController.delegate = self
-//                    previewController.dataSource = self
-//                    previewController.view.tintColor = .altPrimary
-//                    self.present(previewController, animated: true)
-//                }
-//            }
-//            catch
-//            {
-//                debugLog("Failed to export OSLog entries. \(error.localizedDescription)")
-//                
-//                await MainActor.run {
-//                    let alertController = UIAlertController(title: NSLocalizedString("Unable to Export Detailed Log", comment: ""), message: error.localizedDescription, preferredStyle: .alert)
-//                    alertController.addAction(.ok)
-//                    self.present(alertController, animated: true)
-//                }
-//            }
-//            
-//            await MainActor.run {
-//                self.exportLogButton.isIndicatingActivity = false
-//            }
-//        }
-//    }
 }
 
 extension ErrorLogViewController
 {
+    override func tableView(_ tableView: UITableView, contextMenuConfigurationForRowAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration?
+    {
+        let loggedError = self.dataSource.item(at: indexPath)
+        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] _ in
+            return UIMenu(title: "", children: [
+                UIAction(title: NSLocalizedString("Copy Error Message", comment: ""), image: UIImage(systemName: "doc.on.doc")) { [weak self] _ in
+                    self?.copyErrorMessage(for: loggedError)
+                },
+                UIAction(title: NSLocalizedString("Copy Error Code", comment: ""), image: UIImage(systemName: "doc.on.doc")) { [weak self] _ in
+                    self?.copyErrorCode(for: loggedError)
+                },
+                UIAction(title: NSLocalizedString("Search FAQ", comment: ""), image: UIImage(systemName: "magnifyingglass")) { [weak self] _ in
+                    self?.searchFAQ(for: loggedError)
+                },
+                UIAction(title: NSLocalizedString("View More Details", comment: ""), image: UIImage(systemName: "ellipsis.circle")) { [weak self] _ in
+                    self?.viewMoreDetails(for: loggedError)
+                },
+            ])
+        }
+    }
+
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath)
     {
-        guard #unavailable(iOS 14) else { return }
-        let loggedError = self.dataSource.item(at: indexPath)
+        tableView.deselectRow(at: indexPath, animated: true)
+        guard let cell = tableView.cellForRow(at: indexPath) as? ErrorLogTableViewCell else { return }
         
-        let alertController = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
-        alertController.addAction(UIAlertAction(title: UIAlertAction.cancel.title, style: UIAlertAction.cancel.style) { _ in
-            tableView.deselectRow(at: indexPath, animated: true)
-        })
-        alertController.addAction(UIAlertAction(title: NSLocalizedString("Copy Error Message", comment: ""), style: .default) { [weak self] _ in
-            self?.copyErrorMessage(for: loggedError)
-            tableView.deselectRow(at: indexPath, animated: true)
-        })
-        alertController.addAction(UIAlertAction(title: NSLocalizedString("Copy Error Code", comment: ""), style: .default) { [weak self] _ in
-            self?.copyErrorCode(for: loggedError)
-            tableView.deselectRow(at: indexPath, animated: true)
-        })
-        alertController.addAction(UIAlertAction(title: NSLocalizedString("Search FAQ", comment: ""), style: .default) { [weak self] _ in
-            self?.searchFAQ(for: loggedError)
-            tableView.deselectRow(at: indexPath, animated: true)
-        })
-        self.present(alertController, animated: true)
+        if !cell.errorDescriptionTextView.moreButton.isHidden
+        {
+            self.toggleCollapsingCell(cell.errorDescriptionTextView.moreButton)
+        }
     }
     
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration?
