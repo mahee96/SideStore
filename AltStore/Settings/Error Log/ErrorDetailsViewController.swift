@@ -34,6 +34,10 @@ class ErrorDetailsViewController: UIViewController
 
         self.navigationController?.navigationBar.tintColor = .altPrimary
 
+        self.textView.isScrollEnabled = true
+        self.textView.alwaysBounceVertical = true
+        self.textView.showsVerticalScrollIndicator = true
+
         if #available(iOS 15, *), let sheetController = self.navigationController?.sheetPresentationController
         {
             sheetController.detents = [.medium(), .large()]
