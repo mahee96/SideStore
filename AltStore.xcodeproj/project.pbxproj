@@ -7,9 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A8037A0E2F54664300097AF1 /* libem_proxy_swift.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8037A0D2F54664300097AF1 /* libem_proxy_swift.a */; };
-		A8038ABC2F54684D00097AF1 /* libem_proxy_swift.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8037A0D2F54664300097AF1 /* libem_proxy_swift.a */; };
-		A8038AC82F54687A00097AF1 /* libem_proxy_static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8EB8CBC2F5453CD0094BC01 /* libem_proxy_static.a */; };
 		A803924B2F552F4C00097AF1 /* Minimuxer in Frameworks */ = {isa = PBXBuildFile; productRef = A803924A2F552F4C00097AF1 /* Minimuxer */; };
 		A82067C42D03E0DE00645C0D /* SemanticVersion in Frameworks */ = {isa = PBXBuildFile; productRef = A82067C32D03E0DE00645C0D /* SemanticVersion */; };
 		A823609F2FF0B46900AD4DAF /* AltSign-Static in Frameworks */ = {isa = PBXBuildFile; productRef = A823609E2FF0B46900AD4DAF /* AltSign-Static */; };
@@ -21,7 +18,6 @@
 		A844287D2FE791EA003CC103 /* Minimuxer in Frameworks */ = {isa = PBXBuildFile; productRef = A844287C2FE791EA003CC103 /* Minimuxer */; };
 		A8B646012D70C23E00125819 /* MarkdownKit in Frameworks */ = {isa = PBXBuildFile; productRef = A8B646002D70C23E00125819 /* MarkdownKit */; };
 		A8C2260E2EC9039A00047C0D /* Nuke in Frameworks */ = {isa = PBXBuildFile; productRef = A8C2260D2EC9039A00047C0D /* Nuke */; };
-		A8EB89C22F5448B20094BC01 /* em_proxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8BD2F652F543FD40045335F /* em_proxy.swift */; };
 		A8EB89CE2F5451B50094BC01 /* SemanticVersion in Frameworks */ = {isa = PBXBuildFile; productRef = A8EB89CD2F5451B50094BC01 /* SemanticVersion */; };
 		A8EB89D02F5451C20094BC01 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = A8EB89CF2F5451C20094BC01 /* KeychainAccess */; };
 		BF580498246A3D19008AE704 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF580497246A3D19008AE704 /* UIKit.framework */; };
@@ -38,13 +34,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = BF58047A246A28F7008AE704;
 			remoteInfo = SideBackup;
-		};
-		A8038AC92F54689900097AF1 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A8BD2FBD2F5440300045335F /* em_proxy.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = CA60C44C93D7A30E3695DD59;
-			remoteInfo = "em_proxy-staticlib";
 		};
 		A8EB8CBB2F5453CD0094BC01 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -103,7 +92,6 @@
 
 /* Begin PBXFileReference section */
 		A8036EA72F54642D00097AF1 /* libimobiledevice.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libimobiledevice.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		A8037A0D2F54664300097AF1 /* libem_proxy_swift.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libem_proxy_swift.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		A84596F12F7DC4C90000B8CD /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		A84596F22F7DC4C90000B8CD /* .gitmodules */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitmodules; sourceTree = "<group>"; };
 		A84596F32F7DC4C90000B8CD /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -384,14 +372,6 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		A85A51432F4B4532002E2E11 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				A8038AC82F54687A00097AF1 /* libem_proxy_static.a in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		BF580478246A28F7008AE704 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -425,8 +405,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				A8B646012D70C23E00125819 /* MarkdownKit in Frameworks */,
-				A8037A0E2F54664300097AF1 /* libem_proxy_swift.a in Frameworks */,
-				A8038ABC2F54684D00097AF1 /* libem_proxy_swift.a in Frameworks */,
 				A8EB89D02F5451C20094BC01 /* KeychainAccess in Frameworks */,
 				A844287D2FE791EA003CC103 /* Minimuxer in Frameworks */,
 				A8C2260E2EC9039A00047C0D /* Nuke in Frameworks */,
@@ -441,6 +419,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A8818E85302B23C700273665 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				A8EB8CBC2F5453CD0094BC01 /* libem_proxy_static.a */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		A8BD1FD62F543F390045335F /* Dependencies */ = {
 			isa = PBXGroup;
 			children = (
@@ -492,14 +478,6 @@
 			path = em_proxy;
 			sourceTree = "<group>";
 		};
-		A8EB8CB82F5453CD0094BC01 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				A8EB8CBC2F5453CD0094BC01 /* libem_proxy_static.a */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		BFD247612284B9A500981D42 = {
 			isa = PBXGroup;
 			children = (
@@ -520,13 +498,13 @@
 				A84596F22F7DC4C90000B8CD /* .gitmodules */,
 				A84596F32F7DC4C90000B8CD /* README.md */,
 				A84596F42F7DC4C90000B8CD /* trustedapps.json */,
+				A8818E85302B23C700273665 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
 		BFD2476B2284B9A500981D42 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A8037A0D2F54664300097AF1 /* libem_proxy_swift.a */,
 				A8036EA72F54642D00097AF1 /* libimobiledevice.a */,
 				BFD2476A2284B9A500981D42 /* SideStore.app */,
 				BF58047B246A28F7008AE704 /* SideBackup.app */,
@@ -557,23 +535,6 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		A85A51412F4B4532002E2E11 /* em_proxy-swift */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = A85A51452F4B4532002E2E11 /* Build configuration list for PBXNativeTarget "em_proxy-swift" */;
-			buildPhases = (
-				A85A51422F4B4532002E2E11 /* Sources */,
-				A85A51432F4B4532002E2E11 /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				A8038ACA2F54689900097AF1 /* PBXTargetDependency */,
-			);
-			name = "em_proxy-swift";
-			productName = minimuxer;
-			productReference = A8037A0D2F54664300097AF1 /* libem_proxy_swift.a */;
-			productType = "com.apple.product-type.library.static";
-		};
 		BF58047A246A28F7008AE704 /* SideBackup */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = BF58048E246A28F9008AE704 /* Build configuration list for PBXNativeTarget "SideBackup" */;
@@ -726,19 +687,12 @@
 			preferredProjectObjectVersion = 50;
 			productRefGroup = BFD2476B2284B9A500981D42 /* Products */;
 			projectDirPath = "";
-			projectReferences = (
-				{
-					ProductGroup = A8EB8CB82F5453CD0094BC01 /* Products */;
-					ProjectRef = A8BD2FBD2F5440300045335F /* em_proxy.xcodeproj */;
-				},
-			);
 			projectRoot = "";
 			targets = (
 				BFD247692284B9A500981D42 /* SideStore */,
 				BF66EE7D2501AE50007EE018 /* AltStoreCore */,
 				BF58047A246A28F7008AE704 /* SideBackup */,
 				BF989166250AABF3002ACF50 /* AltWidgetExtension */,
-				A85A51412F4B4532002E2E11 /* em_proxy-swift */,
 			);
 		};
 /* End PBXProject section */
@@ -824,14 +778,6 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		A85A51422F4B4532002E2E11 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				A8EB89C22F5448B20094BC01 /* em_proxy.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		BF580477246A28F7008AE704 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -868,11 +814,6 @@
 			target = BF58047A246A28F7008AE704 /* SideBackup */;
 			targetProxy = 0ED4AEC82E6DDB2A0039E2C0 /* PBXContainerItemProxy */;
 		};
-		A8038ACA2F54689900097AF1 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = "em_proxy-staticlib";
-			targetProxy = A8038AC92F54689900097AF1 /* PBXContainerItemProxy */;
-		};
 		BF66EE842501AE50007EE018 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = BF66EE7D2501AE50007EE018 /* AltStoreCore */;
@@ -891,66 +832,6 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		A85A51462F4B4532002E2E11 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = "$(inherited)";
-				CODE_SIGN_STYLE = Automatic;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				LD_WARN_DUPLICATE_LIBRARIES = YES;
-				LD_WARN_UNUSED_DYLIBS = YES;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Dependencies/em_proxy",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 11.5;
-				OTHER_LDFLAGS = (
-					"-ObjC",
-					"$(inherited)",
-				);
-				PRODUCT_MODULE_NAME = em_proxy;
-				PRODUCT_NAME = em_proxy_swift;
-				SKIP_INSTALL = NO;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
-				SWIFT_OBJC_BRIDGING_HEADER = Dependencies/em_proxy/em_proxy.h;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		A85A51472F4B4532002E2E11 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = "$(inherited)";
-				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				LD_WARN_DUPLICATE_LIBRARIES = YES;
-				LD_WARN_UNUSED_DYLIBS = YES;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Dependencies/em_proxy",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 11.5;
-				OTHER_LDFLAGS = (
-					"-ObjC",
-					"$(inherited)",
-				);
-				PRODUCT_MODULE_NAME = em_proxy;
-				PRODUCT_NAME = em_proxy_swift;
-				SKIP_INSTALL = NO;
-				SWIFT_OBJC_BRIDGING_HEADER = Dependencies/em_proxy/em_proxy.h;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
 		BF58048C246A28F9008AE704 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReferenceAnchor = A8EEC71D2F4B10D900F2436D /* xcconfigs */;
@@ -1401,15 +1282,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A85A51452F4B4532002E2E11 /* Build configuration list for PBXNativeTarget "em_proxy-swift" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				A85A51462F4B4532002E2E11 /* Debug */,
-				A85A51472F4B4532002E2E11 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		BF58048E246A28F9008AE704 /* Build configuration list for PBXNativeTarget "SideBackup" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

@@ -12,6 +12,7 @@ public enum AppConstants {
     enum Proxy {
         static let address = "127.0.0.1"
         static let port = "51820"
+        static let defaultPort: UInt16 = 51820
         static let serverURL = "\(address):\(port)"
     }
     

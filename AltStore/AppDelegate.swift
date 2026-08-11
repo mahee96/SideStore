@@ -172,7 +172,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 
         // TODO: @mahee96: find if we need to start em_proxy as in altstore?
         if UserDefaults.standard.enableEMPforWireguard {
-            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
+            Task {
+                try? await startEMProxy()
+            }
         }
 
         SecureValueTransformer.register()        
@@ -217,7 +219,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationWillEnterForeground(_ application: UIApplication)
     {
         if UserDefaults.standard.enableEMPforWireguard {
-            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
+            Task {
+                try? await startEMProxy()
+            }
         }
         Task.detached {
             await AppManager.shared.reconcileInstalledApps()

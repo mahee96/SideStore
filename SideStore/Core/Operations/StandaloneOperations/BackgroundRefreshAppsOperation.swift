@@ -76,7 +76,7 @@ final class BackgroundRefreshAppsOperation: BaseStandaloneOperation<OperationCon
         }
 
         if UserDefaults.standard.enableEMPforWireguard {
-            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
+            try await startEMProxy()
         }
         
         defer {

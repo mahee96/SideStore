@@ -36,7 +36,9 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
     func sceneWillEnterForeground(_ scene: UIScene)
     {
         if UserDefaults.standard.enableEMPforWireguard {
-            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
+            Task {
+                try? await startEMProxy()
+            }
         }
         
         // Called as the scene transitions from the background to the foreground.
