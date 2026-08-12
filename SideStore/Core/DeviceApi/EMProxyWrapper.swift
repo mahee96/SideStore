@@ -24,7 +24,12 @@ func startEMProxy(bind_addr: String = AppConstants.Proxy.serverURL) async throws
 
     let host = ConnectionConfig.shared.wireguardServerHost
     let port = ConnectionConfig.shared.wireguardServerPort
-    do {
+    let vpnPeer = ConnectionConfig.shared.overrideTunnelPeerIp
+    let lockdowndPort = MinimuxerConstants.lockdowndPort
+    
+    Minimuxer.emproxy.setHandshakeClient(host: vpnPeer, port: lockdowndPort)
+    
+    do {        
         try await Minimuxer.emproxy.start(host: host, port: port)
     } catch {
         debugLog("[SideStore] startEMProxy() failed with error: \(error)")
