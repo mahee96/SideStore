@@ -14,6 +14,8 @@ final class ConnectionConfig: ObservableObject {
 
     private static var defaultOverrideIP: String { AppConstants.Connection.defaultOverrideIP }
     private static var defaultRemoteServerIP: String { AppConstants.Connection.defaultRemoteServerIP }
+    private static var defaultWireGuardServerHost: String { AppConstants.Proxy.address }
+    private static var defaultWireGuardServerPort: UInt16 { AppConstants.Proxy.defaultPort }
 
     @Published var tunnelIfaceIp: String?
     @Published var tunnelIfaceSubnetMask: String?
@@ -33,6 +35,14 @@ final class ConnectionConfig: ObservableObject {
         didSet { Self.useLocalVPNStorage = useLocalVPN }
     }
 
+    @Published var wireguardServerHost: String = wireguardServerHostStorage {
+        didSet { Self.wireguardServerHostStorage = wireguardServerHost }
+    }
+
+    @Published var wireguardServerPort: UInt16 = wireguardServerPortStorage {
+        didSet { Self.wireguardServerPortStorage = wireguardServerPort }
+    }
+
     private static var overrideIPStorage: String {
         get { getStoredOverrideIP(default: defaultOverrideIP) }
         set { setStoredOverrideIP(newValue) }
@@ -46,6 +56,16 @@ final class ConnectionConfig: ObservableObject {
     private static var useLocalVPNStorage: Bool {
         get { UserDefaults.standard.useLocalVPN }
         set { UserDefaults.standard.useLocalVPN = newValue }
+    }
+
+    private static var wireguardServerHostStorage: String {
+        get { getStoredWireGuardServerHost(default: defaultWireGuardServerHost) }
+        set { setStoredWireGuardServerHost(newValue) }
+    }
+
+    private static var wireguardServerPortStorage: UInt16 {
+        get { getStoredWireGuardServerPort(default: defaultWireGuardServerPort) }
+        set { setStoredWireGuardServerPort(newValue) }
     }
 
     var overrideTunnelPeerActive: ActiveState { overrideTunnelPeerReachable ? .yes : .no }
@@ -69,5 +89,22 @@ private extension ConnectionConfig {
     
     static func setStoredRemoteServerIP(_ ip: String) {
         UserDefaults.standard.set(ip, forKey: "RemoteServerIp")
+    }
+
+    static func getStoredWireGuardServerHost(default defaultHost: String) -> String {
+        return UserDefaults.standard.string(forKey: "WireGuardServerHost") ?? defaultHost
+    }
+
+    static func setStoredWireGuardServerHost(_ host: String) {
+        UserDefaults.standard.set(host, forKey: "WireGuardServerHost")
+    }
+
+    static func getStoredWireGuardServerPort(default defaultPort: UInt16) -> UInt16 {
+        let val = UserDefaults.standard.integer(forKey: "WireGuardServerPort")
+        return (val > 0 && val <= 65535) ? UInt16(val) : defaultPort
+    }
+
+    static func setStoredWireGuardServerPort(_ port: UInt16) {
+        UserDefaults.standard.set(Int(port), forKey: "WireGuardServerPort")
     }
 }

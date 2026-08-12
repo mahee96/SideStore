@@ -25,6 +25,7 @@ struct DeveloperOptionsView: View {
     @State private var isMinimuxerVerboseLoggingEnabled: Bool = UserDefaults.standard.isMinimuxerVerboseLoggingEnabled
     @State private var isRotateLogsOnStartupEnabled: Bool = UserDefaults.standard.isRotateLogsOnStartupEnabled
     @State private var recreateDatabaseOnNextStart: Bool = UserDefaults.standard.recreateDatabaseOnNextStart
+    @State private var alwaysShowWireGuardConfig: Bool = UserDefaults.standard.alwaysShowWireGuardConfig
     
     @State private var isExportingDB: Bool = false
     @State private var showDeleteConfirmation: Bool = false
@@ -228,6 +229,74 @@ struct DeveloperOptionsView: View {
                             set: { newValue in
                                 recreateDatabaseOnNextStart = newValue
                                 UserDefaults.standard.recreateDatabaseOnNextStart = newValue
+                            }
+                        ))
+                    }
+                    .background(Color.settingsRowBackground)
+                    .cornerRadius(14)
+                }
+                
+                // Section 3: WireGuard Configuration
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("WIREGUARD CONFIGURATION")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.6))
+                        .padding(.horizontal, 16)
+                    
+                    VStack(spacing: 0) {
+                        SwiftUI.Button(action: { exportWireGuardConfig() }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "shield.text.mini")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.white)
+                                Text("Export WireGuard Config")
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(.white)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .frame(height: 50)
+                        }
+                        
+                        divider
+                        
+                        SwiftUI.Button(action: { triggerStartEMProxy() }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "play.circle")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.green)
+                                Text("Start EMProxy")
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(.green)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .frame(height: 50)
+                        }
+                        
+                        divider
+                        
+                        SwiftUI.Button(action: { triggerStopEMProxy() }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "stop.circle")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(Color(red: 1.0, green: 0.27, blue: 0.27))
+                                Text("Stop EMProxy")
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(Color(red: 1.0, green: 0.27, blue: 0.27))
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .frame(height: 50)
+                        }
+                        
+                        divider
+                        
+                        toggleRow(title: "Always Show WireGuard Settings", isOn: Binding(
+                            get: { alwaysShowWireGuardConfig },
+                            set: { newValue in
+                                alwaysShowWireGuardConfig = newValue
+                                UserDefaults.standard.alwaysShowWireGuardConfig = newValue
                             }
                         ))
                     }
@@ -442,6 +511,53 @@ struct DeveloperOptionsView: View {
                 debugLog("[DeveloperOptionsView] Export error: \(error)")
                 await MainActor.run {
                     isExportingDB = false
+                }
+            }
+        }
+    }
+    
+    private func exportWireGuardConfig() {
+        guard let top = topViewController() else { return }
+        guard let url = Bundle.main.url(forResource: "SideStore", withExtension: "conf") else {
+            let toastView = ToastView(text: NSLocalizedString("SideStore.conf missing!", comment: ""), detailText: "Unable to locate SideStore.conf in bundle resources.")
+            toastView.show(in: top)
+            return
+        }
+        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        top.present(activityVC, animated: true)
+    }
+    
+    private func triggerStartEMProxy() {
+        guard let top = topViewController() else { return }
+        Task {
+            do {
+                try await startEMProxy()
+                await MainActor.run {
+                    let toastView = ToastView(text: NSLocalizedString("Started EMProxy", comment: ""), detailText: "EMProxy loopback server is running.")
+                    toastView.show(in: top)
+                }
+            } catch {
+                await MainActor.run {
+                    let toastView = ToastView(text: NSLocalizedString("Failed to start EMProxy!", comment: ""), detailText: error.localizedDescription)
+                    toastView.show(in: top)
+                }
+            }
+        }
+    }
+    
+    private func triggerStopEMProxy() {
+        guard let top = topViewController() else { return }
+        Task {
+            do {
+                try await stopEMProxy()
+                await MainActor.run {
+                    let toastView = ToastView(text: NSLocalizedString("Stopped EMProxy", comment: ""), detailText: "EMProxy loopback server stopped.")
+                    toastView.show(in: top)
+                }
+            } catch {
+                await MainActor.run {
+                    let toastView = ToastView(text: NSLocalizedString("Failed to stop EMProxy!", comment: ""), detailText: error.localizedDescription)
+                    toastView.show(in: top)
                 }
             }
         }

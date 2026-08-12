@@ -170,13 +170,6 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         self.setTintColor()
         self.prepareImageCache()
 
-        // TODO: @mahee96: find if we need to start em_proxy as in altstore?
-        if UserDefaults.standard.enableEMPforWireguard {
-            Task {
-                try? await startEMProxy()
-            }
-        }
-
         SecureValueTransformer.register()        
         
         if UserDefaults.standard.firstLaunch == nil
@@ -199,12 +192,6 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationDidEnterBackground(_ application: UIApplication)
     {
         // Make sure to update SceneDelegate.sceneDidEnterBackground() as well.
-        // TODO: @mahee96: find if we need to stop em_proxy as in altstore?
-        if UserDefaults.standard.enableEMPforWireguard {
-            Task {
-                try? await stopEMProxy()
-            }
-        }
         guard let oneMonthAgo = Calendar.current.date(byAdding: .month, value: -1, to: Date()) else { return }
         
         let midnightOneMonthAgo = Calendar.current.startOfDay(for: oneMonthAgo)
@@ -220,11 +207,6 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func applicationWillEnterForeground(_ application: UIApplication)
     {
-        if UserDefaults.standard.enableEMPforWireguard {
-            Task {
-                try? await startEMProxy()
-            }
-        }
         Task.detached {
             await AppManager.shared.reconcileInstalledApps()
         }

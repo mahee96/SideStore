@@ -58,7 +58,12 @@ struct ConnectionConfigView: View {
     @State private var draftUseLocalVPN: Bool = ConnectionConfig.shared.useLocalVPN
     @State private var draftOverrideTunnelPeerIp: String = ConnectionConfig.shared.overrideTunnelPeerIp
     @State private var draftRemoteServerIp: String = ConnectionConfig.shared.remoteServerIp
+    @State private var draftWireGuardServerHost: String = ConnectionConfig.shared.wireguardServerHost
+    @State private var draftWireGuardServerPort: String = String(ConnectionConfig.shared.wireguardServerPort)
+    @State private var alwaysShowWireGuardConfig: Bool = UserDefaults.standard.alwaysShowWireGuardConfig
     @State private var showConfirmDialog = false
+    @State private var validationError: String?
+    @State private var showValidationErrorAlert = false
 
     var body: some View {
         ZStack {
@@ -113,6 +118,26 @@ struct ConnectionConfigView: View {
                         Text("Remote Endpoint")
                     }
                 }
+
+                if draftUseLocalVPN || UserDefaults.standard.alwaysShowWireGuardConfig {
+                    Section {
+                        networkConfigRow(
+                            label: "Bind Host / IP",
+                            text: Binding<String?>(get: { draftWireGuardServerHost }, set: { draftWireGuardServerHost = $0 ?? "" }),
+                            editable: true
+                        )
+                        networkConfigRow(
+                            label: "Bind Port",
+                            text: Binding<String?>(get: { draftWireGuardServerPort }, set: { draftWireGuardServerPort = $0 ?? "" }),
+                            editable: true,
+                            isPort: true
+                        )
+                    } header: {
+                        Text("WireGuard Server Parameters")
+                    } footer: {
+                        Text("Configures the local UDP loopback host and port bound by EMProxy.")
+                    }
+                }
             }
             .navigationTitle("Connection Config")
             .toolbar {
@@ -127,6 +152,14 @@ struct ConnectionConfigView: View {
                 draftUseLocalVPN = config.useLocalVPN
                 draftOverrideTunnelPeerIp = config.overrideTunnelPeerIp
                 draftRemoteServerIp = config.remoteServerIp
+                draftWireGuardServerHost = config.wireguardServerHost
+                draftWireGuardServerPort = String(config.wireguardServerPort)
+                alwaysShowWireGuardConfig = UserDefaults.standard.alwaysShowWireGuardConfig
+            }
+            .alert("Invalid Configuration", isPresented: $showValidationErrorAlert) {
+                SwiftUI.Button("OK", role: .cancel) {}
+            } message: {
+                Text(validationError ?? "Please check your configuration settings.")
             }
             
             if showConfirmDialog {
@@ -169,10 +202,30 @@ struct ConnectionConfigView: View {
         .animation(.easeInOut, value: showConfirmDialog)
     }
 
+    private func validateInputs() -> String? {
+        if draftUseLocalVPN || alwaysShowWireGuardConfig {
+            let host = draftWireGuardServerHost.trimmingCharacters(in: .whitespaces)
+            guard !host.isEmpty else {
+                return "Bind Host / IP cannot be empty."
+            }
+            guard let port = UInt16(draftWireGuardServerPort), port > 0 else {
+                return "Bind Port must be a valid number between 1 and 65535."
+            }
+        }
+        return nil
+    }
+
     private func commitChanges() async {
+        if let errorMsg = validateInputs() {
+            self.validationError = errorMsg
+            self.showValidationErrorAlert = true
+            return
+        }
         config.useLocalVPN = draftUseLocalVPN
         config.overrideTunnelPeerIp = draftOverrideTunnelPeerIp
         config.remoteServerIp = draftRemoteServerIp
+        config.wireguardServerHost = draftWireGuardServerHost.trimmingCharacters(in: .whitespaces)
+        config.wireguardServerPort = UInt16(draftWireGuardServerPort)!
         await bindConnectionConfig()
         showConfirmDialog = true
     }
@@ -185,7 +238,8 @@ struct ConnectionConfigView: View {
         label: LocalizedStringKey,
         text: Binding<String?>,
         editable: Bool,
-        textColor: Color? = nil
+        textColor: Color? = nil,
+        isPort: Bool = false
     ) -> some View {
 
         let proxy = Binding<String>(
@@ -201,11 +255,21 @@ struct ConnectionConfigView: View {
                 .multilineTextAlignment(.trailing)
                 .foregroundColor(textColor ?? (editable ? .secondary : .gray))
                 .disabled(!editable)
-                .keyboardType(.numbersAndPunctuation)
+                .keyboardType(isPort ? .numberPad : .numbersAndPunctuation)
                 .onChange(of: proxy.wrappedValue) { newValue in
                     guard editable else { return }
-                    proxy.wrappedValue =
-                        newValue.filter { "0123456789.".contains($0) }
+                    if isPort {
+                        let digits = newValue.filter { "0123456789".contains($0) }
+                        if let val = UInt32(digits), val <= 65535 {
+                            proxy.wrappedValue = digits
+                        } else if digits.isEmpty {
+                            proxy.wrappedValue = ""
+                        } else {
+                            proxy.wrappedValue = String(digits.prefix(5).filter { "0123456789".contains($0) })
+                        }
+                    } else {
+                        proxy.wrappedValue = newValue.filter { "0123456789.".contains($0) }
+                    }
                 }
         }
     }

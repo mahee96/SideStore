@@ -22,11 +22,8 @@ func startEMProxy(bind_addr: String = AppConstants.Proxy.serverURL) async throws
         throw EMProxyError.invalidSocketAddress(bind_addr)
     }
 
-    let defaultAddress = AppConstants.Proxy.address
-    let defaultPort = AppConstants.Proxy.defaultPort
-
-    let host = components.first.map(String.init) ?? defaultAddress
-    let port = components.count == 2 ? (components.last.flatMap { UInt16($0) } ?? defaultPort) : defaultPort
+    let host = ConnectionConfig.shared.wireguardServerHost
+    let port = ConnectionConfig.shared.wireguardServerPort
     do {
         try await Minimuxer.emproxy.start(host: host, port: port)
     } catch {

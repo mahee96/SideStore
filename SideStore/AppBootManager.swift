@@ -14,12 +14,6 @@ public final class AppBootManager {
     
     private let lock = NSLock()
     
-    private var _isMinimuxerStarted = false
-    public var isMinimuxerStarted: Bool {
-        get { lock.withLock { _isMinimuxerStarted } }
-        set { lock.withLock { _isMinimuxerStarted = newValue } }
-    }
-    
     private var _needsPairingPrompt = false
     public var needsPairingPrompt: Bool {
         get { lock.withLock { _needsPairingPrompt } }
@@ -54,15 +48,13 @@ public final class AppBootManager {
     
     public nonisolated func startMinimuxer(pairingFile: String) async throws {
         debugLog("[AppBootManager] startMinimuxer() entered")
-        var success = false
-        self.isMinimuxerStarted = true
-        defer {
-            if !success {
-                self.isMinimuxerStarted = false
-            }
-            debugLog("[AppBootManager] startMinimuxer() exited (success: \(success))")
-        }
+        defer { debugLog("[AppBootManager] startMinimuxer() exited") }
         
+        if UserDefaults.standard.enableEMPforWireguard {
+            debugLog("[AppBootManager] Starting EMProxy before minimuxer...")
+            try await startEMProxy()
+        }
+
         try await minimuxerStart(pairingFile, mountPath: FileManager.default.documentsDirectory.absoluteString)
         
         // Validate the pairing by trying to fetch the UDID
@@ -71,7 +63,6 @@ public final class AppBootManager {
             let deviceUDID = try await fetchUDID()
             debugLog("[AppBootManager] startMinimuxer(): Minimuxer fetchUDID() based connection test SUCCEEDED. UDID: \(deviceUDID ?? "nil")")
             self.needsPairingPrompt = false
-            success = true
         } catch {
             if error.isMinimuxerPairingFile {
                 debugLog("[AppBootManager] startMinimuxer(): Minimuxer fetchUDID() based connection test FAILED. \(error)")
@@ -79,7 +70,6 @@ public final class AppBootManager {
                 throw error
             } else {
                 debugLog("[AppBootManager] startMinimuxer(): Minimuxer fetchUDID() based connection test FAILED but PAIRING FILE IS VALID. \(error)")
-                success = true
             }
         }
     }

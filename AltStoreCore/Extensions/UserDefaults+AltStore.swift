@@ -233,6 +233,10 @@ public extension UserDefaults
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
     }
+    @objc var alwaysShowWireGuardConfig: Bool {
+        get { self.bool(forKey: #function) }
+        set { self.set(newValue, forKey: #function) }
+    }
 
     @nonobjc var preferredAppSorting: AppSorting {
         get {

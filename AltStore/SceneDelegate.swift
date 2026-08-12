@@ -35,13 +35,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
 
     func sceneWillEnterForeground(_ scene: UIScene)
     {
-        if UserDefaults.standard.enableEMPforWireguard {
-            Task {
-                try? await startEMProxy()
-            }
-        }
-        
-        // Called as the scene transitions from the background to the foreground.
+        // Called as the scene transitions from the foreground to the background.
         // Use this method to undo the changes made on entering the background.
         
         // applicationWillEnterForeground is _not_ called when launching app,
@@ -77,13 +71,6 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
         guard UIApplication.shared.applicationState == .background else { return }
         
         // Make sure to update AppDelegate.applicationDidEnterBackground() as well.
-
-        // TODO: @mahee96: find if we need to stop em_proxy as in altstore?
-        if UserDefaults.standard.enableEMPforWireguard {
-            Task {
-                try? await stopEMProxy()
-            }
-        }
 
         guard let oneMonthAgo = Calendar.current.date(byAdding: .month, value: -1, to: Date()) else { return }
         
