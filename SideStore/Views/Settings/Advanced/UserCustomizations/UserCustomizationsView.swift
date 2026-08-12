@@ -91,7 +91,7 @@ struct UserCustomizationsView: View {
                         
                         divider
                         
-                        toggleRow(title: "Enable EMP for WireGuard", isOn: Binding(
+                        toggleRow(title: "EMProxy (WireGuard) Server", isOn: Binding(
                             get: { enableEMPforWireguard },
                             set: { newValue in
                                 enableEMPforWireguard = newValue
@@ -101,7 +101,7 @@ struct UserCustomizationsView: View {
                         
                         divider
                         
-                        toggleRow(title: "Skip Non-Copyable Files", isOn: Binding(
+                        toggleRow(title: "Skip Uncopyable Backup Files", isOn: Binding(
                             get: { skipNonCopyableFiles },
                             set: { newValue in
                                 skipNonCopyableFiles = newValue
