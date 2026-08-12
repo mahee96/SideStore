@@ -80,7 +80,9 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
 
         // TODO: @mahee96: find if we need to stop em_proxy as in altstore?
         if UserDefaults.standard.enableEMPforWireguard {
-            stopEMProxy()
+            Task {
+                try? await stopEMProxy()
+            }
         }
 
         guard let oneMonthAgo = Calendar.current.date(byAdding: .month, value: -1, to: Date()) else { return }

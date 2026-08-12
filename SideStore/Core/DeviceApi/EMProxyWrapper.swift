@@ -9,7 +9,7 @@
 import Foundation
 import Minimuxer
 
-public func startEMProxy(bind_addr: String = AppConstants.Proxy.serverURL) async throws {
+func startEMProxy(bind_addr: String = AppConstants.Proxy.serverURL) async throws {
     debugLog("[SideStore] startEMProxy(\(bind_addr)) invoked")
     defer { debugLog("[SideStore] startEMProxy() completed") }
 
@@ -36,7 +36,7 @@ public func startEMProxy(bind_addr: String = AppConstants.Proxy.serverURL) async
     #endif
 }
 
-public func stopEMProxy() async throws {
+func stopEMProxy() async throws {
     debugLog("[SideStore] stopEMProxy() invoked")
     defer { debugLog("[SideStore] stopEMProxy() completed") }
 
@@ -44,7 +44,7 @@ public func stopEMProxy() async throws {
     debugLog("[SideStore] stopEMProxy() is no-op on simulator")
     #else
     do {
-        await Minimuxer.emproxy.stop()
+        try await Minimuxer.emproxy.stop()
     } catch {
         debugLog("[SideStore] stopEMProxy() failed with error: \(error)")
         throw error
