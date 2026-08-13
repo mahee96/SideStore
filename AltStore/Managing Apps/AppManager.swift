@@ -468,38 +468,42 @@ final class AppManager: ObservableObject, @unchecked Sendable
             var fetchedSources = Set<Source>()
             var errors = [Source: Error]()
             
-            await withTaskGroup(of: (NSManagedObjectID, Result<Source, Error>).self) { taskGroup in
+            var taskResults = [(NSManagedObjectID, Result<NSManagedObjectID, Error>)]()
+            await withTaskGroup(of: (NSManagedObjectID, Result<NSManagedObjectID, Error>).self) { taskGroup in
                 for data in sourceData {
                     taskGroup.addTask {
                         do {
-                            let source = managedObjectContext.performAndWait { managedObjectContext.object(with: data.objectID) as! Source }
                             let context = StandaloneOperationContext(steps: [], dbBackgroundContext: managedObjectContext)
-                            let fetchSourceOperation = try FetchSourceOperation(source: source, context: context)
+                            let fetchSourceOperation = try FetchSourceOperation(sourceURL: data.sourceURL, context: context)
                             let fetchedSource = try await fetchSourceOperation.execute()
-                            return (data.objectID, .success(fetchedSource))
+                            return (data.objectID, .success(fetchedSource.objectID)) // objectID is thread-safe
                         } catch {
                             return (data.objectID, .failure(error))
                         }
                     }
                 }
-                
-                for await (objectID, result) in taskGroup {
-                    managedObjectContext.performAndWait {
-                        let source = managedObjectContext.object(with: objectID) as! Source
-                        switch result {
-                        case .success(let fetchedSource):
-                            fetchedSources.insert(fetchedSource)
-                        case .failure(let nsError as NSError):
-                            let title = String(format: NSLocalizedString("Unable to Refresh “%@” Source", comment: ""), source.name)
-                            let error = nsError.withLocalizedTitle(title)
-                            errors[source] = error
-                            source.error = error.sanitizedForSerialization()
-                        }
-                    }
+                for await result in taskGroup {
+                    taskResults.append(result)
                 }
             }
             
             await managedObjectContext.perform {
+                var fetchedSources = Set<Source>()
+                var errors = [Source: Error]()
+                
+                for (objectID, result) in taskResults {
+                    let source = managedObjectContext.object(with: objectID) as! Source
+                    switch result {
+                    case .success(let fetchedObjectID):
+                        fetchedSources.insert(managedObjectContext.object(with: fetchedObjectID) as! Source)
+                    case .failure(let nsError as NSError):
+                        let title = String(format: NSLocalizedString("Unable to Refresh “%@” Source", comment: ""), source.name)
+                        let error = nsError.withLocalizedTitle(title)
+                        errors[source] = error
+                        source.error = error.sanitizedForSerialization()
+                    }
+                }
+                
                 do {
                     if managedObjectContext.hasChanges {
                         try managedObjectContext.save()

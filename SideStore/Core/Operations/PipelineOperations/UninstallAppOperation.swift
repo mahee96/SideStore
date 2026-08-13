@@ -19,6 +19,7 @@ final class UninstallAppOperation: BasePipelineOperation<InstallAppOperationCont
             throw OperationError.invalidParameters("UninstallAppOperation.main: self.context.installedApp is nil")
         }
         
+        
         let bundleID = await installedApp.managedObjectContext?.perform { installedApp.bundleIdentifier }
         if bundleID?.isAltStoreAppID == true {
             throw OperationError.invalidParameters("SideStore cannot delete itself.")

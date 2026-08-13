@@ -60,8 +60,9 @@ final class FetchSourceOperation: BaseStandaloneOperation<StandaloneOperationCon
         
         if let source = self.source {
             // Check if source is blocked before fetching it.
+            let sourceObjectID = source.objectID
             try dbContext.performAndWait {
-                try self.verifyExistingSource(source)
+                try self.verifyExistingSource(sourceObjectID)
             }
         }
         
@@ -106,11 +107,11 @@ final class FetchSourceOperation: BaseStandaloneOperation<StandaloneOperationCon
         }
     }
     
-    private func verifyExistingSource(_ source: Source) throws {
+    private func verifyExistingSource(_ sourceObjectID: NSManagedObjectID) throws {
         guard let dbContext = self.context.dbBackgroundContext else {
             throw OperationError.invalidParameters("FetchSourceOperation: context.dbBackgroundContext is nil")
         }
-        let source = dbContext.object(with: source.objectID) as! Source
+        let source = dbContext.object(with: sourceObjectID) as! Source
         try self.verifySourceNotBlocked(source, response: nil)
     }
     

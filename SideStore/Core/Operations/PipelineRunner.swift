@@ -230,6 +230,7 @@ final class PipelineRunner: Sendable
             debugLog("[AppManager] performOperation: completed successfully. progress was reset for installedApp: \(result.bundleIdentifier)")
             
             // persist the result
+            let bundleID = result.bundleIdentifier
             if let dbContext = group.context.dbBackgroundContext {
                 do {
                     try dbContext.performAndWait {
@@ -237,14 +238,14 @@ final class PipelineRunner: Sendable
                         if hasChanges {
                             try dbContext.save()
                         }
-                        debugLog("[AppManager] performOperation: Context changes were saved for installedApp: \(result.bundleIdentifier)")
+                        debugLog("[AppManager] performOperation: Context changes were saved for installedApp: \(bundleID)")
                     }
                 } catch {
                     debugLog("[AppManager] perform(): Failed to save InstalledApp to database. \(error.localizedDescription)")
                 }
             }
             
-            group.set(.success(result), forAppWithBundleIdentifier: result.bundleIdentifier)
+            group.set(.success(result), forAppWithBundleIdentifier: bundleID)
             debugLog("[AppManager] performOperation: Execution SUCCESS for app: \(operation.bundleIdentifier)")
             
             if let dbContext = group.context.dbBackgroundContext {

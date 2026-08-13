@@ -464,13 +464,6 @@ private extension MyAppsViewController
                 cell.deactivateBadge?.transform = CGAffineTransform.identity.scaledBy(x: 0.33, y: 0.33)
             }
             
-            let currentDate = Date()
-            
-            let numberOfDays = installedApp.expirationDate.numberOfCalendarDays(since: currentDate)
-            
-            let formatter = DateComponentsFormatter()
-            formatter.unitsStyle = .full
-            formatter.includesApproximationPhrase = false
             cell.bannerView.button.configure(for: installedApp)
             cell.bannerView.button.isIndicatingActivity = false
             cell.bannerView.configure(for: installedApp, action: .custom(cell.bannerView.button.title(for: .normal) ?? ""))
@@ -482,6 +475,7 @@ private extension MyAppsViewController
                 cell.bannerView.iconImageView.isIndicatingActivity = true
             }
             
+            let currentDate = Date()
             let isExpired = currentDate > installedApp.expirationDate
             cell.bannerView.buttonLabel.isHidden = isExpired || installedApp.certificateStatus == .revoked
             cell.bannerView.buttonLabel.text = NSLocalizedString("Expires in", comment: "")
@@ -893,9 +887,10 @@ private extension MyAppsViewController
             }
             
             let interaction = INInteraction.refreshAllApps()
-            interaction.donate { (error) in
-                guard let error = error else { return }
-                debugLog("Failed to donate intent \(interaction.intent). \(error)")
+            do {
+                try await interaction.donate()
+            } catch {
+                debugLog("Donate intent failed \(interaction.intent). \(error)")
             }
         }
     }
@@ -1593,7 +1588,10 @@ private extension MyAppsViewController
     }
     
     func enableJIT(for installedApp: InstalledApp) {
-        let sidejitenabled = UserDefaults.standard.sidejitenable
+        guard UserDefaults.standard.sidejitenable else {
+            debugLog("MyAppsViewController: userdefaults for 'sidejitenable' was not enabled")
+            return
+        }
         AppManager.shared.enableJIT(for: installedApp) { result in
             DispatchQueue.main.async {
                 switch result {
@@ -1993,7 +1991,7 @@ extension MyAppsViewController
         {
             backupSubmenuActions.append(backupAction)
         }
-        else if let _ = UTTypeCopyDeclaration(installedApp.installedAppUTI as CFString)?.takeRetainedValue() as NSDictionary?, !UserDefaults.standard.isLegacyDeactivationSupported
+        else if UTType(installedApp.installedAppUTI) != nil, !UserDefaults.standard.isLegacyDeactivationSupported
         {
             // Allow backing up inactive apps if they are still installed,
             // but on an iOS version that no longer supports legacy deactivation.
