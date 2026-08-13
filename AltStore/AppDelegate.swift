@@ -151,6 +151,13 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
             debugLog("[AppDelegate] Boot sequence completed.")
         }
         
+        
+        let isFirstLaunch = (UserDefaults.standard.firstLaunch == nil)
+        if isFirstLaunch
+        {
+            UserDefaults.standard.firstLaunch = Date()
+        }
+        
         DatabaseManager.shared.start { (error) in
             if let error = error
             {
@@ -162,6 +169,11 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
                 debugLog("Reconciling any staged drafts started...")
                 Self.reconcileSelfReinstallationIfNeeded()
                 debugLog("Reconcile any staged drafts completed.")
+                
+                if isFirstLaunch
+                {
+                    AuthManager.shared.signOut()
+                }
             }
         }
         
@@ -169,12 +181,6 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         self.prepareImageCache()
 
         SecureValueTransformer.register()        
-        
-        if UserDefaults.standard.firstLaunch == nil
-        {
-            AuthManager.shared.signOut()
-            UserDefaults.standard.firstLaunch = Date()
-        }
         
         UserDefaults.standard.preferredServerID = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.serverID) as? String
         
