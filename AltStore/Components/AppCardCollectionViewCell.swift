@@ -249,6 +249,30 @@ private extension AppCardCollectionViewCell
             let cell = cell as! AppScreenshotCollectionViewCell
             cell.imageView.image = nil
             cell.imageView.isIndicatingActivity = true
+            cell.reloadImageView.isHidden = true
+            
+            cell.onRetry = { [weak cell] in
+                guard let cell = cell else { return }
+                cell.imageView.isIndicatingActivity = true
+                cell.reloadImageView.isHidden = true
+                
+                let imageURL = screenshot.imageURL
+                let request = ImageRequest(
+                    url: imageURL,
+                    processors: [ImageProcessors.Resize(size: CGSize(width: 250, height: 500))]
+                )
+                ImagePipeline.shared.loadImage(with: request, progress: nil) { [weak cell] result in
+                    cell?.imageView.isIndicatingActivity = false
+                    switch result
+                    {
+                    case .success(let response):
+                        cell?.setImage(response.image)
+                    case .failure:
+                        cell?.setImage(nil)
+                        cell?.reloadImageView.isHidden = false
+                    }
+                }
+            }
             
             var aspectRatio = screenshot.aspectRatio
             if aspectRatio.width > aspectRatio.height
@@ -271,6 +295,7 @@ private extension AppCardCollectionViewCell
         }
         dataSource.prefetchHandler = { (screenshot, indexPath, completionHandler) in
             let imageURL = screenshot.imageURL
+            debugLog("Loading screenshot from \(imageURL) at index \(indexPath.item)")
             let request = ImageRequest(
                 url: imageURL,
                 processors: [ImageProcessors.Resize(size: CGSize(width: 250, height: 500))]
@@ -299,7 +324,18 @@ private extension AppCardCollectionViewCell
             
             if let error = error
             {
-                debugLog("Error loading image: \(error)")
+                debugLog("Error loading image at index \(indexPath.item): \(error.localizedDescription)")
+                cell.reloadImageView.isHidden = false
+            }
+            else if image == nil
+            {
+                debugLog("Loaded image is nil at index \(indexPath.item)")
+                cell.reloadImageView.isHidden = false
+            }
+            else
+            {
+                debugLog("Successfully loaded image at index \(indexPath.item) with size: \(image?.size ?? .zero)")
+                cell.reloadImageView.isHidden = true
             }
         }
         
