@@ -195,9 +195,10 @@ private extension FeaturedViewController
                 let group = NSCollectionLayoutGroup.vertical(layoutSize: groupSize, subitems: [item])
                 group.interItemSpacing = .fixed(spacing)
                 
-                let titleHeader = NSCollectionLayoutBoundarySupplementaryItem(layoutSize: titleSize, elementKind: ElementKind.sourceHeader.rawValue, alignment: .topLeading)
+                let sourceHeaderSize = NSCollectionLayoutSize(widthDimension: .estimated(100), heightDimension: .absolute(30))
+                let titleHeader = NSCollectionLayoutBoundarySupplementaryItem(layoutSize: sourceHeaderSize, elementKind: ElementKind.sourceHeader.rawValue, alignment: .topLeading)
                 
-                let buttonSize = NSCollectionLayoutSize(widthDimension: .estimated(44), heightDimension: .estimated(20))
+                let buttonSize = NSCollectionLayoutSize(widthDimension: .estimated(70), heightDimension: .absolute(30))
                 let buttonHeader = NSCollectionLayoutBoundarySupplementaryItem(layoutSize: buttonSize, elementKind: ElementKind.button.rawValue, alignment: .topTrailing)
                 
                 let layoutSection = NSCollectionLayoutSection(group: group)
@@ -636,9 +637,11 @@ extension FeaturedViewController
             
             buttonView.button.setTitle(NSLocalizedString("See All", comment: ""), for: .normal)
             let font = UIFont.preferredFont(forTextStyle: .body)
-            buttonView.button.titleLabel?.font = font
-            var config = buttonView.button.configuration ?? UIButton.Configuration.plain()
-            config.contentInsets.bottom = 8
+            var config = UIButton.Configuration.plain()
+            config.cornerStyle = .fixed
+            config.background.cornerRadius = 0
+            config.contentInsets = .zero
+            config.baseForegroundColor = buttonView.tintColor
             config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
                 var outgoing = incoming
                 outgoing.font = font
