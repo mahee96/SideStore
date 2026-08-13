@@ -60,14 +60,7 @@ class AppsTimelineProviderBase<T>
 
             apps = getUpdatedData(apps, context)
 
-            var entries = self.makeEntries(for: apps, in: context)
-            
-//            #if targetEnvironment(simulator)
-//            if let first = entries.first{
-//                entries = [first]
-//            }
-//            #endif
-            
+            let entries = self.makeEntries(for: apps, in: context)
             let timeline = Timeline(entries: entries, policy: .atEnd)
             return timeline
         }
@@ -191,7 +184,7 @@ class AppsTimelineProvider: AppsTimelineProviderBase<Intent>, IntentTimelineProv
 // Modern AppIntents-based provider for AppDetailWidget on iOS 17+.
 // Replaces AppsTimelineProvider (IntentTimelineProvider) which uses the legacy
 // SiriKit Intents framework that breaks containerBackground on iOS 17+.
-@available(iOSApplicationExtension 17, *)
+@available(iOS 17.0, *)
 class SelectAppTimelineProvider: AppsTimelineProviderBase<SelectAppIntent>, AppIntentTimelineProvider
 {
     typealias Intent = SelectAppIntent

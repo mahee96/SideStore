@@ -11,7 +11,7 @@ import AppIntents
 import WidgetKit
 
 // Represents one installed app in the picker list.
-@available(iOSApplicationExtension 17, *)
+@available(iOS 17.0, *)
 struct InstalledAppEntity: AppEntity
 {
     // Disambiguates from the AppEntity name used in AppIntents framework.
@@ -26,7 +26,7 @@ struct InstalledAppEntity: AppEntity
     }
 }
 
-@available(iOSApplicationExtension 17, *)
+@available(iOS 17.0, *)
 struct InstalledAppQuery: EntityQuery
 {
     func entities(for identifiers: [String]) async throws -> [InstalledAppEntity]
@@ -46,7 +46,7 @@ struct InstalledAppQuery: EntityQuery
     }
 }
 
-@available(iOSApplicationExtension 17, *)
+@available(iOS 17.0, *)
 struct SelectAppIntent: WidgetConfigurationIntent
 {
     static var title: LocalizedStringResource = "Select App"
