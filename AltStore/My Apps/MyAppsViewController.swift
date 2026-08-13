@@ -641,7 +641,10 @@ private extension MyAppsViewController
     func update()
     {
         self.updateUnsupportedUpdates()
-        self.reconfigureVisibleCells()
+        if !self.isRefreshingAllApps
+        {
+            self.reconfigureVisibleCells()
+        }
         
         if self.updatesDataSource.itemCount > 0
         {
@@ -657,21 +660,10 @@ private extension MyAppsViewController
         // Reloading collection view when not visible can mess with cell margins.
         guard self.isViewLoaded && self.view.window != nil else { return }
         
-        if #available(iOS 15, *)
+        if !self.isCheckingForUpdates && !self.isRefreshingAllApps
         {
-            // Don't reconfigureItems() while checking for updates to avoid incorrect UIRefreshControl animation.
-            // update() will be called again once we've finished checking.
-            if !self.isCheckingForUpdates
-            {
-                let indexPath = IndexPath(row: 0, section: Section.noUpdates.rawValue)
-                self.collectionView.reconfigureItems(at: [indexPath])
-            }
-        }
-        else
-        {
-            // Might not work if already reloading collection view,
-            // but hopefully iOS 14 users won't notice...
-            self.collectionView.reloadSections(IndexSet([Section.noUpdates.rawValue]))
+            let indexPath = IndexPath(row: 0, section: Section.noUpdates.rawValue)
+            self.collectionView.reconfigureItems(at: [indexPath])
         }
     }
     
@@ -764,9 +756,7 @@ private extension MyAppsViewController
         
         if self.isRefreshingAllApps
         {
-            UIView.performWithoutAnimation {
-                self.collectionView.reloadSections([Section.activeApps.rawValue, Section.inactiveApps.rawValue])
-            }
+            self.reconfigureVisibleCells()
         }
     }
 }
@@ -877,12 +867,20 @@ private extension MyAppsViewController
             }
             
             self.isRefreshingAllApps = true
-            self.collectionView.collectionViewLayout.invalidateLayout()
+            if let activeAppsHeader = self.collectionView.supplementaryView(forElementKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: Section.activeApps.rawValue)) as? InstalledAppsCollectionHeaderView {
+                activeAppsHeader.button.isIndicatingActivity = true
+                activeAppsHeader.button.accessibilityLabel = NSLocalizedString("Refreshing", comment: "")
+            }
+            self.reconfigureVisibleCells()
             
             self.refresh(installedApps) { (result) in
                 DispatchQueue.main.async {
                     self.isRefreshingAllApps = false
-                    self.collectionView.reloadSections([Section.activeApps.rawValue, Section.inactiveApps.rawValue])
+                    if let activeAppsHeader = self.collectionView.supplementaryView(forElementKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: Section.activeApps.rawValue)) as? InstalledAppsCollectionHeaderView {
+                        activeAppsHeader.button.isIndicatingActivity = false
+                        activeAppsHeader.button.accessibilityLabel = nil
+                    }
+                    self.reconfigureVisibleCells()
                 }
             }
             
@@ -1202,7 +1200,7 @@ private extension MyAppsViewController
                 if results.values.contains(where: { $0.error != nil })
                 {
                     DispatchQueue.main.async {
-                        self.collectionView.reloadSections([Section.activeApps.rawValue, Section.inactiveApps.rawValue])
+                        self.reconfigureVisibleCells()
                     }
                 }
                 
@@ -1223,13 +1221,13 @@ private extension MyAppsViewController
                 case .failure(let error) where error is CancellationError:
                     debugLog("Resign app cancelled by user.")
                     DispatchQueue.main.async {
-                        self.collectionView.reloadSections([Section.activeApps.rawValue, Section.inactiveApps.rawValue])
+                        self.reconfigureVisibleCells()
                     }
                 case .failure(let error):
                     debugLog("Failed to resign app: \(error)")
                     DispatchQueue.main.async {
                         ToastView(error: error, opensLog: true).show(in: self)
-                        self.collectionView.reloadSections([Section.activeApps.rawValue, Section.inactiveApps.rawValue])
+                        self.reconfigureVisibleCells()
                     }
                 case .success(let app):
                     debugLog("Successfully resigned app: \(app.name)")
@@ -1411,13 +1409,13 @@ private extension MyAppsViewController
                         DispatchQueue.main.async {
                             ToastView(error: error, opensLog: true).show(in: self)
 
-                            self.collectionView.reloadSections([Section.activeApps.rawValue, Section.inactiveApps.rawValue])
+                            self.reconfigureVisibleCells()
                         }
                     }
                 }
                 
                 DispatchQueue.main.async {
-                    self.collectionView.reloadSections([Section.activeApps.rawValue, Section.inactiveApps.rawValue])
+                    self.reconfigureVisibleCells()
                 }
             }))
             
@@ -2555,11 +2553,6 @@ extension MyAppsViewController: NSFetchedResultsControllerDelegate
             {
             case self.activeAppsDataSource, self.inactiveAppsDataSource:
                 DispatchQueue.main.async {
-                    self.collectionView.collectionViewLayout.invalidateLayout()
-                    self.collectionView.performBatchUpdates(nil) { _ in
-                        self.reconfigureVisibleCells()
-                    }
-                    
                     let inactiveAppsCount = self.inactiveAppsDataSource.itemCount
                     if (inactiveAppsCount == 0) != (self.previousInactiveAppsCount == 0)
                     {

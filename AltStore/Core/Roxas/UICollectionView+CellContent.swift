@@ -51,22 +51,26 @@ extension UICollectionView: RSTCellContentUpdateableView, RSTCellContentTransact
             }
         }
         
+        var updateIndexPaths = [IndexPath]()
+        for change in operations {
+            if change.sectionIndex == RSTUnknownSectionIndex && change.type == .update, let indexPath = change.currentIndexPath {
+                updateIndexPaths.append(indexPath)
+            }
+        }
+        
+        let moveIndexPaths = postMoveUpdateChanges.compactMap { $0.currentIndexPath }
+        let allTargetIndexPaths = Array(Set(updateIndexPaths + moveIndexPaths))
+        
         var isFinished = false
         let finish = { [weak self] in
             guard let self = self, !isFinished else { return }
             isFinished = true
             
-            if postMoveUpdateChanges.isEmpty {
-                return
-            }
-            
-            self.performBatchUpdates({
-                for change in postMoveUpdateChanges {
-                    if let currentIndexPath = change.currentIndexPath {
-                        self.reloadItems(at: [currentIndexPath])
-                    }
+            if !allTargetIndexPaths.isEmpty {
+                UIView.performWithoutAnimation {
+                    self.reconfigureItems(at: allTargetIndexPaths)
                 }
-            }, completion: nil)
+            }
         }
         
         CATransaction.begin()
@@ -95,9 +99,7 @@ extension UICollectionView: RSTCellContentUpdateableView, RSTCellContentTransact
                             self.deleteItems(at: [currentIndexPath])
                         }
                     case .update:
-                        if let currentIndexPath = change.currentIndexPath {
-                            self.reloadItems(at: [currentIndexPath])
-                        }
+                        break
                     case .move:
                         if let currentIndexPath = change.currentIndexPath, let destinationIndexPath = change.destinationIndexPath {
                             self.moveItem(at: currentIndexPath, to: destinationIndexPath)
@@ -132,10 +134,17 @@ extension UICollectionView: RSTCellContentUpdateableView, RSTCellContentTransact
                     case .delete:
                         if let currentIndexPath = change.currentIndexPath { self.deleteItems(at: [currentIndexPath]) }
                     case .update:
-                        if let currentIndexPath = change.currentIndexPath { self.reloadItems(at: [currentIndexPath]) }
+                        if let currentIndexPath = change.currentIndexPath {
+                            UIView.performWithoutAnimation {
+                                self.reconfigureItems(at: [currentIndexPath])
+                            }
+                        }
                     case .move:
                         if let currentIndexPath = change.currentIndexPath, let destinationIndexPath = change.destinationIndexPath {
                             self.moveItem(at: currentIndexPath, to: destinationIndexPath)
+                            UIView.performWithoutAnimation {
+                                self.reconfigureItems(at: [destinationIndexPath])
+                            }
                         }
                     }
                 }
