@@ -6,6 +6,7 @@
 //  Copyright © 2026 SideStore. All rights reserved.
 //
 
+import Foundation
 import UIKit
 import WidgetKit
 
@@ -67,7 +68,7 @@ public final class WidgetDataManager: @unchecked Sendable {
         if !FileManager.default.fileExists(atPath: fileURL.path) {
             if let resized = iconImage.resizing(toFill: CGSize(width: 180, height: 180)),
                let pngData = resized.pngData() {
-                try? pngData.write(to: fileURL, options: .atomic)
+                try? pngData.write(to: fileURL, options: Data.WritingOptions.atomic)
             }
         }
     }
@@ -78,9 +79,10 @@ public final class WidgetDataManager: @unchecked Sendable {
             let encoder = JSONEncoder()
             encoder.outputFormatting = .prettyPrinted
             let data = try encoder.encode(snapshot)
-            try data.write(to: url, options: .atomic)
+            try data.write(to: url, options: Data.WritingOptions.atomic)
         } catch {
-            debugLog("[WidgetDataManager] Failed to write snapshot JSON: \(error)")
+            print("[WidgetDataManager] Failed to write snapshot JSON: \(error)")
         }
     }
 }
+

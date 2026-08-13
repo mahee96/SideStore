@@ -38,7 +38,6 @@ public extension NSError
         return localizedTitle
     }
 
-    @objc(alt_errorWithLocalizedFailure:)
     func withLocalizedFailure(_ failure: String) -> NSError
     {
         switch self
@@ -56,7 +55,6 @@ public extension NSError
         }
     }
 
-    @objc(alt_errorWithLocalizedTitle:)
     func withLocalizedTitle(_ title: String) -> NSError
     {
         switch self

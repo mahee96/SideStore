@@ -15,13 +15,17 @@ public extension CodingUserInfoKey
     static let sourceURL = CodingUserInfoKey(rawValue: "sourceURL")!
 }
 
-public final class JSONDecoder: Foundation.JSONDecoder
+public extension Foundation.JSONDecoder
 {
-    @DecoderItem(key: .managedObjectContext)
-    public var managedObjectContext: NSManagedObjectContext?
-    
-    @DecoderItem(key: .sourceURL)
-    public var sourceURL: URL?
+    var managedObjectContext: NSManagedObjectContext? {
+        get { self.userInfo[.managedObjectContext] as? NSManagedObjectContext }
+        set { self.userInfo[.managedObjectContext] = newValue }
+    }
+
+    var sourceURL: URL? {
+        get { self.userInfo[.sourceURL] as? URL }
+        set { self.userInfo[.sourceURL] = newValue }
+    }
 }
 
 public extension Decoder

@@ -9,7 +9,6 @@
 
 import AppIntents
 import WidgetKit
-@preconcurrency import AltStoreCore
 
 // Represents one installed app in the picker list.
 @available(iOSApplicationExtension 17, *)

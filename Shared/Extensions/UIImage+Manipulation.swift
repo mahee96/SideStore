@@ -8,8 +8,7 @@
 @preconcurrency import UIKit
 
 public extension UIImage {
-    @objc(imageByResizingToSize:)
-    func resizing(to size: CGSize) -> UIImage? {
+    public func resizing(to size: CGSize) -> UIImage? {
         var finalSize = size
         switch self.imageOrientation {
         case .left, .leftMirrored, .right, .rightMirrored:
@@ -26,8 +25,7 @@ public extension UIImage {
         }.withRenderingMode(self.renderingMode)
     }
     
-    @objc(imageByResizingToFitSize:)
-    func resizing(toFit size: CGSize) -> UIImage? {
+    public func resizing(toFit size: CGSize) -> UIImage? {
         let imageSize = self.size
         let horizontalScale = size.width / imageSize.width
         let verticalScale = size.height / imageSize.height
@@ -36,8 +34,7 @@ public extension UIImage {
         return self.resizing(to: finalSize)
     }
     
-    @objc(imageByResizingToFillSize:)
-    func resizing(toFill size: CGSize) -> UIImage? {
+    public func resizing(toFill size: CGSize) -> UIImage? {
         let imageSize = self.size
         let horizontalScale = size.width / imageSize.width
         let verticalScale = size.height / imageSize.height
@@ -46,12 +43,10 @@ public extension UIImage {
         return self.resizing(to: finalSize)
     }
     
-    @objc(imageWithCornerRadius:)
     func withCornerRadius(_ cornerRadius: CGFloat) -> UIImage? {
         return self.withCornerRadius(cornerRadius, inset: .zero)
     }
     
-    @objc(imageWithCornerRadius:inset:)
     func withCornerRadius(_ cornerRadius: CGFloat, inset: UIEdgeInsets) -> UIImage? {
         var correctedInset = inset
         switch self.imageOrientation {
@@ -87,13 +82,11 @@ public extension UIImage {
         }.withRenderingMode(self.renderingMode)
     }
     
-    @objc(rotatedToImageOrientation:)
     func rotated(to imageOrientation: UIImage.Orientation) -> UIImage? {
         guard let cgImage = self.cgImage else { return nil }
         return UIImage(cgImage: cgImage, scale: self.scale, orientation: imageOrientation).rotatedToIntrinsicOrientation()
     }
     
-    @objc(rotatedToIntrinsicOrientation)
     func rotatedToIntrinsicOrientation() -> UIImage? {
         if self.imageOrientation == .up {
             return self

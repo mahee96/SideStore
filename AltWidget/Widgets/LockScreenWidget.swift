@@ -8,7 +8,6 @@
 
 import SwiftUI
 import WidgetKit
-@preconcurrency import AltStoreCore
 
 struct TextLockScreenWidget: Widget
 {

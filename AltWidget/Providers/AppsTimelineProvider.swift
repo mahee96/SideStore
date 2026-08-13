@@ -7,7 +7,6 @@
 //
 
 import WidgetKit
-@preconcurrency import AltStoreCore
 
 struct AppsEntry<T>: TimelineEntry
 {
@@ -160,7 +159,7 @@ extension AppsTimelineProviderBase
     {
         let snapshot = WidgetDataManager.shared.fetchSnapshot()
         let bundleIDs = snapshot.activeApps.map { $0.bundleIdentifier }
-        return bundleIDs.isEmpty ? [StoreApp.altstoreAppID] : bundleIDs
+        return bundleIDs.isEmpty ? [Bundle.Info.storeAppBundleIdentifier] : bundleIDs
     }
 }
 
@@ -171,7 +170,7 @@ class AppsTimelineProvider: AppsTimelineProviderBase<Intent>, IntentTimelineProv
     func getSnapshot(for intent: Intent, in context: Context, completion: @escaping (AppsEntry<Intent>) -> Void)
     {
         Task {
-            let bundleIDs = [intent.app?.identifier ?? StoreApp.altstoreAppID]
+            let bundleIDs = [intent.app?.identifier ?? Bundle.Info.storeAppBundleIdentifier]
             
             let snapshot = await self.snapshot(for: bundleIDs, in: intent)
             completion(snapshot)
@@ -181,7 +180,7 @@ class AppsTimelineProvider: AppsTimelineProviderBase<Intent>, IntentTimelineProv
     func getTimeline(for intent: Intent, in context: Context, completion: @escaping (Timeline<AppsEntry<Intent>>) -> Void)
     {
         Task {
-            let bundleIDs = [intent.app?.identifier ?? StoreApp.altstoreAppID]
+            let bundleIDs = [intent.app?.identifier ?? Bundle.Info.storeAppBundleIdentifier]
             
             let timeline = await self.timeline(for: bundleIDs, in: intent)
             completion(timeline)
@@ -215,6 +214,6 @@ class SelectAppTimelineProvider: AppsTimelineProviderBase<SelectAppIntent>, AppI
     {
         if let id = intent.app?.id { return id }
         let activeIDs = await self.fetchActiveAppBundleIDs()
-        return activeIDs.first ?? StoreApp.altstoreAppID
+        return activeIDs.first ?? Bundle.Info.storeAppBundleIdentifier
     }
 }

@@ -10,17 +10,19 @@
 
 public extension UIColor
 {
-    private static let colorBundle = Bundle(for: DatabaseManager.self)
-    
+    private static func namedColor(_ name: String) -> UIColor? {
+        return UIColor(named: name, in: Bundle.altStoreCore, compatibleWith: nil) ?? UIColor(named: name, in: .main, compatibleWith: nil)
+    }
+
     static var altPrimary: UIColor {
         return ThemeManager.shared.primaryColor
     }
-    static let defaultAltPrimary = UIColor(named: "Primary", in: colorBundle, compatibleWith: nil)!
-    static let deltaPrimary = UIColor(named: "DeltaPrimary", in: colorBundle, compatibleWith: nil)
-    static let clipPrimary = UIColor(named: "ClipPrimary", in: colorBundle, compatibleWith: nil)
+    static let defaultAltPrimary = namedColor("Primary")!
+    static let deltaPrimary = namedColor("DeltaPrimary")
+    static let clipPrimary = namedColor("ClipPrimary")
     
-    static let refreshRed = UIColor(named: "RefreshRed", in: colorBundle, compatibleWith: nil)!
-    static let refreshOrange = UIColor(named: "RefreshOrange", in: colorBundle, compatibleWith: nil)!
-    static let refreshYellow = UIColor(named: "RefreshYellow", in: colorBundle, compatibleWith: nil)!
-    static let refreshGreen = UIColor(named: "RefreshGreen", in: colorBundle, compatibleWith: nil)!
+    static let refreshRed = namedColor("RefreshRed")!
+    static let refreshOrange = namedColor("RefreshOrange")!
+    static let refreshYellow = namedColor("RefreshYellow")!
+    static let refreshGreen = namedColor("RefreshGreen")!
 }

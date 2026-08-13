@@ -24,19 +24,19 @@ public extension FileManager
         return appBackupsDirectory
     }
     
-    func backupDirectoryURL(for app: InstalledApp) -> URL?
+    func backupDirectoryURL(forBundleIdentifier bundleIdentifier: String) -> URL?
     {
-        let backupDirectoryURL = self.appBackupsDirectory?.appendingPathComponent(app.bundleIdentifier, isDirectory: true)
+        let backupDirectoryURL = self.appBackupsDirectory?.appendingPathComponent(bundleIdentifier, isDirectory: true)
         return backupDirectoryURL
     }
     
-    func deleteBackup(for app: InstalledApp) throws
+    func deleteBackup(forBundleIdentifier bundleIdentifier: String) throws
     {
-        debugLog("[FileManager] deleteBackup() started for \(app.bundleIdentifier)")
-        defer { debugLog("[FileManager] deleteBackup() completed for \(app.bundleIdentifier)") }
+        debugLog("[FileManager] deleteBackup() started for \(bundleIdentifier)")
+        defer { debugLog("[FileManager] deleteBackup() completed for \(bundleIdentifier)") }
         
-        guard let backupDirectoryURL = self.backupDirectoryURL(for: app) else {
-            debugLog("[FileManager] deleteBackup: Failed to construct backup directory URL for \(app.bundleIdentifier)")
+        guard let backupDirectoryURL = self.backupDirectoryURL(forBundleIdentifier: bundleIdentifier) else {
+            debugLog("[FileManager] deleteBackup: Failed to construct backup directory URL for \(bundleIdentifier)")
             return
         }
         
@@ -46,6 +46,6 @@ public extension FileManager
         }
         
         try self.removeItem(at: backupDirectoryURL)
-        debugLog("[FileManager] Successfully deleted backup directory for \(app.bundleIdentifier) at \(backupDirectoryURL.path)")
+        debugLog("[FileManager] Successfully deleted backup directory for \(bundleIdentifier) at \(backupDirectoryURL.path)")
     }
 }

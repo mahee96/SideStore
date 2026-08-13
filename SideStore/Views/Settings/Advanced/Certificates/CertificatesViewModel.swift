@@ -8,7 +8,6 @@
 
 import SwiftUI
 @preconcurrency import AltSign
-import KeychainAccess
 @preconcurrency import AltStoreCore
 
 struct PendingImport {
@@ -101,9 +100,6 @@ class CertificatesViewModel: ObservableObject {
         
         return !subjectContainsTeam && !issuerContainsTeam
     }
-    
-    private let certificateKeychain = KeychainAccess.Keychain(service: Bundle.Info.appbundleIdentifier)
-        .accessibility(.afterFirstUnlock)
     
     private var activeLocalCert: ALTCertificate? {
         CertificateManager.shared.activeCertificate?.certificate
