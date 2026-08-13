@@ -6,6 +6,7 @@
 //
 
 @preconcurrency import UIKit
+@preconcurrency import AltStoreCore
 
 @objc(RSTNibView)
 open class RSTNibView: UIView {
@@ -23,7 +24,14 @@ open class RSTNibView: UIView {
         let name = String(describing: type(of: self))
         let nibName = name.components(separatedBy: ".").last ?? name
         
-        let bundle = Bundle(for: type(of: self))
+        var bundle = Bundle(for: type(of: self))
+        if bundle.path(forResource: nibName, ofType: "nib") == nil {
+            let coreBundle = Bundle.altStoreCore
+            if coreBundle.path(forResource: nibName, ofType: "nib") != nil {
+                bundle = coreBundle
+            }
+        }
+        
         let nib = UINib(nibName: nibName, bundle: bundle)
         guard let views = nib.instantiate(withOwner: self, options: nil) as? [UIView],
               let nibView = views.first else {
