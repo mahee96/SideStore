@@ -9,7 +9,6 @@
 @preconcurrency import UIKit
 import UniformTypeIdentifiers
 
-@MainActor
 final class PairingFileManager: NSObject {
     static let shared = PairingFileManager()
     static let pairingFileName = "ALTPairingFile.mobiledevicepairing"
@@ -54,15 +53,7 @@ final class PairingFileManager: NSObject {
 
 // MARK: - UI Extension
 extension PairingFileManager: UIDocumentPickerDelegate {
-    func fetchPairingFile(presentingVC: UIViewController) -> String? {
-        if let contents = fetchPairingFile() {
-            return contents
-        }
-
-        presentPairingFileAlert(on: presentingVC, isRetry: false)
-        return nil
-    }
-
+    @MainActor
     func presentPairingFileAlert(on vc: UIViewController, isRetry: Bool, completion: ((URL?) -> Void)? = nil) {
         self.completion = { url in
             completion?(url)
@@ -116,16 +107,19 @@ extension PairingFileManager: UIDocumentPickerDelegate {
 
     func importPairingFile(presentingVC: UIViewController, title: String, message: String) async throws -> URL {
         try await withCheckedThrowingContinuation { continuation in
-            presentPairingFileAlert(on: presentingVC, isRetry: false) { url in
-                if let url = url {
-                    continuation.resume(returning: url)
-                } else {
-                    continuation.resume(throwing: MinimuxerWrapperError.pairingFile)
+            Task { @MainActor in
+                self.presentPairingFileAlert(on: presentingVC, isRetry: false) { url in
+                    if let url = url {
+                        continuation.resume(returning: url)
+                    } else {
+                        continuation.resume(throwing: MinimuxerWrapperError.pairingFile)
+                    }
                 }
             }
         }
     }
 
+    @MainActor
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
         let url = urls[0]
         let isSecuredURL = url.startAccessingSecurityScopedResource() == true
@@ -183,6 +177,7 @@ extension PairingFileManager: UIDocumentPickerDelegate {
         controller.dismiss(animated: true, completion: nil)
     }
 
+    @MainActor
     func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
         if let completion = self.completion {
             completion(nil)
