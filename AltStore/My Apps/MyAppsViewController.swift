@@ -641,10 +641,6 @@ private extension MyAppsViewController
     func update()
     {
         self.updateUnsupportedUpdates()
-        if !self.isRefreshingAllApps
-        {
-            self.reconfigureVisibleCells()
-        }
         
         if self.updatesDataSource.itemCount > 0
         {
@@ -708,7 +704,7 @@ private extension MyAppsViewController
     
     func refresh(_ installedApps: [InstalledApp], completionHandler: @escaping ([String : Result<InstalledApp, Error>]) -> Void)
     {
-        let group = AppManager.shared.refresh(installedApps, presentingViewController: self, group: self.refreshGroup)
+        let group = AppManager.shared.refresh(installedApps, presentingViewController: self, group: self.isRefreshingAllApps ? self.refreshGroup : nil)
         group.completionHandler = { (results) in
             DispatchQueue.main.async {
                 let failures = results.compactMapValues { (result) -> Error? in
@@ -1850,6 +1846,8 @@ extension MyAppsViewController
                 headerView.button.setTitle(nil, for: .normal)
                 headerView.button.setImage(UIImage(systemName: "questionmark.circle"), for: .normal)
                 headerView.button.addTarget(self, action: #selector(MyAppsViewController.presentInactiveAppsAlert), for: .primaryActionTriggered)
+                
+                headerView.isHidden = (self.inactiveAppsDataSource.itemCount == 0)
             }
             
             return headerView
@@ -2557,9 +2555,14 @@ extension MyAppsViewController: NSFetchedResultsControllerDelegate
                     if (inactiveAppsCount == 0) != (self.previousInactiveAppsCount == 0)
                     {
                         self.previousInactiveAppsCount = inactiveAppsCount
-                        UIView.performWithoutAnimation {
-                            self.collectionView.reloadSections([Section.activeApps.rawValue, Section.inactiveApps.rawValue])
+                        if let headerView = self.collectionView.supplementaryView(forElementKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: Section.inactiveApps.rawValue)) {
+                            headerView.isHidden = (inactiveAppsCount == 0)
                         }
+                        self.collectionView.collectionViewLayout.invalidateLayout()
+                    }
+                    else
+                    {
+                        self.previousInactiveAppsCount = inactiveAppsCount
                     }
                     
                     if dataSource == self.activeAppsDataSource && self.didChangeActiveApps {
