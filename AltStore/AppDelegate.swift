@@ -559,7 +559,7 @@ private extension AppDelegate {
             let stackTrace = exception.callStackSymbols.joined(separator: "\n")
             let message = """
             \n===================================================
-            |                UNCAUGHT CRASH                   |
+            |           UNCAUGHT NSEXCEPTION CRASH            |
             ===================================================
               • Name: \(exception.name.rawValue)
               • Reason: \(exception.reason ?? "Unknown")
@@ -577,6 +577,43 @@ private extension AppDelegate {
             
             // Also write to NSLog (Apple System Log)
             NSLog("%@", message)
+        }
+        
+        let fatalSignals = [SIGABRT, SIGSEGV, SIGBUS, SIGILL, SIGFPE, SIGTRAP]
+        for sig in fatalSignals {
+            signal(sig) { signalNumber in
+                signal(signalNumber, SIG_DFL)
+                
+                let signalName: String
+                switch signalNumber {
+                case SIGABRT: signalName = "SIGABRT (Abort/Assertion Failure)"
+                case SIGSEGV: signalName = "SIGSEGV (Segmentation Fault)"
+                case SIGBUS: signalName = "SIGBUS (Bus Error)"
+                case SIGILL: signalName = "SIGILL (Illegal Instruction)"
+                case SIGFPE: signalName = "SIGFPE (Floating Point Exception)"
+                case SIGTRAP: signalName = "SIGTRAP (Trace Trap)"
+                default: signalName = "Signal \(signalNumber)"
+                }
+                
+                let stackTrace = Thread.callStackSymbols.joined(separator: "\n")
+                let message = """
+                \n===================================================
+                |             UNCAUGHT FATAL SIGNAL               |
+                ===================================================
+                  • Signal: \(signalName)
+                
+                Call Stack:
+                \(stackTrace)
+                ===================================================\n
+                """
+                
+                debugLog(message)
+                fputs(message, stderr)
+                fflush(stderr)
+                NSLog("%@", message)
+                
+                raise(signalNumber)
+            }
         }
     }
     
