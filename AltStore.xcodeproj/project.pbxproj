@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A823609F2FF0B46900AD4DAF /* AltSign-Static in Frameworks */ = {isa = PBXBuildFile; productRef = A823609E2FF0B46900AD4DAF /* AltSign-Static */; };
-		A82526E72FF0E1C000FB2EDD /* OpenSSL in Frameworks */ = {isa = PBXBuildFile; productRef = A82526E62FF0E1C000FB2EDD /* OpenSSL */; };
 		A84596F62F7DC4C90000B8CD /* SideStore.conf in Resources */ = {isa = PBXBuildFile; fileRef = A84596F52F7DC4C90000B8CD /* SideStore.conf */; };
 		A8C37026302DA7BA0010213A /* Minimuxer in Frameworks */ = {isa = PBXBuildFile; productRef = A8C37025302DA7BA0010213A /* Minimuxer */; };
 		A8C37029302DA7F30010213A /* MarkdownKit in Frameworks */ = {isa = PBXBuildFile; productRef = A8C37028302DA7F30010213A /* MarkdownKit */; };
@@ -162,8 +160,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A82526E72FF0E1C000FB2EDD /* OpenSSL in Frameworks */,
-				A823609F2FF0B46900AD4DAF /* AltSign-Static in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -853,10 +849,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		A844287A2FE791BB003CC103 /* XCLocalSwiftPackageReference "Dependencies/AltSign" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Dependencies/AltSign;
-		};
 		A8C37021302DA7A70010213A /* XCLocalSwiftPackageReference "Dependencies/AltSign" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Dependencies/AltSign;
@@ -911,16 +903,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		A823609E2FF0B46900AD4DAF /* AltSign-Static */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A844287A2FE791BB003CC103 /* XCLocalSwiftPackageReference "Dependencies/AltSign" */;
-			productName = "AltSign-Static";
-		};
-		A82526E62FF0E1C000FB2EDD /* OpenSSL */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A844287A2FE791BB003CC103 /* XCLocalSwiftPackageReference "Dependencies/AltSign" */;
-			productName = OpenSSL;
-		};
 		A8C37025302DA7BA0010213A /* Minimuxer */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Minimuxer;
