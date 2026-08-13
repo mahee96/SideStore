@@ -27,24 +27,7 @@ public final class AppBootManager {
     
     private init() {}
     
-    public nonisolated func getSavedPairingFile() -> String? {
-        let fm = FileManager.default
-        let pairingFileName = "ALTPairingFile.mobiledevicepairing"
-        let documentsPath = fm.documentsDirectory.appendingPathComponent(pairingFileName)
-        if fm.fileExists(atPath: documentsPath.path),
-           let contents = try? String(contentsOf: documentsPath), !contents.isEmpty {
-            return contents
-        }
-        if let url = Bundle.main.url(forResource: "ALTPairingFile", withExtension: "mobiledevicepairing"),
-           fm.fileExists(atPath: url.path),
-           let data = fm.contents(atPath: url.path),
-           let contents = String(data: data, encoding: .utf8),
-           !contents.isEmpty, !UserDefaults.standard.isPairingReset { return contents }
-        if let plistString = Bundle.main.object(forInfoDictionaryKey: "ALTPairingFile") as? String,
-           !plistString.isEmpty, !plistString.contains("insert pairing file here"), !UserDefaults.standard.isPairingReset { return plistString }
-        return nil
-    }
-    
+
     public nonisolated func startMinimuxer(pairingFile: String) async throws {
         debugLog("[AppBootManager] startMinimuxer() entered")
         defer { debugLog("[AppBootManager] startMinimuxer() exited") }
@@ -112,7 +95,7 @@ public final class AppBootManager {
                 debugLog("[AppBootManager] Failed to start minimuxer: \(error)")
             }
             #else
-            if let pf = self.getSavedPairingFile() {
+            if let pf = PairingFileManager.shared.fetchPairingFile() {
                 do {
                     try await self.startMinimuxer(pairingFile: pf)
                 } catch {
