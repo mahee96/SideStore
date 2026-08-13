@@ -635,9 +635,15 @@ extension FeaturedViewController
             buttonView.tintColor = storeApp.source?.effectiveTintColor?.adjustedForDisplay ?? .altPrimary
             
             buttonView.button.setTitle(NSLocalizedString("See All", comment: ""), for: .normal)
-            buttonView.button.titleLabel?.font = UIFont.preferredFont(forTextStyle: .body)
+            let font = UIFont.preferredFont(forTextStyle: .body)
+            buttonView.button.titleLabel?.font = font
             var config = buttonView.button.configuration ?? UIButton.Configuration.plain()
             config.contentInsets.bottom = 8
+            config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+                var outgoing = incoming
+                outgoing.font = font
+                return outgoing
+            }
             buttonView.button.configuration = config
             
             buttonView.button.removeAction(identifiedBy: .showAllApps, for: .primaryActionTriggered)
