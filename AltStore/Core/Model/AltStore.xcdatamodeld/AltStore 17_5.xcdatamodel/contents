@@ -105,7 +105,7 @@
         <attribute name="version" attributeType="String"/>
         <relationship name="appExtensions" toMany="YES" deletionRule="Cascade" destinationEntity="InstalledExtension" inverseName="parentApp" inverseEntity="InstalledExtension"/>
         <relationship name="loggedErrors" toMany="YES" deletionRule="Nullify" destinationEntity="LoggedError" inverseName="installedApp" inverseEntity="LoggedError"/>
-        <relationship name="releaseTrack" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="ReleaseTrack" inverseName="installedApps" inverseEntity="ReleaseTrack"/>
+        <relationship name="releaseTrack" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="ReleaseTrack" inverseName="installedApp" inverseEntity="ReleaseTrack"/>
         <relationship name="storeApp" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="StoreApp" inverseName="installedApp" inverseEntity="StoreApp"/>
         <relationship name="team" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Team" inverseName="installedApps" inverseEntity="Team"/>
         <uniquenessConstraints>
