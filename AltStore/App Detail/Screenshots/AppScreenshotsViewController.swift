@@ -125,17 +125,26 @@ private extension AppScreenshotsViewController
         }
         dataSource.prefetchHandler = { (screenshot, indexPath, completionHandler) in
             let imageURL = screenshot.imageURL
-            Task.detached(priority: .background) {
-                let request = ImageRequest(url: imageURL)
-                ImagePipeline.shared.loadImage(with: request, progress: nil) { result in
-                    switch result
-                    {
-                    case .success(let response): completionHandler(response.image, nil)
-                    case .failure(let error): completionHandler(nil, error)
-                    }
+            let request = ImageRequest(
+                url: imageURL,
+                processors: [ImageProcessors.Resize(size: CGSize(width: 250, height: 500))]
+            )
+            let imageTask = ImagePipeline.shared.loadImage(with: request, progress: nil) { result in
+                switch result
+                {
+                case .success(let response): completionHandler(response.image, nil)
+                case .failure(let error): completionHandler(nil, error)
                 }
             }
-            return nil
+            return Task {
+                await withTaskCancellationHandler {
+                    if Task.isCancelled {
+                        imageTask.cancel()
+                    }
+                } onCancel: {
+                    imageTask.cancel()
+                }
+            }
         }
         dataSource.prefetchCompletionHandler = { (cell, image, indexPath, error) in
             let cell = cell as! AppScreenshotCollectionViewCell

@@ -148,6 +148,13 @@ private extension AppCardCollectionViewCell
         let layout = UICollectionViewCompositionalLayout(sectionProvider: { [weak self] (sectionIndex, layoutEnvironment) -> NSCollectionLayoutSection? in
             guard let self else { return nil }
             
+            guard !self.screenshots.isEmpty else {
+                let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .fractionalHeight(1.0))
+                let item = NSCollectionLayoutItem(layoutSize: itemSize)
+                let group = NSCollectionLayoutGroup.horizontal(layoutSize: itemSize, subitems: [item])
+                return NSCollectionLayoutSection(group: group)
+            }
+            
             var contentWidth = 0.0
             var numberOfVisibleScreenshots = 0
             
@@ -181,6 +188,13 @@ private extension AppCardCollectionViewCell
                 
                 contentWidth = totalContentWidth
                 numberOfVisibleScreenshots += 1
+            }
+            
+            guard numberOfVisibleScreenshots > 0 else {
+                let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .fractionalHeight(1.0))
+                let item = NSCollectionLayoutItem(layoutSize: itemSize)
+                let group = NSCollectionLayoutGroup.horizontal(layoutSize: itemSize, subitems: [item])
+                return NSCollectionLayoutSection(group: group)
             }
             
             // Use .estimated(1) to ensure we don't over-estimate widths, which can cause incorrect layouts for the last group.
@@ -257,17 +271,26 @@ private extension AppCardCollectionViewCell
         }
         dataSource.prefetchHandler = { (screenshot, indexPath, completionHandler) in
             let imageURL = screenshot.imageURL
-            Task.detached(priority: .background) {
-                let request = ImageRequest(url: imageURL)
-                ImagePipeline.shared.loadImage(with: request, progress: nil) { result in
-                    switch result
-                    {
-                    case .success(let response): completionHandler(response.image, nil)
-                    case .failure(let error): completionHandler(nil, error)
-                    }
+            let request = ImageRequest(
+                url: imageURL,
+                processors: [ImageProcessors.Resize(size: CGSize(width: 250, height: 500))]
+            )
+            let imageTask = ImagePipeline.shared.loadImage(with: request, progress: nil) { result in
+                switch result
+                {
+                case .success(let response): completionHandler(response.image, nil)
+                case .failure(let error): completionHandler(nil, error)
                 }
             }
-            return nil
+            return Task {
+                await withTaskCancellationHandler {
+                    if Task.isCancelled {
+                        imageTask.cancel()
+                    }
+                } onCancel: {
+                    imageTask.cancel()
+                }
+            }
         }
         dataSource.prefetchCompletionHandler = { (cell, image, indexPath, error) in
             let cell = cell as! AppScreenshotCollectionViewCell

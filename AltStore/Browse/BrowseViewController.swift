@@ -264,13 +264,28 @@ private extension BrowseViewController
         }
         dataSource.prefetchHandler = { (storeApp, indexPath, completionHandler) in
             let iconURL = storeApp.iconURL
-            return Task.detached(priority: .background) {
-                ImagePipeline.shared.loadImage(with: iconURL, progress: nil) { result in
-                    switch result
-                    {
-                    case .success(let response): completionHandler(response.image, nil)
-                    case .failure(let error): completionHandler(nil, error)
+            let imageTask = ImagePipeline.shared.loadImage(with: iconURL, progress: nil) { result in
+                switch result
+                {
+                case .success(let response):
+                    let image = response.image
+                    DispatchQueue.global(qos: .userInitiated).async {
+                        _ = image.isPredominantlyLight
+                        _ = image.withDropShadow(color: .black, radius: 4, offset: CGSize(width: 0, height: 1.5), opacity: 0.25)
+                        DispatchQueue.main.async {
+                            completionHandler(image, nil)
+                        }
                     }
+                case .failure(let error): completionHandler(nil, error)
+                }
+            }
+            return Task {
+                await withTaskCancellationHandler {
+                    if Task.isCancelled {
+                        imageTask.cancel()
+                    }
+                } onCancel: {
+                    imageTask.cancel()
                 }
             }
         }
