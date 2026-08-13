@@ -146,7 +146,7 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
             let effectiveParentBundleID = self.context.targetBundleIdentifier
             let updatedParentBundleID = effectiveParentBundleID + "." + team.identifier
 
-            if let parentAppBundle,
+            if parentAppBundle != nil,
                targetAppBundle.bundleIdentifier.hasPrefix(parentBundleID + ".") {
                 let suffix = String(targetAppBundle.bundleIdentifier.dropFirst(parentBundleID.count))
                 bundleID = updatedParentBundleID + suffix

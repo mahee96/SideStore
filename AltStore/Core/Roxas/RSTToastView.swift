@@ -47,7 +47,7 @@ open class RSTToastView: UIControl {
     
     @objc public let textLabel = UILabel()
     @objc public let detailTextLabel = UILabel()
-    @objc public let activityIndicatorView = UIActivityIndicatorView(style: .white)
+    @objc public let activityIndicatorView = UIActivityIndicatorView(style: .medium)
     
     @objc open var presentationEdge: RSTViewEdge = .bottom {
         didSet {

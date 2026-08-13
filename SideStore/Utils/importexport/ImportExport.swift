@@ -268,7 +268,7 @@ extension ImportExport {
 #endif
 
 private struct AssociatedKeys {
-    static var documentPickerHandler = "documentPickerHandler"
+    static var documentPickerHandler: UInt8 = 0
 }
 
 

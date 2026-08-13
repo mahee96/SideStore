@@ -20,15 +20,15 @@ extension UIApplication: LegacyBackgroundFetching {}
 
 extension AppDelegate
 {
-    static let openPatreonSettingsDeepLinkNotification = Notification.Name(Bundle.Info.appbundleIdentifier + ".OpenPatreonSettingsDeepLinkNotification")
-    static let importAppDeepLinkNotification = Notification.Name(Bundle.Info.appbundleIdentifier + ".ImportAppDeepLinkNotification")
-    static let addSourceDeepLinkNotification = Notification.Name(Bundle.Info.appbundleIdentifier + ".AddSourceDeepLinkNotification")
+    nonisolated static let openPatreonSettingsDeepLinkNotification = Notification.Name(Bundle.Info.appbundleIdentifier + ".OpenPatreonSettingsDeepLinkNotification")
+    nonisolated static let importAppDeepLinkNotification = Notification.Name(Bundle.Info.appbundleIdentifier + ".ImportAppDeepLinkNotification")
+    nonisolated static let addSourceDeepLinkNotification = Notification.Name(Bundle.Info.appbundleIdentifier + ".AddSourceDeepLinkNotification")
     
-    static let appBackupDidFinish = Notification.Name(Bundle.Info.appbundleIdentifier + ".AppBackupDidFinish")
+    nonisolated static let appBackupDidFinish = Notification.Name(Bundle.Info.appbundleIdentifier + ".AppBackupDidFinish")
     
-    static let importAppDeepLinkURLKey = "fileURL"
-    static let appBackupResultKey = "result"
-    static let addSourceDeepLinkURLKey = "sourceURL"
+    nonisolated static let importAppDeepLinkURLKey = "fileURL"
+    nonisolated static let appBackupResultKey = "result"
+    nonisolated static let addSourceDeepLinkURLKey = "sourceURL"
     
     static func dumpSideBackupLogsIfNeeded() async {
         await Task.detached {

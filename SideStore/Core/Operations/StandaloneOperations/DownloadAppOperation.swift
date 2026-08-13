@@ -141,6 +141,9 @@ final class DownloadAppOperation: BasePipelineOperation<InstallAppOperationConte
         }
         
         let dependencies = try await self.downloadDependencies(for: appBundle)
+        if !dependencies.isEmpty {
+            self.debugLog("[DownloadAppOperation] Downloaded \(dependencies.count) dependencies for \(appBundle.name): \(dependencies.map(\.lastPathComponent))")
+        }
         
         try FileManager.default.copyItem(at: appBundle.fileURL, to: self.destinationURL, shouldReplace: true)
         

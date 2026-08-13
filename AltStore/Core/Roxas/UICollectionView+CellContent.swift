@@ -10,8 +10,8 @@
 
 extension UICollectionView: RSTCellContentUpdateableView, RSTCellContentTransactionUpdateable {
     private struct AssociatedKeys {
-        static var nestedUpdatesCounter = "rst_nestedUpdatesCounter"
-        static var operations = "rst_operations"
+        static var nestedUpdatesCounter: UInt8 = 0
+        static var operations: UInt8 = 0
     }
 
     private var rst_nestedUpdatesCounter: Int {

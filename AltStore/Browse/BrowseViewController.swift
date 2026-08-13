@@ -568,8 +568,7 @@ private extension BrowseViewController
             }
         }
         
-        @MainActor
-        func finish(_ result: Result<InstalledApp, Error>)
+        nonisolated func finish(_ result: Result<InstalledApp, Error>)
         {
             debugLog("BrowseViewController.finish invoked with result: \(result) for \(app.bundleIdentifier)")
             DispatchQueue.main.async {

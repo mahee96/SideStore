@@ -744,7 +744,7 @@ final class SafeContinuation<T, E: Error>: @unchecked Sendable {
     }
 }
 
-extension HTTPUpgradeError: LocalizedError {
+extension HTTPUpgradeError: @retroactive LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .notAnUpgrade(let statusCode, _):
@@ -755,7 +755,7 @@ extension HTTPUpgradeError: LocalizedError {
     }
 }
 
-extension WSError: LocalizedError {
+extension WSError: @retroactive LocalizedError {
     public var errorDescription: String? {
         return "\(self.message) (code: \(self.code))"
     }
