@@ -611,7 +611,7 @@ private extension AddSourceViewController
                 var isSourceAlreadyPersisted = false
                 do
                 {
-                    isSourceAlreadyPersisted = try await source.isAdded
+                    isSourceAlreadyPersisted = try await source.isAdded()
                 }
                 catch
                 {

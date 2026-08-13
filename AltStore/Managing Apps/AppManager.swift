@@ -320,7 +320,7 @@ final class AppManager: ObservableObject, @unchecked Sendable
 
         // Wait for fetch to finish before saving context to make
         // sure there isn't already a source with this identifier.
-        let sourceExists = try await fetchedSource.isAdded
+        let sourceExists = try await fetchedSource.isAdded()
         
         // This is just a sanity check, so pass nil for existingSource to keep code simple.
         guard !sourceExists else { throw SourceError.duplicate(source, existingSource: nil) }
@@ -367,7 +367,7 @@ final class AppManager: ObservableObject, @unchecked Sendable
         do
         {
             // Check if we need to add source first before installing app.
-            if let source = await $app.perform({ $0.storeApp?.source }), try await !source.isAdded
+            if let source = await $app.perform({ $0.storeApp?.source }), try await !source.isAdded()
             {
                 // This app's source is not yet added, so add it first.
                 guard let presentingViewController else { throw OperationError.sourceNotAdded(source) }
