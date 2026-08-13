@@ -387,6 +387,7 @@
 /* Begin PBXShellScriptBuildPhase section */
 		A8E00D3F2D0C9C6D000DD2C7 /* Build SideBackup.ipa */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -747,7 +748,11 @@
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				LLVM_LTO = YES_THIN;
 				MARKETING_VERSION = "$(inherited)";
-				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-Xlinker",
+					"-w",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -790,7 +795,11 @@
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				LLVM_LTO = YES_THIN;
 				MARKETING_VERSION = "$(inherited)";
-				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-Xlinker",
+					"-w",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
