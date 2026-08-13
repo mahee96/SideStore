@@ -10,7 +10,6 @@
 import Foundation
 import CommonCrypto
 import Starscream
-@preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
 final class FetchAnisetteDataOperation: BaseStandaloneOperation<AuthenticatedOperationContext, ALTAnisetteData>, @unchecked Sendable {

@@ -8,7 +8,6 @@
 
 import SwiftUI
 @preconcurrency import AltSign
-@preconcurrency import AltStoreCore
 
 struct PendingImport {
     let url: URL

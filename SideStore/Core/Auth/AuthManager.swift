@@ -9,7 +9,6 @@
 @preconcurrency import UIKit
 import Foundation
 @preconcurrency import AltSign
-@preconcurrency import AltStoreCore
 
 public final class AuthManager: @unchecked Sendable {
     public static let shared = AuthManager()

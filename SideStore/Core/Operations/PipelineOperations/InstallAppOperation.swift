@@ -10,7 +10,6 @@ import UserNotifications
 import Foundation
 import Network
 import CoreData
-@preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
 let shortcutURLonDelay = URL(string: "shortcuts://run-shortcut?name=TurnOnDataDelay")!

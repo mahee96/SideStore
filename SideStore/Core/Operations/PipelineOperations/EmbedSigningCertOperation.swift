@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import AltStoreCore
 import AltSign
 
 final class EmbedSigningCertOperation: BasePipelineOperation<AppOperationContext, Void>, @unchecked Sendable {

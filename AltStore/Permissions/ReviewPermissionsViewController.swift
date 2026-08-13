@@ -10,7 +10,6 @@
 import SwiftUI
 
 @preconcurrency import AltSign
-import AltStoreCore
 
 @available(iOS 15, *)
 extension ReviewPermissionsViewController

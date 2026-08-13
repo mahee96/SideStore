@@ -1,6 +1,5 @@
 import SwiftUI
 import UniformTypeIdentifiers
-import AltStoreCore
 
 private extension Color {
     static let settingsRowBackground = Color.white.opacity(0.15)

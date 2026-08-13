@@ -10,7 +10,6 @@ import SwiftUI
 import CoreData
 import UniformTypeIdentifiers
 @preconcurrency import AltSign
-import AltStoreCore
 
 private extension Color {
     static let settingsRowBackground = Color.white.opacity(0.15)
@@ -75,7 +74,6 @@ struct DeveloperOptionsView: View {
                                 isSideStoreVerboseLoggingEnabled = newValue
                                 UserDefaults.standard.isSideStoreVerboseLoggingEnabled = newValue
                                 SideStoreLogging.setLogging(newValue)
-                                AltStoreCore.SideStoreLogging.setLogging(newValue)
                             }
                         ))
                         

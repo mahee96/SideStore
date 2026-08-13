@@ -16,7 +16,6 @@ import AppKit
 public typealias ALTFont = NSFont
 #endif
 
-@preconcurrency import AltSign
 
 public extension NSError
 {
@@ -152,8 +151,8 @@ public extension NSError
         userInfo[NSLocalizedRecoverySuggestionErrorKey] = self.localizedRecoverySuggestion
 
         let sortedUserInfo = userInfo.sorted { (a, b) in
-            let indexA = preferredKeyOrder.firstIndex(of: a.key as? String ?? "")
-            let indexB = preferredKeyOrder.firstIndex(of: b.key as? String ?? "")
+            let indexA = preferredKeyOrder.firstIndex(of: a.key)
+            let indexB = preferredKeyOrder.firstIndex(of: b.key)
 
             switch (indexA, indexB)
             {

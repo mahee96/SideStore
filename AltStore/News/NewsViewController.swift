@@ -10,7 +10,6 @@
 import SafariServices
 import Combine
 import CoreData
-@preconcurrency import AltStoreCore
 
 import Nuke
 

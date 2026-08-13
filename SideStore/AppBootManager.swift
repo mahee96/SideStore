@@ -7,7 +7,6 @@
 //
 
 import Foundation
-@preconcurrency import AltStoreCore
 
 public final class AppBootManager {
     public static let shared = AppBootManager()

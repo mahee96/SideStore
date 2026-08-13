@@ -8,7 +8,6 @@
 
 import Foundation
 import CoreData
-@preconcurrency import AltStoreCore
 import SemanticVersion
 
 final class FetchSourceOperation: BaseStandaloneOperation<StandaloneOperationContext, Source>, @unchecked Sendable {
@@ -116,7 +115,7 @@ final class FetchSourceOperation: BaseStandaloneOperation<StandaloneOperationCon
     }
     
     private func performDecodeAndSave(data: Data, response: URLResponse, childContext: NSManagedObjectContext) throws -> String {
-        let decoder = AltStoreCore.JSONDecoder()
+        let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom({ (decoder) -> Date in
             let container = try decoder.singleValueContainer()
             let text = try container.decode(String.self)

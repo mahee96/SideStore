@@ -11,7 +11,6 @@
 import WidgetKit
 
 @preconcurrency import AltSign
-@preconcurrency import AltStoreCore
 import UniformTypeIdentifiers
 import CryptoKit
 

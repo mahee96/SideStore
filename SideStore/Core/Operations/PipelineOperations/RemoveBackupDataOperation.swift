@@ -7,7 +7,6 @@
 //
 
 import Foundation
-@preconcurrency import AltStoreCore
 
 final class RemoveBackupDataOperation: BasePipelineOperation<InstallAppOperationContext, Bool>
 {

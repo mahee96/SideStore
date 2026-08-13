@@ -7,7 +7,6 @@
 //
 
 import Foundation
-@preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 import CoreData
 

@@ -9,7 +9,6 @@
 @preconcurrency import UIKit
 import CoreData
 import Combine
-@preconcurrency import AltStoreCore
 
 import Nuke
 

@@ -14,7 +14,6 @@ import MobileCoreServices
 import Intents
 import Combine
 import WidgetKit
-@preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 import UniformTypeIdentifiers
 

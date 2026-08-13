@@ -9,7 +9,6 @@
 import Foundation
 import WebKit
 import UniformTypeIdentifiers
-@preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
 final class DownloadAppOperation: BasePipelineOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {

@@ -9,7 +9,6 @@
 
 @preconcurrency import UIKit
 @preconcurrency import AltSign
-@preconcurrency import AltStoreCore
 import CryptoKit
 import CommonCrypto
 

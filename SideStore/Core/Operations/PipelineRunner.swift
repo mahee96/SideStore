@@ -8,7 +8,6 @@
 
 @preconcurrency import UIKit
 @preconcurrency import WidgetKit
-@preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
 

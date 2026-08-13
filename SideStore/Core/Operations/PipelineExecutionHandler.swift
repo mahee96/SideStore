@@ -8,7 +8,6 @@
 
 import Foundation
 @preconcurrency import AltSign
-@preconcurrency import AltStoreCore
 
 protocol PipelineExecutionHandler: AnyObject {
     var preflightChecksHandler: PreflightChecksHandler { get }

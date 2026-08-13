@@ -13,7 +13,6 @@ import Intents
 import Combine
 import CoreData
 import UniformTypeIdentifiers
-import AltStoreCore
 @preconcurrency import AltSign
 import SemanticVersion
 

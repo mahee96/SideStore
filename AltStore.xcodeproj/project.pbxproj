@@ -7,17 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A803924B2F552F4C00097AF1 /* Minimuxer in Frameworks */ = {isa = PBXBuildFile; productRef = A803924A2F552F4C00097AF1 /* Minimuxer */; };
 		A823609F2FF0B46900AD4DAF /* AltSign-Static in Frameworks */ = {isa = PBXBuildFile; productRef = A823609E2FF0B46900AD4DAF /* AltSign-Static */; };
-		A823DC542FF0D82100AD4DAF /* OpenSSL in Frameworks */ = {isa = PBXBuildFile; productRef = A823DC532FF0D82100AD4DAF /* OpenSSL */; };
 		A82526E72FF0E1C000FB2EDD /* OpenSSL in Frameworks */ = {isa = PBXBuildFile; productRef = A82526E62FF0E1C000FB2EDD /* OpenSSL */; };
-		A83FE3672EC90482005ACE9A /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = A83FE3662EC90482005ACE9A /* Starscream */; };
-		A844287D2FE791EA003CC103 /* Minimuxer in Frameworks */ = {isa = PBXBuildFile; productRef = A844287C2FE791EA003CC103 /* Minimuxer */; };
 		A84596F62F7DC4C90000B8CD /* SideStore.conf in Resources */ = {isa = PBXBuildFile; fileRef = A84596F52F7DC4C90000B8CD /* SideStore.conf */; };
-		A8B646012D70C23E00125819 /* MarkdownKit in Frameworks */ = {isa = PBXBuildFile; productRef = A8B646002D70C23E00125819 /* MarkdownKit */; };
-		A8C2260E2EC9039A00047C0D /* Nuke in Frameworks */ = {isa = PBXBuildFile; productRef = A8C2260D2EC9039A00047C0D /* Nuke */; };
-		A8EB89CE2F5451B50094BC01 /* SemanticVersion in Frameworks */ = {isa = PBXBuildFile; productRef = A8EB89CD2F5451B50094BC01 /* SemanticVersion */; };
-		A8EB89D02F5451C20094BC01 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = A8EB89CF2F5451C20094BC01 /* KeychainAccess */; };
+		A8C37023302DA7A70010213A /* AltSign-Static in Frameworks */ = {isa = PBXBuildFile; productRef = A8C37022302DA7A70010213A /* AltSign-Static */; };
+		A8C37026302DA7BA0010213A /* Minimuxer in Frameworks */ = {isa = PBXBuildFile; productRef = A8C37025302DA7BA0010213A /* Minimuxer */; };
+		A8C37029302DA7F30010213A /* MarkdownKit in Frameworks */ = {isa = PBXBuildFile; productRef = A8C37028302DA7F30010213A /* MarkdownKit */; };
+		A8C3702C302DA80D0010213A /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = A8C3702B302DA80D0010213A /* KeychainAccess */; };
+		A8C3702F302DA82A0010213A /* Nuke in Frameworks */ = {isa = PBXBuildFile; productRef = A8C3702E302DA82A0010213A /* Nuke */; };
+		A8C37035302DA84D0010213A /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = A8C37034302DA84D0010213A /* Starscream */; };
+		A8C37039302DA8D90010213A /* SemanticVersion in Frameworks */ = {isa = PBXBuildFile; productRef = A8C37038302DA8D90010213A /* SemanticVersion */; };
 		BF989177250AABF4002ACF50 /* AltWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BF989167250AABF3002ACF50 /* AltWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -77,14 +76,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		A8EEC36A2F4B0D8700F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"Extensions/Bundle+AltStore.swift",
-				"Extensions/OperatingSystemVersion+Comparable.swift",
-			);
-			target = BFD247692284B9A500981D42 /* SideStore */;
-		};
 		A8EEC36B2F4B0D8700F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -127,141 +118,11 @@
 		A8EECF492F4B195000F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				AppBootManager.swift,
-				AppConstants.swift,
-				Core/Anisette/AnisetteConfigManager.swift,
-				Core/Anisette/AnisetteDataManager.swift,
-				Core/Anisette/AnisetteServersManager.swift,
-				Core/Auth/AuthManager.swift,
-				Core/Auth/DeveloperPortalService.swift,
-				Core/Certificates/CertificateASN1Parser.swift,
-				Core/Certificates/CertificateManager.swift,
-				Core/Certificates/CodeSignValidator.swift,
-				Core/Certificates/OCSPValidator.swift,
-				Core/DeviceApi/EMProxyWrapper.swift,
-				Core/DeviceApi/MinimuxerWrapper.swift,
-				Core/Logging/OperationLogging.swift,
-				Core/Logging/SideStoreLogging.swift,
-				Core/Operations/AppOperation.swift,
-				Core/Operations/AsyncOperation.swift,
-				Core/Operations/Errors/OperationError.swift,
-				Core/Operations/Errors/SourceError.swift,
-				Core/Operations/Errors/VerificationError.swift,
-				Core/Operations/OperationContexts.swift,
-				Core/Operations/OperationEntitlements.swift,
-				Core/Operations/OperationStep.swift,
-				Core/Operations/OperationStepDefinition.swift,
-				Core/Operations/PipelineExecutionHandler.swift,
-				Core/Operations/PipelineExecutor.swift,
-				Core/Operations/PipelineOperations/CacheAppOperation.swift,
-				Core/Operations/PipelineOperations/CacheSigningCertOperation.swift,
-				Core/Operations/PipelineOperations/ChangeAppIconOperation.swift,
-				Core/Operations/PipelineOperations/CleanStagedAppOperation.swift,
-				Core/Operations/PipelineOperations/EmbedSigningCertOperation.swift,
-				Core/Operations/PipelineOperations/EnableJITOperation.swift,
-				Core/Operations/PipelineOperations/ExportResignedAppOperation.swift,
-				Core/Operations/PipelineOperations/FetchAnisetteDataOperation.swift,
-				Core/Operations/PipelineOperations/FetchProvisioningProfilesOperation.swift,
-				Core/Operations/PipelineOperations/InstallAppOperation.swift,
-				Core/Operations/PipelineOperations/MarkAppInactiveOperation.swift,
-				Core/Operations/PipelineOperations/PerformBackupRestoreOperation.swift,
-				Core/Operations/PipelineOperations/PreflightChecksOperation.swift,
-				Core/Operations/PipelineOperations/PrepareAppExtensionBundleIDsOperation.swift,
-				Core/Operations/PipelineOperations/RefreshAppOperation.swift,
-				Core/Operations/PipelineOperations/RemoveAppExtensionsOperation.swift,
-				Core/Operations/PipelineOperations/RemoveAppOperation.swift,
-				Core/Operations/PipelineOperations/RemoveBackupDataOperation.swift,
-				Core/Operations/PipelineOperations/ResignAppOperation.swift,
-				Core/Operations/PipelineOperations/SendAppOperation.swift,
-				Core/Operations/PipelineOperations/StageAppOperation.swift,
-				Core/Operations/PipelineOperations/StageBackupAppOperation.swift,
-				Core/Operations/PipelineOperations/UninstallAppOperation.swift,
-				Core/Operations/PipelineOperations/UpdateAppCertificateOperation.swift,
-				Core/Operations/PipelineOperations/UserCustomizationOperation.swift,
-				Core/Operations/PipelineOperations/VerifyAppOperation.swift,
-				Core/Operations/PipelineOperations/VerifyCertificateOperation.swift,
-				Core/Operations/PipelineRunner.swift,
-				Core/Operations/RefreshGroup.swift,
-				Core/Operations/StandaloneExecutionHandler.swift,
-				Core/Operations/StandaloneOperations/AuthenticationOperation.swift,
-				Core/Operations/StandaloneOperations/BackgroundRefreshAppsOperation.swift,
-				Core/Operations/StandaloneOperations/ClearAppCacheOperation.swift,
-				Core/Operations/StandaloneOperations/DeactivateAppOperation.swift,
-				Core/Operations/StandaloneOperations/DownloadAppOperation.swift,
-				Core/Operations/StandaloneOperations/FetchSourceOperation.swift,
-				Core/Operations/StandaloneOperations/ScheduleExpirationWarningNotificationOperation.swift,
-				Core/Operations/StandaloneOperations/SyncAppIDsOperation.swift,
-				Core/Operations/StandaloneOperations/UpdateKnownSourcesOperation.swift,
-				Core/Pairing/PairingFileManager.swift,
-				Core/Storage/CacheManager.swift,
-				DeepLinks/ExportCertificateDialog.swift,
-				DeepLinks/InstallAppDialog.swift,
-				DeepLinks/URLHandler.swift,
-				"Extensions/NSAttributedString+Markdown.swift",
-				Handlers/AuthFlowHandler.swift,
-				Handlers/PipelineHandler.swift,
-				Utils/common/BuildInfo.swift,
-				Utils/common/DateTimeUtil.swift,
-				Utils/common/FileOutputStream.swift,
-				Utils/common/OutputStream.swift,
-				Utils/concurrency/TaskChainCoalescer.swift,
-				Utils/concurrency/TaskChainSerializer.swift,
-				Utils/concurrency/TaskMutexSerializer.swift,
-				Utils/datastructures/LinkedHashMap.swift,
-				Utils/datastructures/TreeMap.swift,
-				Utils/dignostics/database/CoreDataHelper.swift,
-				Utils/dignostics/errors/ErrorProcessing.swift,
-				Utils/dignostics/operations/OperationsLoggingControl.swift,
-				Utils/importexport/ImportExport.swift,
-				Utils/iostreams/AbstractClassError.swift,
-				Utils/iostreams/ConsoleLog.swift,
-				Utils/iostreams/ConsoleLogger.swift,
-				Views/Components/AppInfoView.swift,
-				Views/Components/BundleResourceBrowserView.swift,
-				Views/Components/InfoPlistContainerView.swift,
-				Views/Components/UIKit/CollapsingMarkdownView.swift,
-				Views/Settings/Advanced/Anisette/AnisetteDataView.swift,
-				Views/Settings/Advanced/BackupRestore/BackupAndRestoreView.swift,
-				Views/Settings/Advanced/CacheMgmt/CacheManagementView.swift,
-				Views/Settings/Advanced/CacheMgmt/CacheViewModel.swift,
-				Views/Settings/Advanced/Certificates/ActiveCertSectionView.swift,
-				Views/Settings/Advanced/Certificates/CertificateDetailView.swift,
-				Views/Settings/Advanced/Certificates/CertificateExporter.swift,
-				Views/Settings/Advanced/Certificates/CertificateRowView.swift,
-				Views/Settings/Advanced/Certificates/CertificatesListView.swift,
-				Views/Settings/Advanced/Certificates/CertificatesView.swift,
-				Views/Settings/Advanced/Certificates/CertificatesViewModel.swift,
-				Views/Settings/Advanced/Certificates/CertificateTypes.swift,
-				Views/Settings/Advanced/Certificates/PrivateKeyTextEditor.swift,
-				Views/Settings/Advanced/Certificates/PrivateKeyTextInputView.swift,
-				Views/Settings/Advanced/Certificates/RevokeAlertViewController.swift,
-				Views/Settings/Advanced/Certificates/SetCertificateAlertViewController.swift,
-				Views/Settings/Advanced/Certificates/SignableCertificatesListViewController.swift,
-				Views/Settings/Advanced/Connection/ConnectionConfig.swift,
-				Views/Settings/Advanced/Connection/ConnectionConfigView.swift,
-				Views/Settings/Advanced/NetworkDiscovery/BonjourDiscoveryManager.swift,
-				Views/Settings/Advanced/NetworkDiscovery/BonjourDiscoveryManagerV2.swift,
-				Views/Settings/Advanced/NetworkDiscovery/BonjourDiscoveryTypes.swift,
-				Views/Settings/Advanced/NetworkDiscovery/BonjourDiscoveryView.swift,
-				Views/Settings/Advanced/NetworkDiscovery/BonjourDiscoveryViewV2.swift,
-				Views/Settings/Advanced/NetworkDiscovery/LocalNetworkPermissionChecker.swift,
-				Views/Settings/Advanced/UserCustomizations/ThemePickerView.swift,
-				Views/Settings/Advanced/UserCustomizations/UserCustomizationsView.swift,
-				Views/Settings/Advanced/WirelessPair/WirelessPairManager.swift,
-				Views/Settings/Advanced/WirelessPair/WirelessPairView.swift,
-				Views/Settings/Auth/ExportAccountAlertViewController.swift,
-				Views/Settings/Auth/ImportAccountAlertController.swift,
-				Views/Settings/Auth/RevokeCertificatesAlertViewController.swift,
-				Views/Settings/Auth/SignOutAlertViewController.swift,
-				Views/Settings/Diagnostics/DeveloperOptionsView.swift,
-				Views/Settings/Diagnostics/ExperimentalFeaturesView.swift,
-				Views/Settings/Diagnostics/OperationsLoggingControlView.swift,
-				Views/Settings/TechyThings/ErrorLog/ConsoleLogView.swift,
-				Views/Settings/TechyThings/HealthCheck/HealthCheckView.swift,
-				Views/Settings/TechyThings/HealthCheck/HealthCheckViewModel.swift,
-				Views/Settings/TechyThings/StorageExplorer/DirectoryExplorerView.swift,
-				Views/Settings/TechyThings/StorageExplorer/StorageExplorerView.swift,
-				Views/Settings/TechyThings/StorageExplorer/StorageExplorerViewModel.swift,
+				Tests/UITests/UITests.swift,
+				Tests/UITests/UITestsLaunchTests.swift,
+				Tests/UnitTests/datastructures/DataStructuresTests.swift,
+				Tests/UnitTests/datastructures/LinkedHashMapTests.swift,
+				Tests/UnitTests/datastructures/TreeMapTests.swift,
 			);
 			target = BFD247692284B9A500981D42 /* SideStore */;
 		};
@@ -286,7 +147,7 @@
 /* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		A8EEC3482F4B0D8600F2436D /* Shared */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC36A2F4B0D8700F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A8EEC36B2F4B0D8700F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Shared; sourceTree = "<group>"; };
+		A8EEC3482F4B0D8600F2436D /* Shared */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC36B2F4B0D8700F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Shared; sourceTree = "<group>"; };
 		A8EEC3B92F4B0EFC00F2436D /* AltWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC3CA2F4B0EFC00F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = AltWidget; sourceTree = "<group>"; };
 		A8EEC3D92F4B0FC800F2436D /* SideBackup */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC3E22F4B0FC800F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = SideBackup; sourceTree = "<group>"; };
 		A8EEC71D2F4B10D900F2436D /* xcconfigs */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = xcconfigs; sourceTree = "<group>"; };
@@ -315,14 +176,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A8B646012D70C23E00125819 /* MarkdownKit in Frameworks */,
-				A8EB89D02F5451C20094BC01 /* KeychainAccess in Frameworks */,
-				A844287D2FE791EA003CC103 /* Minimuxer in Frameworks */,
-				A8C2260E2EC9039A00047C0D /* Nuke in Frameworks */,
-				A823DC542FF0D82100AD4DAF /* OpenSSL in Frameworks */,
-				A83FE3672EC90482005ACE9A /* Starscream in Frameworks */,
-				A8EB89CE2F5451B50094BC01 /* SemanticVersion in Frameworks */,
-				A803924B2F552F4C00097AF1 /* Minimuxer in Frameworks */,
+				A8C37023302DA7A70010213A /* AltSign-Static in Frameworks */,
+				A8C37026302DA7BA0010213A /* Minimuxer in Frameworks */,
+				A8C37029302DA7F30010213A /* MarkdownKit in Frameworks */,
+				A8C3702C302DA80D0010213A /* KeychainAccess in Frameworks */,
+				A8C3702F302DA82A0010213A /* Nuke in Frameworks */,
+				A8C37035302DA84D0010213A /* Starscream in Frameworks */,
+				A8C37039302DA8D90010213A /* SemanticVersion in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -408,7 +268,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = BFD2477E2284B9A700981D42 /* Build configuration list for PBXNativeTarget "SideStore" */;
 			buildPhases = (
-				A8D768282F52F0D4002356C4 /* Build Minimuxer Rust Bridge */,
 				BFD247662284B9A500981D42 /* Sources */,
 				BFD247672284B9A500981D42 /* Frameworks */,
 				A8E00D3F2D0C9C6D000DD2C7 /* Build SideBackup.ipa */,
@@ -425,10 +284,17 @@
 			fileSystemSynchronizedGroups = (
 				A8EEC3482F4B0D8600F2436D /* Shared */,
 				A8EEC8412F4B146A00F2436D /* AltStore */,
+				A8EECF2A2F4B195000F2436D /* SideStore */,
 			);
 			name = SideStore;
 			packageProductDependencies = (
-				A823DC532FF0D82100AD4DAF /* OpenSSL */,
+				A8C37022302DA7A70010213A /* AltSign-Static */,
+				A8C37025302DA7BA0010213A /* Minimuxer */,
+				A8C37028302DA7F30010213A /* MarkdownKit */,
+				A8C3702B302DA80D0010213A /* KeychainAccess */,
+				A8C3702E302DA82A0010213A /* Nuke */,
+				A8C37034302DA84D0010213A /* Starscream */,
+				A8C37038302DA8D90010213A /* SemanticVersion */,
 			);
 			productName = AltStore;
 			productReference = BFD2476A2284B9A500981D42 /* SideStore.app */;
@@ -474,13 +340,14 @@
 			);
 			mainGroup = BFD247612284B9A500981D42;
 			packageReferences = (
-				A82067C22D03E0DE00645C0D /* XCRemoteSwiftPackageReference "SemanticVersion" */,
-				A8B645FD2D70C1AD00125819 /* XCRemoteSwiftPackageReference "MarkdownKit" */,
-				A8C2260C2EC9039A00047C0D /* XCRemoteSwiftPackageReference "Nuke" */,
-				A83FE3652EC90482005ACE9A /* XCRemoteSwiftPackageReference "Starscream" */,
-				A83FE36D2EC90512005ACE9A /* XCRemoteSwiftPackageReference "KeychainAccess" */,
-				A844287A2FE791BB003CC103 /* XCLocalSwiftPackageReference "Dependencies/AltSign" */,
-				A844287B2FE791CF003CC103 /* XCLocalSwiftPackageReference "Dependencies/minimuxer" */,
+				A8C37021302DA7A70010213A /* XCLocalSwiftPackageReference "Dependencies/AltSign" */,
+				A8C37024302DA7BA0010213A /* XCLocalSwiftPackageReference "Dependencies/minimuxer" */,
+				A8C37027302DA7F30010213A /* XCRemoteSwiftPackageReference "MarkdownKit" */,
+				A8C3702A302DA80D0010213A /* XCRemoteSwiftPackageReference "KeychainAccess" */,
+				A8C3702D302DA82A0010213A /* XCRemoteSwiftPackageReference "Nuke" */,
+				A8C37033302DA84D0010213A /* XCRemoteSwiftPackageReference "Starscream" */,
+				A8C37036302DA8600010213A /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
+				A8C37037302DA8D90010213A /* XCRemoteSwiftPackageReference "SemanticVersion" */,
 			);
 			preferredProjectObjectVersion = 50;
 			productRefGroup = BFD2476B2284B9A500981D42 /* Products */;
@@ -520,24 +387,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		A8D768282F52F0D4002356C4 /* Build Minimuxer Rust Bridge */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Build Minimuxer Rust Bridge";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "set -e\n\necho \"Building minimuxer…\"\n\ncd \"${PROJECT_DIR}/Dependencies/minimuxer\"\npwd\n\n#make build\n";
-		};
 		A8E00D3F2D0C9C6D000DD2C7 /* Build SideBackup.ipa */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -893,10 +742,7 @@
 				);
 				LD_WARN_DUPLICATE_LIBRARIES = YES;
 				LD_WARN_UNUSED_DYLIBS = YES;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Dependencies/minimuxer/Sources/RustBridge/lib",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				LLVM_LTO = YES_THIN;
 				MARKETING_VERSION = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
@@ -906,7 +752,6 @@
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_ENFORCE_EXCLUSIVE_ACCESS = "debug-only";
-				SWIFT_OBJC_BRIDGING_HEADER = "AltStore/AltStore-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -940,10 +785,7 @@
 				);
 				LD_WARN_DUPLICATE_LIBRARIES = YES;
 				LD_WARN_UNUSED_DYLIBS = YES;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Dependencies/minimuxer/Sources/RustBridge/lib",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				LLVM_LTO = YES_THIN;
 				MARKETING_VERSION = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
@@ -954,7 +796,6 @@
 				SWIFT_COMPILATION_MODE = singlefile;
 				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_ENFORCE_EXCLUSIVE_ACCESS = "debug-only";
-				SWIFT_OBJC_BRIDGING_HEADER = "AltStore/AltStore-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Osize";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1011,6 +852,14 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Dependencies/minimuxer;
 		};
+		A8C37021302DA7A70010213A /* XCLocalSwiftPackageReference "Dependencies/AltSign" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Dependencies/AltSign;
+		};
+		A8C37024302DA7BA0010213A /* XCLocalSwiftPackageReference "Dependencies/minimuxer" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Dependencies/minimuxer;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -1062,6 +911,54 @@
 				minimumVersion = 10.0.0;
 			};
 		};
+		A8C37027302DA7F30010213A /* XCRemoteSwiftPackageReference "MarkdownKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/bmoliveira/MarkdownKit.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.7.3;
+			};
+		};
+		A8C3702A302DA80D0010213A /* XCRemoteSwiftPackageReference "KeychainAccess" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kishikawakatsumi/KeychainAccess";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+		A8C3702D302DA82A0010213A /* XCRemoteSwiftPackageReference "Nuke" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kean/Nuke";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 10.0.1;
+			};
+		};
+		A8C37033302DA84D0010213A /* XCRemoteSwiftPackageReference "Starscream" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/daltoniam/Starscream";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.0.8;
+			};
+		};
+		A8C37036302DA8600010213A /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/weichsel/ZIPFoundation";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.9.20;
+			};
+		};
+		A8C37037302DA8D90010213A /* XCRemoteSwiftPackageReference "SemanticVersion" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SwiftPackageIndex/SemanticVersion";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.4.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1074,11 +971,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A844287A2FE791BB003CC103 /* XCLocalSwiftPackageReference "Dependencies/AltSign" */;
 			productName = "AltSign-Static";
-		};
-		A823DC532FF0D82100AD4DAF /* OpenSSL */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A844287A2FE791BB003CC103 /* XCLocalSwiftPackageReference "Dependencies/AltSign" */;
-			productName = OpenSSL;
 		};
 		A82526E62FF0E1C000FB2EDD /* OpenSSL */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -1104,6 +996,39 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A8C2260C2EC9039A00047C0D /* XCRemoteSwiftPackageReference "Nuke" */;
 			productName = Nuke;
+		};
+		A8C37022302DA7A70010213A /* AltSign-Static */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = "AltSign-Static";
+		};
+		A8C37025302DA7BA0010213A /* Minimuxer */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Minimuxer;
+		};
+		A8C37028302DA7F30010213A /* MarkdownKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A8C37027302DA7F30010213A /* XCRemoteSwiftPackageReference "MarkdownKit" */;
+			productName = MarkdownKit;
+		};
+		A8C3702B302DA80D0010213A /* KeychainAccess */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A8C3702A302DA80D0010213A /* XCRemoteSwiftPackageReference "KeychainAccess" */;
+			productName = KeychainAccess;
+		};
+		A8C3702E302DA82A0010213A /* Nuke */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A8C3702D302DA82A0010213A /* XCRemoteSwiftPackageReference "Nuke" */;
+			productName = Nuke;
+		};
+		A8C37034302DA84D0010213A /* Starscream */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A8C37033302DA84D0010213A /* XCRemoteSwiftPackageReference "Starscream" */;
+			productName = Starscream;
+		};
+		A8C37038302DA8D90010213A /* SemanticVersion */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A8C37037302DA8D90010213A /* XCRemoteSwiftPackageReference "SemanticVersion" */;
+			productName = SemanticVersion;
 		};
 		A8EB89CD2F5451B50094BC01 /* SemanticVersion */ = {
 			isa = XCSwiftPackageProductDependency;

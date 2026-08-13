@@ -1,12 +1,22 @@
 //
 //  OperatingSystemVersion+Comparable.swift
-//  AltStoreCore
+//  AltStore
 //
 //  Created by Riley Testut on 11/15/22.
 //  Copyright © 2022 Riley Testut. All rights reserved.
 //
 
 import Foundation
+
+public extension OperatingSystemVersion {
+    var stringValue: String {
+        if patchVersion == 0 {
+            return "\(majorVersion).\(minorVersion)"
+        } else {
+            return "\(majorVersion).\(minorVersion).\(patchVersion)"
+        }
+    }
+}
 
 extension OperatingSystemVersion: Comparable
 {
@@ -17,6 +27,12 @@ extension OperatingSystemVersion: Comparable
     
     public static func <(lhs: OperatingSystemVersion, rhs: OperatingSystemVersion) -> Bool
     {
-        return lhs.stringValue.compare(rhs.stringValue, options: .numeric) == .orderedAscending
+        if lhs.majorVersion != rhs.majorVersion {
+            return lhs.majorVersion < rhs.majorVersion
+        }
+        if lhs.minorVersion != rhs.minorVersion {
+            return lhs.minorVersion < rhs.minorVersion
+        }
+        return lhs.patchVersion < rhs.patchVersion
     }
 }

@@ -1,6 +1,6 @@
 //
 //  StoreCategory.swift
-//  AltStoreCore
+//  AltStore
 //
 //  Created by Riley Testut on 11/8/23.
 //  Copyright © 2023 Riley Testut. All rights reserved.

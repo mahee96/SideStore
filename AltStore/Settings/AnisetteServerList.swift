@@ -8,7 +8,6 @@
 
 @preconcurrency import UIKit
 import SwiftUI
-@preconcurrency import AltStoreCore
 
 typealias SUIButton = SwiftUI.Button
 

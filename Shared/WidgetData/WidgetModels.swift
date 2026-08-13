@@ -8,6 +8,11 @@
 
 import Foundation
 
+public enum Direction: String, Sendable {
+    case up
+    case down
+}
+
 public struct WidgetAppItem: Codable, Sendable {
     public var name: String
     public var bundleIdentifier: String

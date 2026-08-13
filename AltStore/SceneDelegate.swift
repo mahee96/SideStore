@@ -7,7 +7,6 @@
 //
 
 @preconcurrency import UIKit
-@preconcurrency import AltStoreCore
 
 
 @available(iOS 13, *)

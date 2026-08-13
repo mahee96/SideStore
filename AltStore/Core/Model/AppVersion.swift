@@ -1,6 +1,6 @@
 //
 //  AppVersion.swift
-//  AltStoreCore
+//  AltStore
 //
 //  Created by Riley Testut on 8/18/22.
 //  Copyright © 2022 Riley Testut. All rights reserved.

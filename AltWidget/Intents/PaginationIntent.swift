@@ -10,11 +10,6 @@ import AppIntents
 import Intents
 import WidgetKit
 
-public enum Direction: String, Sendable{
-    case up
-    case down
-}
-
 public struct NavigationEvent {
     let direction: Direction?
     var consumed: Bool = false

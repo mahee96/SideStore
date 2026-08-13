@@ -8,7 +8,6 @@
 
 import Foundation
 import CoreData
-@preconcurrency import AltStoreCore
 
 final class UninstallAppOperation: BasePipelineOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
     

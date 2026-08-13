@@ -1,6 +1,6 @@
 //
 //  Source11To17MigrationPolicy.swift
-//  AltStoreCore
+//  AltStore
 //
 //  Created by Riley Testut on 10/19/23.
 //  Copyright © 2023 Riley Testut. All rights reserved.

@@ -10,7 +10,6 @@
 import SafariServices
 import QuickLook
 import CoreData
-@preconcurrency import AltStoreCore
 
 import Nuke
 

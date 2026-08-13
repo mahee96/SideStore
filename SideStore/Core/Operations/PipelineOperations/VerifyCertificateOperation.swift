@@ -10,7 +10,6 @@
 import Foundation
 import CoreData
 import Security
-@preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
 final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContext, Void>, @unchecked Sendable {

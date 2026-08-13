@@ -8,7 +8,6 @@
 
 import SwiftUI
 @preconcurrency import AltSign
-@preconcurrency import AltStoreCore
 
 struct DeveloperPortalMetadata {
     var identifier: String?

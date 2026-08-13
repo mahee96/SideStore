@@ -1,6 +1,6 @@
 //
 //  StoreApp10ToStoreApp11Policy.swift
-//  AltStoreCore
+//  AltStore
 //
 //  Created by Riley Testut on 9/13/22.
 //  Copyright © 2022 Riley Testut. All rights reserved.

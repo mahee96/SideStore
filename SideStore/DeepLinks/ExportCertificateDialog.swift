@@ -7,7 +7,6 @@
 //
 
 import UIKit
-@preconcurrency import AltStoreCore
 
 @MainActor
 public enum ExportCertificateDialog {

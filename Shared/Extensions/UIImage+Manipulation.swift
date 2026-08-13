@@ -1,6 +1,6 @@
 //
 //  UIImage+Manipulation.swift
-//  AltStoreCore
+//  AltStore
 //
 //  Created by Magesh K on 6/17/26.
 //
@@ -8,7 +8,7 @@
 @preconcurrency import UIKit
 
 public extension UIImage {
-    public func resizing(to size: CGSize) -> UIImage? {
+    func resizing(to size: CGSize) -> UIImage? {
         var finalSize = size
         switch self.imageOrientation {
         case .left, .leftMirrored, .right, .rightMirrored:
@@ -25,7 +25,7 @@ public extension UIImage {
         }.withRenderingMode(self.renderingMode)
     }
     
-    public func resizing(toFit size: CGSize) -> UIImage? {
+    func resizing(toFit size: CGSize) -> UIImage? {
         let imageSize = self.size
         let horizontalScale = size.width / imageSize.width
         let verticalScale = size.height / imageSize.height
@@ -34,7 +34,7 @@ public extension UIImage {
         return self.resizing(to: finalSize)
     }
     
-    public func resizing(toFill size: CGSize) -> UIImage? {
+    func resizing(toFill size: CGSize) -> UIImage? {
         let imageSize = self.size
         let horizontalScale = size.width / imageSize.width
         let verticalScale = size.height / imageSize.height

@@ -1,6 +1,6 @@
 //
 //  DatabaseManager+Async.swift
-//  AltStoreCore
+//  AltStore
 //
 //  Created by Riley Testut on 8/22/23.
 //  Copyright © 2023 Riley Testut. All rights reserved.

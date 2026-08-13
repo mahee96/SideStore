@@ -10,7 +10,6 @@
 import Foundation
 import Network
 import CoreData
-@preconcurrency import AltStoreCore
 @preconcurrency import AltSign
 
 enum RevokeDecision: Sendable {

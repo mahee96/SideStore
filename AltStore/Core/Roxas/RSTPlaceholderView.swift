@@ -1,6 +1,6 @@
 //
 //  RSTPlaceholderView.swift
-//  AltStoreCore
+//  AltStore
 //
 //  Created by Magesh K on 6/17/26.
 //

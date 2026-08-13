@@ -8,7 +8,6 @@
 
 @preconcurrency import UIKit
 @preconcurrency import AltSign
-@preconcurrency import AltStoreCore
 
 enum DeveloperPortalError: LocalizedError {
     case missingAccount

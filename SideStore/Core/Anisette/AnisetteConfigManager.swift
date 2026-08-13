@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import AltStoreCore
 
 public struct AnisetteConfig: Codable, Equatable {
     public var clientInfo: String

@@ -9,7 +9,6 @@
 @preconcurrency import UIKit
 import SafariServices
 import Combine
-@preconcurrency import AltStoreCore
 
 import Nuke
 
