@@ -95,7 +95,7 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
         self.dataSource.contentView = self.collectionView
         self.collectionView.dragDelegate = self
         self.collectionView.dropDelegate = self
-        self.collectionView.dragInteractionEnabled = true
+        self.collectionView.dragInteractionEnabled = false
                 
         self.prototypeUpdateCell = UpdateCollectionViewCell.instantiate(with: UpdateCollectionViewCell.nib)
         self.prototypeUpdateCell.contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -2318,31 +2318,7 @@ extension MyAppsViewController: UICollectionViewDragDelegate
 {
     func collectionView(_ collectionView: UICollectionView, itemsForBeginning session: UIDragSession, at indexPath: IndexPath) -> [UIDragItem]
     {
-        switch Section(rawValue: indexPath.section)!
-        {
-        case .updates, .noUpdates:
-            return []
-            
-        case .activeApps, .inactiveApps:
-            guard UserDefaults.standard.activeAppsLimit != nil && !UserDefaults.standard.isAppLimitDisabled else { return [] }
-            guard let cell = collectionView.cellForItem(at: indexPath as IndexPath) as? InstalledAppCollectionViewCell else { return [] }
-            
-            let item = self.dataSource.item(at: indexPath)
-            guard item.bundleIdentifier != StoreApp.altstoreAppID else { return [] }
-                        
-            let dragItem = UIDragItem(itemProvider: NSItemProvider(item: nil, typeIdentifier: nil))
-            dragItem.localObject = item
-            dragItem.previewProvider = {
-                let parameters = UIDragPreviewParameters()
-                parameters.backgroundColor = .clear
-                parameters.visiblePath = UIBezierPath(roundedRect: cell.bannerView.iconImageView.bounds, cornerRadius: cell.bannerView.iconImageView.layer.cornerRadius)
-                
-                let preview = UIDragPreview(view: cell.bannerView.iconImageView, parameters: parameters)
-                return preview
-            }
-                            
-            return [dragItem]
-        }
+        return []
     }
     
     func collectionView(_ collectionView: UICollectionView, dragPreviewParametersForItemAt indexPath: IndexPath) -> UIDragPreviewParameters?
