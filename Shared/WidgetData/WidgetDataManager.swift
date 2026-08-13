@@ -31,13 +31,23 @@ public final class WidgetDataManager: @unchecked Sendable {
     }
 
     public func fetchSnapshot() -> WidgetDataSnapshot {
-        guard let url = jsonFileURL,
-              FileManager.default.fileExists(atPath: url.path),
-              let data = try? Data(contentsOf: url),
-              let snapshot = try? JSONDecoder().decode(WidgetDataSnapshot.self, from: data) else {
+        guard let url = jsonFileURL else {
+            print("[WidgetDataManager] fetchSnapshot failed: containerURL or jsonFileURL is nil")
             return WidgetDataSnapshot()
         }
-        return snapshot
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            print("[WidgetDataManager] fetchSnapshot failed: file does not exist at \(url.path)")
+            return WidgetDataSnapshot()
+        }
+        do {
+            let data = try Data(contentsOf: url)
+            let snapshot = try JSONDecoder().decode(WidgetDataSnapshot.self, from: data)
+            print("[WidgetDataManager] fetchSnapshot success: \(snapshot.activeApps.count) active, \(snapshot.allApps.count) total apps (lastUpdated: \(snapshot.lastUpdated))")
+            return snapshot
+        } catch {
+            print("[WidgetDataManager] fetchSnapshot decode error at \(url.path): \(error)")
+            return WidgetDataSnapshot()
+        }
     }
 
     public func loadCachedIcon(for bundleIdentifier: String) -> UIImage? {
@@ -51,12 +61,14 @@ public final class WidgetDataManager: @unchecked Sendable {
     }
 
     public func publishWidgetData(activeItems: [WidgetAppItem], allItems: [WidgetAppItem], icons: [String: UIImage] = [:]) {
+        print("[WidgetDataManager] publishWidgetData: \(activeItems.count) active, \(allItems.count) all items, \(icons.count) icons")
         let snapshot = WidgetDataSnapshot(activeApps: activeItems, allApps: allItems, lastUpdated: Date())
         writeSnapshot(snapshot)
         for (bundleID, iconImage) in icons {
             cacheIcon(iconImage, for: bundleID)
         }
         WidgetCenter.shared.reloadAllTimelines()
+        print("[WidgetDataManager] Triggered WidgetCenter.shared.reloadAllTimelines()")
     }
 
     public func cacheIcon(_ iconImage: UIImage, for bundleIdentifier: String) {
@@ -74,12 +86,16 @@ public final class WidgetDataManager: @unchecked Sendable {
     }
 
     private func writeSnapshot(_ snapshot: WidgetDataSnapshot) {
-        guard let url = jsonFileURL else { return }
+        guard let url = jsonFileURL else {
+            print("[WidgetDataManager] writeSnapshot failed: jsonFileURL is nil")
+            return
+        }
         do {
             let encoder = JSONEncoder()
             encoder.outputFormatting = .prettyPrinted
             let data = try encoder.encode(snapshot)
             try data.write(to: url, options: Data.WritingOptions.atomic)
+            print("[WidgetDataManager] Successfully wrote snapshot JSON to \(url.path) (\(data.count) bytes)")
         } catch {
             print("[WidgetDataManager] Failed to write snapshot JSON: \(error)")
         }

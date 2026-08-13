@@ -31,6 +31,7 @@ struct InstalledAppQuery: EntityQuery
 {
     func entities(for identifiers: [String]) async throws -> [InstalledAppEntity]
     {
+        debugLog("[InstalledAppQuery] Fetching entities for identifiers: \(identifiers)")
         let snapshot = WidgetDataManager.shared.fetchSnapshot()
         let matching = snapshot.allApps.filter { identifiers.contains($0.bundleIdentifier) }
         return matching.map { InstalledAppEntity(id: $0.bundleIdentifier, name: $0.name) }
@@ -40,6 +41,7 @@ struct InstalledAppQuery: EntityQuery
     {
         let snapshot = WidgetDataManager.shared.fetchSnapshot()
         let items = snapshot.activeApps.isEmpty ? snapshot.allApps : snapshot.activeApps
+        debugLog("[InstalledAppQuery] Suggested entities requested (\(items.count) app(s) returned)")
         return items
             .map { InstalledAppEntity(id: $0.bundleIdentifier, name: $0.name) }
             .sorted { $0.name < $1.name }

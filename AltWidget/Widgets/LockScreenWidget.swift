@@ -13,6 +13,10 @@ struct TextLockScreenWidget: Widget
 {
     private let kind: String = "TextLockAppDetail"
     
+    init() {
+        debugLog("[TextLockScreenWidget] Initialized widget kind: TextLockAppDetail")
+    }
+    
     public var body: some WidgetConfiguration {
         if #available(iOSApplicationExtension 16, *)
         {
@@ -40,6 +44,10 @@ struct TextLockScreenWidget: Widget
 struct IconLockScreenWidget: Widget
 {
     private let kind: String = "IconLockAppDetail"
+    
+    init() {
+        debugLog("[IconLockScreenWidget] Initialized widget kind: IconLockAppDetail")
+    }
     
     public var body: some WidgetConfiguration {
         if #available(iOSApplicationExtension 16, *)
@@ -140,6 +148,9 @@ private struct ComplicationView: View
         .gaugeStyle(.accessoryCircularCapacity)
         .unredacted()
         .widgetBackground(Color.clear)
+        .onAppear {
+            debugLog("[ComplicationView] onAppear: style=\(style), isPlaceholder=\(entry.isPlaceholder), appsCount=\(entry.apps.count)")
+        }
     }
 }
 

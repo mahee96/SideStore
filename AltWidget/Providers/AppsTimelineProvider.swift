@@ -25,11 +25,13 @@ class AppsTimelineProviderBase<T>
     
     func placeholder(in context: TimelineProviderContext) -> AppsEntry<T>
     {
+        debugLog("[AppsTimelineProviderBase] placeholder requested (isPreview: \(context.isPreview))")
         return Entry(date: Date(), apps: [], isPlaceholder: true)
     }
     
     func snapshot(for appBundleIDs: [String], in context: T? = nil) async -> AppsEntry<T>
     {
+        debugLog("[AppsTimelineProvider] Snapshot requested for bundleIDs: \(appBundleIDs)")
         do
         {
             try await self.prepare()
@@ -38,6 +40,7 @@ class AppsTimelineProviderBase<T>
             
             apps = getUpdatedData(apps, context)
             
+            verboseLog("[AppsTimelineProvider] Prepared snapshot entry with \(apps.count) app(s)")
             let entry = Entry(date: Date(), apps: apps, context: context)
             return entry
         }
@@ -52,6 +55,7 @@ class AppsTimelineProviderBase<T>
     
     func timeline(for appBundleIDs: [String], in context: T? = nil) async -> Timeline<AppsEntry<T>>
     {
+        debugLog("[AppsTimelineProvider] Timeline requested for bundleIDs: \(appBundleIDs)")
         do
         {
             try await self.prepare()
@@ -61,6 +65,7 @@ class AppsTimelineProviderBase<T>
             apps = getUpdatedData(apps, context)
 
             let entries = self.makeEntries(for: apps, in: context)
+            verboseLog("[AppsTimelineProvider] Generated timeline with \(entries.count) entries")
             let timeline = Timeline(entries: entries, policy: .atEnd)
             return timeline
         }
@@ -162,6 +167,7 @@ class AppsTimelineProvider: AppsTimelineProviderBase<Intent>, IntentTimelineProv
 {
     func getSnapshot(for intent: Intent, in context: Context, completion: @escaping (AppsEntry<Intent>) -> Void)
     {
+        debugLog("[AppsTimelineProvider] Legacy getSnapshot for app: \(intent.app?.identifier ?? "default")")
         Task {
             let bundleIDs = [intent.app?.identifier ?? Bundle.Info.storeAppBundleIdentifier]
             
@@ -172,6 +178,7 @@ class AppsTimelineProvider: AppsTimelineProviderBase<Intent>, IntentTimelineProv
     
     func getTimeline(for intent: Intent, in context: Context, completion: @escaping (Timeline<AppsEntry<Intent>>) -> Void)
     {
+        debugLog("[AppsTimelineProvider] Legacy getTimeline for app: \(intent.app?.identifier ?? "default")")
         Task {
             let bundleIDs = [intent.app?.identifier ?? Bundle.Info.storeAppBundleIdentifier]
             
@@ -191,12 +198,14 @@ class SelectAppTimelineProvider: AppsTimelineProviderBase<SelectAppIntent>, AppI
 
     func snapshot(for intent: SelectAppIntent, in context: Context) async -> AppsEntry<SelectAppIntent>
     {
+        debugLog("[SelectAppTimelineProvider] AppIntent snapshot for app: \(intent.app?.id ?? "none") (isPreview: \(context.isPreview))")
         let bundleID = await resolvedBundleID(for: intent)
         return await self.snapshot(for: [bundleID], in: intent)
     }
 
     func timeline(for intent: SelectAppIntent, in context: Context) async -> Timeline<AppsEntry<SelectAppIntent>>
     {
+        debugLog("[SelectAppTimelineProvider] AppIntent timeline for app: \(intent.app?.id ?? "none") (isPreview: \(context.isPreview))")
         let bundleID = await resolvedBundleID(for: intent)
         return await self.timeline(for: [bundleID], in: intent)
     }
@@ -205,8 +214,13 @@ class SelectAppTimelineProvider: AppsTimelineProviderBase<SelectAppIntent>, AppI
     // rather than a hardcoded bundle ID that may not exist in the database.
     private func resolvedBundleID(for intent: SelectAppIntent) async -> String
     {
-        if let id = intent.app?.id { return id }
+        if let id = intent.app?.id {
+            verboseLog("[SelectAppTimelineProvider] resolvedBundleID from intent: \(id)")
+            return id
+        }
         let activeIDs = await self.fetchActiveAppBundleIDs()
-        return activeIDs.first ?? Bundle.Info.storeAppBundleIdentifier
+        let resolved = activeIDs.first ?? Bundle.Info.storeAppBundleIdentifier
+        verboseLog("[SelectAppTimelineProvider] resolvedBundleID fallback: \(resolved)")
+        return resolved
     }
 }

@@ -146,6 +146,15 @@ public extension UserDefaults
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
     }
+    @objc var isAltWidgetVerboseLoggingEnabled: Bool {
+        get {
+            if self.object(forKey: #function) == nil {
+                return true
+            }
+            return self.bool(forKey: #function)
+        }
+        set { self.set(newValue, forKey: #function) }
+    }
     @objc var isMinimuxerVerboseLoggingEnabled: Bool {
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
@@ -341,6 +350,7 @@ public extension UserDefaults
             #keyPath(UserDefaults.isExportResignedAppEnabled): false,
             #keyPath(UserDefaults.isVerboseOperationsLoggingEnabled): false,
             #keyPath(UserDefaults.isSideStoreVerboseLoggingEnabled): false,
+            #keyPath(UserDefaults.isAltWidgetVerboseLoggingEnabled): true,
             #keyPath(UserDefaults.isAltSignVerboseLoggingEnabled): false,
             #keyPath(UserDefaults.isMinimuxerVerboseLoggingEnabled): false,
             #keyPath(UserDefaults.isRotateLogsOnStartupEnabled): true,

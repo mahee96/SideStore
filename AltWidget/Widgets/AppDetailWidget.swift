@@ -13,6 +13,10 @@ struct AppDetailWidget: Widget
 {
     private let kind: String = "AppDetail"
     
+    init() {
+        debugLog("[AppDetailWidget] Initialized widget kind: AppDetail")
+    }
+    
     public var body: some WidgetConfiguration {
         // On iOS 16+ use AppIntentConfiguration — it correctly supports
         // containerBackground and contentMarginsDisabled(), unlike the legacy
@@ -146,6 +150,9 @@ private struct AppDetailWidgetView: View
                 tintColor: apps.first?.tintColor
             )
         )
+        .onAppear {
+            debugLog("[AppDetailWidgetView] onAppear: isPlaceholder=\(isPlaceholder), appsCount=\(apps.count), firstApp=\(apps.first?.name ?? "none"), date=\(date)")
+        }
     }
 
     func backgroundView(icon: UIImage? = nil, tintColor: UIColor? = nil) -> some View
