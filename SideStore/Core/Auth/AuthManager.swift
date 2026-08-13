@@ -14,6 +14,10 @@ import Foundation
 public final class AuthManager: @unchecked Sendable {
     public static let shared = AuthManager()
     
+    private var portalService: DeveloperPortalAuthService {
+        DeveloperPortalService.shared as! DeveloperPortalAuthService
+    }
+    
     private init() {}
     
     public var team: ALTTeam?
@@ -92,13 +96,17 @@ public final class AuthManager: @unchecked Sendable {
     
     
     // Developer Portal Operations
+    @discardableResult
+    public func fetchAccount(session: ALTAppleAPISession) async throws -> ALTAccount {
+        return try await self.portalService.fetchAccount(session: session)
+    }
     
     public func authenticate(appleID: String, password: String, anisetteData: ALTAnisetteData, xcodeVersion: String, verificationHandler: ((@escaping (String?) -> Void) -> Void)?) async throws -> (ALTAccount, ALTAppleAPISession) {
-        return try await DeveloperPortalService.shared.authenticate(appleID: appleID, password: password, anisetteData: anisetteData, xcodeVersion: xcodeVersion, verificationHandler: verificationHandler)
+        return try await self.portalService.authenticate(appleID: appleID, password: password, anisetteData: anisetteData, xcodeVersion: xcodeVersion, verificationHandler: verificationHandler)
     }
     
     public func authenticateWithToken(adsid: String, xcodeToken: String, anisetteData: ALTAnisetteData, xcodeVersion: String) async throws -> (ALTAccount, ALTAppleAPISession) {
-        return try await DeveloperPortalService.shared.authenticateWithToken(adsid: adsid, xcodeToken: xcodeToken, anisetteData: anisetteData, xcodeVersion: xcodeVersion)
+        return try await self.portalService.authenticateWithToken(adsid: adsid, xcodeToken: xcodeToken, anisetteData: anisetteData, xcodeVersion: xcodeVersion)
     }
 }
 
