@@ -44,7 +44,7 @@ final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContex
                 self.debugLog("[VerifyCertificateOperation] Utilizing \(portalCertificates.count) active certificates cached from Auth context.")
             } else {
                 self.debugLog("[VerifyCertificateOperation] Active certificates not found in Auth context. Fetching live from Apple Developer Portal...")
-                portalCertificates = try await AuthManager.shared.fetchCertificates(for: team, session: session)
+                portalCertificates = try await DeveloperPortalService.shared.fetchCertificates(team: team, session: session)
                 self.context.authenticatedContext.portalCertificates = portalCertificates
             }
             

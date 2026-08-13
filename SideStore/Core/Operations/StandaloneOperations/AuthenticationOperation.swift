@@ -529,7 +529,7 @@ private extension AuthenticationOperation {
 
     private func fetchTeam(for account: ALTAccount, session: ALTAppleAPISession) async throws -> ALTTeam {
         self.verboseLog("[Authentication] fetchTeam: Requesting teams from Apple...")
-        let teams = try await AuthManager.shared.fetchTeams(for: account, session: session)
+        let teams = try await DeveloperPortalService.shared.fetchTeams(for: account, session: session)
         
         var activeTeamFromDB: Team?
         if let dbContext = self.context.dbBackgroundContext {
@@ -556,7 +556,7 @@ private extension AuthenticationOperation {
     }
 
     private func fetchCertificate(for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTCertificate {
-        let portalCertificates = try await AuthManager.shared.fetchCertificates(for: team, session: session)
+        let portalCertificates = try await DeveloperPortalService.shared.fetchCertificates(team: team, session: session)
         self.context.portalCertificates = portalCertificates
         
         let mainBundleCertSerial = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String
@@ -601,12 +601,12 @@ private extension AuthenticationOperation {
         self.verboseLog("[Authentication] Requesting certificate for machineName '\(machineName)'...")
 
         do {
-            let newPortalCertificate = try await AuthManager.shared.addCertificate(machineName: machineName, to: team, session: session)
+            let newPortalCertificate = try await DeveloperPortalService.shared.createCertificate(machineName: machineName, team: team, session: session)
             self.debugLog("[Authentication] Successfully requested new portal certificate (Serial: \(newPortalCertificate.serialNumber)).")
             
             // Apple's submitDevelopmentCSR response does not include raw certContent.
             // Fetch updated certificates list from portal to populate X509 certificate PEM data.
-            let portalCertificates = try await AuthManager.shared.fetchCertificates(for: team, session: session)
+            let portalCertificates = try await DeveloperPortalService.shared.fetchCertificates(team: team, session: session)
             self.context.portalCertificates = portalCertificates
 
             let finalCert: ALTCertificate
@@ -672,7 +672,7 @@ private extension AuthenticationOperation {
                 for certificate in certsToRevoke {
                     do {
                         self.verboseLog("[Authentication] replaceCertificate: Revoking certificate '\(certificate.machineName ?? certificate.name)' (Serial: \(certificate.serialNumber))...")
-                        try await AuthManager.shared.revokeCertificate(certificate, for: team, session: session)
+                        _ = try await DeveloperPortalService.shared.revokeCertificate(certificate, team: team, session: session)
                         self.verboseLog("[Authentication] replaceCertificate: Revoke succeeded.")
                     } catch {
                         self.debugLog("[Authentication] replaceCertificate: Revoke failed with error: \(error)")
@@ -701,14 +701,14 @@ private extension AuthenticationOperation {
         }
         self.debugLog("[Authentication] Fetched device UDID: \(udid). Fetching team devices...")
         
-        let devices = try await AuthManager.shared.fetchDevices(for: team, types: [.iphone, .ipad], session: session)
+        let devices = try await DeveloperPortalService.shared.fetchDevices(for: team, types: [.iphone, .ipad], session: session)
         if let device = devices.first(where: { $0.identifier == udid }) {
             self.debugLog("[Authentication] Device '\(device.name)' (UDID: \(udid)) is registered on team.")
             return device
         } else {
             let deviceName = await MainActor.run { UIDevice.current.name }
             self.debugLog("[Authentication] Registering new device '\(deviceName)' (UDID: \(udid))...")
-            let device = try await AuthManager.shared.registerDevice(name: UIDevice.current.name, identifier: udid, type: .iphone, team: team, session: session)
+            let device = try await DeveloperPortalService.shared.registerDevice(name: UIDevice.current.name, identifier: udid, type: .iphone, team: team, session: session)
             self.debugLog("[Authentication] Device '\(device.name)' (UDID: \(udid)) successfully registered.")
             return device
         }
