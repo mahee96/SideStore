@@ -19,7 +19,7 @@ private let ReceivedWillMigrateDatabaseNotification: @convention(c) (CFNotificat
     DatabaseManager.shared.receivedWillMigrateDatabaseNotification()
 }
 
-fileprivate class PersistentContainer: RSTPersistentContainer
+fileprivate class PersistentContainer: RSTPersistentContainer, @unchecked Sendable
 {
     override class func defaultDirectoryURL() -> URL
     {
@@ -36,7 +36,6 @@ fileprivate class PersistentContainer: RSTPersistentContainer
         return super.defaultDirectoryURL()
     }
 }
-
 public class DatabaseManager
 {
     public static private(set) var shared = DatabaseManager()
@@ -61,11 +60,7 @@ public class DatabaseManager
         let observer = Unmanaged.passUnretained(self).toOpaque()
         CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, ReceivedWillMigrateDatabaseNotification, CFNotificationName.willMigrateDatabase.rawValue, nil, .deliverImmediately)
     }
-}
 
-
-public extension DatabaseManager
-{
     private class func loadPersistentStoresSync() {
         let container = Self.shared.persistentContainer
         let semaphore = DispatchSemaphore(value: 0)  // Semaphore to wait for async completion
@@ -84,7 +79,7 @@ public extension DatabaseManager
         debugLog("Persistent store loading complete.")
     }
     
-    class func deleteDatabase() -> Bool
+    public class func deleteDatabase() -> Bool
     {
         // delete existing database and start fresh if required
         do {
@@ -137,7 +132,7 @@ public extension DatabaseManager
         }
     }
     
-    class func recreateDatabase() {
+    public class func recreateDatabase() {
         // Try to perform delete if one exists
         _ = Self.deleteDatabase()
         
@@ -145,11 +140,7 @@ public extension DatabaseManager
         Self.shared = DatabaseManager()
     }
 
-}
-
-public extension DatabaseManager
-{
-    func start(completionHandler: @escaping (Error?) -> Void)
+    public func start(completionHandler: @escaping (Error?) -> Void)
     {
         
         func finish(_ error: Error?)
@@ -216,8 +207,7 @@ public extension DatabaseManager
         }
     }
 
-    
-    func purgeLoggedErrors(before date: Date? = nil, completion: @escaping (Result<Void, Error>) -> Void)
+    public func purgeLoggedErrors(before date: Date? = nil, completion: @escaping (Result<Void, Error>) -> Void)
     {
         self.persistentContainer.performBackgroundTask { context in
             do
@@ -238,7 +228,7 @@ public extension DatabaseManager
         }
     }
     
-    func updateFeaturedSortIDs() async
+    public func updateFeaturedSortIDs() async
     {
         let context = DatabaseManager.shared.persistentContainer.newBackgroundContext()
         context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy // DON'T use our custom merge policy, because that one ignores changes to featuredSortID.
@@ -280,11 +270,8 @@ public extension DatabaseManager
             }
         }
     }
-}
 
-public extension DatabaseManager
-{
-    func startForPreview()
+    public func startForPreview()
     {
         let semaphore = DispatchSemaphore(value: 0)
         
@@ -296,15 +283,12 @@ public extension DatabaseManager
         
         _ = semaphore.wait(timeout: .now() + 2.0)
     }
-}
 
-public extension DatabaseManager
-{
-    var viewContext: NSManagedObjectContext {
+    public var viewContext: NSManagedObjectContext {
         return self.persistentContainer.viewContext
     }
     
-    func activeAccount(in context: NSManagedObjectContext = DatabaseManager.shared.viewContext) -> Account?
+    public func activeAccount(in context: NSManagedObjectContext = DatabaseManager.shared.viewContext) -> Account?
     {
         let predicate = NSPredicate(format: "%K == YES", #keyPath(Account.isActiveAccount))
         
@@ -312,18 +296,15 @@ public extension DatabaseManager
         return activeAccount
     }
     
-    func activeTeam(in context: NSManagedObjectContext = DatabaseManager.shared.viewContext) -> Team?
+    public func activeTeam(in context: NSManagedObjectContext = DatabaseManager.shared.viewContext) -> Team?
     {
         let predicate = NSPredicate(format: "%K == YES", #keyPath(Team.isActiveTeam))
         
         let activeTeam = Team.first(satisfying: predicate, in: context)
         return activeTeam
     }
-}
 
-private extension DatabaseManager
-{
-    func prepareDatabase(completionHandler: @escaping (Result<Void, Error>) -> Void)
+    private func prepareDatabase(completionHandler: @escaping (Result<Void, Error>) -> Void)
     {
         guard !Bundle.isAppExtension() else { return completionHandler(.success(())) }
         
@@ -588,7 +569,7 @@ private extension DatabaseManager
         }
     }
     
-    func migrateDatabaseToAppGroupIfNeeded(completion: @escaping (Result<Void, Error>) -> Void)
+    private func migrateDatabaseToAppGroupIfNeeded(completion: @escaping (Result<Void, Error>) -> Void)
     {
         // Only migrate if we haven't migrated yet and there's a valid AltStore app group.
         guard UserDefaults.shared.requiresAppGroupMigration && Bundle.main.altstoreAppGroup != nil else { return completion(.success(())) }
@@ -663,7 +644,7 @@ private extension DatabaseManager
         }
     }
     
-    func receivedWillMigrateDatabaseNotification()
+    fileprivate func receivedWillMigrateDatabaseNotification()
     {
         defer { self.ignoreWillMigrateDatabaseNotification = false }
 
