@@ -184,14 +184,20 @@ func installIPA(_ bundleId: String) async throws {
 }
 
 @discardableResult
-func fetchUDID() async throws -> String? {
+func fetchUDID(useStatic: Bool = false) async throws -> String? {
     defer { debugLog("[SideStore] fetchUDID() completed") }
     #if targetEnvironment(simulator)
     debugLog("[SideStore] fetchUDID() is no-op on simulator")
     return "XXXXX-XXXX-XXXXX-XXXX"
     #else
     debugLog("[SideStore] fetchUDID() invoked")
-    return try await Minimuxer.shared.fetchUDID()
+    if let udid = try? await Minimuxer.shared.fetchUDID(), !udid.isEmpty, udid != "XXXXX-XXXX-XXXXX-XXXX" {
+        return udid
+    }
+    if useStatic {
+        return await PairingFileManager.shared.pairingUDID
+    }
+    return nil
     #endif
 }
 
