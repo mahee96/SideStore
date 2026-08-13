@@ -94,7 +94,9 @@ class PillButton: UIButton
             if self.style == .custom
             {
                 // Reset insets for custom style.
-                self.contentEdgeInsets = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
+                var config = self.configuration ?? UIButton.Configuration.plain()
+                config.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8)
+                self.configuration = config
             }
             
             self.update()
@@ -326,12 +328,14 @@ private extension PillButton
         {
         case .custom: break // Don't update insets in case client has updated them.
         case .pill:
-            self.contentEdgeInsets = UIEdgeInsets(
+            var config = self.configuration ?? UIButton.Configuration.plain()
+            config.contentInsets = NSDirectionalEdgeInsets(
                 top: Self.contentInsets.top,
-                left: Self.contentInsets.leading,
+                leading: Self.contentInsets.leading,
                 bottom: Self.contentInsets.bottom,
-                right: Self.contentInsets.trailing
+                trailing: Self.contentInsets.trailing
             )
+            self.configuration = config
             self.layer.cornerRadius = self.bounds.height / 2
         }
     }

@@ -636,7 +636,9 @@ extension FeaturedViewController
             
             buttonView.button.setTitle(NSLocalizedString("See All", comment: ""), for: .normal)
             buttonView.button.titleLabel?.font = UIFont.preferredFont(forTextStyle: .body)
-            buttonView.button.contentEdgeInsets.bottom = 8
+            var config = buttonView.button.configuration ?? UIButton.Configuration.plain()
+            config.contentInsets.bottom = 8
+            buttonView.button.configuration = config
             
             buttonView.button.removeAction(identifiedBy: .showAllApps, for: .primaryActionTriggered)
             

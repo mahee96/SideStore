@@ -167,14 +167,14 @@ open class RSTFetchedResultsDataSource<ContentType: NSManagedObject, CellType: U
     }
 
     public func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        if let window = contentView?.window {
+        if (contentView?.window) != nil {
             (contentView as? RSTCellContentTransactionUpdateable)?.beginUpdates()
         }
     }
 
     public func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         refreshItemCount()
-        if let window = contentView?.window {
+        if (contentView?.window) != nil {
             (contentView as? RSTCellContentTransactionUpdateable)?.endUpdates()
         } else {
             (contentView as? UITableView)?.reloadData()

@@ -45,16 +45,12 @@ internal final class ActivityIndicatingHelper: NSObject, RSTActivityIndicating {
     }
     
     var activityCount: Int {
-        lock.lock()
-        defer { lock.unlock() }
-        return _activityCount
+        lock.withLock { _activityCount }
     }
     
     var isIndicatingActivity: Bool {
         get {
-            lock.lock()
-            defer { lock.unlock() }
-            return _isIndicatingActivity
+            lock.withLock { _isIndicatingActivity }
         }
         set {
             DispatchQueue.main.async {
@@ -65,13 +61,13 @@ internal final class ActivityIndicatingHelper: NSObject, RSTActivityIndicating {
                 }
             }
             
-            var didChange = false
-            lock.lock()
-            if _isIndicatingActivity != newValue {
-                _isIndicatingActivity = newValue
-                didChange = true
+            let didChange = lock.withLock { () -> Bool in
+                if _isIndicatingActivity != newValue {
+                    _isIndicatingActivity = newValue
+                    return true
+                }
+                return false
             }
-            lock.unlock()
             
             guard didChange else { return }
             
@@ -86,10 +82,10 @@ internal final class ActivityIndicatingHelper: NSObject, RSTActivityIndicating {
     }
     
     func incrementActivityCount() {
-        lock.lock()
-        _activityCount += 1
-        let shouldStart = (_activityCount == 1)
-        lock.unlock()
+        let shouldStart = lock.withLock { () -> Bool in
+            _activityCount += 1
+            return _activityCount == 1
+        }
         
         if shouldStart {
             DispatchQueue.main.async {
@@ -99,14 +95,11 @@ internal final class ActivityIndicatingHelper: NSObject, RSTActivityIndicating {
     }
     
     func decrementActivityCount() {
-        lock.lock()
-        guard _activityCount > 0 else {
-            lock.unlock()
-            return
+        let shouldStop = lock.withLock { () -> Bool in
+            guard _activityCount > 0 else { return false }
+            _activityCount -= 1
+            return _activityCount == 0
         }
-        _activityCount -= 1
-        let shouldStop = (_activityCount == 0)
-        lock.unlock()
         
         if shouldStop {
             DispatchQueue.main.async {
@@ -385,15 +378,8 @@ extension UIApplication: _ActivityIndicating, RSTActivityIndicating {
     }
     
     func startIndicatingActivity() {
-        // networkActivityIndicatorVisible is deprecated in iOS 13, but we can compile it
-        #if os(iOS)
-        self.isNetworkActivityIndicatorVisible = true
-        #endif
     }
     
     func stopIndicatingActivity() {
-        #if os(iOS)
-        self.isNetworkActivityIndicatorVisible = false
-        #endif
     }
 }

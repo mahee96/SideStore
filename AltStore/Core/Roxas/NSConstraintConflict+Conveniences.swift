@@ -57,6 +57,7 @@ public extension NSConstraintConflict {
         return snapshots
     }
     
+    @discardableResult
     @objc(cacheSnapshotsForConflicts:)
     static func cacheSnapshots(for conflicts: [NSConstraintConflict]) -> NSMapTable<NSManagedObject, NSDictionary> {
         let snapshots = NSMapTable<NSManagedObject, NSDictionary>.strongToStrongObjects()

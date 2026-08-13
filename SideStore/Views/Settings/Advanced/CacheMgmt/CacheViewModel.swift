@@ -44,12 +44,12 @@ class CacheViewModel: ObservableObject {
     // Export/Share states
     @Published var activeExportURL: URL? = nil
     
-    private static let byteFormatter: ByteCountFormatter = {
+    private static func formatBytes(_ size: Int64) -> String {
         let formatter = ByteCountFormatter()
         formatter.allowedUnits = [.useAll]
         formatter.countStyle = .file
-        return formatter
-    }()
+        return formatter.string(fromByteCount: size)
+    }
     
     func loadCacheItems() {
         self.isLoading = true
@@ -82,7 +82,7 @@ class CacheViewModel: ObservableObject {
             for url in internalAppURLs {
                 let bundleID = url.lastPathComponent
                 let size = CacheManager.shared.calculateSize(of: url)
-                let sizeStr = Self.byteFormatter.string(fromByteCount: size)
+                let sizeStr = Self.formatBytes(size)
                 
                 var displayName = bundleID
                 var iconImage: UIImage? = nil
@@ -115,7 +115,7 @@ class CacheViewModel: ObservableObject {
             for url in resignedAppURLs {
                 let filename = url.lastPathComponent
                 let size = CacheManager.shared.calculateSize(of: url)
-                let sizeStr = Self.byteFormatter.string(fromByteCount: size)
+                let sizeStr = Self.formatBytes(size)
                 
                 let displayName = filename.replacingOccurrences(of: ".app", with: "")
                                           .replacingOccurrences(of: ".ipa", with: "")

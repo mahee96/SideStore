@@ -249,7 +249,7 @@ final class DownloadAppOperation: BasePipelineOperation<InstallAppOperationConte
     
     private func download(_ dependency: Dependency, for appBundle: ALTApplication) async throws -> URL {
         do {
-            let (fileURL, response) = try await self.session.download(from: dependency.downloadURL)
+            let (fileURL, _) = try await self.session.download(from: dependency.downloadURL)
             defer { try? FileManager.default.removeItem(at: fileURL) }
             
             let path = dependency.path ?? dependency.preferredFilename

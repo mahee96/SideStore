@@ -690,7 +690,7 @@ public extension StoreApp
         let placeholderSourceID = Source.altStoreIdentifier
         let placeholderVersion = "0.0.0"
         let placeholderDate = Date.distantPast
-        var placeholderChannel = ReleaseTrackType.stable.description
+        let placeholderChannel = ReleaseTrackType.stable.description
         
         let app = StoreApp(context: context)
         app.name = "SideStore"
