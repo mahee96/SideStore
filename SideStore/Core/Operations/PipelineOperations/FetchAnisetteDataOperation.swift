@@ -69,7 +69,7 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<AuthenticatedOpe
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
         
-        if let authContext = self.context as? AuthenticatedOperationContext,
+        if let authContext = self.context,
            let session = authContext.session,
            session.anisetteData.date.timeIntervalSinceNow > -30.0 {
             self.debugLog("[FetchAnisetteDataOperation] Skipping anisette fetch: Anisette data is still fresh (\(-session.anisetteData.date.timeIntervalSinceNow)s old).")

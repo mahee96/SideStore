@@ -232,8 +232,8 @@ class ImportExport {
 }
 
 #if DEBUG
-private extension ImportExport {
-        public static func exportAccountJSON(password: String) -> ImportedAccount? {
+extension ImportExport {
+    static func exportAccountJSON(password: String) -> ImportedAccount? {
         guard let email = AuthManager.shared.currentAppleID,
               let passwordStr = AuthManager.shared.password,
               let activeCert = CertificateManager.shared.activeCertificate,
@@ -248,7 +248,7 @@ private extension ImportExport {
         }
     }
 
-    public static func importAccountJSON(from file: URL) throws {
+    static func importAccountJSON(from file: URL) throws {
         _ = file.startAccessingSecurityScopedResource()
         defer { file.stopAccessingSecurityScopedResource() }
         

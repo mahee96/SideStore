@@ -364,16 +364,10 @@ private extension SourcesViewController
             
             let backgroundContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
             let source = try await AppManager.shared.fetchSource(sourceURL: url, managedObjectContext: backgroundContext)
-            do
-            {
-                await MainActor.run {
-                    showSourceDetails(for: source)
-                }
-                
-                finish(.success(()))
-            } catch {
-                finish(.failure(error))
+            await MainActor.run {
+                showSourceDetails(for: source)
             }
+            finish(.success(()))
         }
     }
 

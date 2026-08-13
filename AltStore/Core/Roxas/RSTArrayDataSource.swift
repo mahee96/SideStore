@@ -76,7 +76,7 @@ open class RSTArrayCollectionViewPrefetchingDataSource<ContentType, PrefetchCont
                 self.prefetchItemCache.setObject(content as AnyObject, forKey: item as AnyObject)
             }
             DispatchQueue.main.async {
-                if let collectionView = self.contentView as? UICollectionView,
+                if let collectionView = self.contentView,
                    let cellIndexPath = collectionView.indexPath(for: cell) {
                     let localIndexPath = self.localIndexPath(for: cellIndexPath) ?? cellIndexPath
                     if self.isValidIndexPath(localIndexPath) {
@@ -142,7 +142,7 @@ open class RSTArrayTableViewPrefetchingDataSource<ContentType, PrefetchContentTy
                 self.prefetchItemCache.setObject(content as AnyObject, forKey: item as AnyObject)
             }
             DispatchQueue.main.async {
-                if let tableView = self.contentView as? UITableView,
+                if let tableView = self.contentView,
                    let cellIndexPath = tableView.indexPath(for: cell) {
                     let localIndexPath = self.localIndexPath(for: cellIndexPath) ?? cellIndexPath
                     if self.isValidIndexPath(localIndexPath) {

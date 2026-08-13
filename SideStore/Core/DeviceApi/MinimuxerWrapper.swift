@@ -329,8 +329,6 @@ extension MinimuxerError {
             return NSLocalizedString("Restart already in progress", comment: "")
         case .invalidVPN:
             return NSLocalizedString("Invalid VPN configuration", comment: "")
-        case .invalidPairing(let proto, let reason):
-            return String(format: NSLocalizedString("Invalid pairing configuration (%@ protocol): %@", comment: ""), proto.description, reason)
         case .muxerNotListening:
             return NSLocalizedString("Usbmuxd server is not listening on the device", comment: "")
         case .notStarted(let reason):

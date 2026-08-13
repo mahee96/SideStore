@@ -54,9 +54,11 @@ public enum ExportCertificateDialog {
         presentingVC.present(alert, animated: true)
     }
     
-    private static func topViewController(base: UIViewController? = UIApplication.shared.connectedScenes
+    private static func topViewController(
+        base: UIViewController? = UIApplication.shared.connectedScenes
         .compactMap { ($0 as? UIWindowScene)?.keyWindow }
-        .first?.rootViewController) -> UIViewController? {
+        .first?.rootViewController) -> UIViewController?
+    {
             
         if let nav = base as? UINavigationController {
             return topViewController(base: nav.visibleViewController)

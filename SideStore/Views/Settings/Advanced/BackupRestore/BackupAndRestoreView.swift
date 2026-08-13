@@ -196,7 +196,7 @@ struct BackupAndRestoreView: View {
             
             do {
                 let encryptedData = try ImportExport.exportAccount(password: filePassword, includeApplePassword: includeApplePassword)
-                guard let email = AuthManager.shared.currentAppleID else { return }
+                guard AuthManager.shared.currentAppleID != nil else { return }
                 
                 let tempDir = FileManager.default.temporaryDirectory
                 let fileURL = tempDir.appendingPathComponent(AppConstants.accountConfigurationFileName)

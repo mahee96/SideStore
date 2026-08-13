@@ -211,7 +211,6 @@ public class BaseEntity: NSManagedObject, Fetchable
             }
             
             guard let relationData = dictionary[name] else { continue }
-            let destinationEntityName = relationship.destinationEntity!.name!
             
             guard let destClassName = relationship.destinationEntity?.managedObjectClassName,
                   let destinationClass = NSClassFromString(destClassName) as? BaseEntity.Type else {

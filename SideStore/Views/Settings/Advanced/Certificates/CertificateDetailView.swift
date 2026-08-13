@@ -42,7 +42,6 @@ struct CertificateDetailView: View {
     @State private var copiedFingerprintSHA256 = false
     
     var body: some View {
-        let briefInfo = getBriefInfo(for: certificate.data)
         Form {
             Section {
                 Section {

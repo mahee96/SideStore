@@ -15,8 +15,6 @@ final class EmbedSigningCertOperation: BasePipelineOperation<AppOperationContext
         defer { debugLog("[EmbedSigningCertOperation] execute() completed") }
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         
-        let bundleID = self.context.targetBundleIdentifier
-        
         // 1. Resolve the certificate used for signing this app
         guard let cert = self.context.overrideCertificate ?? self.context.authenticatedContext.signingCertificate else
         {

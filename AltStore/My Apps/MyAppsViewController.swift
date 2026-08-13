@@ -7,13 +7,13 @@
 //
 
 @preconcurrency import UIKit
+@preconcurrency import Intents
+@preconcurrency import AltSign
 import SwiftUI
 import MobileCoreServices
-import Intents
 import Combine
 import CoreData
 import UniformTypeIdentifiers
-@preconcurrency import AltSign
 import SemanticVersion
 
 import Nuke
@@ -705,9 +705,6 @@ private extension MyAppsViewController
             do
             {
                 try result.get()
-                DispatchQueue.main.async {
-                    self.collectionView.reloadSections([Section.activeApps.rawValue, Section.inactiveApps.rawValue])
-                }
             }
             catch
             {
@@ -719,7 +716,6 @@ private extension MyAppsViewController
     @objc private func appIDsViewControllerDidDismiss(_ notification: Notification)
     {
         DispatchQueue.main.async {
-            self.collectionView.reloadSections([Section.activeApps.rawValue, Section.inactiveApps.rawValue])
             self.fetchAppIDs()
         }
     }
@@ -1227,18 +1223,18 @@ private extension MyAppsViewController
             guard previousProgress == nil else { return }
             
             AppManager.shared.resign(installedApp, alternateIconMode: alternateIconMode, presentingViewController: self) { (result) in
-                DispatchQueue.main.async {
-                    self.collectionView.reloadSections([Section.activeApps.rawValue, Section.inactiveApps.rawValue])
-                }
-                
                 switch result
                 {
                 case .failure(let error) where error is CancellationError:
                     debugLog("Resign app cancelled by user.")
+                    DispatchQueue.main.async {
+                        self.collectionView.reloadSections([Section.activeApps.rawValue, Section.inactiveApps.rawValue])
+                    }
                 case .failure(let error):
                     debugLog("Failed to resign app: \(error)")
                     DispatchQueue.main.async {
                         ToastView(error: error, opensLog: true).show(in: self)
+                        self.collectionView.reloadSections([Section.activeApps.rawValue, Section.inactiveApps.rawValue])
                     }
                 case .success(let app):
                     debugLog("Successfully resigned app: \(app.name)")
