@@ -465,9 +465,6 @@ final class AppManager: ObservableObject, @unchecked Sendable
                 return
             }
             
-            var fetchedSources = Set<Source>()
-            var errors = [Source: Error]()
-            
             var taskResults = [(NSManagedObjectID, Result<NSManagedObjectID, Error>)]()
             await withTaskGroup(of: (NSManagedObjectID, Result<NSManagedObjectID, Error>).self) { taskGroup in
                 for data in sourceData {
