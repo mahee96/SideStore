@@ -16,9 +16,14 @@ private extension Color {
 struct UserCustomizationsView: View {
     @State private var customizeAppId: Bool = UserDefaults.standard.customizeAppId
     @State private var customizeAppExtensions: Bool = UserDefaults.standard.customizeAppExtensions
+    @State private var autoFixAppGroupIDs: Bool = UserDefaults.standard.autoFixAppGroupIDs
     @State private var isExportResignedAppEnabled: Bool = UserDefaults.standard.isExportResignedAppEnabled
     @State private var enableEMPforWireguard: Bool = UserDefaults.standard.enableEMPforWireguard
     @State private var skipNonCopyableFiles: Bool = UserDefaults.standard.skipNonCopyableBackupFiles
+
+    private var isFreeAccount: Bool {
+        DatabaseManager.shared.activeTeam()?.type == .free
+    }
 
     var body: some View {
         ScrollView {
@@ -80,6 +85,22 @@ struct UserCustomizationsView: View {
                         
                         divider
                         
+                        toggleRow(
+                            title: "Auto-Fix AppGroup IDs",
+                            subtitle: isFreeAccount ? "Required for free developer accounts" : "Automatically fix App Group casing mismatches",
+                            isOn: Binding(
+                                get: { isFreeAccount ? true : autoFixAppGroupIDs },
+                                set: { newValue in
+                                    guard !isFreeAccount else { return }
+                                    autoFixAppGroupIDs = newValue
+                                    UserDefaults.standard.autoFixAppGroupIDs = newValue
+                                }
+                            )
+                        )
+                        .disabled(isFreeAccount)
+                        
+                        divider
+                        
                         toggleRow(title: "Export Resigned Apps", isOn: Binding(
                             get: { isExportResignedAppEnabled },
                             set: { newValue in
@@ -121,12 +142,20 @@ struct UserCustomizationsView: View {
         .navigationBarTitleDisplayMode(.large)
     }
 
-    private func toggleRow(title: String, isOn: Binding<Bool>) -> some View {
+    private func toggleRow(title: String, subtitle: String? = nil, isOn: Binding<Bool>) -> some View {
         HStack {
-            Text(title)
-                .font(.system(size: 17, weight: .bold))
-                .foregroundColor(.white)
-                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundColor(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let subtitle = subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundColor(Color.white.opacity(0.6))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
             Spacer()
             Toggle("", isOn: isOn)
                 .labelsHidden()

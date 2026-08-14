@@ -376,6 +376,8 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
         }
         verboseLog("[FetchProvisioningProfiles] Application groups: \(applicationGroups)")
         
+        var seenGroupIDs = Set<String>()
+        
         do {
             let fetchedGroups: [ALTAppGroup]
             if let cachedGroups = self.context.sharedContext?.appGroups {
@@ -389,10 +391,9 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
             }
             
             var groups = [ALTAppGroup]()
-            var seenGroupIDs = Set<String>()
             
             for groupIdentifier in applicationGroups {
-                let adjustedGroupIdentifier = self.adjustedGroupIdentifier(for: groupIdentifier, appID: appID, targetAppBundle: targetAppBundle, team: team)
+                let adjustedGroupIdentifier = try await self.adjustedGroupIdentifier(for: groupIdentifier, appID: appID, targetAppBundle: targetAppBundle, team: team)
                 guard seenGroupIDs.insert(adjustedGroupIdentifier).inserted else { continue }
                 
                 if let group = fetchedGroups.first(where: { $0.groupIdentifier == adjustedGroupIdentifier }) {
@@ -418,14 +419,13 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
             
             return appID
         } catch {
-            let adjustedGroupIDs = applicationGroups.map { self.adjustedGroupIdentifier(for: $0, appID: appID, targetAppBundle: targetAppBundle, team: team) }
-            let groupIDs = Array(Set(adjustedGroupIDs))
+            let groupIDs = Array(seenGroupIDs.isEmpty ? Set(applicationGroups.map { $0 + "." + team.identifier }) : seenGroupIDs)
             self.debugLog("[FetchProvisioningProfiles] Failed to assign/create App Groups \(groupIDs) for App ID \(appID.bundleIdentifier): \(error.localizedDescription)")
             throw error
         }
     }
 
-    private func adjustedGroupIdentifier(for groupIdentifier: String, appID: ALTAppID, targetAppBundle: ALTApplication, team: ALTTeam) -> String {
+    private func adjustedGroupIdentifier(for groupIdentifier: String, appID: ALTAppID, targetAppBundle: ALTApplication, team: ALTTeam) async throws -> String {
         // Currently Build.xconfig for debug appends suffix as TEAMID already
         #if DEBUG
         if groupIdentifier.contains(Bundle.baseAltStoreAppGroupID) && groupIdentifier.contains(team.identifier) {
@@ -433,16 +433,31 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
         }
         #endif
 
-        if team.type == .free {
-            // On free accounts, Apple enforces: groupIdentifier == "group." + appID.bundleIdentifier
-            let rawGroupID = groupIdentifier.hasPrefix("group.") ? String(groupIdentifier.dropFirst("group.".count)) : groupIdentifier
+        let rawGroupID = groupIdentifier.hasPrefix("group.") ? String(groupIdentifier.dropFirst("group.".count)) : groupIdentifier
+        let targetBundleID = targetAppBundle.bundleIdentifier
+        let contextTargetBundleID = self.context.targetBundleIdentifier
+        
+        let matchesBundleID = rawGroupID.caseInsensitiveCompare(targetBundleID) == .orderedSame ||
+                              rawGroupID.caseInsensitiveCompare(contextTargetBundleID) == .orderedSame
+        let isExactCaseMatch = rawGroupID == targetBundleID || rawGroupID == contextTargetBundleID
+
+        if matchesBundleID && !isExactCaseMatch {
+            let correctedGroup = "group." + appID.bundleIdentifier
+            let originalGroupWithTeam = groupIdentifier + "." + team.identifier
             
-            let targetBundleID = targetAppBundle.bundleIdentifier
-            let contextTargetBundleID = self.context.targetBundleIdentifier
-            
-            if rawGroupID.caseInsensitiveCompare(targetBundleID) == .orderedSame ||
-               rawGroupID.caseInsensitiveCompare(contextTargetBundleID) == .orderedSame {
-                return "group." + appID.bundleIdentifier
+            if UserDefaults.standard.autoFixAppGroupIDs {
+                return correctedGroup
+            } else {
+                let decision = try await self.context.handler.userCustomizationHandler.resolveAppGroupMismatch(
+                    originalGroup: originalGroupWithTeam,
+                    correctedGroup: correctedGroup
+                )
+                switch decision {
+                case .correctAndProceed(let group):
+                    return group
+                case .keepOriginal(let group):
+                    return group
+                }
             }
         }
 

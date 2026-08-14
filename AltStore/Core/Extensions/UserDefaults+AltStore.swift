@@ -130,6 +130,19 @@ public extension UserDefaults
         get { self.bool(forKey: "customizeAppExtensions") }
         set { self.set(newValue, forKey: "customizeAppExtensions") }
     }
+    var autoFixAppGroupIDs: Bool {
+        get {
+            if self.object(forKey: "autoFixAppGroupIDs") != nil {
+                return self._autoFixAppGroupIDs
+            }
+            return true
+        }
+        set { self._autoFixAppGroupIDs = newValue }
+    }
+    @objc(autoFixAppGroupIDs) private var _autoFixAppGroupIDs: Bool {
+        get { self.bool(forKey: "autoFixAppGroupIDs") }
+        set { self.set(newValue, forKey: "autoFixAppGroupIDs") }
+    }
     @objc var isExportResignedAppEnabled: Bool {
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
