@@ -170,6 +170,10 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
                 Self.reconcileSelfReinstallationIfNeeded()
                 debugLog("Reconcile any staged drafts completed.")
                 
+                Task {
+                    await WidgetDataManager.publishCurrentInstalledAppsIfNeeded(in: DatabaseManager.shared.viewContext)
+                }
+                
                 if isFirstLaunch
                 {
                     AuthManager.shared.signOut()

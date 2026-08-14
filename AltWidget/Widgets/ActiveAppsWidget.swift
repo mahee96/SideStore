@@ -237,6 +237,7 @@ private struct ActiveAppsWidgetView: View
                 .multilineTextAlignment(.center)
         }
         .padding()
+        .unredacted()
     }
 }
 

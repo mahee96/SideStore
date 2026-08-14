@@ -135,7 +135,6 @@ final class LaunchViewController: UIViewController {
         }
         updateKnownSources()
         splashView.updateStatus(NSLocalizedString("Almost there…", comment: ""))
-        await WidgetDataManager.publishCurrentInstalledApps(in: DatabaseManager.shared.viewContext)
         didFinishLaunching = true
         
         let destinationVC = destinationViewController!

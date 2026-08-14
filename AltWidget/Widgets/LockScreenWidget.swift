@@ -96,11 +96,40 @@ private struct ComplicationView: View
         let totalDays = expirationDate.numberOfCalendarDays(since: refreshedDate)
         let daysRemaining = expirationDate.numberOfCalendarDays(since: self.entry.date)
         
-        let progress = Double(daysRemaining) / Double(totalDays)
+        let progress = totalDays > 0 ? Double(daysRemaining) / Double(totalDays) : 0.0
         
         // TODO: Gauge initialized with an out-of-bounds progress amount. The amount will be clamped to the nearest bound.
         Gauge(value: progress) {
-            if daysRemaining < 0
+            if self.entry.apps.isEmpty
+            {
+                switch self.style
+                {
+                case .text:
+                    VStack(spacing: -1) {
+                        Text("-")
+                            .font(.system(size: 20.0, weight: .bold, design: .rounded))
+                        
+                        Text("DAYS")
+                            .font(.caption)
+                    }
+                    .fixedSize()
+                    .offset(y: -1)
+                    
+                case .icon:
+                    ZStack {
+                        Image("SmallIcon")
+                            .resizable()
+                            .aspectRatio(1.0, contentMode: .fill)
+                            .scaleEffect(x: 0.8, y: 0.8)
+                        
+                        Text("-")
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .foregroundColor(Color.black)
+                            .blendMode(.destinationOut)
+                    }
+                }
+            }
+            else if daysRemaining < 0
             {
                 Text("Expired")
                     .font(.system(size: 10, weight: .bold))

@@ -104,7 +104,9 @@ extension AppsTimelineProviderBase
     func makeEntries(for snapshots: [AppSnapshot], in context: T? = nil) -> [AppsEntry<T>]
     {
         let sortedAppsByExpirationDate = snapshots.sorted { $0.expirationDate < $1.expirationDate }
-        guard let firstExpiringApp = sortedAppsByExpirationDate.first, let lastExpiringApp = sortedAppsByExpirationDate.last else { return [] }
+        guard let firstExpiringApp = sortedAppsByExpirationDate.first, let lastExpiringApp = sortedAppsByExpirationDate.last else {
+            return [Entry(date: Date(), apps: [], context: context)]
+        }
         
         let currentDate = Calendar.current.startOfDay(for: Date())
         let numberOfDays = lastExpiringApp.expirationDate.numberOfCalendarDays(since: currentDate)

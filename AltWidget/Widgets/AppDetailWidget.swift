@@ -133,14 +133,17 @@ private struct AppDetailWidgetView: View
             else
             {
                 VStack(spacing: 4) {
-                    if !isPlaceholder
-                    {
-                        Text("Open SideStore")
-                            .font(.system(.subheadline, design: .rounded))
-                            .fontWeight(.semibold)
-                            .foregroundColor(Color.white.opacity(0.8))
-                    }
+                    Text("Open SideStore")
+                        .font(.system(.subheadline, design: .rounded))
+                        .fontWeight(.semibold)
+                        .foregroundColor(Color.white.opacity(0.8))
+                    Text("Launch app to update widget")
+                        .font(.system(.caption2, design: .rounded))
+                        .foregroundColor(Color.white.opacity(0.5))
+                        .multilineTextAlignment(.center)
                 }
+                .padding()
+                .unredacted()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }

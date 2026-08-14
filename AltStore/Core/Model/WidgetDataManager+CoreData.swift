@@ -11,6 +11,11 @@ import CoreData
 @preconcurrency import AltSign
 
 extension WidgetDataManager {
+    public static func publishCurrentInstalledAppsIfNeeded(in context: NSManagedObjectContext) async {
+        guard !WidgetDataManager.shared.hasWidgetData else { return }
+        await publishCurrentInstalledApps(in: context)
+    }
+
     public static func publishCurrentInstalledApps(in context: NSManagedObjectContext) async {
         await context.performAsync {
             let activeFetch = InstalledApp.activeAppsFetchRequest()
@@ -26,8 +31,13 @@ extension WidgetDataManager {
 
             var icons: [String: UIImage] = [:]
             for app in sortedAllApps {
-                if let application = ALTApplication(fileURL: app.fileURL),
-                   let icon = application.icon {
+                var icon: UIImage? = nil
+                if app.bundleIdentifier == StoreApp.altstoreAppID {
+                    icon = ALTApplication(fileURL: Bundle.Info.activeBundleURL)?.icon ?? UIImage(named: "SideStore")
+                } else if let application = ALTApplication(fileURL: app.fileURL) {
+                    icon = application.icon
+                }
+                if let icon {
                     icons[app.bundleIdentifier] = icon
                 }
             }

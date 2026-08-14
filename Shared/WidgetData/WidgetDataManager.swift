@@ -30,6 +30,11 @@ public final class WidgetDataManager: @unchecked Sendable {
         containerURL?.appendingPathComponent(iconFolderName, isDirectory: true)
     }
 
+    public var hasWidgetData: Bool {
+        guard let url = jsonFileURL else { return false }
+        return FileManager.default.fileExists(atPath: url.path)
+    }
+
     public func fetchSnapshot() -> WidgetDataSnapshot {
         guard let url = jsonFileURL else {
             print("[WidgetDataManager] fetchSnapshot failed: containerURL or jsonFileURL is nil")
