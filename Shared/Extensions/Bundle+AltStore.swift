@@ -8,6 +8,7 @@
 
 import Foundation
 
+// @livecontainer
 private extension Bundle {
     @objc dynamic static let activeBundle: Bundle = Bundle.main
     @objc dynamic static let storeAppBundleIdentifier = "com.SideStore.SideStore"
@@ -79,6 +80,7 @@ public extension Bundle
         return self.infoDictionary?[Bundle.Info.appGroups] as? [String] ?? []
     }
     
+    // @livecontainer
     @objc dynamic var altstoreAppGroup: String? {
         let appGroup = self.appGroups.first { $0.contains(Bundle.baseAltStoreAppGroupID) }
         return appGroup

@@ -11,29 +11,10 @@ import CoreData
 
 public extension Source
 {
-    #if ALPHA
-    static let altStoreGroupIdentifier = Bundle.Info.appbundleIdentifier
-    #else
-    static let altStoreGroupIdentifier = Bundle.Info.appbundleIdentifier
-    #endif
-    
-    #if STAGING
-    
-    #if ALPHA
-    static let altStoreSourceURL = URL(string: "https://apps.sidestore.io/")!
-    #else
-    static let altStoreSourceURL = URL(string: "https://apps.sidestore.io/")!
-    #endif
-    
-    #else
-    
-    #if ALPHA
+
+    // @livecontainer
     @objc dynamic static let altStoreSourceURL = URL(string: "https://sidestore.io/apps-v2.json/")!
-    #else
-    @objc dynamic static let altStoreSourceURL = URL(string: "https://sidestore.io/apps-v2.json/")!
-    #endif
-    
-    #endif
+    static let altStoreGroupIdentifier = Bundle.Info.appbundleIdentifier
     
     // normalized url is the source identifier (or) p-key!
     static let altStoreIdentifier = try! Source.sourceID(from: altStoreSourceURL)

@@ -31,6 +31,7 @@ extension MyAppsViewController
     }
 }
 
+// @livecontainer
 @objc(MyAppsViewController)
 class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
 {
