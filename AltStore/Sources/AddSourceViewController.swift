@@ -594,9 +594,7 @@ private extension AddSourceViewController
         cell.bannerView.button.imageView?.contentMode = .scaleAspectFit
         cell.bannerView.button.contentHorizontalAlignment = .fill // Fill entire button with imageView
         cell.bannerView.button.contentVerticalAlignment = .fill
-        var btnConfig = cell.bannerView.button.configuration ?? UIButton.Configuration.plain()
-        btnConfig.contentInsets = .zero
-        cell.bannerView.button.configuration = btnConfig
+        cell.bannerView.button.configuration = nil
         cell.bannerView.button.tintColor = .clear
         cell.bannerView.button.isHidden = false
         
