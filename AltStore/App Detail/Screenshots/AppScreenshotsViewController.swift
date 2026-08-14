@@ -7,8 +7,7 @@
 //
 
 @preconcurrency import UIKit
-
-import Nuke
+@preconcurrency import Nuke
 
 class AppScreenshotsViewController: UICollectionViewController
 {

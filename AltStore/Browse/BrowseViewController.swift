@@ -9,8 +9,7 @@
 @preconcurrency import UIKit
 import Combine
 import CoreData
-
-import Nuke
+@preconcurrency import Nuke
 
 class BrowseViewController: UICollectionViewController, PeekPopPreviewing
 {

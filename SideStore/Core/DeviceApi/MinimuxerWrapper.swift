@@ -195,7 +195,7 @@ func fetchUDID(useStatic: Bool = false) async throws -> String? {
         return udid
     }
     if useStatic {
-        return await PairingFileManager.shared.pairingUDID
+        return PairingFileManager.shared.pairingUDID
     }
     return nil
     #endif

@@ -141,6 +141,10 @@ public actor AnisetteServersManager {
         }
 
         let data = try Data(contentsOf: url)
+        return try importFromData(data: data, filename: url.lastPathComponent)
+    }
+
+    public func importFromData(data: Data, filename: String) throws -> [AnisetteServerItem] {
         var parsedServers: [Server] = []
 
         let decoder = Foundation.JSONDecoder()
@@ -170,7 +174,7 @@ public actor AnisetteServersManager {
         // Save raw imported file backup for Reset feature
         try? data.write(to: rawImportedBackupFileURL, options: .atomic)
         self.isOfflineMode = true
-        self.importedFileName = url.lastPathComponent
+        self.importedFileName = filename
         return importedItems
     }
 

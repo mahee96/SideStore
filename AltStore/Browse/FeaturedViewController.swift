@@ -8,8 +8,7 @@
 
 @preconcurrency import UIKit
 import CoreData
-
-import Nuke
+@preconcurrency import Nuke
 
 extension UIAction.Identifier
 {

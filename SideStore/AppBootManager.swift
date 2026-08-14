@@ -95,7 +95,7 @@ public final class AppBootManager {
                 debugLog("[AppBootManager] Failed to start minimuxer: \(error)")
             }
             #else
-            if let pf = await PairingFileManager.shared.fetchPairingFile() {
+            if let pf = PairingFileManager.shared.fetchPairingFile() {
                 do {
                     try await self.startMinimuxer(pairingFile: pf)
                 } catch {
