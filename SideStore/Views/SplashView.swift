@@ -11,11 +11,12 @@ import UIKit
 final class SplashView: UIView {
     let iconView    = UIImageView()
     let titleLabel  = UILabel()
-
-    private let spinner     = UIActivityIndicatorView(style: .medium)
     private let statusLabel = UILabel()
     private var iconContainer: UIView!
     private var animationsStarted = false
+    private var currentBaseStatus: String = ""
+    private var dotCount = 1
+    private var dotTimer: Timer?
 
     // MARK: - Init
 
@@ -56,21 +57,45 @@ final class SplashView: UIView {
 
     @MainActor
     func updateStatus(_ text: String) {
-        statusLabel.text = text
-        if !spinner.isAnimating {
-            spinner.startAnimating()
-        }
+        let cleanText = text.trimmingCharacters(in: CharacterSet(charactersIn: ".… "))
+        self.currentBaseStatus = cleanText
+        self.renderStatus()
         debugLog("[SplashView] status: \(text)")
+    }
+
+    private func renderStatus() {
+        guard !currentBaseStatus.isEmpty else {
+            statusLabel.text = ""
+            return
+        }
+        let dots = String(repeating: ".", count: dotCount)
+        statusLabel.text = "\(currentBaseStatus)\(dots)"
     }
 
     // MARK: - Animations
 
     private func startAnimations() {
         startBreatheAnimation()
+        startDotAnimation()
     }
 
     private func stopAnimations() {
         iconContainer?.layer.removeAnimation(forKey: "breathe")
+        stopDotAnimation()
+    }
+
+    private func startDotAnimation() {
+        dotTimer?.invalidate()
+        dotTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            self.dotCount = (self.dotCount % 3) + 1
+            self.renderStatus()
+        }
+    }
+
+    private func stopDotAnimation() {
+        dotTimer?.invalidate()
+        dotTimer = nil
     }
 
     private func startBreatheAnimation() {
@@ -131,11 +156,6 @@ final class SplashView: UIView {
     }
 
     private func setupStatus() {
-        spinner.hidesWhenStopped = true
-        spinner.color            = .secondaryLabel
-        spinner.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(spinner)
-
         statusLabel.text          = ""
         statusLabel.font          = .systemFont(ofSize: 13, weight: .regular)
         statusLabel.textColor     = .secondaryLabel
@@ -145,10 +165,7 @@ final class SplashView: UIView {
         addSubview(statusLabel)
 
         NSLayoutConstraint.activate([
-            spinner.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 32),
-            spinner.centerXAnchor.constraint(equalTo: centerXAnchor),
-
-            statusLabel.topAnchor.constraint(equalTo: spinner.bottomAnchor, constant: 8),
+            statusLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 32),
             statusLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
             statusLabel.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 24),
             statusLabel.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -24)
