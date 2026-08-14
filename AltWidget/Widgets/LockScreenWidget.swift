@@ -18,12 +18,25 @@ struct TextLockScreenWidget: Widget
     }
     
     public var body: some WidgetConfiguration {
-        if #available(iOSApplicationExtension 16, *)
+        if #available(iOSApplicationExtension 17, *)
+        {
+            return AppIntentConfiguration(
+                kind: kind,
+                intent: SelectAppIntent.self,
+                provider: SelectAppTimelineProvider()
+            ) { entry in
+                ComplicationView(apps: entry.apps, date: entry.date, isPlaceholder: entry.isPlaceholder, style: .text)
+            }
+            .supportedFamilies([.accessoryCircular])
+            .configurationDisplayName("AltWidget (Text)")
+            .description("View remaining days until SideStore expires.")
+        }
+        else if #available(iOSApplicationExtension 16, *)
         {
             return IntentConfiguration(kind: kind,
                                        intent: ViewAppIntent.self,
                                        provider: AppsTimelineProvider()) { (entry) in
-                ComplicationView(entry: entry, style: .text)
+                ComplicationView(apps: entry.apps, date: entry.date, isPlaceholder: entry.isPlaceholder, style: .text)
             }
             .supportedFamilies([.accessoryCircular])
             .configurationDisplayName("AltWidget (Text)")
@@ -50,12 +63,25 @@ struct IconLockScreenWidget: Widget
     }
     
     public var body: some WidgetConfiguration {
-        if #available(iOSApplicationExtension 16, *)
+        if #available(iOSApplicationExtension 17, *)
+        {
+            return AppIntentConfiguration(
+                kind: kind,
+                intent: SelectAppIntent.self,
+                provider: SelectAppTimelineProvider()
+            ) { entry in
+                ComplicationView(apps: entry.apps, date: entry.date, isPlaceholder: entry.isPlaceholder, style: .icon)
+            }
+            .supportedFamilies([.accessoryCircular])
+            .configurationDisplayName("AltWidget (Icon)")
+            .description("View remaining days until SideStore expires.")
+        }
+        else if #available(iOSApplicationExtension 16, *)
         {
             return IntentConfiguration(kind: kind,
                                        intent: ViewAppIntent.self,
                                        provider: AppsTimelineProvider()) { (entry) in
-                ComplicationView(entry: entry, style: .icon)
+                ComplicationView(apps: entry.apps, date: entry.date, isPlaceholder: entry.isPlaceholder, style: .icon)
             }
             .supportedFamilies([.accessoryCircular])
             .configurationDisplayName("AltWidget (Icon)")
@@ -86,21 +112,23 @@ extension ComplicationView
 @available(iOS 16, *)
 private struct ComplicationView: View
 {
-    let entry: AppsEntry<Intent>
+    let apps: [AppSnapshot]
+    let date: Date
+    let isPlaceholder: Bool
     let style: Style
     
     var body: some View {
-        let refreshedDate = self.entry.apps.first?.refreshedDate ?? .now
-        let expirationDate = self.entry.apps.first?.expirationDate ?? .now
+        let refreshedDate = self.apps.first?.refreshedDate ?? .now
+        let expirationDate = self.apps.first?.expirationDate ?? .now
         
         let totalDays = expirationDate.numberOfCalendarDays(since: refreshedDate)
-        let daysRemaining = expirationDate.numberOfCalendarDays(since: self.entry.date)
+        let daysRemaining = expirationDate.numberOfCalendarDays(since: self.date)
         
         let progress = totalDays > 0 ? Double(daysRemaining) / Double(totalDays) : 0.0
         
         // TODO: Gauge initialized with an out-of-bounds progress amount. The amount will be clamped to the nearest bound.
         Gauge(value: progress) {
-            if self.entry.apps.isEmpty
+            if self.apps.isEmpty
             {
                 switch self.style
                 {
@@ -178,7 +206,7 @@ private struct ComplicationView: View
         .unredacted()
         .widgetBackground(Color.clear)
         .onAppear {
-            debugLog("[ComplicationView] onAppear: style=\(style), isPlaceholder=\(entry.isPlaceholder), appsCount=\(entry.apps.count)")
+            debugLog("[ComplicationView] onAppear: style=\(style), isPlaceholder=\(isPlaceholder), appsCount=\(apps.count)")
         }
     }
 }

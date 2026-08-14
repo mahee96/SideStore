@@ -171,9 +171,8 @@ class AppsTimelineProvider: AppsTimelineProviderBase<Intent>, IntentTimelineProv
     {
         debugLog("[AppsTimelineProvider] Legacy getSnapshot for app: \(intent.app?.identifier ?? "default")")
         Task {
-            let bundleIDs = [intent.app?.identifier ?? Bundle.Info.storeAppBundleIdentifier]
-            
-            let snapshot = await self.snapshot(for: bundleIDs, in: intent)
+            let bundleID = await self.resolvedBundleID(for: intent)
+            let snapshot = await self.snapshot(for: [bundleID], in: intent)
             completion(snapshot)
         }
     }
@@ -182,11 +181,20 @@ class AppsTimelineProvider: AppsTimelineProviderBase<Intent>, IntentTimelineProv
     {
         debugLog("[AppsTimelineProvider] Legacy getTimeline for app: \(intent.app?.identifier ?? "default")")
         Task {
-            let bundleIDs = [intent.app?.identifier ?? Bundle.Info.storeAppBundleIdentifier]
-            
-            let timeline = await self.timeline(for: bundleIDs, in: intent)
+            let bundleID = await self.resolvedBundleID(for: intent)
+            let timeline = await self.timeline(for: [bundleID], in: intent)
             completion(timeline)
         }
+    }
+    
+    private func resolvedBundleID(for intent: Intent) async -> String
+    {
+        if let id = intent.app?.identifier {
+            return id
+        }
+        let activeIDs = await self.fetchActiveAppBundleIDs()
+        let resolved = activeIDs.first ?? Bundle.Info.storeAppBundleIdentifier
+        return resolved
     }
 }
 
