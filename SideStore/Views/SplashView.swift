@@ -54,15 +54,13 @@ final class SplashView: UIView {
 
     // MARK: - Public
 
+    @MainActor
     func updateStatus(_ text: String) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            self.statusLabel.text = text
-            if !self.spinner.isAnimating {
-                self.spinner.startAnimating()
-            }
-            debugLog("[SplashView] status: \(text)")
+        statusLabel.text = text
+        if !spinner.isAnimating {
+            spinner.startAnimating()
         }
+        debugLog("[SplashView] status: \(text)")
     }
 
     // MARK: - Animations

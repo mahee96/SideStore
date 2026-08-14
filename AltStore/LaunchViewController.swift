@@ -144,9 +144,6 @@ final class LaunchViewController: UIViewController {
         let remaining = elapsed >= 1 ? 0 : 1 - elapsed
         try? await Task.sleep(nanoseconds: UInt64(remaining * 500_000_000))
         
-        // TODO: REMOVE — temporary 3s hold to test splash animations
-        try? await Task.sleep(nanoseconds: 3_000_000_000)
-        
         destinationVC.loadViewIfNeeded()
         addChild(destinationVC)
         destinationVC.view.translatesAutoresizingMaskIntoConstraints = false
