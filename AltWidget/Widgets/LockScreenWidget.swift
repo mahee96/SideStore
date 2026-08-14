@@ -18,20 +18,7 @@ struct TextLockScreenWidget: Widget
     }
     
     public var body: some WidgetConfiguration {
-        if #available(iOSApplicationExtension 17, *)
-        {
-            return AppIntentConfiguration(
-                kind: kind,
-                intent: SelectAppIntent.self,
-                provider: SelectAppTimelineProvider()
-            ) { entry in
-                ComplicationView(apps: entry.apps, date: entry.date, isPlaceholder: entry.isPlaceholder, style: .text)
-            }
-            .supportedFamilies([.accessoryCircular])
-            .configurationDisplayName("AltWidget (Text)")
-            .description("View remaining days until SideStore expires.")
-        }
-        else if #available(iOSApplicationExtension 16, *)
+        if #available(iOSApplicationExtension 16, *)
         {
             return IntentConfiguration(kind: kind,
                                        intent: ViewAppIntent.self,
@@ -63,20 +50,7 @@ struct IconLockScreenWidget: Widget
     }
     
     public var body: some WidgetConfiguration {
-        if #available(iOSApplicationExtension 17, *)
-        {
-            return AppIntentConfiguration(
-                kind: kind,
-                intent: SelectAppIntent.self,
-                provider: SelectAppTimelineProvider()
-            ) { entry in
-                ComplicationView(apps: entry.apps, date: entry.date, isPlaceholder: entry.isPlaceholder, style: .icon)
-            }
-            .supportedFamilies([.accessoryCircular])
-            .configurationDisplayName("AltWidget (Icon)")
-            .description("View remaining days until SideStore expires.")
-        }
-        else if #available(iOSApplicationExtension 16, *)
+        if #available(iOSApplicationExtension 16, *)
         {
             return IntentConfiguration(kind: kind,
                                        intent: ViewAppIntent.self,
