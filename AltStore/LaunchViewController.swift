@@ -24,6 +24,7 @@ final class LaunchViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        debugLog("[LaunchViewController] viewDidLoad()")
         splashView = SplashView(frame: view.bounds, appName: "SideStore")
         destinationViewController = storyboard!.instantiateViewController(withIdentifier: "tabBarController") as? TabBarController
         view.addSubview(splashView)
@@ -34,6 +35,7 @@ final class LaunchViewController: UIViewController {
         super.viewDidAppear(animated)
         guard !didFinishLaunching else { return }
         startTime = Date()
+        splashView.updateStatus(NSLocalizedString("Starting…", comment: ""))
         
         // spin off the startup sequence concurrently
         Task.detached { [weak self] in
@@ -116,7 +118,9 @@ final class LaunchViewController: UIViewController {
         guard !didFinishLaunching else { return }
         didFinishLaunching = true
         
+        splashView.updateStatus(NSLocalizedString("Loading apps…", comment: ""))
         await AppManager.shared.reconcileInstalledApps()
+        splashView.updateStatus(NSLocalizedString("Updating sources…", comment: ""))
         AppManager.shared.updateAllSources { result in
             guard case .failure(let error) = result else { return }
             debugLog("Failed to update sources on launch. \(error.localizedDescription)")
@@ -130,6 +134,7 @@ final class LaunchViewController: UIViewController {
             toastView.show(in: self.destinationViewController!.selectedViewController ?? self.destinationViewController!)
         }
         updateKnownSources()
+        splashView.updateStatus(NSLocalizedString("Almost there…", comment: ""))
         await WidgetDataManager.publishCurrentInstalledApps(in: DatabaseManager.shared.viewContext)
         didFinishLaunching = true
         
@@ -138,6 +143,9 @@ final class LaunchViewController: UIViewController {
         let elapsed = abs(startTime.timeIntervalSinceNow)
         let remaining = elapsed >= 1 ? 0 : 1 - elapsed
         try? await Task.sleep(nanoseconds: UInt64(remaining * 500_000_000))
+        
+        // TODO: REMOVE — temporary 3s hold to test splash animations
+        try? await Task.sleep(nanoseconds: 3_000_000_000)
         
         destinationVC.loadViewIfNeeded()
         addChild(destinationVC)
@@ -160,6 +168,7 @@ final class LaunchViewController: UIViewController {
             self.splashView.alpha = 0
             destinationVC.view.alpha = 1
         } completion: { [self] _ in
+            debugLog("[LaunchViewController] Transition complete — exiting LaunchViewController, handing off to TabBarController")
             self.splashView.removeFromSuperview()
             self.destinationViewController = destinationVC
             
