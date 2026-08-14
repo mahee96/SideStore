@@ -392,7 +392,7 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
             var seenGroupIDs = Set<String>()
             
             for groupIdentifier in applicationGroups {
-                let adjustedGroupIdentifier = self.adjustedGroupIdentifier(for: groupIdentifier, team: team)
+                let adjustedGroupIdentifier = self.adjustedGroupIdentifier(for: groupIdentifier, appID: appID, targetAppBundle: targetAppBundle, team: team)
                 guard seenGroupIDs.insert(adjustedGroupIdentifier).inserted else { continue }
                 
                 if let group = fetchedGroups.first(where: { $0.groupIdentifier == adjustedGroupIdentifier }) {
@@ -418,20 +418,34 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
             
             return appID
         } catch {
-            let adjustedGroupIDs = applicationGroups.map { self.adjustedGroupIdentifier(for: $0, team: team) }
+            let adjustedGroupIDs = applicationGroups.map { self.adjustedGroupIdentifier(for: $0, appID: appID, targetAppBundle: targetAppBundle, team: team) }
             let groupIDs = Array(Set(adjustedGroupIDs))
             self.debugLog("[FetchProvisioningProfiles] Failed to assign/create App Groups \(groupIDs) for App ID \(appID.bundleIdentifier): \(error.localizedDescription)")
             throw error
         }
     }
 
-    private func adjustedGroupIdentifier(for groupIdentifier: String, team: ALTTeam) -> String {
+    private func adjustedGroupIdentifier(for groupIdentifier: String, appID: ALTAppID, targetAppBundle: ALTApplication, team: ALTTeam) -> String {
         // Currently Build.xconfig for debug appends suffix as TEAMID already
         #if DEBUG
         if groupIdentifier.contains(Bundle.baseAltStoreAppGroupID) && groupIdentifier.contains(team.identifier) {
             return groupIdentifier
         }
         #endif
+
+        if team.type == .free {
+            // On free accounts, Apple enforces: groupIdentifier == "group." + appID.bundleIdentifier
+            let rawGroupID = groupIdentifier.hasPrefix("group.") ? String(groupIdentifier.dropFirst("group.".count)) : groupIdentifier
+            
+            let targetBundleID = targetAppBundle.bundleIdentifier
+            let contextTargetBundleID = self.context.targetBundleIdentifier
+            
+            if rawGroupID.caseInsensitiveCompare(targetBundleID) == .orderedSame ||
+               rawGroupID.caseInsensitiveCompare(contextTargetBundleID) == .orderedSame {
+                return "group." + appID.bundleIdentifier
+            }
+        }
+
         return groupIdentifier + "." + team.identifier
     }
 }
