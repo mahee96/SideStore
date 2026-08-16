@@ -61,9 +61,9 @@ struct UserCustomizationsView: View {
                     .cornerRadius(14)
                 }
 
-                // Section 1: APP & EXTENSIONS CUSTOMIZATION
+                // Section 1: GENERAL
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("CUSTOMIZATION OPTIONS")
+                    Text("GENERAL")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.6))
                         .padding(.horizontal, 16)
@@ -86,28 +86,6 @@ struct UserCustomizationsView: View {
                                 UserDefaults.standard.customizeAppExtensions = newValue
                             }
                         ))
-                        
-                        divider
-                        
-                        toggleRow(title: "App Verification", isOn: Binding(
-                            get: { !appVerificationDisabled },
-                            set: { newValue in
-                                appVerificationDisabled = !newValue
-                                UserDefaults.standard.appVerificationDisabled = !newValue
-                            }
-                        ))
-                        
-                        divider
-                        
-                        toggleRow(title: "Permission Checks", isOn: Binding(
-                            get: { !permissionCheckingDisabled },
-                            set: { newValue in
-                                permissionCheckingDisabled = !newValue
-                                UserDefaults.standard.permissionCheckingDisabled = !newValue
-                            }
-                        ))
-                        .disabled(appVerificationDisabled)
-                        .opacity(appVerificationDisabled ? 0.5 : 1.0)
                         
                         divider
                         
@@ -137,30 +115,84 @@ struct UserCustomizationsView: View {
                         
                         divider
                         
-                        SwiftUI.Button(action: { exportWireGuardConfig() }) {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Export WireGuard Config")
-                                        .font(.system(size: 17, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .multilineTextAlignment(.leading)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                    Text("Exports SideStore.conf to import into WireGuard app")
-                                        .font(.system(size: 12, weight: .regular))
-                                        .foregroundColor(Color.white.opacity(0.6))
-                                        .multilineTextAlignment(.leading)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                                Spacer()
-                                Image(systemName: "square.and.arrow.up")
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .frame(width: 55, alignment: .center)
+                        toggleRow(title: "Skip Uncopyable Backup Files", isOn: Binding(
+                            get: { skipNonCopyableFiles },
+                            set: { newValue in
+                                skipNonCopyableFiles = newValue
+                                UserDefaults.standard.skipNonCopyableBackupFiles = newValue
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                            .frame(minHeight: 50)
+                        ))
+                    }
+                    .background(Color.settingsRowBackground)
+                    .cornerRadius(14)
+                }
+
+                // Section 2: APP VERIFICATION
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("APP VERIFICATION")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.6))
+                        .padding(.horizontal, 16)
+                    
+                    VStack(spacing: 0) {
+                        toggleRow(title: "App Verification", isOn: Binding(
+                            get: { !appVerificationDisabled },
+                            set: { newValue in
+                                appVerificationDisabled = !newValue
+                                UserDefaults.standard.appVerificationDisabled = !newValue
+                            }
+                        ))
+                        
+                        divider
+                        
+                        toggleRow(title: "Permission Checks", isOn: Binding(
+                            get: { !permissionCheckingDisabled },
+                            set: { newValue in
+                                permissionCheckingDisabled = !newValue
+                                UserDefaults.standard.permissionCheckingDisabled = !newValue
+                            }
+                        ))
+                        .disabled(appVerificationDisabled)
+                        .opacity(appVerificationDisabled ? 0.5 : 1.0)
+                    }
+                    .background(Color.settingsRowBackground)
+                    .cornerRadius(14)
+                }
+
+                // Section 3: EMPROXY & WIREGUARD
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("EMPROXY & WIREGUARD")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.6))
+                        .padding(.horizontal, 16)
+                    
+                    VStack(spacing: 0) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Export WireGuard Config")
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .multilineTextAlignment(.leading)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Text("Exports SideStore.conf to import into WireGuard app")
+                                    .font(.system(size: 12, weight: .regular))
+                                    .foregroundColor(Color.white.opacity(0.6))
+                                    .multilineTextAlignment(.leading)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            Spacer()
+                            SwiftUI.Button(action: { exportWireGuardConfig() }) {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.system(size: 17, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 38, height: 38)
+                                    .background(Color.white.opacity(0.15))
+                                    .cornerRadius(10)
+                            }
                         }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .frame(minHeight: 50)
                         
                         divider
                         
@@ -175,16 +207,6 @@ struct UserCustomizationsView: View {
                                 }
                             )
                         )
-                        
-                        divider
-                        
-                        toggleRow(title: "Skip Uncopyable Backup Files", isOn: Binding(
-                            get: { skipNonCopyableFiles },
-                            set: { newValue in
-                                skipNonCopyableFiles = newValue
-                                UserDefaults.standard.skipNonCopyableBackupFiles = newValue
-                            }
-                        ))
                     }
                     .background(Color.settingsRowBackground)
                     .cornerRadius(14)
