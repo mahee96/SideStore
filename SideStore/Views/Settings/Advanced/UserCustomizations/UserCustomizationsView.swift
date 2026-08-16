@@ -22,6 +22,7 @@ struct UserCustomizationsView: View {
     @State private var pendingEMPOption: Bool = false
     @State private var showEMPRestartConfirmation: Bool = false
     @State private var skipNonCopyableFiles: Bool = UserDefaults.standard.skipNonCopyableBackupFiles
+    @State private var appVerificationDisabled: Bool = UserDefaults.standard.appVerificationDisabled
     @State private var permissionCheckingDisabled: Bool = UserDefaults.standard.permissionCheckingDisabled
 
     private var isFreeAccount: Bool {
@@ -88,6 +89,16 @@ struct UserCustomizationsView: View {
                         
                         divider
                         
+                        toggleRow(title: "App Verification", isOn: Binding(
+                            get: { !appVerificationDisabled },
+                            set: { newValue in
+                                appVerificationDisabled = !newValue
+                                UserDefaults.standard.appVerificationDisabled = !newValue
+                            }
+                        ))
+                        
+                        divider
+                        
                         toggleRow(title: "Permission Checks", isOn: Binding(
                             get: { !permissionCheckingDisabled },
                             set: { newValue in
@@ -95,6 +106,8 @@ struct UserCustomizationsView: View {
                                 UserDefaults.standard.permissionCheckingDisabled = !newValue
                             }
                         ))
+                        .disabled(appVerificationDisabled)
+                        .opacity(appVerificationDisabled ? 0.5 : 1.0)
                         
                         divider
                         
