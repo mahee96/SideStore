@@ -17,7 +17,8 @@ public enum AppConstants {
     }
     
     public enum Connection {
-        public static let defaultOverrideIP = "10.7.0.1"
+        // public static let defaultOverrideIP = "10.7.0.1"
+        public static let defaultOverrideIP = ""    // auto-discover is robust we dont need to supply default
         public static let defaultRemoteServerIP = "10.7.0.1"
     }
     
