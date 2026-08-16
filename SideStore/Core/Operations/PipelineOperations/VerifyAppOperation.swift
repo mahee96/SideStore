@@ -74,7 +74,8 @@ final class VerifyAppOperation: BasePipelineOperation<InstallAppOperationContext
         
         // process missing permissions check only if the source is V2 or later
         if let source = appVersion.app?.source,
-           source.isSourceAtLeastV2 {
+           source.isSourceAtLeastV2
+        {
             try await self.verifyPermissions(of: appBundle, match: appVersion)
         }
         self.setProgress(100)
