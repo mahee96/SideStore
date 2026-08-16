@@ -9,14 +9,6 @@
 import SwiftUI
 import Minimuxer
 
-struct LocalInterfaceInfo: Hashable, Identifiable {
-    var id: String { name + "-" + ip }
-    let name: String
-    let ip: String
-    let subnet: String
-    let type: String
-}
-
 struct HealthCheckView: View {
     @StateObject private var viewModel = HealthCheckViewModel()
     
@@ -150,8 +142,8 @@ struct HealthCheckView: View {
                         .foregroundColor(.secondary)
                         .italic()
                 } else {
-                    let vpnInterfaces = viewModel.availableInterfaces.filter { $0.type.contains("VPN") }
-                    let localInterfaces = viewModel.availableInterfaces.filter { !$0.type.contains("VPN") }
+                    let vpnInterfaces = viewModel.availableInterfaces.filter { $0.type.isVPN }
+                    let localInterfaces = viewModel.availableInterfaces.filter { !$0.type.isVPN }
                     
                     if !vpnInterfaces.isEmpty {
                         ForEach(vpnInterfaces) { iface in
@@ -226,17 +218,22 @@ struct InterfaceRow: View {
                 HStack(spacing: 8) {
                     Text(iface.name)
                         .fontWeight(.semibold)
-                    Text(iface.type)
+                    Text(iface.type.rawValue)
                         .font(.caption)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(iface.type.contains("VPN") ? Color.blue.opacity(0.15) : Color.gray.opacity(0.15))
-                        .foregroundColor(iface.type.contains("VPN") ? .blue : .primary)
+                        .background(iface.type.isVPN ? Color.blue.opacity(0.15) : Color.gray.opacity(0.15))
+                        .foregroundColor(iface.type.isVPN ? .blue : .primary)
                         .cornerRadius(4)
                 }
                 Text("Subnet: \(iface.subnet)")
                     .font(.caption)
                     .foregroundColor(.secondary)
+                if let ipv6 = iface.ipv6, !ipv6.isEmpty {
+                    Text("IPv6: \(ipv6)")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
             }
             Spacer()
             Text(iface.ip)
