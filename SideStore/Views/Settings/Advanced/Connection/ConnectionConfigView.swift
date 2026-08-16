@@ -79,11 +79,12 @@ struct ConnectionConfigView: View {
                             networkConfigRow(label: "Tunnel Mask", text: $config.tunnelIfaceSubnetMask, editable: false)
                             networkConfigRow(label: "Device IP", text: $config.tunnelPeerIp, editable: false)
                             if config.overrideTunnelPeerIp.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                let hasDiscoveredPeer = config.tunnelPeerIp != nil && !config.tunnelPeerIp!.isEmpty
                                 networkConfigRow(
                                     label: "Reachable",
-                                    text: Binding<String?>(get: { config.tunnelPeerActive.rawValue }, set: { _ in }),
+                                    text: Binding<String?>(get: { hasDiscoveredPeer ? config.tunnelPeerActive.rawValue : "N/A" }, set: { _ in }),
                                     editable: false,
-                                    textColor: config.tunnelPeerActive == .yes ? .green : .red
+                                    textColor: hasDiscoveredPeer ? (config.tunnelPeerActive == .yes ? .green : .red) : .gray
                                 )
                             }
                         }
