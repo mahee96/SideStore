@@ -22,6 +22,7 @@ struct UserCustomizationsView: View {
     @State private var pendingEMPOption: Bool = false
     @State private var showEMPRestartConfirmation: Bool = false
     @State private var skipNonCopyableFiles: Bool = UserDefaults.standard.skipNonCopyableBackupFiles
+    @State private var permissionCheckingDisabled: Bool = UserDefaults.standard.permissionCheckingDisabled
 
     private var isFreeAccount: Bool {
         DatabaseManager.shared.activeTeam()?.type == .free
@@ -82,6 +83,16 @@ struct UserCustomizationsView: View {
                             set: { newValue in
                                 customizeAppExtensions = newValue
                                 UserDefaults.standard.customizeAppExtensions = newValue
+                            }
+                        ))
+                        
+                        divider
+                        
+                        toggleRow(title: "Permission Checks", isOn: Binding(
+                            get: { !permissionCheckingDisabled },
+                            set: { newValue in
+                                permissionCheckingDisabled = !newValue
+                                UserDefaults.standard.permissionCheckingDisabled = !newValue
                             }
                         ))
                         

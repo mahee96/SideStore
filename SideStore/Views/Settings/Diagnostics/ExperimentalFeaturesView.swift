@@ -16,7 +16,6 @@ private extension Color {
 struct ExperimentalFeaturesView: View {
     @State private var freeAcctAppIdDeletion: Bool = UserDefaults.standard.freeAcctAppIdDeletion
     @State private var isCellularRefreshEnabled: Bool = UserDefaults.standard.isCellularRefreshEnabled
-    @State private var permissionCheckingDisabled: Bool = UserDefaults.standard.permissionCheckingDisabled
     @State private var appVerificationDisabled: Bool = UserDefaults.standard.appVerificationDisabled
 
     var body: some View {
@@ -89,16 +88,6 @@ struct ExperimentalFeaturesView: View {
                             set: { newValue in
                                 isCellularRefreshEnabled = newValue
                                 UserDefaults.standard.isCellularRefreshEnabled = newValue
-                            }
-                        ))
-                        
-                        divider
-                        
-                        toggleRow(title: "Permission Checks", isOn: Binding(
-                            get: { !permissionCheckingDisabled },
-                            set: { newValue in
-                                permissionCheckingDisabled = !newValue
-                                UserDefaults.standard.permissionCheckingDisabled = !newValue
                             }
                         ))
                         
