@@ -1323,7 +1323,7 @@ private extension MyAppsViewController
         let appName = installedApp.name
         let title = String(format: NSLocalizedString("Delete “%@”?", comment: ""), appName)
         
-        let message = String(format: NSLocalizedString("This will remove “%@” from SideStore. This will also erase any backup data for this app.", comment: ""), appName)
+        let message = String(format: NSLocalizedString("This will remove “%@” from SideStore and erase any backup data for this app.", comment: ""), appName)
         
         let contentVC = DeleteAppAlertViewController()
         
@@ -1337,7 +1337,11 @@ private extension MyAppsViewController
         
         let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel, handler: nil)
         
-        let deleteAction = UIAlertAction(title: NSLocalizedString("Delete", comment: ""), style: .destructive) { [weak self] _ in
+        let actionTitleForState: (Bool) -> String = { isChecked in
+            isChecked ? NSLocalizedString("Delete", comment: "") : NSLocalizedString("Remove", comment: "")
+        }
+        
+        let confirmAction = UIAlertAction(title: actionTitleForState(contentVC.isChecked), style: .destructive) { [weak self] _ in
             guard let self else { return }
             let deleteFromDevice = contentVC.isChecked
             
@@ -1386,8 +1390,12 @@ private extension MyAppsViewController
             }
         }
         
+        contentVC.onToggle = { [weak confirmAction] isChecked in
+            confirmAction?.setValue(actionTitleForState(isChecked), forKey: "title")
+        }
+        
         alertController.addAction(cancelAction)
-        alertController.addAction(deleteAction)
+        alertController.addAction(confirmAction)
         
         self.present(alertController, animated: true, completion: nil)
     }
