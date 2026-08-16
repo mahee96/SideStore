@@ -234,6 +234,26 @@ public extension UserDefaults
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
     }
+    @objc var isBundleIDVerificationEnabled: Bool {
+        get { self.bool(forKey: #function) }
+        set { self.set(newValue, forKey: #function) }
+    }
+    @objc var isiOSVersionVerificationEnabled: Bool {
+        get { self.bool(forKey: #function) }
+        set { self.set(newValue, forKey: #function) }
+    }
+    @objc var isAppVersionVerificationEnabled: Bool {
+        get { self.bool(forKey: #function) }
+        set { self.set(newValue, forKey: #function) }
+    }
+    @objc var isChecksumVerificationEnabled: Bool {
+        get { self.bool(forKey: #function) }
+        set { self.set(newValue, forKey: #function) }
+    }
+    @objc var isFileSizeVerificationEnabled: Bool {
+        get { self.bool(forKey: #function) }
+        set { self.set(newValue, forKey: #function) }
+    }
     @objc var appVerificationDisabled: Bool {
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
@@ -331,6 +351,11 @@ public extension UserDefaults
             #keyPath(UserDefaults.isBackgroundRefreshEnabled): true,
             #keyPath(UserDefaults.isBetaUpdatesEnabled): false,
             #keyPath(UserDefaults.permissionCheckingDisabled): true,
+            #keyPath(UserDefaults.isBundleIDVerificationEnabled): true,
+            #keyPath(UserDefaults.isiOSVersionVerificationEnabled): true,
+            #keyPath(UserDefaults.isAppVersionVerificationEnabled): true,
+            #keyPath(UserDefaults.isChecksumVerificationEnabled): true,
+            #keyPath(UserDefaults.isFileSizeVerificationEnabled): false,
             #keyPath(UserDefaults.appVerificationDisabled): false,
             #keyPath(UserDefaults.isIdleTimeoutDisableEnabled): true,
             #keyPath(UserDefaults.betaUdpatesTrack): defaultBetaUpdatesTrack,

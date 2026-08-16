@@ -23,6 +23,11 @@ struct UserCustomizationsView: View {
     @State private var showEMPRestartConfirmation: Bool = false
     @State private var skipNonCopyableFiles: Bool = UserDefaults.standard.skipNonCopyableBackupFiles
     @State private var appVerificationDisabled: Bool = UserDefaults.standard.appVerificationDisabled
+    @State private var isBundleIDVerificationEnabled: Bool = UserDefaults.standard.isBundleIDVerificationEnabled
+    @State private var isiOSVersionVerificationEnabled: Bool = UserDefaults.standard.isiOSVersionVerificationEnabled
+    @State private var isAppVersionVerificationEnabled: Bool = UserDefaults.standard.isAppVersionVerificationEnabled
+    @State private var isChecksumVerificationEnabled: Bool = UserDefaults.standard.isChecksumVerificationEnabled
+    @State private var isFileSizeVerificationEnabled: Bool = UserDefaults.standard.isFileSizeVerificationEnabled
     @State private var permissionCheckingDisabled: Bool = UserDefaults.standard.permissionCheckingDisabled
 
     private var isFreeAccount: Bool {
@@ -135,23 +140,75 @@ struct UserCustomizationsView: View {
                         .padding(.horizontal, 16)
                     
                     VStack(spacing: 0) {
-                        toggleRow(title: "App Verification", isOn: Binding(
-                            get: { !appVerificationDisabled },
+                        toggleRow(title: "Disable All", isOn: Binding(
+                            get: { appVerificationDisabled },
                             set: { newValue in
-                                appVerificationDisabled = !newValue
-                                UserDefaults.standard.appVerificationDisabled = !newValue
+                                appVerificationDisabled = newValue
+                                UserDefaults.standard.appVerificationDisabled = newValue
                             }
                         ))
                         
                         divider
                         
-                        toggleRow(title: "Permission Checks", isOn: Binding(
-                            get: { !permissionCheckingDisabled },
-                            set: { newValue in
-                                permissionCheckingDisabled = !newValue
-                                UserDefaults.standard.permissionCheckingDisabled = !newValue
-                            }
-                        ))
+                        Group {
+                            toggleRow(title: "Bundle Identifier Check", isOn: Binding(
+                                get: { isBundleIDVerificationEnabled },
+                                set: { newValue in
+                                    isBundleIDVerificationEnabled = newValue
+                                    UserDefaults.standard.isBundleIDVerificationEnabled = newValue
+                                }
+                            ))
+                            
+                            divider
+                            
+                            toggleRow(title: "iOS Version Check", isOn: Binding(
+                                get: { isiOSVersionVerificationEnabled },
+                                set: { newValue in
+                                    isiOSVersionVerificationEnabled = newValue
+                                    UserDefaults.standard.isiOSVersionVerificationEnabled = newValue
+                                }
+                            ))
+                            
+                            divider
+                            
+                            toggleRow(title: "App Version Check", isOn: Binding(
+                                get: { isAppVersionVerificationEnabled },
+                                set: { newValue in
+                                    isAppVersionVerificationEnabled = newValue
+                                    UserDefaults.standard.isAppVersionVerificationEnabled = newValue
+                                }
+                            ))
+                            
+                            divider
+                            
+                            toggleRow(title: "Checksum (SHA-256) Check", isOn: Binding(
+                                get: { isChecksumVerificationEnabled },
+                                set: { newValue in
+                                    isChecksumVerificationEnabled = newValue
+                                    UserDefaults.standard.isChecksumVerificationEnabled = newValue
+                                }
+                            ))
+                            
+                            divider
+                            
+                            toggleRow(title: "App File Size Check", isOn: Binding(
+                                get: { isFileSizeVerificationEnabled },
+                                set: { newValue in
+                                    isFileSizeVerificationEnabled = newValue
+                                    UserDefaults.standard.isFileSizeVerificationEnabled = newValue
+                                }
+                            ))
+                            
+                            divider
+                            
+                            toggleRow(title: "Permission Checks", isOn: Binding(
+                                get: { !permissionCheckingDisabled },
+                                set: { newValue in
+                                    permissionCheckingDisabled = !newValue
+                                    UserDefaults.standard.permissionCheckingDisabled = !newValue
+                                }
+                            ))
+                        }
                         .disabled(appVerificationDisabled)
                         .opacity(appVerificationDisabled ? 0.5 : 1.0)
                     }
