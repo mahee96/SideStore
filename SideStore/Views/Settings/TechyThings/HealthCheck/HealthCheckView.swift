@@ -90,15 +90,19 @@ struct HealthCheckView: View {
                     subtitle: viewModel.isPairingFileVerified ? "Verified" : (viewModel.isPairingFileLoaded ? "Loaded (Connection down)" : "Unverified / Missing"),
                     isSatisfied: viewModel.pairingSatisfied
                 )
-                
+            }
+            
+            // Section 3: JIT Dependencies
+            Section(header: Text("JIT Requirements")) {
                 DependencyRow(
                     title: "Developer Disk Image (DDI)",
-                    subtitle: viewModel.isDDIMounted ? "Mounted" : "Not Mounted",
-                    isSatisfied: viewModel.ddiSatisfied
+                    subtitle: viewModel.isDDIMounted ? "Mounted" : "Not Mounted (JIT unavailable)",
+                    isSatisfied: viewModel.ddiSatisfied,
+                    isOptional: true
                 )
             }
             
-            // Section 3: Connection Configuration
+            // Section 4: Connection Configuration
             Section(header: Text("Connection Configuration")) {
                 HStack {
                     Text("Connection Mode")
@@ -171,6 +175,7 @@ struct DependencyRow: View {
     let title: String
     let subtitle: String
     let isSatisfied: Bool?
+    var isOptional: Bool = false
     
     var body: some View {
         HStack {
@@ -183,9 +188,19 @@ struct DependencyRow: View {
             }
             Spacer()
             if let satisfied = isSatisfied {
-                Image(systemName: satisfied ? "checkmark.circle.fill" : "xmark.circle.fill")
-                    .foregroundColor(satisfied ? .green : .red)
-                    .font(.title3)
+                if satisfied {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                        .font(.title3)
+                } else if isOptional {
+                    Image(systemName: "minus.circle.fill")
+                        .foregroundColor(.orange)
+                        .font(.title3)
+                } else {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.red)
+                        .font(.title3)
+                }
             } else {
                 Image(systemName: "questionmark.circle.fill")
                     .foregroundColor(.gray)
