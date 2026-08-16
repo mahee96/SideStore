@@ -96,9 +96,9 @@ final class HealthCheckViewModel: ObservableObject {
         let utun = Minimuxer.network.isUTunAvailable
         let ipsec = Minimuxer.network.isIKEv2IPSecAvailable
         
-        let tunnelIfaceIp = ConnectionConfig.shared.tunnelIfaceIp
+        let tunnelIfaceIp = ConnectionConfig.shared.formattedTunnelIface
         let tunnelIfaceSubnetMask = ConnectionConfig.shared.tunnelIfaceSubnetMask
-        let tunnelPeerIp = ConnectionConfig.shared.tunnelPeerIp
+        let tunnelPeerIp = ConnectionConfig.shared.formattedTunnelPeer
         let overrideTunnelPeerIp = ConnectionConfig.shared.overrideTunnelPeerIp
         let overrideTunnelPeerEffective = ConnectionConfig.shared.overrideTunnelPeerReachable
         let remoteServerIp = ConnectionConfig.shared.remoteServerIp

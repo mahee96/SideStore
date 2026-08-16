@@ -75,9 +75,8 @@ struct ConnectionConfigView: View {
                 if draftUseLocalVPN {
                     Section(header: Text("Auto Discovered from network")) {
                         Group {
-                            networkConfigRow(label: "Tunnel IP", text: $config.tunnelIfaceIp, editable: false)
-                            networkConfigRow(label: "Tunnel Mask", text: $config.tunnelIfaceSubnetMask, editable: false)
-                            networkConfigRow(label: "Device IP", text: $config.tunnelPeerIp, editable: false)
+                            networkConfigRow(label: "Tunnel IP", text: Binding<String?>(get: { config.formattedTunnelIface }, set: { _ in }), editable: false)
+                            networkConfigRow(label: "Device IP", text: Binding<String?>(get: { config.formattedTunnelPeer }, set: { _ in }), editable: false)
                             if config.overrideTunnelPeerIp.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                                 let hasDiscoveredPeer = config.tunnelPeerIp != nil && !config.tunnelPeerIp!.isEmpty
                                 networkConfigRow(

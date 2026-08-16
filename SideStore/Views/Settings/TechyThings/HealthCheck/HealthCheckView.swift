@@ -113,7 +113,6 @@ struct HealthCheckView: View {
                 
                 if viewModel.connectionMode == .localVPN {
                     ConfigRow(label: "Tunnel Iface IP", value: viewModel.tunnelIfaceIp)
-                    ConfigRow(label: "Tunnel Subnet Mask", value: viewModel.tunnelIfaceSubnetMask)
                     ConfigRow(label: "Tunnel Peer IP", value: viewModel.tunnelPeerIp)
                     ConfigRow(label: "Override Peer IP", value: viewModel.overrideTunnelPeerIp.isEmpty ? nil : viewModel.overrideTunnelPeerIp)
                     HStack {
