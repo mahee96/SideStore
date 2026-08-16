@@ -140,7 +140,7 @@ struct UserCustomizationsView: View {
                         .padding(.horizontal, 16)
                     
                     VStack(spacing: 0) {
-                        toggleRow(title: "Disable All App Verifications", isOn: Binding(
+                        toggleRow(title: "Disable All Verifications", isOn: Binding(
                             get: { appVerificationDisabled },
                             set: { newValue in
                                 appVerificationDisabled = newValue
