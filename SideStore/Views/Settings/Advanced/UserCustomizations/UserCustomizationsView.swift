@@ -19,6 +19,8 @@ struct UserCustomizationsView: View {
     @State private var autoFixAppGroupIDs: Bool = UserDefaults.standard.autoFixAppGroupIDs
     @State private var isExportResignedAppEnabled: Bool = UserDefaults.standard.isExportResignedAppEnabled
     @State private var enableEMPforWireguard: Bool = UserDefaults.standard.enableEMPforWireguard
+    @State private var pendingEMPOption: Bool = false
+    @State private var showEMPRestartConfirmation: Bool = false
     @State private var skipNonCopyableFiles: Bool = UserDefaults.standard.skipNonCopyableBackupFiles
 
     private var isFreeAccount: Bool {
@@ -111,13 +113,17 @@ struct UserCustomizationsView: View {
                         
                         divider
                         
-                        toggleRow(title: "EMProxy (WireGuard) Server", isOn: Binding(
-                            get: { enableEMPforWireguard },
-                            set: { newValue in
-                                enableEMPforWireguard = newValue
-                                UserDefaults.standard.enableEMPforWireguard = newValue
-                            }
-                        ))
+                        toggleRow(
+                            title: "EMProxy (WireGuard) Server",
+                            subtitle: "Restart required to apply changes",
+                            isOn: Binding(
+                                get: { enableEMPforWireguard },
+                                set: { newValue in
+                                    pendingEMPOption = newValue
+                                    showEMPRestartConfirmation = true
+                                }
+                            )
+                        )
                         
                         divider
                         
@@ -140,6 +146,16 @@ struct UserCustomizationsView: View {
         .background(Color(uiColor: .settingsBackground).ignoresSafeArea())
         .navigationTitle("User Customizations")
         .navigationBarTitleDisplayMode(.large)
+        .alert("Restart Required", isPresented: $showEMPRestartConfirmation) {
+            SwiftUI.Button("Restart Now", role: .destructive) {
+                enableEMPforWireguard = pendingEMPOption
+                UserDefaults.standard.enableEMPforWireguard = pendingEMPOption
+                exit(0)
+            }
+            SwiftUI.Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Changing the EMProxy setting requires restarting SideStore. If canceled, changes will not be saved.")
+        }
     }
 
     private func toggleRow(title: String, subtitle: String? = nil, isOn: Binding<Bool>) -> some View {
