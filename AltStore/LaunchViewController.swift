@@ -86,7 +86,7 @@ final class LaunchViewController: UIViewController {
         guard let data = try? Data(contentsOf: accountFileURL) else { return }
         
         let checksum = SHA256.hash(data: data).compactMap { String(format: "%02x", $0) }.joined()
-        guard checksum != UserDefaults.shared.acctFileChecksum else {
+        guard checksum != UserDefaults.standard.acctFileChecksum else {
             debugLog("[LaunchViewController] Skipping import for \(accountFileURL.lastPathComponent): checksum unchanged.")
             return
         }

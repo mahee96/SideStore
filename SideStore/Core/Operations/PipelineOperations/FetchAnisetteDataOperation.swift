@@ -336,7 +336,7 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<AuthenticatedOpe
         let shouldContinue = try await handler.warnOutdatedAnisetteServer()
         if shouldContinue {
             self.verboseLog("[FetchAnisetteDataOperation] Fetching anisette via V1")
-            UserDefaults.shared.defaultServerURL = AnisetteManager.currentURLString
+            UserDefaults.standard.defaultServerURL = AnisetteManager.currentURLString
             return try await self.fetchAnisetteV1()
         } else {
             self.debugLog("[FetchAnisetteDataOperation] Cancelled anisette operation")

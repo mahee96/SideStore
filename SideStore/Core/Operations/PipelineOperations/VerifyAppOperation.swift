@@ -219,7 +219,7 @@ final class VerifyAppOperation: BasePipelineOperation<InstallAppOperationContext
                 throw VerificationError.undeclaredPermissions(missingPermissions, app: appBundle)
             }
         } catch let error as VerificationError where error.code == .undeclaredPermissions {
-            if let recommendedSources = UserDefaults.shared.recommendedSources, let (sourceID, sourceURL) = await $storeApp.perform({
+            if let recommendedSources = UserDefaults.standard.recommendedSources, let (sourceID, sourceURL) = await $storeApp.perform({
                 $0.source.map { ($0.identifier, $0.sourceURL) }
             }) {
                 let normalizedSourceURL = try? sourceURL.normalized()
