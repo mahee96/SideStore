@@ -21,7 +21,7 @@ struct DeveloperOptionsView: View {
     @State private var responseCachingDisabled: Bool = UserDefaults.standard.responseCachingDisabled
     @State private var isVerboseOperationsLoggingEnabled: Bool = UserDefaults.standard.isVerboseOperationsLoggingEnabled
     @State private var isSideStoreVerboseLoggingEnabled: Bool = UserDefaults.standard.isSideStoreVerboseLoggingEnabled
-    @State private var isAltWidgetVerboseLoggingEnabled: Bool = UserDefaults.standard.isAltWidgetVerboseLoggingEnabled
+    @State private var isAltWidgetVerboseLoggingEnabled: Bool = WidgetDataManager.shared.isVerboseLoggingEnabled
     @State private var isAltSignVerboseLoggingEnabled: Bool = UserDefaults.standard.isAltSignVerboseLoggingEnabled
     @State private var isMinimuxerVerboseLoggingEnabled: Bool = UserDefaults.standard.isMinimuxerVerboseLoggingEnabled
     @State private var isRotateLogsOnStartupEnabled: Bool = UserDefaults.standard.isRotateLogsOnStartupEnabled
@@ -85,7 +85,7 @@ struct DeveloperOptionsView: View {
                             get: { isAltWidgetVerboseLoggingEnabled },
                             set: { newValue in
                                 isAltWidgetVerboseLoggingEnabled = newValue
-                                UserDefaults.standard.isAltWidgetVerboseLoggingEnabled = newValue
+                                WidgetDataManager.shared.isVerboseLoggingEnabled = newValue
                             }
                         ))
                         
