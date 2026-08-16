@@ -108,7 +108,7 @@ struct ConnectionConfigView: View {
                     } footer: {
                         HStack(alignment: .top, spacing: 0) {
                             Text("Note: ")
-                            Text("'Device IP' is mandatory and should match exactly as in the target VPN's config")
+                            Text("'Device IP' is optional and if specified should match exactly as in the target VPN's config or Leave empty to prefer auto-discovery.")
                         }
                     }
                 } else {
