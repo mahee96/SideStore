@@ -20,6 +20,7 @@ final class ConnectionConfig: ObservableObject {
     @Published var tunnelIfaceIp: String?
     @Published var tunnelIfaceSubnetMask: String?
     @Published var tunnelPeerIp: String?
+    @Published var tunnelPeerReachable: Bool = false
     @Published var overrideTunnelPeerIp: String = overrideIPStorage {
         didSet { Self.overrideIPStorage = overrideTunnelPeerIp }
     }
@@ -68,6 +69,7 @@ final class ConnectionConfig: ObservableObject {
         set { setStoredWireGuardServerPort(newValue) }
     }
 
+    var tunnelPeerActive: ActiveState { tunnelPeerReachable ? .yes : .no }
     var overrideTunnelPeerActive: ActiveState { overrideTunnelPeerReachable ? .yes : .no }
     var remoteActive: ActiveState { remoteReachable ? .yes : .no }
 }

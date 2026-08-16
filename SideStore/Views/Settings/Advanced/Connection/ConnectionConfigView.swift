@@ -78,6 +78,14 @@ struct ConnectionConfigView: View {
                             networkConfigRow(label: "Tunnel IP", text: $config.tunnelIfaceIp, editable: false)
                             networkConfigRow(label: "Tunnel Mask", text: $config.tunnelIfaceSubnetMask, editable: false)
                             networkConfigRow(label: "Device IP", text: $config.tunnelPeerIp, editable: false)
+                            if config.overrideTunnelPeerIp.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                networkConfigRow(
+                                    label: "Reachable",
+                                    text: Binding<String?>(get: { config.tunnelPeerActive.rawValue }, set: { _ in }),
+                                    editable: false,
+                                    textColor: config.tunnelPeerActive == .yes ? .green : .red
+                                )
+                            }
                         }
                     }
                     
@@ -87,12 +95,14 @@ struct ConnectionConfigView: View {
                             text: Binding<String?>(get: { draftOverrideTunnelPeerIp }, set: { draftOverrideTunnelPeerIp = $0 ?? "" }),
                             editable: true
                         )
-                        networkConfigRow(
-                            label: "Active",
-                            text: Binding<String?>(get: { config.overrideTunnelPeerActive.rawValue }, set: { _ in }),
-                            editable: false,
-                            textColor: config.overrideTunnelPeerActive == .yes ? .green : .red
-                        )
+                        if !config.overrideTunnelPeerIp.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            networkConfigRow(
+                                label: "Active",
+                                text: Binding<String?>(get: { config.overrideTunnelPeerActive.rawValue }, set: { _ in }),
+                                editable: false,
+                                textColor: config.overrideTunnelPeerActive == .yes ? .green : .red
+                            )
+                        }
                     } header: {
                         Text("User Configuration")
                     } footer: {
@@ -116,6 +126,11 @@ struct ConnectionConfigView: View {
                         )
                     } header: {
                         Text("Remote Endpoint")
+                    } footer: {
+                        HStack(alignment: .top, spacing: 0) {
+                            Text("Note: ")
+                            Text("'Device IP / Endpoint' is mandatory and should match the remote server's address")
+                        }
                     }
                 }
 
@@ -203,6 +218,12 @@ struct ConnectionConfigView: View {
     }
 
     private func validateInputs() -> String? {
+        if !draftUseLocalVPN {
+            let remoteIp = draftRemoteServerIp.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !remoteIp.isEmpty else {
+                return "Device IP / Endpoint is mandatory for Remote Endpoint mode."
+            }
+        }
         if UserDefaults.standard.enableEMPforWireguard || UserDefaults.standard.alwaysShowWireGuardConfig {
             let host = draftWireGuardServerHost.trimmingCharacters(in: .whitespaces)
             guard !host.isEmpty else {

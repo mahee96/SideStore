@@ -227,33 +227,81 @@ struct ConfigRow: View {
 struct InterfaceRow: View {
     let iface: LocalInterfaceInfo
     
+    private var hasIPv4: Bool {
+        !iface.subnet.isEmpty && !iface.ip.contains(":")
+    }
+    
+    private var ipv4Host: String {
+        hasIPv4 ? iface.ip : "N/A"
+    }
+    
+    private var ipv4Mask: String {
+        !iface.subnet.isEmpty ? iface.subnet : "N/A"
+    }
+    
+    private var ipv6Address: String {
+        if let v6 = iface.ipv6, !v6.isEmpty {
+            return v6
+        }
+        if iface.ip.contains(":") {
+            return iface.ip
+        }
+        return "N/A"
+    }
+    
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
-                    Text(iface.name)
-                        .fontWeight(.semibold)
-                    Text(iface.type.rawValue)
-                        .font(.caption)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(iface.type.isVPN ? Color.blue.opacity(0.15) : Color.gray.opacity(0.15))
-                        .foregroundColor(iface.type.isVPN ? .blue : .primary)
-                        .cornerRadius(4)
-                }
-                Text("Subnet: \(iface.subnet)")
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Text("Iface:")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                if let ipv6 = iface.ipv6, !ipv6.isEmpty {
-                    Text("IPv6: \(ipv6)")
+                    .frame(width: 36, alignment: .leading)
+                
+                Text(iface.name)
+                    .fontWeight(.semibold)
+                
+                Text(iface.type.rawValue)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(iface.type.isVPN ? Color.blue.opacity(0.15) : Color.gray.opacity(0.15))
+                    .foregroundColor(iface.type.isVPN ? .blue : .primary)
+                    .cornerRadius(4)
+                
+                Spacer()
+            }
+            .padding(.bottom, 2)
+            
+            HStack(alignment: .top, spacing: 8) {
+                Text("IPv4:")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .frame(width: 36, alignment: .leading)
+                
+                Text(ipv4Host)
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundColor(hasIPv4 ? .primary : .secondary)
+                
+                if hasIPv4 {
+                    Text("(\(ipv4Mask))")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
             }
-            Spacer()
-            Text(iface.ip)
-                .font(.system(.body, design: .monospaced))
-                .foregroundColor(.secondary)
+            
+            HStack(alignment: .top, spacing: 8) {
+                Text("IPv6:")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .frame(width: 36, alignment: .leading)
+                
+                Text(ipv6Address)
+                    .font(.system(.caption2, design: .monospaced))
+                    .foregroundColor(ipv6Address != "N/A" ? .primary : .secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
+        .padding(.vertical, 4)
     }
 }
