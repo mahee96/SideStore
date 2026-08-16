@@ -296,22 +296,6 @@ struct DeveloperOptionsView: View {
                         .padding(.horizontal, 16)
                     
                     VStack(spacing: 0) {
-                        SwiftUI.Button(action: { exportWireGuardConfig() }) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "square.and.arrow.up")
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(.white)
-                                Text("Export WireGuard Config")
-                                    .font(.system(size: 17, weight: .bold))
-                                    .foregroundColor(.white)
-                                Spacer()
-                            }
-                            .padding(.horizontal, 16)
-                            .frame(height: 50)
-                        }
-                        
-                        divider
-                        
                         SwiftUI.Button(action: { triggerStartEMProxy() }) {
                             HStack(spacing: 12) {
                                 Image(systemName: "play.circle")
@@ -567,17 +551,7 @@ struct DeveloperOptionsView: View {
             }
         }
     }
-    
-    private func exportWireGuardConfig() {
-        guard let top = topViewController() else { return }
-        guard let url = Bundle.main.url(forResource: "SideStore", withExtension: "conf") else {
-            let toastView = ToastView(text: NSLocalizedString("SideStore.conf missing!", comment: ""), detailText: "Unable to locate SideStore.conf in bundle resources.")
-            toastView.show(in: top)
-            return
-        }
-        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-        top.present(activityVC, animated: true)
-    }
+
     
     private func triggerStartEMProxy() {
         guard let top = topViewController() else { return }

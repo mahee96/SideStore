@@ -113,6 +113,33 @@ struct UserCustomizationsView: View {
                         
                         divider
                         
+                        SwiftUI.Button(action: { exportWireGuardConfig() }) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Export WireGuard Config")
+                                        .font(.system(size: 17, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .multilineTextAlignment(.leading)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                    Text("Exports SideStore.conf to import into WireGuard app")
+                                        .font(.system(size: 12, weight: .regular))
+                                        .foregroundColor(Color.white.opacity(0.6))
+                                        .multilineTextAlignment(.leading)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                Spacer()
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 55, alignment: .center)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .frame(minHeight: 50)
+                        }
+                        
+                        divider
+                        
                         toggleRow(
                             title: "EMProxy (WireGuard) Server",
                             subtitle: "Restart required to apply changes",
@@ -187,5 +214,28 @@ struct UserCustomizationsView: View {
             .fill(Color.settingsDivider)
             .frame(height: 0.5)
             .padding(.horizontal, 16)
+    }
+
+    private func exportWireGuardConfig() {
+        guard let top = topViewController() else { return }
+        guard let url = Bundle.main.url(forResource: "SideStore", withExtension: "conf") else {
+            let toastView = ToastView(text: NSLocalizedString("SideStore.conf missing!", comment: ""), detailText: "Unable to locate SideStore.conf in bundle resources.")
+            toastView.show(in: top)
+            return
+        }
+        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        top.present(activityVC, animated: true)
+    }
+
+    private func topViewController() -> UIViewController? {
+        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = scene.windows.first(where: { $0.isKeyWindow }),
+              var top = window.rootViewController else {
+            return nil
+        }
+        while let presented = top.presentedViewController {
+            top = presented
+        }
+        return top
     }
 }
