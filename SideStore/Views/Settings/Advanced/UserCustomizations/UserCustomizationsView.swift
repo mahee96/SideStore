@@ -174,7 +174,7 @@ struct UserCustomizationsView: View {
                                     .foregroundColor(.white)
                                     .multilineTextAlignment(.leading)
                                     .fixedSize(horizontal: false, vertical: true)
-                                Text("Exports SideStore.conf to import into WireGuard app")
+                                Text("Exports SideStore.conf to import into WireGuard VPN app")
                                     .font(.system(size: 12, weight: .regular))
                                     .foregroundColor(Color.white.opacity(0.6))
                                     .multilineTextAlignment(.leading)
@@ -183,11 +183,9 @@ struct UserCustomizationsView: View {
                             Spacer()
                             SwiftUI.Button(action: { exportWireGuardConfig() }) {
                                 Image(systemName: "square.and.arrow.up")
-                                    .font(.system(size: 17, weight: .semibold))
+                                    .font(.system(size: 22, weight: .semibold))
                                     .foregroundColor(.white)
-                                    .frame(width: 38, height: 38)
-                                    .background(Color.white.opacity(0.15))
-                                    .cornerRadius(10)
+                                    .frame(width: 55, alignment: .center)
                             }
                         }
                         .padding(.horizontal, 16)
