@@ -1323,25 +1323,15 @@ private extension MyAppsViewController
         let appName = installedApp.name
         let title = String(format: NSLocalizedString("Delete “%@”?", comment: ""), appName)
         
-        let messageForState: (Bool) -> String = { isChecked in
-            if isChecked {
-                return String(format: NSLocalizedString("This will remove “%@” from SideStore and the device. This will also erase any backup data for this app.", comment: ""), appName)
-            } else {
-                return String(format: NSLocalizedString("This will remove “%@” from SideStore. This will also erase any backup data for this app.", comment: ""), appName)
-            }
-        }
+        let message = String(format: NSLocalizedString("This will remove “%@” from SideStore. This will also erase any backup data for this app.", comment: ""), appName)
         
         let contentVC = DeleteAppAlertViewController()
         
         let alertController = UIAlertController(
             title: title,
-            message: messageForState(contentVC.isChecked),
+            message: message,
             preferredStyle: .alert
         )
-        
-        contentVC.onToggle = { [weak alertController] isChecked in
-            alertController?.message = messageForState(isChecked)
-        }
         
         alertController.setValue(contentVC, forKey: "contentViewController")
         

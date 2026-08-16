@@ -42,7 +42,7 @@ class DeleteAppAlertViewController: UIViewController {
         checkboxButton.addTarget(self, action: #selector(toggleCheckbox), for: .touchUpInside)
         
         let label = UILabel()
-        label.text = NSLocalizedString("Delete from device", comment: "")
+        label.text = NSLocalizedString("Uninstall from device", comment: "")
         label.font = .systemFont(ofSize: 14)
         label.isUserInteractionEnabled = true
         let tap = UITapGestureRecognizer(target: self, action: #selector(toggleCheckbox))
