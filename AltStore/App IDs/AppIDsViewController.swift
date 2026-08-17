@@ -198,8 +198,8 @@ private extension AppIDsViewController
             self.activityIndicatorBarButtonItem.isIndicatingActivity = false
             
             let activeTeamType = DatabaseManager.shared.activeTeam()?.type
-            let allowsEditMode = (activeTeamType == .individual || activeTeamType == .organization) &&
-                                 (activeTeamType != .free || UserDefaults.standard.freeAcctAppIdDeletion)
+            let allowsEditMode = (activeTeamType == .individual || activeTeamType == .organization) ||
+                                 (activeTeamType == .free && UserDefaults.standard.freeAcctAppIdDeletion)
             
             if allowsEditMode
             {
