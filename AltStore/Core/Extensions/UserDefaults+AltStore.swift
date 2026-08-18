@@ -173,6 +173,10 @@ public extension UserDefaults
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
     }
+    @objc var useOnDeviceAnisette: Bool {
+        get { self.bool(forKey: #function) }
+        set { self.set(newValue, forKey: #function) }
+    }
 
     @objc var recreateDatabaseOnNextStart: Bool {
         get { self.bool(forKey: #function) }
@@ -363,6 +367,7 @@ public extension UserDefaults
             #keyPath(UserDefaults.menuAnisetteURL): "https://ani.sidestore.io",
             #keyPath(UserDefaults.isAnisetteOfflineMode): false,
             #keyPath(UserDefaults.disableAnisetteRotation): false,
+            #keyPath(UserDefaults.useOnDeviceAnisette): true,
             #keyPath(UserDefaults.useLocalVPN): true,
             #keyPath(UserDefaults.enableEMPforWireguard): false,
             #keyPath(UserDefaults.skipNonCopyableBackupFiles): true,
