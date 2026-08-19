@@ -78,12 +78,14 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<AuthenticatedOpe
         }
         
         self.setProgress(20)
+        /*
         if UserDefaults.standard.useOnDeviceAnisette {
             self.debugLog("[FetchAnisetteDataOperation] Fetching anisette via On-Device Anisette (ODA)...")
             let result = try await OnDeviceAnisetteManager.shared.fetchAnisetteData()
             self.setProgress(100)
             return result
         }
+        */
 
         let result = try await self.startProvisioningFlow()
         self.setProgress(100)
