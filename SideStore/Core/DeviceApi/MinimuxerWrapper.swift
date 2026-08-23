@@ -42,13 +42,42 @@ private func resolveDiscoveredRemotePairingPort() async -> UInt16? {
     return nil
 }
 
+private var lastRemotePairingPortResolveTime: Date = .distantPast
+private var activeRemotePairingPortResolveTask: Task<UInt16?, Never>?
+
+private func resolveDiscoveredRemotePairingPortThrottled() async -> UInt16? {
+    let overridePort = UserDefaults.standard.remotePairingPortOverride
+    if overridePort > 0 && overridePort <= 65535 {
+        return UInt16(overridePort)
+    }
+
+    let now = Date()
+    guard now.timeIntervalSince(lastRemotePairingPortResolveTime) > 5.0 else {
+        return nil
+    }
+
+    if let inFlight = activeRemotePairingPortResolveTask {
+        return await inFlight.value
+    }
+
+    let task = Task<UInt16?, Never> {
+        defer {
+            activeRemotePairingPortResolveTask = nil
+            lastRemotePairingPortResolveTime = Date()
+        }
+        return await resolveDiscoveredRemotePairingPort()
+    }
+    activeRemotePairingPortResolveTask = task
+    return await task.value
+}
+
 private func withRemotePairingRetry<T>(_ operation: () async throws -> T) async throws -> T {
     do {
         return try await operation()
     } catch {
         guard minimuxer.gateway.isRPPairing else { throw error }
 
-        if let newPort = await resolveDiscoveredRemotePairingPort(), newPort != remotePairingPortCache {
+        if let newPort = await resolveDiscoveredRemotePairingPortThrottled(), newPort != remotePairingPortCache {
             debugLog("[SideStore] Operation failed, updating RemotePairing port from \(remotePairingPortCache) -> \(newPort) and retrying...")
             remotePairingPortCache = newPort
             _ = Minimuxer.shared(backend: selectedGatewayBackendCache, remotePairingPort: newPort)
