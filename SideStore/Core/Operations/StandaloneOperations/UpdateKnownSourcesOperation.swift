@@ -37,6 +37,7 @@ class UpdateKnownSourcesOperation: OperationLogging
     init()
     {
         let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = 10.0
         
         if UserDefaults.standard.responseCachingDisabled
         {

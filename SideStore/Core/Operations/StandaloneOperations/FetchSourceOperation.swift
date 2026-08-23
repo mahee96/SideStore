@@ -72,6 +72,7 @@ final class FetchSourceOperation: BaseStandaloneOperation<StandaloneOperationCon
         
         var request = URLRequest(url: self.sourceURL)
         request.cachePolicy = .reloadIgnoringLocalCacheData     // don't use local caching
+        request.timeoutInterval = 10.0
 
         let (data, response) = try await self.fetchSourceData(with: request)
         
