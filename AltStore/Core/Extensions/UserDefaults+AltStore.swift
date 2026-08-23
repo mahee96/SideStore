@@ -386,6 +386,9 @@ public extension UserDefaults
             #keyPath(UserDefaults.isDebugModeEnabled): false,
 
         ] as [String: Any]
+
+        // TODO: temporarily forcing this to be visible in nightlies, remove this in stable release later
+        UserDefaults.standard.isDebugModeEnabled = true
         
         UserDefaults.standard.register(defaults: defaults)
         
