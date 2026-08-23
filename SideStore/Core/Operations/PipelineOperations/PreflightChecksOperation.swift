@@ -21,8 +21,12 @@ final class PreflightChecksOperation: BasePipelineOperation<AuthenticatedOperati
     }
 
     override func execute(parentProgress: Progress?) async throws -> Bool {
+        let startTime = CFAbsoluteTimeGetCurrent()
         debugLog("[PreflightChecksOperation] execute() started")
-        defer { debugLog("[PreflightChecksOperation] execute() completed") }
+        defer {
+            let elapsed = CFAbsoluteTimeGetCurrent() - startTime
+            debugLog("[PreflightChecksOperation] execute() took: \(String(format: "%.3fs", elapsed))")
+        }
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
 

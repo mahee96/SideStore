@@ -49,8 +49,12 @@ class UpdateKnownSourcesOperation: OperationLogging
     
     func execute() async throws -> ([KnownSource], [KnownSource])
     {
+        let startTime = CFAbsoluteTimeGetCurrent()
         debugLog("[UpdateKnownSourcesOperation] execute() started")
-        defer { debugLog("[UpdateKnownSourcesOperation] execute() completed") }
+        defer {
+            let elapsed = CFAbsoluteTimeGetCurrent() - startTime
+            debugLog("[UpdateKnownSourcesOperation] execute() took: \(String(format: "%.3fs", elapsed))")
+        }
         let (data, response) = try await self.session.data(from: .sources)
         
         if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 404 {

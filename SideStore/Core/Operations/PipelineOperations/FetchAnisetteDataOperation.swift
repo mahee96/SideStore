@@ -64,8 +64,12 @@ final class FetchAnisetteDataOperation: BaseStandaloneOperation<AuthenticatedOpe
     }
     
     override func execute(parentProgress: Progress?) async throws -> ALTAnisetteData {
+        let startTime = CFAbsoluteTimeGetCurrent()
         debugLog("[FetchAnisetteDataOperation] execute() started")
-        defer { debugLog("[FetchAnisetteDataOperation] execute() completed") }
+        defer {
+            let elapsed = CFAbsoluteTimeGetCurrent() - startTime
+            debugLog("[FetchAnisetteDataOperation] execute() took: \(String(format: "%.3fs", elapsed))")
+        }
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
         
