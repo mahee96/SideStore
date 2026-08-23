@@ -8,6 +8,7 @@
 
 import SwiftUI
 import Combine
+import Minimuxer
 
 private typealias SButton = SwiftUI.Button
 
@@ -120,7 +121,7 @@ struct ConnectionConfigView: View {
                     } footer: {
                         HStack(alignment: .top, spacing: 0) {
                             Text("Note: ")
-                            Text("'Device IP' and 'RemotePair Port' are optional and if specified should match exactly as in the target VPN's config or Leave empty to prefer auto-discovery.")
+                            Text("'Device IP' and 'RemotePair Port' are optional and if specified should match exactly as in the target VPN's config or Leave empty to prefer auto-discovery/default port \(MinimuxerConstants.remotePairingPort).")
                         }
                     }
                 } else {
@@ -131,7 +132,12 @@ struct ConnectionConfigView: View {
                             editable: true
                         )
                         if minimuxer.gateway.isRPPairing {
-                            networkConfigRow(label: "RemotePair Port", text: Binding<String?>(get: { String(remotePairingPortCache) }, set: { _ in }), editable: false)
+                            networkConfigRow(
+                                label: "RemotePair Port",
+                                text: Binding<String?>(get: { draftRemotePairingPortOverride }, set: { draftRemotePairingPortOverride = $0 ?? "" }),
+                                editable: true,
+                                isPort: true
+                            )
                         }
                         networkConfigRow(
                             label: "Reachable",
@@ -144,7 +150,7 @@ struct ConnectionConfigView: View {
                     } footer: {
                         HStack(alignment: .top, spacing: 0) {
                             Text("Note: ")
-                            Text("'Device IP / Endpoint' is mandatory and should match the remote server's address")
+                            Text("'Device IP / Endpoint' is mandatory. 'RemotePair Port' is optional (prefers auto-discovery or default \(MinimuxerConstants.remotePairingPort)).")
                         }
                     }
                 }
@@ -280,6 +286,7 @@ struct ConnectionConfigView: View {
                 UserDefaults.standard.remotePairingPortOverride = 0
             }
             syncMinimuxerBackendFromUserDefaults()
+            try? await fetchUDID()
         }
         await bindConnectionConfig()
         showConfirmDialog = true
