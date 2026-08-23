@@ -6,18 +6,98 @@
 //
 
 import Foundation
+import Network
 import Minimuxer
 import Combine
 
 public var selectedGatewayBackendCache: GatewayBackend = .idevice
+public var remotePairingPortCache: UInt16 = MinimuxerConstants.remotePairingPort
 
 public func syncMinimuxerBackendFromUserDefaults() {
     let raw = UserDefaults.standard.minimuxerGatewayBackend
     selectedGatewayBackendCache = GatewayBackend(rawValue: raw) ?? .idevice
+
+    let overridePort = UserDefaults.standard.remotePairingPortOverride
+    if overridePort > 0 && overridePort <= 65535 {
+        remotePairingPortCache = UInt16(overridePort)
+    }
+    startRemotePairingPortObserver()
 }
 
 var minimuxer: any MinimuxerFacade {
-    Minimuxer.shared(backend: selectedGatewayBackendCache)
+    Minimuxer.shared(backend: selectedGatewayBackendCache, remotePairingPort: remotePairingPortCache)
+}
+
+private var remotePairingObserverBrowser: NWBrowser?
+
+public func startRemotePairingPortObserver() {
+    /*
+    guard remotePairingObserverBrowser == nil else { return }
+    
+    let typeWithoutDot = MinimuxerConstants.remotePairingDaemonServiceType.hasSuffix(".")
+        ? String(MinimuxerConstants.remotePairingDaemonServiceType.dropLast())
+        : MinimuxerConstants.remotePairingDaemonServiceType
+        
+    let descriptor = NWBrowser.Descriptor.bonjour(type: typeWithoutDot, domain: AppConstants.Bonjour.defaultDomain)
+    let parameters = NWParameters.tcp
+    parameters.includePeerToPeer = true
+    
+    let browser = NWBrowser(for: descriptor, using: parameters)
+    browser.browseResultsChangedHandler = { results, changes in
+        for change in changes {
+            guard case .added(let result) = change else { continue }
+            guard case .service = result.endpoint else { continue }
+            
+            let conn = NWConnection(to: result.endpoint, using: parameters)
+            conn.stateUpdateHandler = { state in
+                switch state {
+                case .ready, .waiting:
+                    guard let remote = conn.currentPath?.remoteEndpoint,
+                          case .hostPort(_, let port) = remote else { return }
+                    conn.cancel()
+                    let newPort = port.rawValue
+                    if remotePairingPortCache != newPort {
+                        debugLog("[SideStore] RemotePairing port changed via Bonjour: \(remotePairingPortCache) -> \(newPort)")
+                        remotePairingPortCache = newPort
+                        _ = Minimuxer.shared(backend: selectedGatewayBackendCache, remotePairingPort: newPort)
+                    }
+                case .failed:
+                    conn.cancel()
+                default:
+                    break
+                }
+            }
+            conn.start(queue: .global(qos: .userInitiated))
+        }
+    }
+    browser.stateUpdateHandler = { state in
+        debugLog("[SideStore] RemotePairingPortObserver state: \(state)")
+    }
+    browser.start(queue: .main)
+    remotePairingObserverBrowser = browser
+    */
+}
+
+public func stopRemotePairingPortObserver() {
+    remotePairingObserverBrowser?.cancel()
+    remotePairingObserverBrowser = nil
+}
+
+private func resolveDiscoveredRemotePairingPort() async -> UInt16? {
+    let overridePort = UserDefaults.standard.remotePairingPortOverride
+    if overridePort > 0 && overridePort <= 65535 {
+        return UInt16(overridePort)
+    }
+    /*
+    if let resolved = await BonjourDiscoveryManagerV2.resolveFirstService(
+        ofType: MinimuxerConstants.remotePairingDaemonServiceType,
+        timeout: AppConstants.Bonjour.defaultDiscoveryTimeout
+    ) {
+        debugLog("[SideStore] Discovered RemotePairing port via Bonjour: \(resolved.port)")
+        return resolved.port
+    }
+    */
+    return MinimuxerConstants.remotePairingPort
 }
 
 public var minimuxerStatusPublisher: AnyPublisher<Result<Bool, Error>, Never> {
@@ -118,6 +198,9 @@ func reinitializePairingData(_ pairingFile: String) async throws {
     debugLog("[SideStore] reinitializePairingData(pairingFile) is no-op on simulator")
     #else
     debugLog("[SideStore] reinitializePairingData(pairingFile) invoked")
+    if let port = await resolveDiscoveredRemotePairingPort() {
+        remotePairingPortCache = port
+    }
     try await minimuxer.core.reinitializePairingData(pairingFile: pairingFile)
     #endif
 }
@@ -129,6 +212,10 @@ func minimuxerStart(_ pairingFile: String, mountPath: String) async throws {
     await bindConnectionConfig()
     await minimuxer.network.start()
     #else
+    startRemotePairingPortObserver()
+    if let port = await resolveDiscoveredRemotePairingPort() {
+        remotePairingPortCache = port
+    }
     await bindConnectionConfig()
     debugLog("[SideStore] minimuxerStart(pairingFile) invoked")
     try await minimuxer.core.start(pairingFile: pairingFile, mountPath: mountPath)
@@ -142,6 +229,9 @@ func reinitializePairingData(pairingFile: String) async throws {
     debugLog("[SideStore] reinitializePairingData(pairingFile) is no-op on simulator")
     #else
     debugLog("[SideStore] reinitializePairingData(pairingFile) invoked")
+    if let port = await resolveDiscoveredRemotePairingPort() {
+        remotePairingPortCache = port
+    }
     try await minimuxer.core.reinitializePairingData(pairingFile: pairingFile)
     #endif
 }

@@ -77,6 +77,9 @@ struct ConnectionConfigView: View {
                         Group {
                             networkConfigRow(label: "Tunnel IP", text: Binding<String?>(get: { config.formattedTunnelIface }, set: { _ in }), editable: false)
                             networkConfigRow(label: "Device IP", text: Binding<String?>(get: { config.formattedTunnelPeer }, set: { _ in }), editable: false)
+                            if minimuxer.gateway.isRPPairing {
+                                networkConfigRow(label: "RemotePair Port", text: Binding<String?>(get: { String(remotePairingPortCache) }, set: { _ in }), editable: false)
+                            }
                             if config.overrideTunnelPeerIp.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                                 let hasDiscoveredPeer = config.tunnelPeerIp != nil && !config.tunnelPeerIp!.isEmpty
                                 networkConfigRow(
@@ -118,6 +121,9 @@ struct ConnectionConfigView: View {
                             text: Binding<String?>(get: { draftRemoteServerIp }, set: { draftRemoteServerIp = $0 ?? "" }),
                             editable: true
                         )
+                        if minimuxer.gateway.isRPPairing {
+                            networkConfigRow(label: "RemotePair Port", text: Binding<String?>(get: { String(remotePairingPortCache) }, set: { _ in }), editable: false)
+                        }
                         networkConfigRow(
                             label: "Reachable",
                             text: Binding<String?>(get: { config.remoteActive.rawValue }, set: { _ in }),

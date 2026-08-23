@@ -76,6 +76,10 @@ public extension UserDefaults
         get { self.string(forKey: #function) ?? GatewayBackend.idevice.rawValue }
         set { self.set(newValue, forKey: #function) }
     }
+    @objc var remotePairingPortOverride: Int {
+        get { self.integer(forKey: #function) }
+        set { self.set(newValue, forKey: #function) }
+    }
     @objc var skipNonCopyableBackupFiles: Bool {
         get {
             guard self.object(forKey: #function) != nil else { return true }
