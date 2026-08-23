@@ -13,9 +13,27 @@ public final class SideJITManager {
     
     private init() {}
     
+    public func resolveServerURL() async -> String {
+        if let address = UserDefaults.standard.textInputSideJITServerurl, !address.isEmpty {
+            return address
+        }
+        
+        if let resolved = await BonjourDiscoveryManagerV2.resolveFirstService(
+            ofType: AppConstants.SideJIT.bonjourServiceType,
+            namePrefix: AppConstants.SideJIT.bonjourServiceName,
+            timeout: AppConstants.SideJIT.timeout
+        ) {
+            let cleanHost = resolved.host.strippingInterfaceScope
+            let url = "http://\(cleanHost):\(resolved.port)"
+            debugLog("[SideJITManager] Discovered SideJITServer via Bonjour at: \(url)")
+            return url
+        }
+        
+        return AppConstants.SideJIT.defaultServerURL
+    }
+    
     public func askForNetwork() async {
-        let address = UserDefaults.standard.textInputSideJITServerurl ?? ""
-        let SJSURL = address.isEmpty ? AppConstants.SideJIT.defaultServerURL : address
+        let SJSURL = await resolveServerURL()
         guard let url = URL(string: "\(SJSURL)/re/") else { return }
         do {
             var request = URLRequest(url: url)
@@ -40,8 +58,7 @@ public final class SideJITManager {
     }
 
     public func isSideJITServerDetected() async throws {
-        let address = UserDefaults.standard.textInputSideJITServerurl ?? ""
-        let SJSURL = address.isEmpty ? AppConstants.SideJIT.defaultServerURL : address
+        let SJSURL = await resolveServerURL()
         guard let url = URL(string: SJSURL) else { throw URLError(.badURL) }
         var request = URLRequest(url: url)
         request.timeoutInterval = AppConstants.SideJIT.timeout

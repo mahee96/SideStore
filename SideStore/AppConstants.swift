@@ -32,9 +32,16 @@ public enum AppConstants {
         public static let fetchTimeout: TimeInterval = 3.0
     }
     
+    public enum Bonjour {
+        public static let defaultDomain = "local."
+        public static let defaultDiscoveryTimeout: TimeInterval = 2.0
+    }
+    
     public enum SideJIT {
         public static let defaultServerURL = "http://sidejitserver._http._tcp.local:8080"
         public static let timeout: TimeInterval = 2.0
+        public static let bonjourServiceType = "_http._tcp"
+        public static let bonjourServiceName = "SideJITServer"
     }
     
     public static let accountConfigurationFileName = "Account.sideconf"

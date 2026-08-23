@@ -53,8 +53,8 @@ final class EnableJITOperation: BaseStandaloneOperation<StandaloneOperationConte
         } ?? (installedApp.resignedBundleIdentifier, installedApp.name)
 
         if #available(iOS 17, *), userdefaults.isSideJITServerEnabled {
-            let sideJITIP = userdefaults.textInputSideJITServerurl ?? AppConstants.SideJIT.defaultServerURL
-            guard let serverURL = URL(string: sideJITIP) else {
+            let sideJITURLString = await SideJITManager.shared.resolveServerURL()
+            guard let serverURL = URL(string: sideJITURLString) else {
                 throw OperationError.unableToConnectSideJIT
             }
             self.setProgress(30)
@@ -123,7 +123,9 @@ func enableJITSideJITServer(serverURL: URL, bundleIdentifier: String, appName: S
 
     debugLog("[EnableJITOperation] SideJITServer response: '\(dataString)'")
 
-    if dataString.hasPrefix("Enabled JIT for ") || dataString == "Enabled JIT for '\(appName)'!" {
+    let cleanString = dataString.trimmingCharacters(in: CharacterSet(charactersIn: "\"'\n\r\t "))
+
+    if cleanString.contains("Enabled JIT for") {
         let content = UNMutableNotificationContent()
         content.title = "JIT Successfully Enabled"
         content.subtitle = "JIT Enabled For \(appName)"
@@ -132,9 +134,9 @@ func enableJITSideJITServer(serverURL: URL, bundleIdentifier: String, appName: S
         let request = UNNotificationRequest(identifier: "EnabledJIT", content: content, trigger: nil)
         try? await UNUserNotificationCenter.current().add(request)
     } else {
-        let errorType: SideJITServerErrorType = dataString == "Could not find device!"
+        let errorType: SideJITServerErrorType = cleanString.contains("Could not find device")
             ? .deviceNotFound
-            : .other(dataString)
+            : .other(cleanString)
         throw errorType
     }
 }
