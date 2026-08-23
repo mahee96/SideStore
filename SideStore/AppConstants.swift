@@ -28,5 +28,9 @@ public enum AppConstants {
         public static let defaultRemoteServerIP = "10.7.0.1"
     }
     
+    public enum Sources {
+        public static let fetchTimeout: TimeInterval = 5.0
+    }
+    
     public static let accountConfigurationFileName = "Account.sideconf"
 }
