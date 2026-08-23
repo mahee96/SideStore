@@ -21,66 +21,10 @@ public func syncMinimuxerBackendFromUserDefaults() {
     if overridePort > 0 && overridePort <= 65535 {
         remotePairingPortCache = UInt16(overridePort)
     }
-    startRemotePairingPortObserver()
 }
 
 var minimuxer: any MinimuxerFacade {
     Minimuxer.shared(backend: selectedGatewayBackendCache, remotePairingPort: remotePairingPortCache)
-}
-
-private var remotePairingObserverBrowser: NWBrowser?
-
-public func startRemotePairingPortObserver() {
-    /*
-    guard remotePairingObserverBrowser == nil else { return }
-    
-    let typeWithoutDot = MinimuxerConstants.remotePairingDaemonServiceType.hasSuffix(".")
-        ? String(MinimuxerConstants.remotePairingDaemonServiceType.dropLast())
-        : MinimuxerConstants.remotePairingDaemonServiceType
-        
-    let descriptor = NWBrowser.Descriptor.bonjour(type: typeWithoutDot, domain: AppConstants.Bonjour.defaultDomain)
-    let parameters = NWParameters.tcp
-    parameters.includePeerToPeer = true
-    
-    let browser = NWBrowser(for: descriptor, using: parameters)
-    browser.browseResultsChangedHandler = { results, changes in
-        for change in changes {
-            guard case .added(let result) = change else { continue }
-            guard case .service = result.endpoint else { continue }
-            
-            let conn = NWConnection(to: result.endpoint, using: parameters)
-            conn.stateUpdateHandler = { state in
-                switch state {
-                case .ready, .waiting:
-                    guard let remote = conn.currentPath?.remoteEndpoint,
-                          case .hostPort(_, let port) = remote else { return }
-                    conn.cancel()
-                    let newPort = port.rawValue
-                    if remotePairingPortCache != newPort {
-                        debugLog("[SideStore] RemotePairing port changed via Bonjour: \(remotePairingPortCache) -> \(newPort)")
-                        remotePairingPortCache = newPort
-                        _ = Minimuxer.shared(backend: selectedGatewayBackendCache, remotePairingPort: newPort)
-                    }
-                case .failed:
-                    conn.cancel()
-                default:
-                    break
-                }
-            }
-            conn.start(queue: .global(qos: .userInitiated))
-        }
-    }
-    browser.stateUpdateHandler = { state in
-        debugLog("[SideStore] RemotePairingPortObserver state: \(state)")
-    }
-    browser.start(queue: .main)
-    remotePairingObserverBrowser = browser
-    */
-}
-
-public func stopRemotePairingPortObserver() {
-    remotePairingObserverBrowser?.cancel()
-    remotePairingObserverBrowser = nil
 }
 
 private func resolveDiscoveredRemotePairingPort() async -> UInt16? {
@@ -88,7 +32,6 @@ private func resolveDiscoveredRemotePairingPort() async -> UInt16? {
     if overridePort > 0 && overridePort <= 65535 {
         return UInt16(overridePort)
     }
-    /*
     if let resolved = await BonjourDiscoveryManagerV2.resolveFirstService(
         ofType: MinimuxerConstants.remotePairingDaemonServiceType,
         timeout: AppConstants.Bonjour.defaultDiscoveryTimeout
@@ -96,8 +39,23 @@ private func resolveDiscoveredRemotePairingPort() async -> UInt16? {
         debugLog("[SideStore] Discovered RemotePairing port via Bonjour: \(resolved.port)")
         return resolved.port
     }
-    */
-    return MinimuxerConstants.remotePairingPort
+    return nil
+}
+
+private func withRemotePairingRetry<T>(_ operation: () async throws -> T) async throws -> T {
+    do {
+        return try await operation()
+    } catch {
+        guard minimuxer.gateway.isRPPairing else { throw error }
+
+        if let newPort = await resolveDiscoveredRemotePairingPort(), newPort != remotePairingPortCache {
+            debugLog("[SideStore] Operation failed, updating RemotePairing port from \(remotePairingPortCache) -> \(newPort) and retrying...")
+            remotePairingPortCache = newPort
+            _ = Minimuxer.shared(backend: selectedGatewayBackendCache, remotePairingPort: newPort)
+            return try await operation()
+        }
+        throw error
+    }
 }
 
 public var minimuxerStatusPublisher: AnyPublisher<Result<Bool, Error>, Never> {
@@ -198,10 +156,9 @@ func reinitializePairingData(_ pairingFile: String) async throws {
     debugLog("[SideStore] reinitializePairingData(pairingFile) is no-op on simulator")
     #else
     debugLog("[SideStore] reinitializePairingData(pairingFile) invoked")
-    if let port = await resolveDiscoveredRemotePairingPort() {
-        remotePairingPortCache = port
+    try await withRemotePairingRetry {
+        try await minimuxer.core.reinitializePairingData(pairingFile: pairingFile)
     }
-    try await minimuxer.core.reinitializePairingData(pairingFile: pairingFile)
     #endif
 }
 
@@ -212,13 +169,11 @@ func minimuxerStart(_ pairingFile: String, mountPath: String) async throws {
     await bindConnectionConfig()
     await minimuxer.network.start()
     #else
-    startRemotePairingPortObserver()
-    if let port = await resolveDiscoveredRemotePairingPort() {
-        remotePairingPortCache = port
-    }
     await bindConnectionConfig()
     debugLog("[SideStore] minimuxerStart(pairingFile) invoked")
-    try await minimuxer.core.start(pairingFile: pairingFile, mountPath: mountPath)
+    try await withRemotePairingRetry {
+        try await minimuxer.core.start(pairingFile: pairingFile, mountPath: mountPath)
+    }
     #endif
 }
 
@@ -229,10 +184,9 @@ func reinitializePairingData(pairingFile: String) async throws {
     debugLog("[SideStore] reinitializePairingData(pairingFile) is no-op on simulator")
     #else
     debugLog("[SideStore] reinitializePairingData(pairingFile) invoked")
-    if let port = await resolveDiscoveredRemotePairingPort() {
-        remotePairingPortCache = port
+    try await withRemotePairingRetry {
+        try await minimuxer.core.reinitializePairingData(pairingFile: pairingFile)
     }
-    try await minimuxer.core.reinitializePairingData(pairingFile: pairingFile)
     #endif
 }
 
@@ -242,7 +196,9 @@ func installProvisioningProfiles(_ profileData: Data) async throws {
     debugLog("[SideStore] installProvisioningProfiles(profileData) is no-op on simulator")
     #else
     debugLog("[SideStore] installProvisioningProfiles(profileData) invoked")
-    try await minimuxer.core.installProvisioningProfile(profile: profileData)
+    try await withRemotePairingRetry {
+        try await minimuxer.core.installProvisioningProfile(profile: profileData)
+    }
     #endif
 }
 
@@ -252,7 +208,9 @@ func removeProvisioningProfile(_ id: String) async throws {
     debugLog("[SideStore] removeProvisioningProfile(id) is no-op on simulator")
     #else
     debugLog("[SideStore] removeProvisioningProfile(id) invoked")
-    try await minimuxer.core.removeProvisioningProfile(id: id)
+    try await withRemotePairingRetry {
+        try await minimuxer.core.removeProvisioningProfile(id: id)
+    }
     #endif
 }
 
@@ -262,7 +220,9 @@ func removeApp(_ bundleId: String) async throws {
     debugLog("[SideStore] removeApp(bundleId) is no-op on simulator")
     #else
     debugLog("[SideStore] removeApp(bundleId) invoked")
-    try await minimuxer.core.removeApp(bundleId: bundleId)
+    try await withRemotePairingRetry {
+        try await minimuxer.core.removeApp(bundleId: bundleId)
+    }
     #endif
 }
 
@@ -272,7 +232,9 @@ func yeetAppAFC(_ bundleId: String, _ rawBytes: Data) async throws {
     debugLog("[SideStore] yeetAppAFC(bundleId, rawBytes) is no-op on simulator")
     #else
     debugLog("[SideStore] yeetAppAFC(bundleId, rawBytes) invoked")
-    try await minimuxer.core.yeetAppAfc(bundleId: bundleId, ipaBytes: rawBytes)
+    try await withRemotePairingRetry {
+        try await minimuxer.core.yeetAppAfc(bundleId: bundleId, ipaBytes: rawBytes)
+    }
     #endif
 }
 
@@ -282,7 +244,9 @@ func installIPA(_ bundleId: String) async throws {
     debugLog("[SideStore] installIPA(bundleId) is no-op on simulator")
     #else
     debugLog("[SideStore] installIPA(bundleId) invoked")
-    try await minimuxer.core.installIpa(bundleId: bundleId)
+    try await withRemotePairingRetry {
+        try await minimuxer.core.installIpa(bundleId: bundleId)
+    }
     #endif
 }
 
@@ -294,7 +258,10 @@ func fetchUDID(useStatic: Bool = false) async throws -> String? {
     return "XXXXX-XXXX-XXXXX-XXXX"
     #else
     debugLog("[SideStore] fetchUDID() invoked")
-    if let udid = try? await minimuxer.core.fetchUDID(), !udid.isEmpty, udid != "XXXXX-XXXX-XXXXX-XXXX" {
+    let result = try? await withRemotePairingRetry {
+        try await minimuxer.core.fetchUDID()
+    }
+    if let udid = result ?? nil, !udid.isEmpty, udid != "XXXXX-XXXX-XXXXX-XXXX" {
         return udid
     }
     if useStatic {
@@ -310,7 +277,9 @@ func debugApp(_ appId: String) async throws {
     debugLog("[SideStore] debugApp(appId) is no-op on simulator")
     #else
     debugLog("[SideStore] debugApp(appId) invoked")
-    try await minimuxer.core.debugApp(appId: appId)
+    try await withRemotePairingRetry {
+        try await minimuxer.core.debugApp(appId: appId)
+    }
     #endif
 }
 
@@ -320,7 +289,9 @@ func attachDebugger(_ pid: UInt32) async throws {
     debugLog("[SideStore] attachDebugger(pid) is no-op on simulator")
     #else
     debugLog("[SideStore] attachDebugger(pid) invoked")
-    try await minimuxer.core.attachDebugger(pid: pid)
+    try await withRemotePairingRetry {
+        try await minimuxer.core.attachDebugger(pid: pid)
+    }
     #endif
 }
 
@@ -332,7 +303,9 @@ func dumpProfiles(_ docsPath: String) async throws -> String {
     return ""
     #else
     debugLog("[SideStore] dumpProfiles(docsPath) invoked")
-    return try await minimuxer.core.dumpProfiles(docsPath: docsPath)
+    return try await withRemotePairingRetry {
+        try await minimuxer.core.dumpProfiles(docsPath: docsPath)
+    }
     #endif
 }
 
@@ -521,7 +494,9 @@ extension Error {
 
 func minimuxerRestart() async throws {
     #if !targetEnvironment(simulator)
-    try await minimuxer.core.restart()
+    try await withRemotePairingRetry {
+        try await minimuxer.core.restart()
+    }
     #endif
 }
 
