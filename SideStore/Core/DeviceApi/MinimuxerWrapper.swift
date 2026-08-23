@@ -16,7 +16,7 @@ public func syncMinimuxerBackendFromUserDefaults() {
     selectedGatewayBackendCache = GatewayBackend(rawValue: raw) ?? .idevice
 }
 
-var minimuxer: Minimuxer {
+var minimuxer: any MinimuxerFacade {
     Minimuxer.shared(backend: selectedGatewayBackendCache)
 }
 
