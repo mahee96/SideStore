@@ -20,6 +20,8 @@ public func syncMinimuxerBackendFromUserDefaults() {
     let overridePort = UserDefaults.standard.remotePairingPortOverride
     if overridePort > 0 && overridePort <= 65535 {
         remotePairingPortCache = UInt16(overridePort)
+    } else {
+        remotePairingPortCache = MinimuxerConstants.remotePairingPort
     }
 }
 

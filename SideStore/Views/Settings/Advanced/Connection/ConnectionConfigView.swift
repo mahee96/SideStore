@@ -276,11 +276,10 @@ struct ConnectionConfigView: View {
             let portStr = draftRemotePairingPortOverride.trimmingCharacters(in: .whitespacesAndNewlines)
             if let port = Int(portStr), port > 0 && port <= 65535 {
                 UserDefaults.standard.remotePairingPortOverride = port
-                remotePairingPortCache = UInt16(port)
-                _ = Minimuxer.shared(backend: selectedGatewayBackendCache, remotePairingPort: UInt16(port))
             } else {
                 UserDefaults.standard.remotePairingPortOverride = 0
             }
+            syncMinimuxerBackendFromUserDefaults()
         }
         await bindConnectionConfig()
         showConfirmDialog = true
