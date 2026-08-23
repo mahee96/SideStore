@@ -32,6 +32,8 @@ public final class AppBootManager {
         debugLog("[AppBootManager] startMinimuxer() entered")
         defer { debugLog("[AppBootManager] startMinimuxer() exited") }
         
+        syncMinimuxerBackendFromUserDefaults()
+        
         if UserDefaults.standard.enableEMPforWireguard {
             debugLog("[AppBootManager] Starting EMProxy before minimuxer...")
             try await startEMProxy()

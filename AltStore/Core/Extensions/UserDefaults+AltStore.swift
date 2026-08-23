@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import Minimuxer
 
 public extension UserDefaults
 {
@@ -69,6 +70,10 @@ public extension UserDefaults
     }
     @objc var enableEMPforWireguard: Bool {
         get { self.bool(forKey: #function) }
+        set { self.set(newValue, forKey: #function) }
+    }
+    @objc var minimuxerGatewayBackend: String {
+        get { self.string(forKey: #function) ?? GatewayBackend.idevice.rawValue }
         set { self.set(newValue, forKey: #function) }
     }
     @objc var skipNonCopyableBackupFiles: Bool {
@@ -350,6 +355,7 @@ public extension UserDefaults
             #keyPath(UserDefaults._preferredAppSorting): preferredAppSorting.rawValue,
 
             // sidestore actively used
+            #keyPath(UserDefaults.minimuxerGatewayBackend): GatewayBackend.idevice.rawValue,
             #keyPath(UserDefaults.keepSigningCertsAfterLogout): true,
             #keyPath(UserDefaults.keepAnisetteDataAfterLogout): true,
             #keyPath(UserDefaults.isBackgroundRefreshEnabled): true,

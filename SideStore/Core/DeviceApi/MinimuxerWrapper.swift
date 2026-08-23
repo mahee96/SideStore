@@ -9,10 +9,15 @@ import Foundation
 import Minimuxer
 import Combine
 
-public var selectedGatewayBackend: GatewayBackend = .libimobiledevice
+public var selectedGatewayBackendCache: GatewayBackend = .idevice
+
+public func syncMinimuxerBackendFromUserDefaults() {
+    let raw = UserDefaults.standard.minimuxerGatewayBackend
+    selectedGatewayBackendCache = GatewayBackend(rawValue: raw) ?? .idevice
+}
 
 var minimuxer: Minimuxer {
-    Minimuxer.shared(backend: selectedGatewayBackend)
+    Minimuxer.shared(backend: selectedGatewayBackendCache)
 }
 
 public var minimuxerStatusPublisher: AnyPublisher<Result<Bool, Error>, Never> {
