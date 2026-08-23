@@ -178,13 +178,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		A87939D4303A89EB004D9227 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 		BFD247612284B9A500981D42 = {
 			isa = PBXGroup;
 			children = (
@@ -203,7 +196,6 @@
 				A84596F32F7DC4C90000B8CD /* README.md */,
 				A84596F42F7DC4C90000B8CD /* trustedapps.json */,
 				A84596F52F7DC4C90000B8CD /* SideStore.conf */,
-				A87939D4303A89EB004D9227 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};

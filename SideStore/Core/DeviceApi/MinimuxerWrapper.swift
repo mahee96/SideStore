@@ -9,8 +9,14 @@ import Foundation
 import Minimuxer
 import Combine
 
+public var selectedGatewayBackend: GatewayBackend = .libimobiledevice
+
+var minimuxer: Minimuxer {
+    Minimuxer.shared(backend: selectedGatewayBackend)
+}
+
 public var minimuxerStatusPublisher: AnyPublisher<Result<Bool, Error>, Never> {
-    Minimuxer.shared.statusPublisher
+    minimuxer.core.statusPublisher
         .map { result in
             result.mapError { $0 as Error }
         }
@@ -34,11 +40,11 @@ func bindConnectionConfig() async {
         setOverrideTunnelPeerReachable: { value in Task { @MainActor in config.overrideTunnelPeerReachable = value } },
         getConnectionMode: { config.useLocalVPN ? .localVPN : .remoteServer }
     )
-    await Minimuxer.shared.bindConnectionConfig(configBinding)
+    await minimuxer.core.bindConnectionConfig(configBinding)
 }
 
 func getDeviceConnectionMode() async -> DeviceConnectionMode {
-    return await Minimuxer.shared.getConnectionMode()
+    return await minimuxer.core.getConnectionMode()
 }
 
 enum MinimuxerStatus: Equatable {
@@ -97,7 +103,7 @@ func getMinimuxerStatus() async -> MinimuxerStatus {
     // debugLog("[SideStore] getMinimuxerStatus() = .ready on simulator")
     // return .ready
     // #endif
-    let result = await Minimuxer.shared.isReady()
+    let result = await minimuxer.core.isReady()
     return MinimuxerStatus.from(result.mapError { $0 as Error })
 }
 
@@ -107,7 +113,7 @@ func reinitializePairingData(_ pairingFile: String) async throws {
     debugLog("[SideStore] reinitializePairingData(pairingFile) is no-op on simulator")
     #else
     debugLog("[SideStore] reinitializePairingData(pairingFile) invoked")
-    try await Minimuxer.shared.reinitializePairingData(pairingFile: pairingFile)
+    try await minimuxer.core.reinitializePairingData(pairingFile: pairingFile)
     #endif
 }
 
@@ -116,11 +122,11 @@ func minimuxerStart(_ pairingFile: String, mountPath: String) async throws {
     #if targetEnvironment(simulator)
     debugLog("[SideStore] minimuxerStart(pairingFile) is no-op on simulator")
     await bindConnectionConfig()
-    await Minimuxer.network.start()
+    await minimuxer.network.start()
     #else
     await bindConnectionConfig()
     debugLog("[SideStore] minimuxerStart(pairingFile) invoked")
-    try await Minimuxer.shared.start(pairingFile: pairingFile, mountPath: mountPath)
+    try await minimuxer.core.start(pairingFile: pairingFile, mountPath: mountPath)
     #endif
 }
 
@@ -131,7 +137,7 @@ func reinitializePairingData(pairingFile: String) async throws {
     debugLog("[SideStore] reinitializePairingData(pairingFile) is no-op on simulator")
     #else
     debugLog("[SideStore] reinitializePairingData(pairingFile) invoked")
-    try await Minimuxer.shared.reinitializePairingData(pairingFile: pairingFile)
+    try await minimuxer.core.reinitializePairingData(pairingFile: pairingFile)
     #endif
 }
 
@@ -141,7 +147,7 @@ func installProvisioningProfiles(_ profileData: Data) async throws {
     debugLog("[SideStore] installProvisioningProfiles(profileData) is no-op on simulator")
     #else
     debugLog("[SideStore] installProvisioningProfiles(profileData) invoked")
-    try await Minimuxer.shared.installProvisioningProfile(profile: profileData)
+    try await minimuxer.core.installProvisioningProfile(profile: profileData)
     #endif
 }
 
@@ -151,7 +157,7 @@ func removeProvisioningProfile(_ id: String) async throws {
     debugLog("[SideStore] removeProvisioningProfile(id) is no-op on simulator")
     #else
     debugLog("[SideStore] removeProvisioningProfile(id) invoked")
-    try await Minimuxer.shared.removeProvisioningProfile(id: id)
+    try await minimuxer.core.removeProvisioningProfile(id: id)
     #endif
 }
 
@@ -161,7 +167,7 @@ func removeApp(_ bundleId: String) async throws {
     debugLog("[SideStore] removeApp(bundleId) is no-op on simulator")
     #else
     debugLog("[SideStore] removeApp(bundleId) invoked")
-    try await Minimuxer.shared.removeApp(bundleId: bundleId)
+    try await minimuxer.core.removeApp(bundleId: bundleId)
     #endif
 }
 
@@ -171,7 +177,7 @@ func yeetAppAFC(_ bundleId: String, _ rawBytes: Data) async throws {
     debugLog("[SideStore] yeetAppAFC(bundleId, rawBytes) is no-op on simulator")
     #else
     debugLog("[SideStore] yeetAppAFC(bundleId, rawBytes) invoked")
-    try await Minimuxer.shared.yeetAppAfc(bundleId: bundleId, ipaBytes: rawBytes)
+    try await minimuxer.core.yeetAppAfc(bundleId: bundleId, ipaBytes: rawBytes)
     #endif
 }
 
@@ -181,7 +187,7 @@ func installIPA(_ bundleId: String) async throws {
     debugLog("[SideStore] installIPA(bundleId) is no-op on simulator")
     #else
     debugLog("[SideStore] installIPA(bundleId) invoked")
-    try await Minimuxer.shared.installIpa(bundleId: bundleId)
+    try await minimuxer.core.installIpa(bundleId: bundleId)
     #endif
 }
 
@@ -193,7 +199,7 @@ func fetchUDID(useStatic: Bool = false) async throws -> String? {
     return "XXXXX-XXXX-XXXXX-XXXX"
     #else
     debugLog("[SideStore] fetchUDID() invoked")
-    if let udid = try? await Minimuxer.shared.fetchUDID(), !udid.isEmpty, udid != "XXXXX-XXXX-XXXXX-XXXX" {
+    if let udid = try? await minimuxer.core.fetchUDID(), !udid.isEmpty, udid != "XXXXX-XXXX-XXXXX-XXXX" {
         return udid
     }
     if useStatic {
@@ -209,7 +215,7 @@ func debugApp(_ appId: String) async throws {
     debugLog("[SideStore] debugApp(appId) is no-op on simulator")
     #else
     debugLog("[SideStore] debugApp(appId) invoked")
-    try await Minimuxer.shared.debugApp(appId: appId)
+    try await minimuxer.core.debugApp(appId: appId)
     #endif
 }
 
@@ -219,7 +225,7 @@ func attachDebugger(_ pid: UInt32) async throws {
     debugLog("[SideStore] attachDebugger(pid) is no-op on simulator")
     #else
     debugLog("[SideStore] attachDebugger(pid) invoked")
-    try await Minimuxer.shared.attachDebugger(pid: pid)
+    try await minimuxer.core.attachDebugger(pid: pid)
     #endif
 }
 
@@ -231,7 +237,7 @@ func dumpProfiles(_ docsPath: String) async throws -> String {
     return ""
     #else
     debugLog("[SideStore] dumpProfiles(docsPath) invoked")
-    return try await Minimuxer.shared.dumpProfiles(docsPath: docsPath)
+    return try await minimuxer.core.dumpProfiles(docsPath: docsPath)
     #endif
 }
 
@@ -239,7 +245,7 @@ func minimuxerSetLogging(_ enabled: Bool) {
     defer { debugLog("[SideStore] minimuxerSetLogging(enabled) completed") }
     debugLog("[SideStore] minimuxerSetLogging(enabled) invoked")
     #if !targetEnvironment(simulator)
-    Minimuxer.shared.setLogging(enabled)
+    minimuxer.core.setLogging(enabled)
     #endif
 }
 
@@ -420,7 +426,7 @@ extension Error {
 
 func minimuxerRestart() async throws {
     #if !targetEnvironment(simulator)
-    try await Minimuxer.shared.restart()
+    try await minimuxer.core.restart()
     #endif
 }
 
@@ -447,14 +453,14 @@ public final class WirelessPairWrapper {
     public var onPinReceived: ((String) -> Void)? {
         get {
             #if !targetEnvironment(simulator)
-            return Minimuxer.wirelessPair.onPinReceived
+            return minimuxer.wirelessPair.onPinReceived
             #else
             return nil
             #endif
         }
         set {
             #if !targetEnvironment(simulator)
-            Minimuxer.wirelessPair.onPinReceived = newValue
+            minimuxer.wirelessPair.onPinReceived = newValue
             #endif
         }
     }
@@ -462,14 +468,14 @@ public final class WirelessPairWrapper {
     public var onReadyToPair: ((String, Int) -> Void)? {
         get {
             #if !targetEnvironment(simulator)
-            return Minimuxer.wirelessPair.onReadyToPair
+            return minimuxer.wirelessPair.onReadyToPair
             #else
             return nil
             #endif
         }
         set {
             #if !targetEnvironment(simulator)
-            Minimuxer.wirelessPair.onReadyToPair = newValue
+            minimuxer.wirelessPair.onReadyToPair = newValue
             #endif
         }
     }
@@ -479,7 +485,7 @@ public final class WirelessPairWrapper {
         completion: @escaping (Result<MinimuxerPairedDevice, Error>) -> Void
     ) {
         #if !targetEnvironment(simulator)
-        Minimuxer.wirelessPair.start(outPath: outPath) { result in
+        minimuxer.wirelessPair.start(outPath: outPath) { result in
             switch result {
             case .success(let device):
                 completion(.success(MinimuxerPairedDevice(
@@ -499,7 +505,7 @@ public final class WirelessPairWrapper {
     
     public func stop() {
         #if !targetEnvironment(simulator)
-        Minimuxer.wirelessPair.stop()
+        minimuxer.wirelessPair.stop()
         #endif
     }
 }
