@@ -1643,10 +1643,6 @@ private extension MyAppsViewController
     }
     
     func enableJIT(for installedApp: InstalledApp) {
-        guard UserDefaults.standard.sidejitenable else {
-            debugLog("MyAppsViewController: userdefaults for 'sidejitenable' was not enabled")
-            return
-        }
         AppManager.shared.enableJIT(for: installedApp) { result in
             DispatchQueue.main.async {
                 switch result {

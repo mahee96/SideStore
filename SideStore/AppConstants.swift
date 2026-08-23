@@ -18,9 +18,9 @@ public enum AppConstants {
     
     public enum Connection {
         //fix: temporarily reverting the no default overrideIP 
-        // coz though our auto discovery works perfectly, 
-        // localDevVPN is flawed in its routing table 
-        // - so until it is fixed, to reduce friction we are okay with this
+        //     coz though our auto discovery works perfectly, 
+        //     localDevVPN is flawed in its routing table 
+        //   - so until it is fixed, to reduce friction we are okay with this
         //
         // when localdevvpn is fixed, we can comment out the line with an IP with with the one with ""
         public static let defaultOverrideIP = "10.7.0.1"
@@ -29,7 +29,12 @@ public enum AppConstants {
     }
     
     public enum Sources {
-        public static let fetchTimeout: TimeInterval = 5.0
+        public static let fetchTimeout: TimeInterval = 3.0
+    }
+    
+    public enum SideJIT {
+        public static let defaultServerURL = "http://sidejitserver._http._tcp.local:8080"
+        public static let timeout: TimeInterval = 2.0
     }
     
     public static let accountConfigurationFileName = "Account.sideconf"

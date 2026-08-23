@@ -1121,22 +1121,26 @@ extension SettingsViewController
                       preferredStyle: UIAlertController.Style.actionSheet)
                     
                     
-                    if UserDefaults.standard.sidejitenable {
+                    if UserDefaults.standard.isSideJITServerEnabled {
                         alertController.addAction(UIAlertAction(title: NSLocalizedString("Disable", comment: ""), style: .default){ _ in
-                            UserDefaults.standard.sidejitenable = false
+                            UserDefaults.standard.isSideJITServerEnabled = false
                         })
                     } else {
                         alertController.addAction(UIAlertAction(title: NSLocalizedString("Enable", comment: ""), style: .default){ _ in
-                            UserDefaults.standard.sidejitenable = true
+                            UserDefaults.standard.isSideJITServerEnabled = true
                         })
                     }
                     
-                    alertController.addAction(UIAlertAction(title: NSLocalizedString("Server Address", comment: ""), style: .default){ _ in
+                    alertController.addAction(UIAlertAction(title: NSLocalizedString("Edit Server Address", comment: ""), style: .default){ _ in
                         let alertController1 = UIAlertController(title: "SideJITServer Address", message: "Please Enter the SideJITServer Address Below. (this is not needed if SideJITServer has already been detected)", preferredStyle: .alert)
                         
 
                         alertController1.addTextField { textField in
-                            textField.placeholder = "SideJITServer Address"
+                            textField.placeholder = AppConstants.SideJIT.defaultServerURL
+                            textField.text = UserDefaults.standard.textInputSideJITServerurl
+                            textField.autocapitalizationType = .none
+                            textField.autocorrectionType = .no
+                            textField.keyboardType = .URL
                         }
                         
                         
@@ -1145,8 +1149,8 @@ extension SettingsViewController
                         
 
                         let okAction = UIAlertAction(title: "OK", style: .default) { _ in
-                            if let text = alertController1.textFields?.first?.text {
-                                UserDefaults.standard.textInputSideJITServerurl = text
+                            if let text = alertController1.textFields?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines) {
+                                UserDefaults.standard.textInputSideJITServerurl = text.isEmpty ? nil : text
                             }
                         }
                         
@@ -1158,22 +1162,19 @@ extension SettingsViewController
                     
 
                    alertController.addAction(UIAlertAction(title: NSLocalizedString("Refresh", comment: ""), style: .destructive){ _ in
-                      if UserDefaults.standard.sidejitenable {
-                         var SJSURL = ""
-                          if (UserDefaults.standard.textInputSideJITServerurl ?? "").isEmpty {
-                            SJSURL = "http://sidejitserver._http._tcp.local:8080"
-                         } else {
-                            SJSURL = UserDefaults.standard.textInputSideJITServerurl ?? ""
-                         }
-                        
-                          
+                      if UserDefaults.standard.isSideJITServerEnabled {
+                         let address = UserDefaults.standard.textInputSideJITServerurl ?? ""
+                         let SJSURL = address.isEmpty ? AppConstants.SideJIT.defaultServerURL : address
                          let url = URL(string: SJSURL + "/re/")!
 
+                         debugLog("[SettingsViewController] Refreshing SideJITServer at: \(url)")
                          let task = URLSession.shared.dataTask(with: url) { (data, response, error) in
                             if let error = error {
-                               debugLog("Error: \(error)")
+                               debugLog("[SettingsViewController] Failed to refresh SideJITServer: \(error)")
                             } else {
-                               // Do nothing with data or response
+                               let status = (response as? HTTPURLResponse)?.statusCode ?? 200
+                               let responseStr = data.flatMap { String(data: $0, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) } ?? ""
+                               debugLog("[SettingsViewController] SideJITServer refreshed successfully (status: \(status)): \(responseStr)")
                             }
                          }
 
