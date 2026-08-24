@@ -8,6 +8,50 @@
 
 import Foundation
 import SwiftUI
+import Combine
+import Minimuxer
+
+struct WirelessPairTarget: Identifiable, Hashable {
+    var id: String { service.id.uuidString }
+    let service: DiscoveredService
+    
+    var name: String {
+        if case .bonjour(let txt) = service.result.metadata,
+           let customName = txt.dictionary["name"], !customName.isEmpty {
+            return customName
+        }
+        return service.name
+    }
+    
+    var rawType: String { service.type }
+    
+    var model: String? {
+        if case .bonjour(let txt) = service.result.metadata {
+            return txt.dictionary["model"]
+        }
+        return nil
+    }
+    
+    var uuid: String? {
+        if case .bonjour(let txt) = service.result.metadata {
+            return txt.dictionary["uuid"] ?? txt.dictionary["deviceid"]
+        }
+        return nil
+    }
+    
+    var typeBadge: String {
+        if service.type.contains("manual-pairing") { return "Apple TV / Manual" }
+        if service.type.contains("pairable-host") { return "Pairable Host" }
+        if service.type.contains("remotepairing") { return "Remote Device" }
+        return BonjourDiscoveryManager.friendlyName(for: service.type) ?? service.type
+    }
+    
+    var iconName: String {
+        if service.type.contains("manual-pairing") { return "appletv.fill" }
+        if service.type.contains("pairable-host") { return "macbook.and.iphone" }
+        return "antenna.radiowaves.left.and.right"
+    }
+}
 
 @MainActor
 final class WirelessPairManager: ObservableObject {
@@ -22,12 +66,42 @@ final class WirelessPairManager: ObservableObject {
     @Published var serviceID: String? = nil
     @Published var port: Int? = nil
     
-    private let pairing = wirelessPairing
-    private var startTask: Task<Void, Never>? = nil
+    // Pairing Target Discovery State
+    @Published var discoveredTargets: [WirelessPairTarget] = []
+    @Published var selectedTarget: WirelessPairTarget? = nil
+    @Published var resolvedService: ResolvedServiceInfo? = nil
+    @Published var isScanning = false
+    
+    private let pairingServiceTypes = [
+        "_remotepairing-manual-pairing._tcp",
+        "_remotepairing._tcp",
+        "_remotepairing-pairable-host._tcp"
+    ]
+    
+    private let bonjour = BonjourDiscoveryManager()
+    private var cancellables = Set<AnyCancellable>()
+    
+    var fallbackConfigEndpoint: (ip: String, port: UInt16) {
+        let config = ConnectionConfig.shared
+        let port = remotePairingPortCache != 0 ? remotePairingPortCache : MinimuxerConstants.remotePairingPort
+
+        guard config.useLocalVPN else {
+            let remote = config.remoteServerIp.trimmingCharacters(in: .whitespacesAndNewlines)
+            return (ip: !remote.isEmpty ? remote : AppConstants.Connection.defaultRemoteServerIP, port: port)
+        }
+
+        guard let ip = [config.overrideTunnelPeerIp, config.tunnelPeerIp]
+            .compactMap({ $0?.trimmingCharacters(in: .whitespacesAndNewlines) })
+            .first(where: { !$0.isEmpty }) else {
+            return (ip: AppConstants.Connection.defaultOverrideIP, port: port)
+        }
+
+        return (ip: ip, port: port)
+    }
     
     private init() {
         // Setup closures once
-        pairing.onReadyToPair = { [weak self] (serviceID: String, port: Int) in
+        wirelessPairing.onReadyToPair = { [weak self] (serviceID: String, port: Int) in
             Task { @MainActor in
                 guard let self = self else { return }
                 self.serviceID = serviceID
@@ -37,7 +111,7 @@ final class WirelessPairManager: ObservableObject {
             }
         }
         
-        pairing.onPinReceived = { [weak self] (pin: String) in
+        wirelessPairing.onPinReceived = { [weak self] (pin: String) in
             Task { @MainActor in
                 guard let self = self else { return }
                 self.pinCode = pin
@@ -45,6 +119,47 @@ final class WirelessPairManager: ObservableObject {
                 self.subStatusText = "Enter the pairing code shown below on your other device settings screen."
             }
         }
+        
+        // Observe discovery results reactively
+        bonjour.$instances
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] instances in
+                self?.discoveredTargets = instances.map { WirelessPairTarget(service: $0) }
+            }
+            .store(in: &cancellables)
+        
+        // Observe resolver results reactively
+        bonjour.$resolvedService
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] resolved in
+                self?.resolvedService = resolved
+            }
+            .store(in: &cancellables)
+    }
+    
+    func startDiscovery() {
+        discoveredTargets.removeAll()
+        selectedTarget = nil
+        resolvedService = nil
+        isScanning = true
+        bonjour.discoverInstances(ofTypes: pairingServiceTypes, inDomain: "local.")
+    }
+    
+    func stopDiscovery() {
+        isScanning = false
+        bonjour.stopAll()
+    }
+    
+    func selectAndResolveTarget(_ target: WirelessPairTarget) {
+        selectedTarget = target
+        resolvedService = nil
+        bonjour.resolveService(target.service)
+    }
+    
+    func deselectTarget() {
+        selectedTarget = nil
+        resolvedService = nil
+        bonjour.stopResolving()
     }
     
     func togglePairing() {
@@ -56,30 +171,19 @@ final class WirelessPairManager: ObservableObject {
     }
     
     func startPairing() {
-        startTask?.cancel()
-        
         isAdvertising = true
         pinCode = nil
         errorMessage = nil
         serviceID = nil
         port = nil
-        
-        // Debounce the "Waiting..." status text by 200ms
-        let debounceTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 200_000_000) // 200ms
-            guard !Task.isCancelled else { return }
-            guard isAdvertising && serviceID == nil else { return }
-            statusText = "Waiting for connection..."
-            subStatusText = "Open Remote Pairing on your Apple TV / Vision Pro / host device to discover this server."
-        }
-        startTask = debounceTask
+        statusText = "Waiting for connection..."
+        subStatusText = "Open Remote Pairing on your Apple TV / Vision Pro / host device to discover this server."
         
         let pairingFile = pairingFilePath()
         
-        pairing.start(outPath: pairingFile) { [weak self] (result: Result<MinimuxerPairedDevice, Swift.Error>) in
+        wirelessPairing.start(outPath: pairingFile) { [weak self] (result: Result<MinimuxerPairedDevice, Swift.Error>) in
             Task { @MainActor in
                 guard let self = self else { return }
-                debounceTask.cancel()
                 guard self.isAdvertising else { return }
                 self.isAdvertising = false
                 self.pinCode = nil
@@ -100,20 +204,38 @@ final class WirelessPairManager: ObservableObject {
         }
     }
 
-    func triggerPairing(completion: ((Result<MinimuxerPairedDevice, Swift.Error>) -> Void)? = nil) {
-        startTask?.cancel()
+    func stopPairing() {
+        wirelessPairing.stop()
         
+        isAdvertising = false
+        statusText = "Ready to pair"
+        subStatusText = "Tap Start to advertise this device on the local network."
+        pinCode = nil
+        errorMessage = nil
+        serviceID = nil
+        port = nil
+    }
+    
+    func triggerPairing(
+        targetIp: String,
+        targetPort: UInt16,
+        completion: ((Result<MinimuxerPairedDevice, Swift.Error>) -> Void)? = nil
+    ) {
         isAdvertising = true
         pinCode = nil
         errorMessage = nil
         serviceID = nil
         port = nil
         statusText = "Connecting to device..."
-        subStatusText = "Initiating pairing handshake on port \(remotePairingPortCache)..."
+        subStatusText = "Initiating pairing handshake on \(targetIp):\(targetPort)..."
         
         let pairingFile = pairingFilePath()
         
-        pairing.trigger(outPath: pairingFile) { [weak self] (result: Result<MinimuxerPairedDevice, Swift.Error>) in
+        wirelessPairing.trigger(
+            targetIp: targetIp,
+            targetPort: targetPort,
+            outPath: pairingFile
+        ) { [weak self] (result: Result<MinimuxerPairedDevice, Swift.Error>) in
             Task { @MainActor in
                 guard let self = self else { return }
                 self.isAdvertising = false
@@ -134,20 +256,6 @@ final class WirelessPairManager: ObservableObject {
                 completion?(result)
             }
         }
-    }
-    
-    func stopPairing() {
-        pairing.stop()
-        startTask?.cancel()
-        startTask = nil
-        
-        isAdvertising = false
-        statusText = "Ready to pair"
-        subStatusText = "Tap Start to advertise this device on the local network."
-        pinCode = nil
-        errorMessage = nil
-        serviceID = nil
-        port = nil
     }
     
     private func pairingFilePath() -> String {

@@ -18,7 +18,7 @@ public final class SideJITManager {
             return address
         }
         
-        if let resolved = await BonjourDiscoveryManagerV2.resolveFirstService(
+        if let resolved = await BonjourDiscoveryManager.resolveFirstService(
             ofType: AppConstants.SideJIT.bonjourServiceType,
             namePrefix: AppConstants.SideJIT.bonjourServiceName,
             timeout: AppConstants.SideJIT.timeout

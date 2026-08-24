@@ -10,8 +10,8 @@ import SwiftUI
 
 // MARK: - Root View (Domains List)
 
-/// Entry point: discovers and lists browsable Bonjour domains.
-/// Tapping a domain navigates to its service types.
+// Entry point: discovers and lists browsable Bonjour domains.
+// Tapping a domain navigates to its service types.
 struct BonjourDiscoveryView: View {
     @StateObject private var manager = BonjourDiscoveryManager()
     
@@ -99,8 +99,8 @@ struct BonjourDiscoveryView: View {
 
 // MARK: - Service Types View
 
-/// Lists all service types discovered in a given domain.
-/// Tapping a type navigates to its instances.
+// Lists all service types discovered in a given domain.
+// Tapping a type navigates to its instances.
 struct ServiceTypesView: View {
     let domain: String
     @StateObject private var manager = BonjourDiscoveryManager()
@@ -224,8 +224,8 @@ struct ServiceTypesView: View {
 
 // MARK: - Service Instances View
 
-/// Lists all discovered instances of a specific service type.
-/// Tapping an instance navigates to its resolved details.
+// Lists all discovered instances of a specific service type.
+// Tapping an instance navigates to its resolved details.
 struct ServiceInstancesView: View {
     let serviceType: String
     let domain: String
@@ -341,7 +341,7 @@ struct ServiceInstancesView: View {
 
 // MARK: - Service Detail View
 
-/// Shows full resolved details of a service: hostname, port, IP addresses, TXT records.
+// Shows full resolved details of a service: hostname, port, IP addresses, TXT records.
 struct ServiceDetailView: View {
     let service: DiscoveredService
     @StateObject private var manager = BonjourDiscoveryManager()
@@ -550,7 +550,7 @@ struct ServiceDetailView: View {
 
 // MARK: - Detail Row
 
-/// A simple key-value row with context menu for copying
+// A simple key-value row with context menu for copying
 private struct DetailRow: View {
     let label: String
     let value: String

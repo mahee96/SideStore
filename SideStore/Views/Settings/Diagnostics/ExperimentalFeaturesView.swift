@@ -16,10 +16,6 @@ private extension Color {
 struct ExperimentalFeaturesView: View {
     @State private var freeAcctAppIdDeletion: Bool = UserDefaults.standard.freeAcctAppIdDeletion
     @State private var isCellularRefreshEnabled: Bool = UserDefaults.standard.isCellularRefreshEnabled
-    @ObservedObject private var wirelessPairManager = WirelessPairManager.shared
-    @State private var isTriggeringPair = false
-    @State private var triggerPairAlertMessage: String? = nil
-    @State private var showTriggerPairAlert = false
 
     var body: some View {
         ScrollView {
@@ -32,48 +28,10 @@ struct ExperimentalFeaturesView: View {
                         .padding(.horizontal, 16)
                     
                     VStack(spacing: 0) {
-                        SwiftUI.Button(action: {
-                            guard !isTriggeringPair else { return }
-                            isTriggeringPair = true
-                            wirelessPairManager.triggerPairing { result in
-                                isTriggeringPair = false
-                                switch result {
-                                case .success(let device):
-                                    triggerPairAlertMessage = "Successfully paired locally with \(device.name) (\(device.model))! Pairing file saved to documents."
-                                case .failure(let error):
-                                    triggerPairAlertMessage = "Local pairing failed: \(error.localizedDescription)"
-                                }
-                                showTriggerPairAlert = true
-                            }
-                        }) {
-                            HStack {
-                                Image(systemName: "link.circle.fill")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.accentColor)
-                                Text("Trigger Local Pairing")
-                                    .font(.system(size: 17, weight: .bold))
-                                    .foregroundColor(.white)
-                                Spacer()
-                                if isTriggeringPair {
-                                    ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                } else {
-                                    Image(systemName: "play.circle.fill")
-                                        .font(.system(size: 16))
-                                        .foregroundColor(Color.white.opacity(0.4))
-                                }
-                            }
-                            .padding(.horizontal, 16)
-                            .frame(height: 50)
-                        }
-                        .disabled(isTriggeringPair)
-                        
-                        divider
-
                         if #available(iOS 26.0, *) {
                             NavigationLink(destination: WirelessPairView()) {
                                 HStack {
-                                    Text("Wireless Pairing (Responder)")
+                                    Text("Wireless Pairing")
                                         .font(.system(size: 17, weight: .bold))
                                         .foregroundColor(.white)
                                     Spacer()
@@ -143,13 +101,6 @@ struct ExperimentalFeaturesView: View {
         .background(Color(uiColor: .settingsBackground).ignoresSafeArea())
         .navigationTitle("Experimental Features")
         .navigationBarTitleDisplayMode(.large)
-        .alert(isPresented: $showTriggerPairAlert) {
-            Alert(
-                title: Text("Local Pairing"),
-                message: Text(triggerPairAlertMessage ?? ""),
-                dismissButton: .default(Text("OK"))
-            )
-        }
     }
 
     private var divider: some View {

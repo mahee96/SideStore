@@ -34,7 +34,7 @@ private func resolveDiscoveredRemotePairingPort() async -> UInt16? {
     if overridePort > 0 && overridePort <= 65535 {
         return UInt16(overridePort)
     }
-    if let resolved = await BonjourDiscoveryManagerV2.resolveFirstService(
+    if let resolved = await BonjourDiscoveryManager.resolveFirstService(
         ofType: MinimuxerConstants.remotePairingDaemonServiceType,
         timeout: AppConstants.Bonjour.defaultDiscoveryTimeout
     ) {
@@ -545,7 +545,6 @@ public struct MinimuxerPairedDevice: Codable, Sendable {
     }
 }
 
-@MainActor
 public final class WirelessPairWrapper {
     public static let shared = WirelessPairWrapper()
     
@@ -605,11 +604,21 @@ public final class WirelessPairWrapper {
     }
 
     public func trigger(
+        targetIp: String,
+        targetPort: UInt16,
+        hostName: String = MinimuxerConstants.defaultHostName,
+        hostModel: String = MinimuxerConstants.defaultHostModel,
         outPath: String,
         completion: @escaping (Result<MinimuxerPairedDevice, Error>) -> Void
     ) {
         #if !targetEnvironment(simulator)
-        minimuxer.wirelessPair.trigger(outPath: outPath) { result in
+        minimuxer.wirelessPair.trigger(
+            targetIp: targetIp,
+            targetPort: targetPort,
+            hostName: hostName,
+            hostModel: hostModel,
+            outPath: outPath
+        ) { result in
             switch result {
             case .success(let device):
                 completion(.success(MinimuxerPairedDevice(
@@ -634,5 +643,4 @@ public final class WirelessPairWrapper {
     }
 }
 
-@MainActor
 let wirelessPairing = WirelessPairWrapper.shared

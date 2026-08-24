@@ -136,10 +136,20 @@ struct DeveloperOptionsView: View {
                             .padding(.horizontal, 16)
                             .frame(height: 50)
                         }
-                        
-                        divider
-                        
-                        NavigationLink(destination: BonjourDiscoveryViewV2()) {
+                    }
+                    .background(Color.settingsRowBackground)
+                    .cornerRadius(14)
+                }
+                
+                // Section: Bonjour
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("BONJOUR")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.6))
+                        .padding(.horizontal, 16)
+                    
+                    VStack(spacing: 0) {
+                        NavigationLink(destination: BonjourDiscoveryView()) {
                             HStack {
                                 Text("Network Discovery")
                                     .font(.system(size: 17, weight: .bold))
