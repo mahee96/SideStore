@@ -15,6 +15,7 @@ import SwiftUI
 struct BonjourDiscoveryView: View {
     @StateObject private var viewModel = BonjourDiscoveryViewModel()
     @State private var selectedDomain: String? = nil
+    @State private var isAutoRefreshEnabled = true
     
     var body: some View {
         ZStack {
@@ -32,7 +33,19 @@ struct BonjourDiscoveryView: View {
         .navigationTitle("Discovery")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                SwiftUI.Button {
+                    isAutoRefreshEnabled.toggle()
+                    if isAutoRefreshEnabled {
+                        viewModel.startDomainPeriodicRefresh()
+                    } else {
+                        viewModel.stopPeriodicRefresh()
+                    }
+                } label: {
+                    Image(systemName: isAutoRefreshEnabled ? "arrow.clockwise.circle.fill" : "arrow.clockwise.circle")
+                        .foregroundColor(isAutoRefreshEnabled ? .accentColor : .secondary)
+                }
+                
                 Menu {
                     Menu {
                         SwiftUI.Button {
@@ -70,7 +83,9 @@ struct BonjourDiscoveryView: View {
         }
         .onAppear {
             selectedDomain = nil
-            viewModel.startDomainPeriodicRefresh()
+            if isAutoRefreshEnabled {
+                viewModel.startDomainPeriodicRefresh()
+            }
         }
         .onDisappear {
             viewModel.stopDomainSearch()
@@ -158,6 +173,7 @@ struct ServiceTypesView: View {
     let domain: String
     @ObservedObject var viewModel: BonjourDiscoveryViewModel
     @State private var selectedType: String? = nil
+    @State private var isAutoRefreshEnabled = true
     
     var body: some View {
         ZStack {
@@ -175,7 +191,19 @@ struct ServiceTypesView: View {
         .navigationTitle(domain)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                SwiftUI.Button {
+                    isAutoRefreshEnabled.toggle()
+                    if isAutoRefreshEnabled {
+                        viewModel.startServiceTypePeriodicRefresh(in: domain)
+                    } else {
+                        viewModel.stopPeriodicRefresh()
+                    }
+                } label: {
+                    Image(systemName: isAutoRefreshEnabled ? "arrow.clockwise.circle.fill" : "arrow.clockwise.circle")
+                        .foregroundColor(isAutoRefreshEnabled ? .accentColor : .secondary)
+                }
+                
                 Menu {
                     Menu {
                         ForEach(ServiceTypeGroupOption.allCases, id: \.self) { opt in
@@ -207,7 +235,9 @@ struct ServiceTypesView: View {
         }
         .onAppear {
             selectedType = nil
-            viewModel.startServiceTypePeriodicRefresh(in: domain)
+            if isAutoRefreshEnabled {
+                viewModel.startServiceTypePeriodicRefresh(in: domain)
+            }
         }
         .onDisappear {
             viewModel.stopTypeSearch()
@@ -334,6 +364,7 @@ struct ServiceInstancesView: View {
     let friendlyName: String?
     @ObservedObject var viewModel: BonjourDiscoveryViewModel
     @State private var selectedInstanceId: String? = nil
+    @State private var isAutoRefreshEnabled = true
     
     var body: some View {
         ZStack {
@@ -351,7 +382,19 @@ struct ServiceInstancesView: View {
         .navigationTitle(friendlyName ?? serviceType)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                SwiftUI.Button {
+                    isAutoRefreshEnabled.toggle()
+                    if isAutoRefreshEnabled {
+                        viewModel.startInstancePeriodicRefresh(ofType: serviceType, in: domain)
+                    } else {
+                        viewModel.stopPeriodicRefresh()
+                    }
+                } label: {
+                    Image(systemName: isAutoRefreshEnabled ? "arrow.clockwise.circle.fill" : "arrow.clockwise.circle")
+                        .foregroundColor(isAutoRefreshEnabled ? .accentColor : .secondary)
+                }
+                
                 Menu {
                     Menu {
                         ForEach(ServiceInstanceGroupOption.allCases, id: \.self) { opt in
@@ -383,7 +426,9 @@ struct ServiceInstancesView: View {
         }
         .onAppear {
             selectedInstanceId = nil
-            viewModel.startInstancePeriodicRefresh(ofType: serviceType, in: domain)
+            if isAutoRefreshEnabled {
+                viewModel.startInstancePeriodicRefresh(ofType: serviceType, in: domain)
+            }
         }
         .onDisappear {
             viewModel.stopInstanceSearch()
