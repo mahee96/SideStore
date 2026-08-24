@@ -34,6 +34,17 @@ struct DiscoveredService: Identifiable, Hashable {
     let type: String
     let domain: String
     let result: NWBrowser.Result
+    let txtRecords: [(key: String, value: String)]
+    let interfaces: [NWInterface]
+    
+    init(name: String, type: String, domain: String, result: NWBrowser.Result, txtRecords: [(key: String, value: String)] = [], interfaces: [NWInterface] = []) {
+        self.name = name
+        self.type = type
+        self.domain = domain
+        self.result = result
+        self.txtRecords = txtRecords
+        self.interfaces = interfaces
+    }
     
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
@@ -44,7 +55,7 @@ struct DiscoveredService: Identifiable, Hashable {
     }
 }
 
-struct ResolvedServiceInfo: Identifiable {
+struct ResolvedServiceInfo: Identifiable, Equatable {
     var id: String { "\(domain)/\(type)/\(name)/\(hostname):\(port)" }
     let name: String
     let type: String
@@ -53,6 +64,17 @@ struct ResolvedServiceInfo: Identifiable {
     let port: UInt16
     let addresses: [String]
     let txtRecords: [(key: String, value: String)]
+    
+    static func == (lhs: ResolvedServiceInfo, rhs: ResolvedServiceInfo) -> Bool {
+        lhs.name == rhs.name &&
+        lhs.type == rhs.type &&
+        lhs.domain == rhs.domain &&
+        lhs.hostname == rhs.hostname &&
+        lhs.port == rhs.port &&
+        lhs.addresses == rhs.addresses &&
+        lhs.txtRecords.count == rhs.txtRecords.count &&
+        zip(lhs.txtRecords, rhs.txtRecords).allSatisfy { $0.0 == $1.0 && $0.1 == $1.1 }
+    }
 }
 
 final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDelegate, NetServiceBrowserDelegate {
@@ -64,6 +86,7 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
     @Published var instances: [DiscoveredService] = []
     @Published var resolvedService: ResolvedServiceInfo? = nil
     @Published var isSearching = false
+    @Published var isResolving = false
     @Published var resolveError: String? = nil
     
     // Private State
@@ -242,12 +265,26 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
             
             var currentTypeInstances: [DiscoveredService] = []
             for result in results {
-                if case .service(let name, _, _, _) = result.endpoint {
+                if case .service(let name, _, _, let iface) = result.endpoint {
+                    let ifaceNames = result.interfaces.map { "\($0.name)(\($0.type))" }.joined(separator: ", ")
+                    let epIface = iface?.name ?? "none"
+                    var txtRecords: [(key: String, value: String)] = []
+                    if case .bonjour(let txt) = result.metadata {
+                        for (k, v) in txt.dictionary {
+                            txtRecords.append((key: k, value: v))
+                        }
+                        txtRecords.sort { $0.key.localizedCaseInsensitiveCompare($1.key) == .orderedAscending }
+                    }
+                    let txtSummary = txtRecords.map { "\($0.key)=\($0.value)" }.joined(separator: ",")
+                    debugLog("[BonjourDiscovery] Discovered '\(name)' (\(type)): ifaces=[\(ifaceNames)], epIface=\(epIface), txt=[\(txtSummary)]")
+                    
                     let discovered = DiscoveredService(
                         name: name,
                         type: type,
                         domain: domain,
-                        result: result
+                        result: result,
+                        txtRecords: txtRecords,
+                        interfaces: Array(result.interfaces)
                     )
                     currentTypeInstances.append(discovered)
                 }
@@ -257,6 +294,7 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
             otherInstances.append(contentsOf: currentTypeInstances)
             otherInstances.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
             self.instances = otherInstances
+            debugLog("[BonjourDiscovery] Live NWBrowser results updated for '\(type)': \(currentTypeInstances.count) active instance(s)")
         }
     }
     
@@ -272,13 +310,15 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
     }
     
     // Service Resolution
-    func resolveService(_ service: DiscoveredService) {
+    func resolveService(_ service: DiscoveredService, clearExisting: Bool = false) {
         debugLog("[BonjourDiscovery] Resolving service '\(service.name)'...")
         stopResolving()
         
-        resolvedService = nil
-        resolveError = nil
-        isSearching = true
+        if clearExisting || resolvedService?.name != service.name {
+            resolvedService = nil
+            resolveError = nil
+        }
+        isResolving = true
         currentResolvingService = service
         
         var txtRecords: [(key: String, value: String)] = []
@@ -298,11 +338,75 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
         let connection = NWConnection(to: service.result.endpoint, using: parameters)
         activeConnection = connection
         
+        connection.pathUpdateHandler = { [weak self] path in
+            guard let self = self else { return }
+            debugLog("[BonjourDiscovery] NWConnection path update for '\(service.name)': status=\(path.status), remoteEndpoint=\(String(describing: path.remoteEndpoint))")
+            if let remote = path.remoteEndpoint, case .hostPort(let host, let port) = remote {
+                var resolvedHost = "\(host)"
+                if let percentIndex = resolvedHost.firstIndex(of: "%") {
+                    resolvedHost = String(resolvedHost[..<percentIndex])
+                }
+                let portVal = port.rawValue
+                let directIPs: [String]
+                if resolvedHost.contains(":") || resolvedHost.filter({ $0 == "." }).count == 3 {
+                    directIPs = [resolvedHost]
+                } else {
+                    directIPs = Self.resolveHostToIPs(resolvedHost)
+                }
+                
+                self.finishResolution(
+                    service: service,
+                    hostname: resolvedHost,
+                    port: portVal,
+                    addresses: directIPs,
+                    txtRecords: txtRecords
+                )
+            }
+        }
+        
         connection.stateUpdateHandler = { [weak self] state in
             guard let self = self else { return }
+            debugLog("[BonjourDiscovery] NWConnection state for '\(service.name)': \(state)")
             
             switch state {
-            case .ready, .waiting:
+            case .ready:
+                if let path = connection.currentPath, let remote = path.remoteEndpoint {
+                    var resolvedHost = ""
+                    var portVal: UInt16 = 0
+                    
+                    switch remote {
+                    case .hostPort(let host, let port):
+                        resolvedHost = "\(host)"
+                        if let percentIndex = resolvedHost.firstIndex(of: "%") {
+                            resolvedHost = String(resolvedHost[..<percentIndex])
+                        }
+                        portVal = port.rawValue
+                    case .service(let sName, _, let sDomain, _):
+                        let cleanDomain = sDomain.isEmpty ? "local" : (sDomain.hasSuffix(".") ? String(sDomain.dropLast()) : sDomain)
+                        resolvedHost = "\(sName).\(cleanDomain)"
+                        if let localEndpoint = path.localEndpoint, case .hostPort(_, let p) = localEndpoint {
+                            portVal = p.rawValue
+                        }
+                    default:
+                        resolvedHost = service.name
+                    }
+                    
+                    let directIPs: [String]
+                    if resolvedHost.contains(":") || resolvedHost.filter({ $0 == "." }).count == 3 {
+                        directIPs = [resolvedHost]
+                    } else {
+                        directIPs = Self.resolveHostToIPs(resolvedHost)
+                    }
+                    
+                    self.finishResolution(
+                        service: service,
+                        hostname: resolvedHost,
+                        port: portVal,
+                        addresses: directIPs,
+                        txtRecords: txtRecords
+                    )
+                }
+            case .waiting:
                 if let path = connection.currentPath,
                    let remote = path.remoteEndpoint,
                    case .hostPort(let host, let port) = remote {
@@ -329,24 +433,30 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
                 }
             case .failed(let error):
                 debugLog("[BonjourDiscovery] NWConnection resolution failed: \(error)")
+                Task { @MainActor [weak self] in
+                    guard let self = self, self.isResolving, self.resolvedService == nil else { return }
+                    self.resolveError = "Connection failed: \(error.localizedDescription)"
+                    self.stopResolving()
+                }
             default:
                 break
             }
         }
         connection.start(queue: .main)
         
-        let netType = service.type.hasSuffix(".") ? service.type : service.type + "."
+        let netType = service.type.hasSuffix(".") ? String(service.type.dropLast()) : service.type
         let netDomain = service.domain.isEmpty ? "local." : (service.domain.hasSuffix(".") ? service.domain : service.domain + ".")
         let ns = NetService(domain: netDomain, type: netType, name: service.name)
         ns.delegate = self
         ns.schedule(in: .main, forMode: .common)
         resolvingNetService = ns
-        ns.resolve(withTimeout: 4.0)
+        ns.resolve(withTimeout: 3.5)
         
         timeoutTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            try? await Task.sleep(nanoseconds: 3_500_000_000)
             guard let self = self, !Task.isCancelled else { return }
-            if self.isSearching && self.resolvedService == nil {
+            if self.isResolving && self.resolvedService == nil {
+                debugLog("[BonjourDiscovery] Resolution timed out for '\(service.name)'")
                 self.resolveError = "Resolution timed out (no response from endpoint)"
                 self.stopResolving()
             }
@@ -361,7 +471,7 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
         txtRecords: [(key: String, value: String)]
     ) {
         Task { @MainActor [weak self] in
-            guard let self = self, self.isSearching, self.resolvedService == nil else { return }
+            guard let self = self, self.isResolving, self.resolvedService == nil else { return }
             
             let finalAddresses = addresses.isEmpty ? Self.resolveHostToIPs(hostname) : addresses
             
@@ -374,7 +484,7 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
                 addresses: finalAddresses,
                 txtRecords: txtRecords
             )
-            self.isSearching = false
+            self.isResolving = false
             self.stopResolving()
         }
     }
@@ -387,7 +497,7 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
         resolvingNetService?.stop()
         resolvingNetService = nil
         currentResolvingService = nil
-        isSearching = false
+        isResolving = false
     }
     
     func stopAll() {
@@ -461,6 +571,7 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
         Task { @MainActor in
             guard let service = self.currentResolvingService else { return }
             let finalRecords = self.activeTxtRecords.isEmpty ? txtRecords : self.activeTxtRecords
+            debugLog("[BonjourDiscovery] Resolved '\(sender.name)' -> \(cleanHost):\(port), addresses: \(resolvedAddresses.count), txt: \(finalRecords.count)")
             self.finishResolution(
                 service: service,
                 hostname: cleanHost.isEmpty ? service.name : cleanHost,
@@ -475,10 +586,9 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
         debugLog("[BonjourDiscovery] NetService failed to resolve: \(errorDict)")
         let errorCode = errorDict[NetService.errorCode]?.intValue ?? -1
         Task { @MainActor in
-            if self.isSearching && self.resolvedService == nil && self.activeConnection == nil {
-                self.resolveError = "NetService resolution failed (error \(errorCode))"
-                self.stopResolving()
-            }
+            guard self.isResolving, self.resolvedService == nil else { return }
+            self.resolveError = errorCode == -72007 ? "Resolution timed out (no response from endpoint)" : "NetService resolution failed (error \(errorCode))"
+            self.stopResolving()
         }
     }
     
@@ -622,6 +732,17 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
                 
                 let conn = NWConnection(to: target.endpoint, using: parameters)
                 resolver.setActiveConnection(conn)
+                
+                conn.pathUpdateHandler = { path in
+                    if path.status == .satisfied, let remote = path.remoteEndpoint,
+                       case .hostPort(let host, let port) = remote {
+                        let hostStr = "\(host)"
+                        let ips = resolveHostToIPs(hostStr)
+                        let finalHost = ips.first ?? hostStr
+                        debugLog("[BonjourDiscovery] Auto-resolved '\(name)' via pathUpdate to \(finalHost):\(port.rawValue)")
+                        resolver.resumeOnce((host: finalHost, port: port.rawValue))
+                    }
+                }
                 
                 conn.stateUpdateHandler = { state in
                     switch state {

@@ -29,6 +29,7 @@ enum ServiceInstanceSortOption: String, CaseIterable {
 }
 
 enum ServiceInstanceGroupOption: String, CaseIterable {
+    case ipVersion = "IP Version (v4/v6)"
     case none = "None"
     case firstLetter = "First Letter"
 }
@@ -61,6 +62,7 @@ final class BonjourDiscoveryViewModel: ObservableObject {
     @Published var instances: [DiscoveredService] = []
     @Published var resolvedService: ResolvedServiceInfo? = nil
     @Published var isSearching = false
+    @Published var isResolving = false
     @Published var resolveError: String? = nil
     
     // Sort & Group Settings
@@ -71,11 +73,10 @@ final class BonjourDiscoveryViewModel: ObservableObject {
     @Published var serviceTypeGroupOption: ServiceTypeGroupOption = .none
     
     @Published var instanceSortOption: ServiceInstanceSortOption = .nameAscending
-    @Published var instanceGroupOption: ServiceInstanceGroupOption = .none
+    @Published var instanceGroupOption: ServiceInstanceGroupOption = .ipVersion
     
     @Published var sortAddressesV4First = true
     
-    private var periodicTimerTask: Task<Void, Never>?
     private var cancellables = Set<AnyCancellable>()
     
     init() {
@@ -84,6 +85,7 @@ final class BonjourDiscoveryViewModel: ObservableObject {
         self.instances = manager.instances
         self.resolvedService = manager.resolvedService
         self.isSearching = manager.isSearching
+        self.isResolving = manager.isResolving
         self.resolveError = manager.resolveError
         
         manager.$domains
@@ -103,12 +105,18 @@ final class BonjourDiscoveryViewModel: ObservableObject {
             
         manager.$resolvedService
             .receive(on: DispatchQueue.main)
+            .removeDuplicates()
             .assign(to: &$resolvedService)
             
         manager.$isSearching
             .receive(on: DispatchQueue.main)
             .removeDuplicates()
             .assign(to: &$isSearching)
+            
+        manager.$isResolving
+            .receive(on: DispatchQueue.main)
+            .removeDuplicates()
+            .assign(to: &$isResolving)
             
         manager.$resolveError
             .receive(on: DispatchQueue.main)
@@ -210,6 +218,49 @@ final class BonjourDiscoveryViewModel: ObservableObject {
             let title = "\(instances.count) Instance\(instances.count == 1 ? "" : "s")"
             return [ServiceInstanceSection(id: "all_instances", title: title, items: sorted)]
             
+        case .ipVersion:
+            let grouped = Dictionary(grouping: sorted) { item -> String in
+                // 1. Direct hostPort endpoint check
+                if case .hostPort(let host, _) = item.result.endpoint {
+                    return "\(host)".contains(":") ? "IPv6" : "IPv4"
+                }
+                
+                // 2. Check TXT records
+                for record in item.txtRecords {
+                    let k = record.key.lowercased()
+                    if k.contains("addr") || k.contains("ip") {
+                        if record.value.contains(":") { return "IPv6" }
+                        if record.value.contains(".") { return "IPv4" }
+                    }
+                }
+                
+                // 3. Name check
+                if item.name.contains(":") { return "IPv6" }
+                
+                // 4. Interface link heuristics from discovery
+                if item.interfaces.contains(where: { $0.type == .loopback || $0.name.lowercased().contains("lo") || $0.name.lowercased().contains("anpi") }) {
+                    return "IPv4"
+                }
+                if item.interfaces.count == 1 && (item.interfaces.first?.type == .wifi || item.interfaces.first?.name.lowercased().starts(with: "en") == true) {
+                    return "IPv6"
+                }
+                
+                return "IPv4"
+            }
+            let preferredOrder = ["IPv4", "IPv6", "IPv4 & IPv6"]
+            let keys = grouped.keys.sorted { k1, k2 in
+                let idx1 = preferredOrder.firstIndex(of: k1) ?? 99
+                let idx2 = preferredOrder.firstIndex(of: k2) ?? 99
+                if idx1 != idx2 {
+                    return idx1 < idx2
+                }
+                return k1 < k2
+            }
+            let sections = keys.map { ServiceInstanceSection(id: "group_ip_\($0)", title: "\($0) (\(grouped[$0]?.count ?? 0))", items: grouped[$0] ?? []) }
+            let summary = sections.map { "\($0.title): [\($0.items.map { $0.name }.joined(separator: ", "))]" }.joined(separator: " | ")
+            debugLog("[BonjourDiscoveryViewModel] processedInstances (ipVersion): \(summary)")
+            return sections
+            
         case .firstLetter:
             let grouped = Dictionary(grouping: sorted) { item -> String in
                 String(item.name.prefix(1)).uppercased()
@@ -234,49 +285,17 @@ final class BonjourDiscoveryViewModel: ObservableObject {
         }
     }
     
-    // Periodic Background Refresh Actions
-    func startDomainPeriodicRefresh(interval: TimeInterval = AppConstants.Bonjour.periodicRefreshInterval) {
-        stopPeriodicRefresh()
-        manager.discoverDomains(clearExisting: domains.isEmpty)
-        
-        periodicTimerTask = Task { @MainActor [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
-                guard let self = self, !Task.isCancelled else { break }
-                self.manager.discoverDomains(clearExisting: false)
-            }
-        }
+    // Search Actions
+    func startDomainSearch(clearExisting: Bool = false) {
+        manager.discoverDomains(clearExisting: clearExisting)
     }
     
-    func startServiceTypePeriodicRefresh(in domain: String, interval: TimeInterval = AppConstants.Bonjour.periodicRefreshInterval) {
-        stopPeriodicRefresh()
-        manager.discoverServiceTypes(in: domain, clearExisting: serviceTypes.isEmpty)
-        
-        periodicTimerTask = Task { @MainActor [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
-                guard let self = self, !Task.isCancelled else { break }
-                self.manager.discoverServiceTypes(in: domain, clearExisting: false)
-            }
-        }
+    func startServiceTypeSearch(in domain: String, clearExisting: Bool = false) {
+        manager.discoverServiceTypes(in: domain, clearExisting: clearExisting)
     }
     
-    func startInstancePeriodicRefresh(ofType type: String, in domain: String, interval: TimeInterval = AppConstants.Bonjour.periodicRefreshInterval) {
-        stopPeriodicRefresh()
-        manager.discoverInstances(ofType: type, inDomain: domain, clearExisting: true)
-        
-        periodicTimerTask = Task { @MainActor [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
-                guard let self = self, !Task.isCancelled else { break }
-                self.manager.discoverInstances(ofType: type, inDomain: domain, clearExisting: false)
-            }
-        }
-    }
-    
-    func stopPeriodicRefresh() {
-        periodicTimerTask?.cancel()
-        periodicTimerTask = nil
+    func startInstanceSearch(ofType type: String, in domain: String, clearExisting: Bool = false) {
+        manager.discoverInstances(ofType: type, inDomain: domain, clearExisting: clearExisting)
     }
     
     func refreshDomains() {
@@ -292,22 +311,138 @@ final class BonjourDiscoveryViewModel: ObservableObject {
     }
     
     func stopDomainSearch() {
-        stopPeriodicRefresh()
         manager.stopDomainSearch()
     }
     
     func stopTypeSearch() {
-        stopPeriodicRefresh()
         manager.stopTypeSearch()
     }
     
     func stopInstanceSearch() {
-        stopPeriodicRefresh()
         manager.stopInstanceSearch()
     }
     
-    func resolveService(_ service: DiscoveredService) {
-        manager.resolveService(service)
+    // Auto-Refresh & Manual Refresh Orchestration
+    func startDomainAutoRefresh(isAutoRefreshEnabled: Bool, triggerImmediateScan: Bool = false) -> Task<Void, Never>? {
+        if domains.isEmpty {
+            startDomainSearch(clearExisting: true)
+        } else if triggerImmediateScan {
+            refreshDomains()
+        }
+        guard isAutoRefreshEnabled else { return nil }
+        return Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: UInt64(AppConstants.Bonjour.periodicRefreshInterval * 1_000_000_000))
+                guard let self = self, !Task.isCancelled else { break }
+                self.refreshDomains()
+            }
+        }
+    }
+    
+    func performManualDomainRefresh(isAutoRefreshEnabled: Bool, restartAutoRefresh: @escaping () -> Void) async {
+        debugLog("[BonjourDiscoveryView] Manual refresh triggered (autoRefresh=\(isAutoRefreshEnabled))")
+        if isAutoRefreshEnabled {
+            restartAutoRefresh()
+        } else {
+            startDomainSearch(clearExisting: false)
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                guard let self = self, !isAutoRefreshEnabled else { return }
+                self.stopDomainSearch()
+            }
+        }
+        try? await Task.sleep(nanoseconds: 400_000_000)
+    }
+    
+    func startServiceTypeAutoRefresh(in domain: String, isAutoRefreshEnabled: Bool, triggerImmediateScan: Bool = false) -> Task<Void, Never>? {
+        if serviceTypes.isEmpty {
+            startServiceTypeSearch(in: domain, clearExisting: true)
+        } else if triggerImmediateScan {
+            refreshServiceTypes(in: domain)
+        }
+        guard isAutoRefreshEnabled else { return nil }
+        return Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: UInt64(AppConstants.Bonjour.periodicRefreshInterval * 1_000_000_000))
+                guard let self = self, !Task.isCancelled else { break }
+                self.refreshServiceTypes(in: domain)
+            }
+        }
+    }
+    
+    func performManualServiceTypeRefresh(in domain: String, isAutoRefreshEnabled: Bool, restartAutoRefresh: @escaping () -> Void) async {
+        debugLog("[ServiceTypesView] Manual refresh triggered for '\(domain)' (autoRefresh=\(isAutoRefreshEnabled))")
+        if isAutoRefreshEnabled {
+            restartAutoRefresh()
+        } else {
+            startServiceTypeSearch(in: domain, clearExisting: false)
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                guard let self = self, !isAutoRefreshEnabled else { return }
+                self.stopTypeSearch()
+            }
+        }
+        try? await Task.sleep(nanoseconds: 400_000_000)
+    }
+    
+    func startInstanceAutoRefresh(ofType type: String, in domain: String, isAutoRefreshEnabled: Bool, triggerImmediateScan: Bool = false) -> Task<Void, Never>? {
+        let needsInitialSearch = instances.isEmpty || instances.first?.type != type
+        if needsInitialSearch {
+            startInstanceSearch(ofType: type, in: domain, clearExisting: true)
+        } else if triggerImmediateScan {
+            refreshInstances(ofType: type, in: domain)
+        }
+        guard isAutoRefreshEnabled else { return nil }
+        return Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: UInt64(AppConstants.Bonjour.periodicRefreshInterval * 1_000_000_000))
+                guard let self = self, !Task.isCancelled else { break }
+                self.refreshInstances(ofType: type, in: domain)
+            }
+        }
+    }
+    
+    func performManualInstanceRefresh(ofType type: String, in domain: String, isAutoRefreshEnabled: Bool, restartAutoRefresh: @escaping () -> Void) async {
+        debugLog("[ServiceInstancesView] Manual refresh triggered for '\(type)' in '\(domain)' (autoRefresh=\(isAutoRefreshEnabled))")
+        if isAutoRefreshEnabled {
+            restartAutoRefresh()
+        } else {
+            startInstanceSearch(ofType: type, in: domain, clearExisting: false)
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                guard let self = self, !isAutoRefreshEnabled else { return }
+                self.stopInstanceSearch()
+            }
+        }
+        try? await Task.sleep(nanoseconds: 400_000_000)
+    }
+    
+    func startDetailAutoRefresh(for service: DiscoveredService, isAutoRefreshEnabled: Bool, triggerImmediateScan: Bool = false) -> Task<Void, Never>? {
+        if resolvedService == nil || triggerImmediateScan {
+            resolveService(service)
+        }
+        guard isAutoRefreshEnabled else { return nil }
+        return Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: UInt64(AppConstants.Bonjour.periodicRefreshInterval * 1_000_000_000))
+                guard let self = self, !Task.isCancelled else { break }
+                self.resolveService(service)
+            }
+        }
+    }
+    
+    func performManualDetailRefresh(for service: DiscoveredService, isAutoRefreshEnabled: Bool, restartAutoRefresh: @escaping () -> Void) async {
+        debugLog("[ServiceDetailView] Manual refresh triggered for '\(service.name)' (autoRefresh=\(isAutoRefreshEnabled))")
+        if isAutoRefreshEnabled {
+            restartAutoRefresh()
+        } else {
+            resolveService(service)
+        }
+        try? await Task.sleep(nanoseconds: 400_000_000)
+    }
+    
+    func resolveService(_ service: DiscoveredService, clearExisting: Bool = false) {
+        manager.resolveService(service, clearExisting: clearExisting)
     }
     
     func stopResolving() {
@@ -343,5 +478,106 @@ final class BonjourDiscoveryViewModel: ObservableObject {
         let text = lines.joined(separator: "\n")
         UIPasteboard.general.string = text
         return text
+    }
+    
+    static func portCategory(for port: UInt16) -> String {
+        switch port {
+        case 0...1023:
+            return "Well-Known Port"
+        case 1024...49151:
+            return "Registered Port"
+        default:
+            return "Dynamic / Ephemeral Port"
+        }
+    }
+    
+    static func decodeDeviceModel(_ model: String) -> String? {
+        let m = model.trimmingCharacters(in: .whitespacesAndNewlines)
+        let models: [String: String] = [
+            "iPhone14,2": "iPhone 13 Pro",
+            "iPhone14,3": "iPhone 13 Pro Max",
+            "iPhone14,4": "iPhone 13 mini",
+            "iPhone14,5": "iPhone 13",
+            "iPhone14,7": "iPhone 14",
+            "iPhone14,8": "iPhone 14 Plus",
+            "iPhone15,2": "iPhone 14 Pro",
+            "iPhone15,3": "iPhone 14 Pro Max",
+            "iPhone15,4": "iPhone 15",
+            "iPhone15,5": "iPhone 15 Plus",
+            "iPhone16,1": "iPhone 15 Pro",
+            "iPhone16,2": "iPhone 15 Pro Max",
+            "iPhone17,1": "iPhone 16 Pro",
+            "iPhone17,2": "iPhone 16 Pro Max",
+            "iPhone17,3": "iPhone 16",
+            "iPhone17,4": "iPhone 16 Plus",
+            "AppleTV5,3": "Apple TV HD",
+            "AppleTV6,2": "Apple TV 4K (1st gen)",
+            "AppleTV11,1": "Apple TV 4K (2nd gen)",
+            "AppleTV14,1": "Apple TV 4K (3rd gen)",
+            "MacBookPro18,1": "MacBook Pro (16-inch, 2021)",
+            "MacBookPro18,2": "MacBook Pro (16-inch, 2021)",
+            "MacBookPro18,3": "MacBook Pro (14-inch, 2021)",
+            "Mac14,2": "MacBook Air (M2, 2022)",
+            "Mac14,7": "MacBook Pro (13-inch, M2, 2022)",
+            "Mac14,6": "MacBook Pro (16-inch, 2023)",
+            "Mac14,5": "MacBook Pro (14-inch, 2023)",
+            "Mac14,3": "Mac mini (2023)",
+            "Mac14,12": "Mac mini (M2 Pro, 2023)",
+            "Mac14,15": "MacBook Air (15-inch, M2, 2023)",
+            "Mac15,3": "MacBook Pro (14-inch, Nov 2023)",
+            "Mac15,6": "MacBook Pro (14-inch, Nov 2023)",
+            "Mac15,8": "MacBook Pro (16-inch, Nov 2023)"
+        ]
+        return models[m]
+    }
+    
+    func copyAsJSON(service: DiscoveredService, resolved: ResolvedServiceInfo) -> String? {
+        var dict: [String: Any] = [
+            "name": resolved.name,
+            "type": resolved.type,
+            "domain": resolved.domain,
+            "hostname": resolved.hostname,
+            "port": resolved.port,
+            "addresses": resolved.addresses,
+            "interfaces": service.interfaces.map { $0.name }
+        ]
+        var txtDict: [String: String] = [:]
+        for record in resolved.txtRecords {
+            txtDict[record.key] = record.value
+        }
+        dict["txtRecords"] = txtDict
+        if let data = try? JSONSerialization.data(withJSONObject: dict, options: .prettyPrinted),
+           let str = String(data: data, encoding: .utf8) {
+            UIPasteboard.general.string = str
+            return str
+        }
+        return nil
+    }
+    
+    func dnsSDRawRecords(resolved: ResolvedServiceInfo) -> [(recordType: String, content: String)] {
+        var records: [(recordType: String, content: String)] = []
+        let cleanType = resolved.type.trimmingCharacters(in: CharacterSet(charactersIn: "."))
+        let cleanDomain = resolved.domain.trimmingCharacters(in: CharacterSet(charactersIn: "."))
+        let serviceDomain = "\(cleanType).\(cleanDomain)."
+        let fqdn = "\(resolved.name).\(serviceDomain)"
+        let hostFqdn = resolved.hostname.hasSuffix(".") ? resolved.hostname : (resolved.hostname.contains(":") || resolved.hostname.filter({ $0 == "." }).count == 3 ? resolved.hostname : "\(resolved.hostname).")
+        
+        records.append(("PTR", "\(serviceDomain) 120 IN PTR \(fqdn)"))
+        records.append(("SRV", "\(fqdn) 120 IN SRV 0 0 \(resolved.port) \(hostFqdn)"))
+        
+        for addr in resolved.addresses {
+            if addr.contains(":") {
+                records.append(("AAAA", "\(hostFqdn) 120 IN AAAA \(addr)"))
+            } else {
+                records.append(("A", "\(hostFqdn) 120 IN A \(addr)"))
+            }
+        }
+        
+        if !resolved.txtRecords.isEmpty {
+            let txtString = resolved.txtRecords.map { "\($0.key)=\($0.value)" }.joined(separator: " ")
+            records.append(("TXT", "\(fqdn) 120 IN TXT \"\(txtString)\""))
+        }
+        
+        return records
     }
 }

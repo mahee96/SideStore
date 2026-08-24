@@ -16,6 +16,7 @@ struct BonjourDiscoveryView: View {
     @StateObject private var viewModel = BonjourDiscoveryViewModel()
     @State private var selectedDomain: String? = nil
     @State private var isAutoRefreshEnabled = true
+    @State private var refreshTask: Task<Void, Never>? = nil
     
     var body: some View {
         ZStack {
@@ -36,14 +37,15 @@ struct BonjourDiscoveryView: View {
             ToolbarItemGroup(placement: .navigationBarTrailing) {
                 SwiftUI.Button {
                     isAutoRefreshEnabled.toggle()
+                    debugLog("[BonjourDiscoveryView] Auto-refresh toggled: \(isAutoRefreshEnabled ? "ON" : "OFF")")
                     if isAutoRefreshEnabled {
-                        viewModel.startDomainPeriodicRefresh()
+                        startAutoRefresh(triggerImmediateScan: true)
                     } else {
-                        viewModel.stopPeriodicRefresh()
+                        stopAutoRefresh()
                     }
                 } label: {
-                    Image(systemName: isAutoRefreshEnabled ? "arrow.clockwise.circle.fill" : "arrow.clockwise.circle")
-                        .foregroundColor(isAutoRefreshEnabled ? .accentColor : .secondary)
+                    Image(systemName: isAutoRefreshEnabled ? "antenna.radiowaves.left.and.right.circle.fill" : "antenna.radiowaves.left.and.right.circle")
+                        .foregroundColor(isAutoRefreshEnabled ? .blue : .secondary)
                 }
                 
                 Menu {
@@ -83,12 +85,29 @@ struct BonjourDiscoveryView: View {
         }
         .onAppear {
             selectedDomain = nil
-            if isAutoRefreshEnabled {
-                viewModel.startDomainPeriodicRefresh()
-            }
+            debugLog("[BonjourDiscoveryView] onAppear (domainsCount=\(viewModel.domains.count), autoRefresh=\(isAutoRefreshEnabled))")
+            startAutoRefresh()
         }
         .onDisappear {
-            viewModel.stopDomainSearch()
+            debugLog("[BonjourDiscoveryView] onDisappear")
+            stopAutoRefresh()
+        }
+    }
+    
+    private func startAutoRefresh(triggerImmediateScan: Bool = false) {
+        refreshTask?.cancel()
+        refreshTask = viewModel.startDomainAutoRefresh(isAutoRefreshEnabled: isAutoRefreshEnabled, triggerImmediateScan: triggerImmediateScan)
+    }
+    
+    private func stopAutoRefresh() {
+        refreshTask?.cancel()
+        refreshTask = nil
+        viewModel.stopDomainSearch()
+    }
+    
+    private func performManualRefresh() async {
+        await viewModel.performManualDomainRefresh(isAutoRefreshEnabled: isAutoRefreshEnabled) {
+            startAutoRefresh(triggerImmediateScan: true)
         }
     }
     
@@ -107,7 +126,7 @@ struct BonjourDiscoveryView: View {
                 .padding(.horizontal, 32)
             
             SwiftUI.Button {
-                viewModel.startDomainPeriodicRefresh()
+                startAutoRefresh()
             } label: {
                 Label("Retry", systemImage: "arrow.clockwise")
                     .font(.subheadline.weight(.medium))
@@ -135,15 +154,9 @@ struct BonjourDiscoveryView: View {
             ForEach(viewModel.processedDomains) { section in
                 Section(header: Text(section.title)) {
                     ForEach(section.items, id: \.self) { domain in
-                        NavigationLink(
-                            destination: Group {
-                                if let active = selectedDomain {
-                                    ServiceTypesView(domain: active, viewModel: viewModel)
-                                }
-                            },
-                            tag: domain,
-                            selection: $selectedDomain
-                        ) {
+                        NavigationLink {
+                            ServiceTypesView(domain: domain, viewModel: viewModel)
+                        } label: {
                             HStack {
                                 Image(systemName: "globe")
                                     .foregroundColor(.accentColor)
@@ -159,7 +172,7 @@ struct BonjourDiscoveryView: View {
         }
         .listStyle(.insetGrouped)
         .refreshable {
-            viewModel.refreshDomains()
+            await performManualRefresh()
         }
     }
 }
@@ -174,6 +187,7 @@ struct ServiceTypesView: View {
     @ObservedObject var viewModel: BonjourDiscoveryViewModel
     @State private var selectedType: String? = nil
     @State private var isAutoRefreshEnabled = true
+    @State private var refreshTask: Task<Void, Never>? = nil
     
     var body: some View {
         ZStack {
@@ -194,14 +208,15 @@ struct ServiceTypesView: View {
             ToolbarItemGroup(placement: .navigationBarTrailing) {
                 SwiftUI.Button {
                     isAutoRefreshEnabled.toggle()
+                    debugLog("[ServiceTypesView] Auto-refresh for '\(domain)' toggled: \(isAutoRefreshEnabled ? "ON" : "OFF")")
                     if isAutoRefreshEnabled {
-                        viewModel.startServiceTypePeriodicRefresh(in: domain)
+                        startAutoRefresh(triggerImmediateScan: true)
                     } else {
-                        viewModel.stopPeriodicRefresh()
+                        stopAutoRefresh()
                     }
                 } label: {
-                    Image(systemName: isAutoRefreshEnabled ? "arrow.clockwise.circle.fill" : "arrow.clockwise.circle")
-                        .foregroundColor(isAutoRefreshEnabled ? .accentColor : .secondary)
+                    Image(systemName: isAutoRefreshEnabled ? "antenna.radiowaves.left.and.right.circle.fill" : "antenna.radiowaves.left.and.right.circle")
+                        .foregroundColor(isAutoRefreshEnabled ? .blue : .secondary)
                 }
                 
                 Menu {
@@ -235,12 +250,29 @@ struct ServiceTypesView: View {
         }
         .onAppear {
             selectedType = nil
-            if isAutoRefreshEnabled {
-                viewModel.startServiceTypePeriodicRefresh(in: domain)
-            }
+            debugLog("[ServiceTypesView] onAppear for '\(domain)' (serviceTypesCount=\(viewModel.serviceTypes.count), autoRefresh=\(isAutoRefreshEnabled))")
+            startAutoRefresh()
         }
         .onDisappear {
-            viewModel.stopTypeSearch()
+            debugLog("[ServiceTypesView] onDisappear for '\(domain)'")
+            stopAutoRefresh()
+        }
+    }
+    
+    private func startAutoRefresh(triggerImmediateScan: Bool = false) {
+        refreshTask?.cancel()
+        refreshTask = viewModel.startServiceTypeAutoRefresh(in: domain, isAutoRefreshEnabled: isAutoRefreshEnabled, triggerImmediateScan: triggerImmediateScan)
+    }
+    
+    private func stopAutoRefresh() {
+        refreshTask?.cancel()
+        refreshTask = nil
+        viewModel.stopTypeSearch()
+    }
+    
+    private func performManualRefresh() async {
+        await viewModel.performManualServiceTypeRefresh(in: domain, isAutoRefreshEnabled: isAutoRefreshEnabled) {
+            startAutoRefresh(triggerImmediateScan: true)
         }
     }
     
@@ -259,7 +291,7 @@ struct ServiceTypesView: View {
                 .padding(.horizontal, 32)
             
             SwiftUI.Button {
-                viewModel.startServiceTypePeriodicRefresh(in: domain)
+                startAutoRefresh()
             } label: {
                 Label("Retry", systemImage: "arrow.clockwise")
                     .font(.subheadline.weight(.medium))
@@ -290,21 +322,14 @@ struct ServiceTypesView: View {
                     footer: (section.id == viewModel.processedServiceTypes.last?.id) ? searchingFooter : nil
                 ) {
                     ForEach(section.items) { typeInfo in
-                        NavigationLink(
-                            destination: Group {
-                                if let activeType = selectedType,
-                                   let matchedInfo = section.items.first(where: { $0.rawType == activeType }) ?? viewModel.serviceTypes.first(where: { $0.rawType == activeType }) {
-                                    ServiceInstancesView(
-                                        serviceType: matchedInfo.rawType,
-                                        domain: domain,
-                                        friendlyName: matchedInfo.friendlyName,
-                                        viewModel: viewModel
-                                    )
-                                }
-                            },
-                            tag: typeInfo.rawType,
-                            selection: $selectedType
-                        ) {
+                        NavigationLink {
+                            ServiceInstancesView(
+                                serviceType: typeInfo.rawType,
+                                domain: domain,
+                                friendlyName: typeInfo.friendlyName,
+                                viewModel: viewModel
+                            )
+                        } label: {
                             HStack(spacing: 12) {
                                 Image(systemName: typeInfo.friendlyName != nil ? "checkmark.seal.fill" : "questionmark.circle")
                                     .foregroundColor(typeInfo.friendlyName != nil ? .green : .orange)
@@ -335,7 +360,7 @@ struct ServiceTypesView: View {
         }
         .listStyle(.insetGrouped)
         .refreshable {
-            viewModel.refreshServiceTypes(in: domain)
+            await performManualRefresh()
         }
     }
     
@@ -365,6 +390,7 @@ struct ServiceInstancesView: View {
     @ObservedObject var viewModel: BonjourDiscoveryViewModel
     @State private var selectedInstanceId: String? = nil
     @State private var isAutoRefreshEnabled = true
+    @State private var refreshTask: Task<Void, Never>? = nil
     
     var body: some View {
         ZStack {
@@ -385,14 +411,15 @@ struct ServiceInstancesView: View {
             ToolbarItemGroup(placement: .navigationBarTrailing) {
                 SwiftUI.Button {
                     isAutoRefreshEnabled.toggle()
+                    debugLog("[ServiceInstancesView] Auto-refresh for '\(serviceType)' toggled: \(isAutoRefreshEnabled ? "ON" : "OFF")")
                     if isAutoRefreshEnabled {
-                        viewModel.startInstancePeriodicRefresh(ofType: serviceType, in: domain)
+                        startAutoRefresh(triggerImmediateScan: true)
                     } else {
-                        viewModel.stopPeriodicRefresh()
+                        stopAutoRefresh()
                     }
                 } label: {
-                    Image(systemName: isAutoRefreshEnabled ? "arrow.clockwise.circle.fill" : "arrow.clockwise.circle")
-                        .foregroundColor(isAutoRefreshEnabled ? .accentColor : .secondary)
+                    Image(systemName: isAutoRefreshEnabled ? "antenna.radiowaves.left.and.right.circle.fill" : "antenna.radiowaves.left.and.right.circle")
+                        .foregroundColor(isAutoRefreshEnabled ? .blue : .secondary)
                 }
                 
                 Menu {
@@ -426,12 +453,29 @@ struct ServiceInstancesView: View {
         }
         .onAppear {
             selectedInstanceId = nil
-            if isAutoRefreshEnabled {
-                viewModel.startInstancePeriodicRefresh(ofType: serviceType, in: domain)
-            }
+            debugLog("[ServiceInstancesView] onAppear for '\(serviceType)' in '\(domain)' (instancesCount=\(viewModel.instances.count), autoRefresh=\(isAutoRefreshEnabled))")
+            startAutoRefresh()
         }
         .onDisappear {
-            viewModel.stopInstanceSearch()
+            debugLog("[ServiceInstancesView] onDisappear for '\(serviceType)' in '\(domain)'")
+            stopAutoRefresh()
+        }
+    }
+    
+    private func startAutoRefresh(triggerImmediateScan: Bool = false) {
+        refreshTask?.cancel()
+        refreshTask = viewModel.startInstanceAutoRefresh(ofType: serviceType, in: domain, isAutoRefreshEnabled: isAutoRefreshEnabled, triggerImmediateScan: triggerImmediateScan)
+    }
+    
+    private func stopAutoRefresh() {
+        refreshTask?.cancel()
+        refreshTask = nil
+        viewModel.stopInstanceSearch()
+    }
+    
+    private func performManualRefresh() async {
+        await viewModel.performManualInstanceRefresh(ofType: serviceType, in: domain, isAutoRefreshEnabled: isAutoRefreshEnabled) {
+            startAutoRefresh(triggerImmediateScan: true)
         }
     }
     
@@ -450,7 +494,7 @@ struct ServiceInstancesView: View {
                 .padding(.horizontal, 32)
             
             SwiftUI.Button {
-                viewModel.startInstancePeriodicRefresh(ofType: serviceType, in: domain)
+                startAutoRefresh()
             } label: {
                 Label("Retry", systemImage: "arrow.clockwise")
                     .font(.subheadline.weight(.medium))
@@ -481,16 +525,9 @@ struct ServiceInstancesView: View {
                     footer: (section.id == viewModel.processedInstances.last?.id) ? searchingFooter : nil
                 ) {
                     ForEach(section.items) { instance in
-                        NavigationLink(
-                            destination: Group {
-                                if let activeId = selectedInstanceId,
-                                   let matchedInstance = section.items.first(where: { $0.id == activeId }) ?? viewModel.instances.first(where: { $0.id == activeId }) {
-                                    ServiceDetailView(service: matchedInstance, viewModel: viewModel)
-                                }
-                            },
-                            tag: instance.id,
-                            selection: $selectedInstanceId
-                        ) {
+                        NavigationLink {
+                            ServiceDetailView(service: instance, viewModel: viewModel, autoRefreshEnabled: isAutoRefreshEnabled)
+                        } label: {
                             HStack(spacing: 12) {
                                 Image(systemName: "desktopcomputer")
                                     .foregroundColor(.accentColor)
@@ -509,7 +546,7 @@ struct ServiceInstancesView: View {
         }
         .listStyle(.insetGrouped)
         .refreshable {
-            viewModel.refreshInstances(ofType: serviceType, in: domain)
+            await performManualRefresh()
         }
     }
     
@@ -534,7 +571,18 @@ struct ServiceInstancesView: View {
 struct ServiceDetailView: View {
     let service: DiscoveredService
     @ObservedObject var viewModel: BonjourDiscoveryViewModel
+    let autoRefreshEnabled: Bool
+    
+    @State private var isAutoRefreshEnabled: Bool
+    @State private var refreshTask: Task<Void, Never>? = nil
     @State private var showCopyConfirmation = false
+    
+    init(service: DiscoveredService, viewModel: BonjourDiscoveryViewModel, autoRefreshEnabled: Bool = true) {
+        self.service = service
+        self.viewModel = viewModel
+        self.autoRefreshEnabled = autoRefreshEnabled
+        self._isAutoRefreshEnabled = State(initialValue: autoRefreshEnabled)
+    }
     
     var body: some View {
         ZStack {
@@ -553,42 +601,63 @@ struct ServiceDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItemGroup(placement: .navigationBarTrailing) {
-                if viewModel.resolvedService != nil {
-                    Menu {
-                        SwiftUI.Button {
-                            viewModel.sortAddressesV4First = true
-                        } label: {
-                            Label("IPv4 First", systemImage: viewModel.sortAddressesV4First ? "checkmark" : "")
-                        }
-                        SwiftUI.Button {
-                            viewModel.sortAddressesV4First = false
-                        } label: {
-                            Label("IPv6 First", systemImage: !viewModel.sortAddressesV4First ? "checkmark" : "")
-                        }
-                    } label: {
-                        Image(systemName: "arrow.up.arrow.down")
+                SwiftUI.Button {
+                    isAutoRefreshEnabled.toggle()
+                    debugLog("[ServiceDetailView] Auto-refresh for '\(service.name)' toggled: \(isAutoRefreshEnabled ? "ON" : "OFF")")
+                    if isAutoRefreshEnabled {
+                        startAutoRefresh(triggerImmediateScan: true)
+                    } else {
+                        stopAutoRefresh()
                     }
-                    
-                    SwiftUI.Button("Copy") {
-                        if viewModel.copyAllResolvedInfo() != nil {
-                            withAnimation(.spring(response: 0.3)) {
-                                showCopyConfirmation = true
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                withAnimation(.spring(response: 0.3)) {
-                                    showCopyConfirmation = false
-                                }
-                            }
-                        }
-                    }
+                } label: {
+                    Image(systemName: isAutoRefreshEnabled ? "antenna.radiowaves.left.and.right.circle.fill" : "antenna.radiowaves.left.and.right.circle")
+                        .foregroundColor(isAutoRefreshEnabled ? .blue : .secondary)
                 }
+                
+                Menu {
+                    SwiftUI.Button {
+                        viewModel.sortAddressesV4First = true
+                    } label: {
+                        Label("IPv4 First", systemImage: viewModel.sortAddressesV4First ? "checkmark" : "")
+                    }
+                    SwiftUI.Button {
+                        viewModel.sortAddressesV4First = false
+                    } label: {
+                        Label("IPv6 First", systemImage: !viewModel.sortAddressesV4First ? "checkmark" : "")
+                    }
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
+                }
+                .disabled(viewModel.resolvedService == nil)
             }
         }
         .onAppear {
-            viewModel.resolveService(service)
+            debugLog("[ServiceDetailView] onAppear: Resolving '\(service.name)' (\(service.type)) (autoRefresh=\(isAutoRefreshEnabled))")
+            startAutoRefresh(triggerImmediateScan: true)
         }
         .onDisappear {
-            viewModel.stopResolving()
+            debugLog("[ServiceDetailView] onDisappear: Stopped resolving '\(service.name)'")
+            stopAutoRefresh()
+        }
+        .refreshable {
+            await performManualRefresh()
+        }
+    }
+    
+    private func startAutoRefresh(triggerImmediateScan: Bool = false) {
+        refreshTask?.cancel()
+        refreshTask = viewModel.startDetailAutoRefresh(for: service, isAutoRefreshEnabled: isAutoRefreshEnabled, triggerImmediateScan: triggerImmediateScan)
+    }
+    
+    private func stopAutoRefresh() {
+        refreshTask?.cancel()
+        refreshTask = nil
+        viewModel.stopResolving()
+    }
+    
+    private func performManualRefresh() async {
+        await viewModel.performManualDetailRefresh(for: service, isAutoRefreshEnabled: isAutoRefreshEnabled) {
+            startAutoRefresh(triggerImmediateScan: true)
         }
     }
     
@@ -634,42 +703,98 @@ struct ServiceDetailView: View {
                     Image(systemName: "bonjour")
                         .font(.system(size: 36))
                         .foregroundColor(.accentColor)
+                    
                     Text(resolved.name)
                         .font(.headline)
                         .multilineTextAlignment(.center)
+                    
+                    if let purpose = BonjourDiscoveryManager.friendlyName(for: resolved.type) {
+                        Text(purpose)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 8)
+                    }
+                    
+                    HStack(spacing: 8) {
+                        Text(resolved.type.contains("_tcp") ? "TCP" : "UDP")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Capsule().fill(resolved.type.contains("_tcp") ? Color.blue : Color.orange))
+                        
+                        Text(BonjourDiscoveryViewModel.portCategory(for: resolved.port))
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Capsule().fill(Color(.tertiarySystemFill)))
+                    }
+                    .padding(.top, 2)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 8)
             }
             
-            // Connection Info
+            // Connection Info (Hostname, Addresses, Port, Type, Domain)
             Section(header: Text("Connection")) {
-                DetailRow(label: "Hostname", value: resolved.hostname)
-                DetailRow(label: "Port", value: "\(resolved.port)")
-                DetailRow(label: "Type", value: resolved.type)
-                DetailRow(label: "Domain", value: resolved.domain)
+                DetailRow(label: "Hostname", value: resolved.hostname, onCopy: copyWithFeedback)
+                
+                if !resolved.addresses.isEmpty {
+                    ForEach(viewModel.sortedAddresses, id: \.self) { address in
+                        let label = address.contains(":") ? "IPv6 Address" : "IPv4 Address"
+                        DetailRow(label: label, value: address, onCopy: copyWithFeedback)
+                    }
+                }
+                
+                DetailRow(label: "Port", value: "\(resolved.port)", onCopy: copyWithFeedback)
+                DetailRow(label: "Type", value: resolved.type, onCopy: copyWithFeedback)
+                DetailRow(label: "Domain", value: resolved.domain, onCopy: copyWithFeedback)
             }
             
-            // IP Addresses
-            if !resolved.addresses.isEmpty {
-                Section(header: Text("Addresses (\(resolved.addresses.count))")) {
-                    ForEach(viewModel.sortedAddresses, id: \.self) { address in
+            // Interfaces
+            if !service.interfaces.isEmpty {
+                Section(header: Text("Discovered Interfaces (\(service.interfaces.count))")) {
+                    ForEach(service.interfaces, id: \.index) { iface in
                         HStack {
-                            Image(systemName: address.contains(":") ? "6.circle" : "4.circle")
+                            Image(systemName: iface.type == .wifi ? "wifi" : (iface.type == .loopback ? "arrow.triangle.2.circlepath" : "cable.connector"))
                                 .foregroundColor(.secondary)
                                 .frame(width: 24)
-                            Text(address)
-                                .font(.system(.body, design: .monospaced))
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.7)
+                            Text(iface.name)
+                                .font(.body)
+                            Spacer()
+                            Text(iface.type == .wifi ? "Wi-Fi" : (iface.type == .loopback ? "Loopback" : "\(iface.type)"))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            copyWithFeedback("\(iface.name) (\(iface.type == .wifi ? "Wi-Fi" : "\(iface.type)"))")
                         }
                         .contextMenu {
                             SwiftUI.Button {
-                                UIPasteboard.general.string = address
+                                copyWithFeedback("\(iface.name) (\(iface.type == .wifi ? "Wi-Fi" : "\(iface.type)"))")
                             } label: {
-                                Label("Copy Address", systemImage: "doc.on.doc")
+                                Label("Copy Interface", systemImage: "doc.on.doc")
                             }
                         }
+                    }
+                }
+            }
+            
+            // Decoded Device / Software Information
+            let modelRecord = resolved.txtRecords.first(where: { $0.key.lowercased() == "model" })?.value
+            let decodedModel = modelRecord != nil ? BonjourDiscoveryViewModel.decodeDeviceModel(modelRecord!) : nil
+            let osRecord = resolved.txtRecords.first(where: { $0.key.lowercased() == "osvers" || $0.key.lowercased() == "os" })?.value
+            
+            if decodedModel != nil || osRecord != nil {
+                Section(header: Text("Device Info")) {
+                    if let model = decodedModel {
+                        DetailRow(label: "Model", value: "\(model) (\(modelRecord ?? ""))", onCopy: copyWithFeedback)
+                    }
+                    if let os = osRecord {
+                        DetailRow(label: "OS Version", value: os, onCopy: copyWithFeedback)
                     }
                 }
             }
@@ -687,15 +812,87 @@ struct ServiceDetailView: View {
                                 .foregroundColor(.secondary)
                                 .lineLimit(nil)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                         .padding(.vertical, 2)
+                        .onTapGesture {
+                            copyWithFeedback("\(record.key) = \(record.value)")
+                        }
                         .contextMenu {
                             SwiftUI.Button {
-                                UIPasteboard.general.string = "\(record.key) = \(record.value)"
+                                copyWithFeedback("\(record.key) = \(record.value)")
                             } label: {
                                 Label("Copy", systemImage: "doc.on.doc")
                             }
                         }
                     }
+                }
+            }
+            
+            // DNS-SD Raw Records
+            let dnsRecords = viewModel.dnsSDRawRecords(resolved: resolved)
+            Section(header: Text("DNS-SD Records")) {
+                ForEach(dnsRecords, id: \.content) { rec in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(rec.recordType)
+                            .font(.caption.weight(.bold))
+                            .foregroundColor(.accentColor)
+                        Text(rec.content)
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundColor(.secondary)
+                            .lineLimit(nil)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .padding(.vertical, 2)
+                    .onTapGesture {
+                        copyWithFeedback(rec.content)
+                    }
+                    .contextMenu {
+                        SwiftUI.Button {
+                            copyWithFeedback(rec.content)
+                        } label: {
+                            Label("Copy \(rec.recordType) Record", systemImage: "doc.on.doc")
+                        }
+                    }
+                }
+            }
+            
+            // Quick Actions (Moved to Bottom)
+            Section(header: Text("Quick Actions")) {
+                let isWeb = resolved.type.contains("_http") || resolved.type.contains("_https") || resolved.port == 80 || resolved.port == 443 || resolved.port == 8080
+                let isSSH = resolved.type.contains("_ssh") || resolved.port == 22
+                let endpointStr = "\(resolved.hostname):\(resolved.port)"
+                
+                if isWeb {
+                    let scheme = resolved.type.contains("_https") || resolved.port == 443 ? "https" : "http"
+                    if let url = URL(string: "\(scheme)://\(resolved.hostname):\(resolved.port)") {
+                        Link(destination: url) {
+                            Label("Open in Safari (\(scheme)://)", systemImage: "safari")
+                        }
+                    }
+                }
+                
+                if isSSH {
+                    SwiftUI.Button {
+                        copyWithFeedback("ssh \(resolved.hostname) -p \(resolved.port)")
+                    } label: {
+                        Label("Copy SSH Command", systemImage: "terminal")
+                    }
+                }
+                
+                SwiftUI.Button {
+                    copyWithFeedback(endpointStr)
+                } label: {
+                    Label("Copy Host:Port Endpoint", systemImage: "link")
+                }
+                
+                SwiftUI.Button {
+                    if let jsonStr = viewModel.copyAsJSON(service: service, resolved: resolved) {
+                        copyWithFeedback(jsonStr)
+                    }
+                } label: {
+                    Label("Copy Details as JSON", systemImage: "curlybraces")
                 }
             }
         }
@@ -707,6 +904,18 @@ struct ServiceDetailView: View {
             if showCopyConfirmation {
                 copiedBanner
                     .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+    }
+    
+    private func copyWithFeedback(_ string: String) {
+        UIPasteboard.general.string = string
+        withAnimation(.spring(response: 0.3)) {
+            showCopyConfirmation = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+            withAnimation(.spring(response: 0.3)) {
+                showCopyConfirmation = false
             }
         }
     }
@@ -728,10 +937,11 @@ struct ServiceDetailView: View {
 
 // MARK: - Detail Row
 
-// A simple key-value row with context menu for copying
+// A simple key-value row with tap-to-copy and context menu
 private struct DetailRow: View {
     let label: String
     let value: String
+    var onCopy: ((String) -> Void)? = nil
     
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -742,10 +952,15 @@ private struct DetailRow: View {
                 .font(.body)
                 .lineLimit(nil)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
         .padding(.vertical, 2)
+        .onTapGesture {
+            onCopy?(value)
+        }
         .contextMenu {
             SwiftUI.Button {
-                UIPasteboard.general.string = value
+                onCopy?(value)
             } label: {
                 Label("Copy \(label)", systemImage: "doc.on.doc")
             }
