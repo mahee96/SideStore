@@ -57,8 +57,8 @@ struct ResolvedServiceInfo: Identifiable {
     let txtRecords: [(key: String, value: String)]
 }
 
-@MainActor
 final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDelegate, NetServiceBrowserDelegate {
+    static let shared = BonjourDiscoveryManager()
     
     // Published State
     @Published var domains: [String] = []
@@ -228,7 +228,7 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
         }
     }
     
-    nonisolated private func handleInstanceResults(_ results: Set<NWBrowser.Result>, forType type: String, domain: String) {
+    private func handleInstanceResults(_ results: Set<NWBrowser.Result>, forType type: String, domain: String) {
         Task { @MainActor [weak self] in
             guard let self = self else { return }
             
@@ -333,7 +333,7 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
         }
     }
     
-    nonisolated private func finishResolution(
+    private func finishResolution(
         service: DiscoveredService,
         hostname: String,
         port: UInt16,
@@ -377,7 +377,7 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
     }
     
     // NetServiceBrowserDelegate
-    nonisolated func netServiceBrowser(_ browser: NetServiceBrowser, didFindDomain domainString: String, moreComing: Bool) {
+    func netServiceBrowser(_ browser: NetServiceBrowser, didFindDomain domainString: String, moreComing: Bool) {
         let cleanDomain = domainString.hasSuffix(".") ? String(domainString.dropLast()) : domainString
         Task { @MainActor in
             if self.discoveredDomains.insert(cleanDomain).inserted {
@@ -389,7 +389,7 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
         }
     }
     
-    nonisolated func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService, moreComing: Bool) {
+    func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService, moreComing: Bool) {
         let rawType = "\(service.name).\(service.type)"
         Task { @MainActor in
             if self.discoveredTypes.insert(rawType).inserted {
@@ -406,20 +406,20 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
         }
     }
     
-    nonisolated func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String: NSNumber]) {
+    func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String: NSNumber]) {
         Task { @MainActor in
             self.isSearching = false
         }
     }
     
-    nonisolated func netServiceBrowserDidStopSearch(_ browser: NetServiceBrowser) {
+    func netServiceBrowserDidStopSearch(_ browser: NetServiceBrowser) {
         Task { @MainActor in
             self.isSearching = false
         }
     }
     
     // NetServiceDelegate
-    nonisolated func netServiceDidResolveAddress(_ sender: NetService) {
+    func netServiceDidResolveAddress(_ sender: NetService) {
         let hostname = sender.hostName ?? ""
         let port = UInt16(sender.port)
         
@@ -449,17 +449,17 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
         }
     }
     
-    nonisolated func netService(_ sender: NetService, didNotResolve errorDict: [String: NSNumber]) {
+    func netService(_ sender: NetService, didNotResolve errorDict: [String: NSNumber]) {
         debugLog("[BonjourDiscovery] NetService failed to resolve: \(errorDict)")
     }
     
     // Helpers
-    nonisolated static func friendlyName(for rawType: String) -> String? {
+    static func friendlyName(for rawType: String) -> String? {
         let normalized = rawType.hasSuffix(".") ? rawType : rawType + "."
         return commonKnownServiceTypes[normalized]
     }
     
-    nonisolated static func resolveHostToIPs(_ host: String) -> [String] {
+    static func resolveHostToIPs(_ host: String) -> [String] {
         var addresses: [String] = []
         var results: UnsafeMutablePointer<addrinfo>?
         

@@ -13,16 +13,16 @@ import SwiftUI
 // Entry point: discovers and lists browsable Bonjour domains.
 // Tapping a domain navigates to its service types.
 struct BonjourDiscoveryView: View {
-    @StateObject private var manager = BonjourDiscoveryManager()
+    @StateObject private var viewModel = BonjourDiscoveryViewModel()
     
     var body: some View {
         ZStack {
             Color(.systemGroupedBackground)
                 .ignoresSafeArea()
             
-            if manager.isSearching && manager.domains.isEmpty {
+            if viewModel.manager.isSearching && viewModel.manager.domains.isEmpty {
                 ProgressView("Searching for domains…")
-            } else if manager.domains.isEmpty {
+            } else if viewModel.manager.domains.isEmpty {
                 emptyState
             } else {
                 domainsList
@@ -30,11 +30,48 @@ struct BonjourDiscoveryView: View {
         }
         .navigationTitle("Discovery")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    Menu {
+                        SwiftUI.Button {
+                            viewModel.domainGroupByFirstLetter = false
+                        } label: {
+                            Label("None", systemImage: !viewModel.domainGroupByFirstLetter ? "checkmark" : "")
+                        }
+                        SwiftUI.Button {
+                            viewModel.domainGroupByFirstLetter = true
+                        } label: {
+                            Label("First Letter", systemImage: viewModel.domainGroupByFirstLetter ? "checkmark" : "")
+                        }
+                    } label: {
+                        Label("Group By", systemImage: "rectangle.3.group")
+                    }
+                    
+                    Menu {
+                        SwiftUI.Button {
+                            viewModel.domainSortAscending = true
+                        } label: {
+                            Label("Name (A to Z)", systemImage: viewModel.domainSortAscending ? "checkmark" : "")
+                        }
+                        SwiftUI.Button {
+                            viewModel.domainSortAscending = false
+                        } label: {
+                            Label("Name (Z to A)", systemImage: !viewModel.domainSortAscending ? "checkmark" : "")
+                        }
+                    } label: {
+                        Label("Sort By", systemImage: "arrow.up.arrow.down")
+                    }
+                } label: {
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                }
+            }
+        }
         .onAppear {
-            manager.discoverDomains()
+            viewModel.discoverDomains()
         }
         .onDisappear {
-            manager.stopDomainSearch()
+            viewModel.stopDomainSearch()
         }
     }
     
@@ -53,7 +90,7 @@ struct BonjourDiscoveryView: View {
                 .padding(.horizontal, 32)
             
             SwiftUI.Button {
-                manager.discoverDomains()
+                viewModel.discoverDomains()
             } label: {
                 Label("Retry", systemImage: "arrow.clockwise")
                     .font(.subheadline.weight(.medium))
@@ -78,21 +115,26 @@ struct BonjourDiscoveryView: View {
     
     private var domainsList: some View {
         List {
-            Section(header: Text("Browsable Domains")) {
-                ForEach(manager.domains, id: \.self) { domain in
-                    NavigationLink(destination: ServiceTypesView(domain: domain)) {
-                        HStack {
-                            Image(systemName: "globe")
-                                .foregroundColor(.accentColor)
-                                .frame(width: 28)
-                            Text(domain)
-                                .font(.body)
+            ForEach(viewModel.processedDomains) { section in
+                Section(header: Text(section.title)) {
+                    ForEach(section.items, id: \.self) { domain in
+                        NavigationLink(destination: ServiceTypesView(domain: domain)) {
+                            HStack {
+                                Image(systemName: "globe")
+                                    .foregroundColor(.accentColor)
+                                    .frame(width: 28)
+                                Text(domain)
+                                    .font(.body)
+                            }
                         }
                     }
                 }
             }
         }
         .listStyle(.insetGrouped)
+        .refreshable {
+            viewModel.discoverDomains()
+        }
     }
 }
 
@@ -103,16 +145,16 @@ struct BonjourDiscoveryView: View {
 // Tapping a type navigates to its instances.
 struct ServiceTypesView: View {
     let domain: String
-    @StateObject private var manager = BonjourDiscoveryManager()
+    @StateObject private var viewModel = BonjourDiscoveryViewModel()
     
     var body: some View {
         ZStack {
             Color(.systemGroupedBackground)
                 .ignoresSafeArea()
             
-            if manager.isSearching && manager.serviceTypes.isEmpty {
+            if viewModel.manager.isSearching && viewModel.manager.serviceTypes.isEmpty {
                 ProgressView("Searching for service types…")
-            } else if manager.serviceTypes.isEmpty {
+            } else if viewModel.manager.serviceTypes.isEmpty {
                 emptyState
             } else {
                 serviceTypesList
@@ -120,11 +162,42 @@ struct ServiceTypesView: View {
         }
         .navigationTitle(domain)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    Menu {
+                        ForEach(ServiceTypeGroupOption.allCases, id: \.self) { opt in
+                            SwiftUI.Button {
+                                viewModel.serviceTypeGroupOption = opt
+                            } label: {
+                                Label(opt.rawValue, systemImage: viewModel.serviceTypeGroupOption == opt ? "checkmark" : "")
+                            }
+                        }
+                    } label: {
+                        Label("Group By", systemImage: "rectangle.3.group")
+                    }
+                    
+                    Menu {
+                        ForEach(ServiceTypeSortOption.allCases, id: \.self) { opt in
+                            SwiftUI.Button {
+                                viewModel.serviceTypeSortOption = opt
+                            } label: {
+                                Label(opt.rawValue, systemImage: viewModel.serviceTypeSortOption == opt ? "checkmark" : "")
+                            }
+                        }
+                    } label: {
+                        Label("Sort By", systemImage: "arrow.up.arrow.down")
+                    }
+                } label: {
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                }
+            }
+        }
         .onAppear {
-            manager.discoverServiceTypes(in: domain)
+            viewModel.discoverServiceTypes(in: domain)
         }
         .onDisappear {
-            manager.stopTypeSearch()
+            viewModel.stopTypeSearch()
         }
     }
     
@@ -143,7 +216,7 @@ struct ServiceTypesView: View {
                 .padding(.horizontal, 32)
             
             SwiftUI.Button {
-                manager.discoverServiceTypes(in: domain)
+                viewModel.discoverServiceTypes(in: domain)
             } label: {
                 Label("Retry", systemImage: "arrow.clockwise")
                     .font(.subheadline.weight(.medium))
@@ -168,48 +241,53 @@ struct ServiceTypesView: View {
     
     private var serviceTypesList: some View {
         List {
-            Section(
-                header: Text("\(manager.serviceTypes.count) Service\(manager.serviceTypes.count == 1 ? "" : "s") Found"),
-                footer: searchingFooter
-            ) {
-                ForEach(manager.serviceTypes) { typeInfo in
-                    NavigationLink(destination: ServiceInstancesView(
-                        serviceType: typeInfo.rawType,
-                        domain: domain,
-                        friendlyName: typeInfo.friendlyName
-                    )) {
-                        HStack(spacing: 12) {
-                            Image(systemName: typeInfo.friendlyName != nil ? "checkmark.seal.fill" : "questionmark.circle")
-                                .foregroundColor(typeInfo.friendlyName != nil ? .green : .orange)
-                                .frame(width: 28)
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                if let friendly = typeInfo.friendlyName {
-                                    Text(friendly)
-                                        .font(.body)
-                                        .lineLimit(1)
-                                    Text(typeInfo.rawType)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                        .lineLimit(1)
-                                } else {
-                                    Text(typeInfo.rawType)
-                                        .font(.body)
-                                        .lineLimit(1)
+            ForEach(viewModel.processedServiceTypes) { section in
+                Section(
+                    header: Text(section.title),
+                    footer: (section.id == viewModel.processedServiceTypes.last?.id) ? searchingFooter : nil
+                ) {
+                    ForEach(section.items) { typeInfo in
+                        NavigationLink(destination: ServiceInstancesView(
+                            serviceType: typeInfo.rawType,
+                            domain: domain,
+                            friendlyName: typeInfo.friendlyName
+                        )) {
+                            HStack(spacing: 12) {
+                                Image(systemName: typeInfo.friendlyName != nil ? "checkmark.seal.fill" : "questionmark.circle")
+                                    .foregroundColor(typeInfo.friendlyName != nil ? .green : .orange)
+                                    .frame(width: 28)
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    if let friendly = typeInfo.friendlyName {
+                                        Text(friendly)
+                                            .font(.body)
+                                            .lineLimit(1)
+                                        Text(typeInfo.rawType)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(1)
+                                    } else {
+                                        Text(typeInfo.rawType)
+                                            .font(.body)
+                                            .lineLimit(1)
+                                    }
                                 }
                             }
+                            .padding(.vertical, 2)
                         }
-                        .padding(.vertical, 2)
                     }
                 }
             }
         }
         .listStyle(.insetGrouped)
+        .refreshable {
+            viewModel.discoverServiceTypes(in: domain)
+        }
     }
     
     @ViewBuilder
     private var searchingFooter: some View {
-        if manager.isSearching {
+        if viewModel.manager.isSearching {
             HStack(spacing: 8) {
                 ProgressView()
                     .scaleEffect(0.8)
@@ -231,16 +309,16 @@ struct ServiceInstancesView: View {
     let domain: String
     let friendlyName: String?
     
-    @StateObject private var manager = BonjourDiscoveryManager()
+    @StateObject private var viewModel = BonjourDiscoveryViewModel()
     
     var body: some View {
         ZStack {
             Color(.systemGroupedBackground)
                 .ignoresSafeArea()
             
-            if manager.isSearching && manager.instances.isEmpty {
+            if viewModel.manager.isSearching && viewModel.manager.instances.isEmpty {
                 ProgressView("Searching for instances…")
-            } else if manager.instances.isEmpty {
+            } else if viewModel.manager.instances.isEmpty {
                 emptyState
             } else {
                 instancesList
@@ -248,11 +326,42 @@ struct ServiceInstancesView: View {
         }
         .navigationTitle(friendlyName ?? serviceType)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    Menu {
+                        ForEach(ServiceInstanceGroupOption.allCases, id: \.self) { opt in
+                            SwiftUI.Button {
+                                viewModel.instanceGroupOption = opt
+                            } label: {
+                                Label(opt.rawValue, systemImage: viewModel.instanceGroupOption == opt ? "checkmark" : "")
+                            }
+                        }
+                    } label: {
+                        Label("Group By", systemImage: "rectangle.3.group")
+                    }
+                    
+                    Menu {
+                        ForEach(ServiceInstanceSortOption.allCases, id: \.self) { opt in
+                            SwiftUI.Button {
+                                viewModel.instanceSortOption = opt
+                            } label: {
+                                Label(opt.rawValue, systemImage: viewModel.instanceSortOption == opt ? "checkmark" : "")
+                            }
+                        }
+                    } label: {
+                        Label("Sort By", systemImage: "arrow.up.arrow.down")
+                    }
+                } label: {
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                }
+            }
+        }
         .onAppear {
-            manager.discoverInstances(ofType: serviceType, inDomain: domain)
+            viewModel.discoverInstances(ofType: serviceType, inDomain: domain)
         }
         .onDisappear {
-            manager.stopInstanceSearch()
+            viewModel.stopInstanceSearch()
         }
     }
     
@@ -271,7 +380,7 @@ struct ServiceInstancesView: View {
                 .padding(.horizontal, 32)
             
             SwiftUI.Button {
-                manager.discoverInstances(ofType: serviceType, inDomain: domain)
+                viewModel.discoverInstances(ofType: serviceType, inDomain: domain)
             } label: {
                 Label("Retry", systemImage: "arrow.clockwise")
                     .font(.subheadline.weight(.medium))
@@ -296,37 +405,37 @@ struct ServiceInstancesView: View {
     
     private var instancesList: some View {
         List {
-            Section(
-                header: VStack(alignment: .leading, spacing: 4) {
-                    Text(serviceType)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text("\(manager.instances.count) Instance\(manager.instances.count == 1 ? "" : "s")")
-                },
-                footer: searchingFooter
-            ) {
-                ForEach(manager.instances) { instance in
-                    NavigationLink(destination: ServiceDetailView(service: instance)) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "desktopcomputer")
-                                .foregroundColor(.accentColor)
-                                .frame(width: 28)
-                            
-                            Text(instance.name)
-                                .font(.body)
-                                .lineLimit(2)
+            ForEach(viewModel.processedInstances) { section in
+                Section(
+                    header: Text(section.title),
+                    footer: (section.id == viewModel.processedInstances.last?.id) ? searchingFooter : nil
+                ) {
+                    ForEach(section.items) { instance in
+                        NavigationLink(destination: ServiceDetailView(service: instance)) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "desktopcomputer")
+                                    .foregroundColor(.accentColor)
+                                    .frame(width: 28)
+                                
+                                Text(instance.name)
+                                    .font(.body)
+                                    .lineLimit(2)
+                            }
+                            .padding(.vertical, 2)
                         }
-                        .padding(.vertical, 2)
                     }
                 }
             }
         }
         .listStyle(.insetGrouped)
+        .refreshable {
+            viewModel.discoverInstances(ofType: serviceType, inDomain: domain)
+        }
     }
     
     @ViewBuilder
     private var searchingFooter: some View {
-        if manager.isSearching {
+        if viewModel.manager.isSearching {
             HStack(spacing: 8) {
                 ProgressView()
                     .scaleEffect(0.8)
@@ -344,7 +453,7 @@ struct ServiceInstancesView: View {
 // Shows full resolved details of a service: hostname, port, IP addresses, TXT records.
 struct ServiceDetailView: View {
     let service: DiscoveredService
-    @StateObject private var manager = BonjourDiscoveryManager()
+    @StateObject private var viewModel = BonjourDiscoveryViewModel()
     @State private var showCopyConfirmation = false
     
     var body: some View {
@@ -352,9 +461,9 @@ struct ServiceDetailView: View {
             Color(.systemGroupedBackground)
                 .ignoresSafeArea()
             
-            if let resolved = manager.resolvedService {
+            if let resolved = viewModel.manager.resolvedService {
                 resolvedContent(resolved)
-            } else if let error = manager.resolveError {
+            } else if let error = viewModel.manager.resolveError {
                 errorState(error)
             } else {
                 loadingState
@@ -363,19 +472,43 @@ struct ServiceDetailView: View {
         .navigationTitle("Service Details")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                if manager.resolvedService != nil {
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                if viewModel.manager.resolvedService != nil {
+                    Menu {
+                        SwiftUI.Button {
+                            viewModel.sortAddressesV4First = true
+                        } label: {
+                            Label("IPv4 First", systemImage: viewModel.sortAddressesV4First ? "checkmark" : "")
+                        }
+                        SwiftUI.Button {
+                            viewModel.sortAddressesV4First = false
+                        } label: {
+                            Label("IPv6 First", systemImage: !viewModel.sortAddressesV4First ? "checkmark" : "")
+                        }
+                    } label: {
+                        Image(systemName: "arrow.up.arrow.down")
+                    }
+                    
                     SwiftUI.Button("Copy") {
-                        copyAllInfo()
+                        if viewModel.copyAllResolvedInfo() != nil {
+                            withAnimation(.spring(response: 0.3)) {
+                                showCopyConfirmation = true
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                withAnimation(.spring(response: 0.3)) {
+                                    showCopyConfirmation = false
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
         .onAppear {
-            manager.resolveService(service)
+            viewModel.resolveService(service)
         }
         .onDisappear {
-            manager.stopResolving()
+            viewModel.stopResolving()
         }
     }
     
@@ -404,7 +537,7 @@ struct ServiceDetailView: View {
                 .padding(.horizontal, 32)
             
             SwiftUI.Button {
-                manager.resolveService(service)
+                viewModel.resolveService(service)
             } label: {
                 Label("Retry", systemImage: "arrow.clockwise")
                     .font(.subheadline.weight(.medium))
@@ -439,8 +572,8 @@ struct ServiceDetailView: View {
             
             // IP Addresses
             if !resolved.addresses.isEmpty {
-                Section(header: Text("Addresses")) {
-                    ForEach(resolved.addresses, id: \.self) { address in
+                Section(header: Text("Addresses (\(resolved.addresses.count))")) {
+                    ForEach(viewModel.sortedAddresses, id: \.self) { address in
                         HStack {
                             Image(systemName: address.contains(":") ? "6.circle" : "4.circle")
                                 .foregroundColor(.secondary)
@@ -463,7 +596,7 @@ struct ServiceDetailView: View {
             
             // TXT Records
             if !resolved.txtRecords.isEmpty {
-                Section(header: Text("TXT Record")) {
+                Section(header: Text("TXT Record (\(resolved.txtRecords.count))")) {
                     ForEach(resolved.txtRecords, id: \.key) { record in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(record.key)
@@ -487,6 +620,9 @@ struct ServiceDetailView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .refreshable {
+            viewModel.resolveService(service)
+        }
         .overlay(alignment: .bottom) {
             if showCopyConfirmation {
                 copiedBanner
@@ -506,44 +642,6 @@ struct ServiceDetailView: View {
                     .fill(Color.accentColor)
             )
             .padding(.bottom, 16)
-    }
-    
-    private func copyAllInfo() {
-        guard let resolved = manager.resolvedService else { return }
-        
-        var lines: [String] = []
-        lines.append("Service: \(resolved.name)")
-        lines.append("Type: \(resolved.type)")
-        lines.append("Domain: \(resolved.domain)")
-        lines.append("Hostname: \(resolved.hostname)")
-        lines.append("Port: \(resolved.port)")
-        lines.append("")
-        
-        if !resolved.addresses.isEmpty {
-            lines.append("Addresses:")
-            for addr in resolved.addresses {
-                lines.append("  \(addr)")
-            }
-            lines.append("")
-        }
-        
-        if !resolved.txtRecords.isEmpty {
-            lines.append("TXT Records:")
-            for record in resolved.txtRecords {
-                lines.append("  \(record.key) = \(record.value)")
-            }
-        }
-        
-        UIPasteboard.general.string = lines.joined(separator: "\n")
-        
-        withAnimation(.spring(response: 0.3)) {
-            showCopyConfirmation = true
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            withAnimation(.spring(response: 0.3)) {
-                showCopyConfirmation = false
-            }
-        }
     }
 }
 

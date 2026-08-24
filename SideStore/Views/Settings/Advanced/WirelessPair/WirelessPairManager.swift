@@ -78,7 +78,7 @@ final class WirelessPairManager: ObservableObject {
         "_remotepairing-pairable-host._tcp"
     ]
     
-    private let bonjour = BonjourDiscoveryManager()
+    private let bonjour = BonjourDiscoveryManager.shared
     private var cancellables = Set<AnyCancellable>()
     
     var fallbackConfigEndpoint: (ip: String, port: UInt16) {
