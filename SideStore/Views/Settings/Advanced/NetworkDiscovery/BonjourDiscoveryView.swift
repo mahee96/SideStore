@@ -20,9 +20,9 @@ struct BonjourDiscoveryView: View {
             Color(.systemGroupedBackground)
                 .ignoresSafeArea()
             
-            if viewModel.manager.isSearching && viewModel.manager.domains.isEmpty {
+            if !viewModel.hasInitiallyLoaded && viewModel.manager.isSearching && viewModel.manager.domains.isEmpty {
                 ProgressView("Searching for domains…")
-            } else if viewModel.manager.domains.isEmpty {
+            } else if viewModel.hasInitiallyLoaded && !viewModel.manager.isSearching && viewModel.manager.domains.isEmpty {
                 emptyState
             } else {
                 domainsList
@@ -68,7 +68,7 @@ struct BonjourDiscoveryView: View {
             }
         }
         .onAppear {
-            viewModel.discoverDomains()
+            viewModel.startDomainPeriodicRefresh()
         }
         .onDisappear {
             viewModel.stopDomainSearch()
@@ -90,7 +90,7 @@ struct BonjourDiscoveryView: View {
                 .padding(.horizontal, 32)
             
             SwiftUI.Button {
-                viewModel.discoverDomains()
+                viewModel.startDomainPeriodicRefresh()
             } label: {
                 Label("Retry", systemImage: "arrow.clockwise")
                     .font(.subheadline.weight(.medium))
@@ -133,7 +133,7 @@ struct BonjourDiscoveryView: View {
         }
         .listStyle(.insetGrouped)
         .refreshable {
-            viewModel.discoverDomains()
+            viewModel.refreshDomains()
         }
     }
 }
@@ -152,9 +152,9 @@ struct ServiceTypesView: View {
             Color(.systemGroupedBackground)
                 .ignoresSafeArea()
             
-            if viewModel.manager.isSearching && viewModel.manager.serviceTypes.isEmpty {
+            if !viewModel.hasInitiallyLoaded && viewModel.manager.isSearching && viewModel.manager.serviceTypes.isEmpty {
                 ProgressView("Searching for service types…")
-            } else if viewModel.manager.serviceTypes.isEmpty {
+            } else if viewModel.hasInitiallyLoaded && !viewModel.manager.isSearching && viewModel.manager.serviceTypes.isEmpty {
                 emptyState
             } else {
                 serviceTypesList
@@ -194,7 +194,7 @@ struct ServiceTypesView: View {
             }
         }
         .onAppear {
-            viewModel.discoverServiceTypes(in: domain)
+            viewModel.startServiceTypePeriodicRefresh(in: domain)
         }
         .onDisappear {
             viewModel.stopTypeSearch()
@@ -216,7 +216,7 @@ struct ServiceTypesView: View {
                 .padding(.horizontal, 32)
             
             SwiftUI.Button {
-                viewModel.discoverServiceTypes(in: domain)
+                viewModel.startServiceTypePeriodicRefresh(in: domain)
             } label: {
                 Label("Retry", systemImage: "arrow.clockwise")
                     .font(.subheadline.weight(.medium))
@@ -281,7 +281,7 @@ struct ServiceTypesView: View {
         }
         .listStyle(.insetGrouped)
         .refreshable {
-            viewModel.discoverServiceTypes(in: domain)
+            viewModel.refreshServiceTypes(in: domain)
         }
     }
     
@@ -316,9 +316,9 @@ struct ServiceInstancesView: View {
             Color(.systemGroupedBackground)
                 .ignoresSafeArea()
             
-            if viewModel.manager.isSearching && viewModel.manager.instances.isEmpty {
+            if !viewModel.hasInitiallyLoaded && viewModel.manager.isSearching && viewModel.manager.instances.isEmpty {
                 ProgressView("Searching for instances…")
-            } else if viewModel.manager.instances.isEmpty {
+            } else if viewModel.hasInitiallyLoaded && !viewModel.manager.isSearching && viewModel.manager.instances.isEmpty {
                 emptyState
             } else {
                 instancesList
@@ -358,7 +358,7 @@ struct ServiceInstancesView: View {
             }
         }
         .onAppear {
-            viewModel.discoverInstances(ofType: serviceType, inDomain: domain)
+            viewModel.startInstancePeriodicRefresh(ofType: serviceType, in: domain)
         }
         .onDisappear {
             viewModel.stopInstanceSearch()
@@ -380,7 +380,7 @@ struct ServiceInstancesView: View {
                 .padding(.horizontal, 32)
             
             SwiftUI.Button {
-                viewModel.discoverInstances(ofType: serviceType, inDomain: domain)
+                viewModel.startInstancePeriodicRefresh(ofType: serviceType, in: domain)
             } label: {
                 Label("Retry", systemImage: "arrow.clockwise")
                     .font(.subheadline.weight(.medium))
@@ -429,7 +429,7 @@ struct ServiceInstancesView: View {
         }
         .listStyle(.insetGrouped)
         .refreshable {
-            viewModel.discoverInstances(ofType: serviceType, inDomain: domain)
+            viewModel.refreshInstances(ofType: serviceType, in: domain)
         }
     }
     

@@ -11,7 +11,7 @@ import Network
 import Combine
 
 struct ServiceTypeInfo: Identifiable, Hashable {
-    let id = UUID()
+    var id: String { rawType }
     let rawType: String
     let friendlyName: String?
     
@@ -29,25 +29,23 @@ struct ServiceTypeInfo: Identifiable, Hashable {
 }
 
 struct DiscoveredService: Identifiable, Hashable {
-    let id = UUID()
+    var id: String { "\(domain)/\(type)/\(name)" }
     let name: String
     let type: String
     let domain: String
     let result: NWBrowser.Result
     
     func hash(into hasher: inout Hasher) {
-        hasher.combine(name)
-        hasher.combine(type)
-        hasher.combine(domain)
+        hasher.combine(id)
     }
     
     static func == (lhs: DiscoveredService, rhs: DiscoveredService) -> Bool {
-        lhs.name == rhs.name && lhs.type == rhs.type && lhs.domain == rhs.domain
+        lhs.id == rhs.id
     }
 }
 
 struct ResolvedServiceInfo: Identifiable {
-    let id = UUID()
+    var id: String { "\(domain)/\(type)/\(name)/\(hostname):\(port)" }
     let name: String
     let type: String
     let domain: String
@@ -88,11 +86,13 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
     }
     
     // Domain Discovery
-    func discoverDomains() {
+    func discoverDomains(clearExisting: Bool = false) {
         debugLog("[BonjourDiscovery] Starting domain discovery...")
         stopDomainSearch()
-        discoveredDomains.removeAll()
-        domains.removeAll()
+        if clearExisting {
+            discoveredDomains.removeAll()
+            domains.removeAll()
+        }
         isSearching = true
         
         let browser = NetServiceBrowser()
@@ -100,8 +100,10 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
         browser.searchForRegistrationDomains()
         domainBrowser = browser
         
-        domains.append("local")
-        discoveredDomains.insert("local")
+        if !domains.contains("local") {
+            domains.append("local")
+            discoveredDomains.insert("local")
+        }
     }
     
     func stopDomainSearch() {
@@ -111,12 +113,14 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
     }
     
     // Service Type Discovery
-    func discoverServiceTypes(in domain: String = "local.", probeTypes: [String]? = nil) {
+    func discoverServiceTypes(in domain: String = "local.", probeTypes: [String]? = nil, clearExisting: Bool = false) {
         let domainWithDot = domain.hasSuffix(".") ? domain : domain + "."
         debugLog("[BonjourDiscovery] Starting service type discovery in domain '\(domainWithDot)'...")
         stopTypeSearch()
-        discoveredTypes.removeAll()
-        serviceTypes.removeAll()
+        if clearExisting {
+            discoveredTypes.removeAll()
+            serviceTypes.removeAll()
+        }
         isSearching = true
         
         let browser = NetServiceBrowser()
@@ -157,8 +161,10 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
                                     rawType: t,
                                     friendlyName: Self.friendlyName(for: t)
                                 )
-                                self.serviceTypes.append(info)
-                                self.serviceTypes.sort { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
+                                if !self.serviceTypes.contains(where: { $0.rawType == t }) {
+                                    self.serviceTypes.append(info)
+                                    self.serviceTypes.sort { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
+                                }
                             }
                         }
                     }
@@ -186,16 +192,18 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
     }
     
     // Service Instance Discovery
-    func discoverInstances(ofType type: String, inDomain domain: String = "local.") {
-        discoverInstances(ofTypes: [type], inDomain: domain)
+    func discoverInstances(ofType type: String, inDomain domain: String = "local.", clearExisting: Bool = false) {
+        discoverInstances(ofTypes: [type], inDomain: domain, clearExisting: clearExisting)
     }
     
-    func discoverInstances(ofTypes types: [String], inDomain domain: String = "local.") {
+    func discoverInstances(ofTypes types: [String], inDomain domain: String = "local.", clearExisting: Bool = false) {
         let domainWithDot = domain.hasSuffix(".") ? domain : domain + "."
         debugLog("[BonjourDiscovery] Starting instance discovery for types: \(types) in '\(domainWithDot)'...")
         stopInstanceSearch()
-        discoveredInstances.removeAll()
-        instances.removeAll()
+        if clearExisting {
+            discoveredInstances.removeAll()
+            instances.removeAll()
+        }
         isSearching = true
         
         for type in types {
@@ -232,7 +240,7 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
         Task { @MainActor [weak self] in
             guard let self = self else { return }
             
-            self.instances.removeAll(where: { $0.type == type })
+            // Build incoming map
             for result in results {
                 if case .service(let name, _, _, _) = result.endpoint {
                     let discovered = DiscoveredService(
@@ -241,7 +249,11 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
                         domain: domain,
                         result: result
                     )
-                    self.instances.append(discovered)
+                    if let existingIndex = self.instances.firstIndex(where: { $0.id == discovered.id }) {
+                        self.instances[existingIndex] = discovered
+                    } else {
+                        self.instances.append(discovered)
+                    }
                 }
             }
             self.instances.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }

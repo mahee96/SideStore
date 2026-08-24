@@ -35,6 +35,7 @@ public enum AppConstants {
     public enum Bonjour {
         public static let defaultDomain = "local."
         public static let defaultDiscoveryTimeout: TimeInterval = 2.0
+        public static let periodicRefreshInterval: TimeInterval = 6.0
     }
     
     public enum SideJIT {

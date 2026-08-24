@@ -12,7 +12,7 @@ import Combine
 import Minimuxer
 
 struct WirelessPairTarget: Identifiable, Hashable {
-    var id: String { service.id.uuidString }
+    var id: String { service.id }
     let service: DiscoveredService
     
     var name: String {

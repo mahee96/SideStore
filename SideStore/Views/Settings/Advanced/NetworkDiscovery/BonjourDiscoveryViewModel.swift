@@ -66,7 +66,9 @@ final class BonjourDiscoveryViewModel: ObservableObject {
     @Published var instanceGroupOption: ServiceInstanceGroupOption = .none
     
     @Published var sortAddressesV4First = true
+    @Published var hasInitiallyLoaded = false
     
+    private var periodicTimerTask: Task<Void, Never>?
     private var cancellables = Set<AnyCancellable>()
     
     init() {
@@ -196,28 +198,78 @@ final class BonjourDiscoveryViewModel: ObservableObject {
         }
     }
     
-    // Forwarding Actions
-    func discoverDomains() {
-        manager.discoverDomains()
+    // Periodic Background Refresh Actions
+    func startDomainPeriodicRefresh(interval: TimeInterval = AppConstants.Bonjour.periodicRefreshInterval) {
+        stopPeriodicRefresh()
+        manager.discoverDomains(clearExisting: !hasInitiallyLoaded)
+        hasInitiallyLoaded = true
+        
+        periodicTimerTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+                guard let self = self, !Task.isCancelled else { break }
+                self.manager.discoverDomains(clearExisting: false)
+            }
+        }
+    }
+    
+    func startServiceTypePeriodicRefresh(in domain: String, interval: TimeInterval = AppConstants.Bonjour.periodicRefreshInterval) {
+        stopPeriodicRefresh()
+        manager.discoverServiceTypes(in: domain, clearExisting: !hasInitiallyLoaded)
+        hasInitiallyLoaded = true
+        
+        periodicTimerTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+                guard let self = self, !Task.isCancelled else { break }
+                self.manager.discoverServiceTypes(in: domain, clearExisting: false)
+            }
+        }
+    }
+    
+    func startInstancePeriodicRefresh(ofType type: String, in domain: String, interval: TimeInterval = AppConstants.Bonjour.periodicRefreshInterval) {
+        stopPeriodicRefresh()
+        manager.discoverInstances(ofType: type, inDomain: domain, clearExisting: !hasInitiallyLoaded)
+        hasInitiallyLoaded = true
+        
+        periodicTimerTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+                guard let self = self, !Task.isCancelled else { break }
+                self.manager.discoverInstances(ofType: type, inDomain: domain, clearExisting: false)
+            }
+        }
+    }
+    
+    func stopPeriodicRefresh() {
+        periodicTimerTask?.cancel()
+        periodicTimerTask = nil
+    }
+    
+    func refreshDomains() {
+        manager.discoverDomains(clearExisting: false)
+    }
+    
+    func refreshServiceTypes(in domain: String) {
+        manager.discoverServiceTypes(in: domain, clearExisting: false)
+    }
+    
+    func refreshInstances(ofType type: String, in domain: String) {
+        manager.discoverInstances(ofType: type, inDomain: domain, clearExisting: false)
     }
     
     func stopDomainSearch() {
+        stopPeriodicRefresh()
         manager.stopDomainSearch()
     }
     
-    func discoverServiceTypes(in domain: String) {
-        manager.discoverServiceTypes(in: domain)
-    }
-    
     func stopTypeSearch() {
+        stopPeriodicRefresh()
         manager.stopTypeSearch()
     }
     
-    func discoverInstances(ofType type: String, inDomain domain: String) {
-        manager.discoverInstances(ofType: type, inDomain: domain)
-    }
-    
     func stopInstanceSearch() {
+        stopPeriodicRefresh()
         manager.stopInstanceSearch()
     }
     
