@@ -603,6 +603,29 @@ public final class WirelessPairWrapper {
         completion(.failure(MinimuxerWrapperError.pairingFile))
         #endif
     }
+
+    public func trigger(
+        outPath: String,
+        completion: @escaping (Result<MinimuxerPairedDevice, Error>) -> Void
+    ) {
+        #if !targetEnvironment(simulator)
+        minimuxer.wirelessPair.trigger(outPath: outPath) { result in
+            switch result {
+            case .success(let device):
+                completion(.success(MinimuxerPairedDevice(
+                    name: device.name,
+                    model: device.model,
+                    udid: device.udid,
+                    pairingFilePath: device.pairingFilePath
+                )))
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+        #else
+        completion(.failure(MinimuxerWrapperError.pairingFile))
+        #endif
+    }
     
     public func stop() {
         #if !targetEnvironment(simulator)

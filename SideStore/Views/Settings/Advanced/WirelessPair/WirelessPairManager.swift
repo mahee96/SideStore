@@ -99,6 +99,42 @@ final class WirelessPairManager: ObservableObject {
             }
         }
     }
+
+    func triggerPairing(completion: ((Result<MinimuxerPairedDevice, Swift.Error>) -> Void)? = nil) {
+        startTask?.cancel()
+        
+        isAdvertising = true
+        pinCode = nil
+        errorMessage = nil
+        serviceID = nil
+        port = nil
+        statusText = "Connecting to device..."
+        subStatusText = "Initiating pairing handshake on port \(remotePairingPortCache)..."
+        
+        let pairingFile = pairingFilePath()
+        
+        pairing.trigger(outPath: pairingFile) { [weak self] (result: Result<MinimuxerPairedDevice, Swift.Error>) in
+            Task { @MainActor in
+                guard let self = self else { return }
+                self.isAdvertising = false
+                self.pinCode = nil
+                self.serviceID = nil
+                self.port = nil
+                
+                switch result {
+                case .success(let device):
+                    self.pairedDevice = device
+                    self.statusText = "Success!"
+                    self.subStatusText = "Successfully paired with \(device.name) (\(device.model))!\nPairing file saved to documents."
+                case .failure(let error):
+                    self.errorMessage = error.localizedDescription
+                    self.statusText = "Pairing Failed"
+                    self.subStatusText = "An error occurred during pairing: \(error.localizedDescription)"
+                }
+                completion?(result)
+            }
+        }
+    }
     
     func stopPairing() {
         pairing.stop()
