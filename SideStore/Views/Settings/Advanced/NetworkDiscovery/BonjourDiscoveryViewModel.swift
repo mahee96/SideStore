@@ -34,26 +34,34 @@ enum ServiceInstanceGroupOption: String, CaseIterable {
 }
 
 struct DomainSection: Identifiable {
-    var id: String { title }
+    let id: String
     let title: String
     let items: [String]
 }
 
 struct ServiceTypeSection: Identifiable {
-    var id: String { title }
+    let id: String
     let title: String
     let items: [ServiceTypeInfo]
 }
 
 struct ServiceInstanceSection: Identifiable {
-    var id: String { title }
+    let id: String
     let title: String
     let items: [DiscoveredService]
 }
 
 @MainActor
 final class BonjourDiscoveryViewModel: ObservableObject {
-    @ObservedObject var manager = BonjourDiscoveryManager.shared
+    let manager = BonjourDiscoveryManager.shared
+    
+    // Scoped Published State
+    @Published var domains: [String] = []
+    @Published var serviceTypes: [ServiceTypeInfo] = []
+    @Published var instances: [DiscoveredService] = []
+    @Published var resolvedService: ResolvedServiceInfo? = nil
+    @Published var isSearching = false
+    @Published var resolveError: String? = nil
     
     // Sort & Group Settings
     @Published var domainSortAscending = true
@@ -66,22 +74,50 @@ final class BonjourDiscoveryViewModel: ObservableObject {
     @Published var instanceGroupOption: ServiceInstanceGroupOption = .none
     
     @Published var sortAddressesV4First = true
-    @Published var hasInitiallyLoaded = false
     
     private var periodicTimerTask: Task<Void, Never>?
     private var cancellables = Set<AnyCancellable>()
     
     init() {
-        manager.objectWillChange
-            .sink { [weak self] _ in
-                self?.objectWillChange.send()
-            }
-            .store(in: &cancellables)
+        self.domains = manager.domains
+        self.serviceTypes = manager.serviceTypes
+        self.instances = manager.instances
+        self.resolvedService = manager.resolvedService
+        self.isSearching = manager.isSearching
+        self.resolveError = manager.resolveError
+        
+        manager.$domains
+            .receive(on: DispatchQueue.main)
+            .removeDuplicates()
+            .assign(to: &$domains)
+            
+        manager.$serviceTypes
+            .receive(on: DispatchQueue.main)
+            .removeDuplicates()
+            .assign(to: &$serviceTypes)
+            
+        manager.$instances
+            .receive(on: DispatchQueue.main)
+            .removeDuplicates()
+            .assign(to: &$instances)
+            
+        manager.$resolvedService
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$resolvedService)
+            
+        manager.$isSearching
+            .receive(on: DispatchQueue.main)
+            .removeDuplicates()
+            .assign(to: &$isSearching)
+            
+        manager.$resolveError
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$resolveError)
     }
     
     // Processed Domains
     var processedDomains: [DomainSection] {
-        let sorted = manager.domains.sorted {
+        let sorted = domains.sorted {
             domainSortAscending ? $0.localizedCaseInsensitiveCompare($1) == .orderedAscending
                                 : $0.localizedCaseInsensitiveCompare($1) == .orderedDescending
         }
@@ -93,15 +129,15 @@ final class BonjourDiscoveryViewModel: ObservableObject {
             let keys = grouped.keys.sorted {
                 domainSortAscending ? $0 < $1 : $0 > $1
             }
-            return keys.map { DomainSection(title: "\($0) (\(grouped[$0]?.count ?? 0))", items: grouped[$0] ?? []) }
+            return keys.map { DomainSection(id: "group_\($0)", title: "\($0) (\(grouped[$0]?.count ?? 0))", items: grouped[$0] ?? []) }
         } else {
-            return [DomainSection(title: "Browsable Domains", items: sorted)]
+            return [DomainSection(id: "all_domains", title: "Browsable Domains", items: sorted)]
         }
     }
     
     // Processed Service Types
     var processedServiceTypes: [ServiceTypeSection] {
-        let sorted = manager.serviceTypes.sorted { lhs, rhs in
+        let sorted = serviceTypes.sorted { lhs, rhs in
             switch serviceTypeSortOption {
             case .nameAscending:
                 return lhs.displayName.localizedCaseInsensitiveCompare(rhs.displayName) == .orderedAscending
@@ -114,8 +150,8 @@ final class BonjourDiscoveryViewModel: ObservableObject {
         
         switch serviceTypeGroupOption {
         case .none:
-            let title = "\(manager.serviceTypes.count) Service\(manager.serviceTypes.count == 1 ? "" : "s") Found"
-            return [ServiceTypeSection(title: title, items: sorted)]
+            let title = "\(serviceTypes.count) Service\(serviceTypes.count == 1 ? "" : "s") Found"
+            return [ServiceTypeSection(id: "all_types", title: title, items: sorted)]
             
         case .protocolType:
             let tcpItems = sorted.filter { $0.rawType.contains("_tcp") }
@@ -124,13 +160,13 @@ final class BonjourDiscoveryViewModel: ObservableObject {
             
             var sections: [ServiceTypeSection] = []
             if !tcpItems.isEmpty {
-                sections.append(ServiceTypeSection(title: "TCP Services (\(tcpItems.count))", items: tcpItems))
+                sections.append(ServiceTypeSection(id: "tcp_types", title: "TCP Services (\(tcpItems.count))", items: tcpItems))
             }
             if !udpItems.isEmpty {
-                sections.append(ServiceTypeSection(title: "UDP Services (\(udpItems.count))", items: udpItems))
+                sections.append(ServiceTypeSection(id: "udp_types", title: "UDP Services (\(udpItems.count))", items: udpItems))
             }
             if !otherItems.isEmpty {
-                sections.append(ServiceTypeSection(title: "Other Services (\(otherItems.count))", items: otherItems))
+                sections.append(ServiceTypeSection(id: "other_types", title: "Other Services (\(otherItems.count))", items: otherItems))
             }
             return sections
             
@@ -140,10 +176,10 @@ final class BonjourDiscoveryViewModel: ObservableObject {
             
             var sections: [ServiceTypeSection] = []
             if !recognized.isEmpty {
-                sections.append(ServiceTypeSection(title: "Recognized Services (\(recognized.count))", items: recognized))
+                sections.append(ServiceTypeSection(id: "recognized_types", title: "Recognized Services (\(recognized.count))", items: recognized))
             }
             if !unknown.isEmpty {
-                sections.append(ServiceTypeSection(title: "Other / Raw Services (\(unknown.count))", items: unknown))
+                sections.append(ServiceTypeSection(id: "unknown_types", title: "Other / Raw Services (\(unknown.count))", items: unknown))
             }
             return sections
             
@@ -154,13 +190,13 @@ final class BonjourDiscoveryViewModel: ObservableObject {
             let keys = grouped.keys.sorted {
                 serviceTypeSortOption == .nameDescending ? $0 > $1 : $0 < $1
             }
-            return keys.map { ServiceTypeSection(title: "\($0) (\(grouped[$0]?.count ?? 0))", items: grouped[$0] ?? []) }
+            return keys.map { ServiceTypeSection(id: "group_\($0)", title: "\($0) (\(grouped[$0]?.count ?? 0))", items: grouped[$0] ?? []) }
         }
     }
     
     // Processed Service Instances
     var processedInstances: [ServiceInstanceSection] {
-        let sorted = manager.instances.sorted { lhs, rhs in
+        let sorted = instances.sorted { lhs, rhs in
             switch instanceSortOption {
             case .nameAscending:
                 return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
@@ -171,8 +207,8 @@ final class BonjourDiscoveryViewModel: ObservableObject {
         
         switch instanceGroupOption {
         case .none:
-            let title = "\(manager.instances.count) Instance\(manager.instances.count == 1 ? "" : "s")"
-            return [ServiceInstanceSection(title: title, items: sorted)]
+            let title = "\(instances.count) Instance\(instances.count == 1 ? "" : "s")"
+            return [ServiceInstanceSection(id: "all_instances", title: title, items: sorted)]
             
         case .firstLetter:
             let grouped = Dictionary(grouping: sorted) { item -> String in
@@ -181,13 +217,13 @@ final class BonjourDiscoveryViewModel: ObservableObject {
             let keys = grouped.keys.sorted {
                 instanceSortOption == .nameDescending ? $0 > $1 : $0 < $1
             }
-            return keys.map { ServiceInstanceSection(title: "\($0) (\(grouped[$0]?.count ?? 0))", items: grouped[$0] ?? []) }
+            return keys.map { ServiceInstanceSection(id: "group_\($0)", title: "\($0) (\(grouped[$0]?.count ?? 0))", items: grouped[$0] ?? []) }
         }
     }
     
     // Sorted Addresses
     var sortedAddresses: [String] {
-        guard let resolved = manager.resolvedService else { return [] }
+        guard let resolved = resolvedService else { return [] }
         return resolved.addresses.sorted { a, b in
             let aIsV6 = a.contains(":")
             let bIsV6 = b.contains(":")
@@ -201,8 +237,7 @@ final class BonjourDiscoveryViewModel: ObservableObject {
     // Periodic Background Refresh Actions
     func startDomainPeriodicRefresh(interval: TimeInterval = AppConstants.Bonjour.periodicRefreshInterval) {
         stopPeriodicRefresh()
-        manager.discoverDomains(clearExisting: !hasInitiallyLoaded)
-        hasInitiallyLoaded = true
+        manager.discoverDomains(clearExisting: domains.isEmpty)
         
         periodicTimerTask = Task { @MainActor [weak self] in
             while !Task.isCancelled {
@@ -215,8 +250,7 @@ final class BonjourDiscoveryViewModel: ObservableObject {
     
     func startServiceTypePeriodicRefresh(in domain: String, interval: TimeInterval = AppConstants.Bonjour.periodicRefreshInterval) {
         stopPeriodicRefresh()
-        manager.discoverServiceTypes(in: domain, clearExisting: !hasInitiallyLoaded)
-        hasInitiallyLoaded = true
+        manager.discoverServiceTypes(in: domain, clearExisting: serviceTypes.isEmpty)
         
         periodicTimerTask = Task { @MainActor [weak self] in
             while !Task.isCancelled {
@@ -229,8 +263,7 @@ final class BonjourDiscoveryViewModel: ObservableObject {
     
     func startInstancePeriodicRefresh(ofType type: String, in domain: String, interval: TimeInterval = AppConstants.Bonjour.periodicRefreshInterval) {
         stopPeriodicRefresh()
-        manager.discoverInstances(ofType: type, inDomain: domain, clearExisting: !hasInitiallyLoaded)
-        hasInitiallyLoaded = true
+        manager.discoverInstances(ofType: type, inDomain: domain, clearExisting: true)
         
         periodicTimerTask = Task { @MainActor [weak self] in
             while !Task.isCancelled {
@@ -282,7 +315,7 @@ final class BonjourDiscoveryViewModel: ObservableObject {
     }
     
     func copyAllResolvedInfo() -> String? {
-        guard let resolved = manager.resolvedService else { return nil }
+        guard let resolved = resolvedService else { return nil }
         
         var lines: [String] = []
         lines.append("Service: \(resolved.name)")

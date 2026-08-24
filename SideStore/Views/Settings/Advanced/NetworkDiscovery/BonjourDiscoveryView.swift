@@ -14,15 +14,16 @@ import SwiftUI
 // Tapping a domain navigates to its service types.
 struct BonjourDiscoveryView: View {
     @StateObject private var viewModel = BonjourDiscoveryViewModel()
+    @State private var selectedDomain: String? = nil
     
     var body: some View {
         ZStack {
             Color(.systemGroupedBackground)
                 .ignoresSafeArea()
             
-            if !viewModel.hasInitiallyLoaded && viewModel.manager.isSearching && viewModel.manager.domains.isEmpty {
+            if viewModel.isSearching && viewModel.domains.isEmpty {
                 ProgressView("Searching for domains…")
-            } else if viewModel.hasInitiallyLoaded && !viewModel.manager.isSearching && viewModel.manager.domains.isEmpty {
+            } else if !viewModel.isSearching && viewModel.domains.isEmpty {
                 emptyState
             } else {
                 domainsList
@@ -68,6 +69,7 @@ struct BonjourDiscoveryView: View {
             }
         }
         .onAppear {
+            selectedDomain = nil
             viewModel.startDomainPeriodicRefresh()
         }
         .onDisappear {
@@ -118,7 +120,15 @@ struct BonjourDiscoveryView: View {
             ForEach(viewModel.processedDomains) { section in
                 Section(header: Text(section.title)) {
                     ForEach(section.items, id: \.self) { domain in
-                        NavigationLink(destination: ServiceTypesView(domain: domain)) {
+                        NavigationLink(
+                            destination: Group {
+                                if let active = selectedDomain {
+                                    ServiceTypesView(domain: active, viewModel: viewModel)
+                                }
+                            },
+                            tag: domain,
+                            selection: $selectedDomain
+                        ) {
                             HStack {
                                 Image(systemName: "globe")
                                     .foregroundColor(.accentColor)
@@ -127,6 +137,7 @@ struct BonjourDiscoveryView: View {
                                     .font(.body)
                             }
                         }
+                        .id(domain)
                     }
                 }
             }
@@ -145,16 +156,17 @@ struct BonjourDiscoveryView: View {
 // Tapping a type navigates to its instances.
 struct ServiceTypesView: View {
     let domain: String
-    @StateObject private var viewModel = BonjourDiscoveryViewModel()
+    @ObservedObject var viewModel: BonjourDiscoveryViewModel
+    @State private var selectedType: String? = nil
     
     var body: some View {
         ZStack {
             Color(.systemGroupedBackground)
                 .ignoresSafeArea()
             
-            if !viewModel.hasInitiallyLoaded && viewModel.manager.isSearching && viewModel.manager.serviceTypes.isEmpty {
+            if viewModel.isSearching && viewModel.serviceTypes.isEmpty {
                 ProgressView("Searching for service types…")
-            } else if viewModel.hasInitiallyLoaded && !viewModel.manager.isSearching && viewModel.manager.serviceTypes.isEmpty {
+            } else if !viewModel.isSearching && viewModel.serviceTypes.isEmpty {
                 emptyState
             } else {
                 serviceTypesList
@@ -194,6 +206,7 @@ struct ServiceTypesView: View {
             }
         }
         .onAppear {
+            selectedType = nil
             viewModel.startServiceTypePeriodicRefresh(in: domain)
         }
         .onDisappear {
@@ -247,11 +260,21 @@ struct ServiceTypesView: View {
                     footer: (section.id == viewModel.processedServiceTypes.last?.id) ? searchingFooter : nil
                 ) {
                     ForEach(section.items) { typeInfo in
-                        NavigationLink(destination: ServiceInstancesView(
-                            serviceType: typeInfo.rawType,
-                            domain: domain,
-                            friendlyName: typeInfo.friendlyName
-                        )) {
+                        NavigationLink(
+                            destination: Group {
+                                if let activeType = selectedType,
+                                   let matchedInfo = section.items.first(where: { $0.rawType == activeType }) ?? viewModel.serviceTypes.first(where: { $0.rawType == activeType }) {
+                                    ServiceInstancesView(
+                                        serviceType: matchedInfo.rawType,
+                                        domain: domain,
+                                        friendlyName: matchedInfo.friendlyName,
+                                        viewModel: viewModel
+                                    )
+                                }
+                            },
+                            tag: typeInfo.rawType,
+                            selection: $selectedType
+                        ) {
                             HStack(spacing: 12) {
                                 Image(systemName: typeInfo.friendlyName != nil ? "checkmark.seal.fill" : "questionmark.circle")
                                     .foregroundColor(typeInfo.friendlyName != nil ? .green : .orange)
@@ -275,6 +298,7 @@ struct ServiceTypesView: View {
                             }
                             .padding(.vertical, 2)
                         }
+                        .id(typeInfo.rawType)
                     }
                 }
             }
@@ -287,7 +311,7 @@ struct ServiceTypesView: View {
     
     @ViewBuilder
     private var searchingFooter: some View {
-        if viewModel.manager.isSearching {
+        if viewModel.isSearching {
             HStack(spacing: 8) {
                 ProgressView()
                     .scaleEffect(0.8)
@@ -308,17 +332,17 @@ struct ServiceInstancesView: View {
     let serviceType: String
     let domain: String
     let friendlyName: String?
-    
-    @StateObject private var viewModel = BonjourDiscoveryViewModel()
+    @ObservedObject var viewModel: BonjourDiscoveryViewModel
+    @State private var selectedInstanceId: String? = nil
     
     var body: some View {
         ZStack {
             Color(.systemGroupedBackground)
                 .ignoresSafeArea()
             
-            if !viewModel.hasInitiallyLoaded && viewModel.manager.isSearching && viewModel.manager.instances.isEmpty {
+            if viewModel.isSearching && viewModel.instances.isEmpty {
                 ProgressView("Searching for instances…")
-            } else if viewModel.hasInitiallyLoaded && !viewModel.manager.isSearching && viewModel.manager.instances.isEmpty {
+            } else if !viewModel.isSearching && viewModel.instances.isEmpty {
                 emptyState
             } else {
                 instancesList
@@ -358,6 +382,7 @@ struct ServiceInstancesView: View {
             }
         }
         .onAppear {
+            selectedInstanceId = nil
             viewModel.startInstancePeriodicRefresh(ofType: serviceType, in: domain)
         }
         .onDisappear {
@@ -411,7 +436,16 @@ struct ServiceInstancesView: View {
                     footer: (section.id == viewModel.processedInstances.last?.id) ? searchingFooter : nil
                 ) {
                     ForEach(section.items) { instance in
-                        NavigationLink(destination: ServiceDetailView(service: instance)) {
+                        NavigationLink(
+                            destination: Group {
+                                if let activeId = selectedInstanceId,
+                                   let matchedInstance = section.items.first(where: { $0.id == activeId }) ?? viewModel.instances.first(where: { $0.id == activeId }) {
+                                    ServiceDetailView(service: matchedInstance, viewModel: viewModel)
+                                }
+                            },
+                            tag: instance.id,
+                            selection: $selectedInstanceId
+                        ) {
                             HStack(spacing: 12) {
                                 Image(systemName: "desktopcomputer")
                                     .foregroundColor(.accentColor)
@@ -423,6 +457,7 @@ struct ServiceInstancesView: View {
                             }
                             .padding(.vertical, 2)
                         }
+                        .id(instance.id)
                     }
                 }
             }
@@ -435,7 +470,7 @@ struct ServiceInstancesView: View {
     
     @ViewBuilder
     private var searchingFooter: some View {
-        if viewModel.manager.isSearching {
+        if viewModel.isSearching {
             HStack(spacing: 8) {
                 ProgressView()
                     .scaleEffect(0.8)
@@ -453,7 +488,7 @@ struct ServiceInstancesView: View {
 // Shows full resolved details of a service: hostname, port, IP addresses, TXT records.
 struct ServiceDetailView: View {
     let service: DiscoveredService
-    @StateObject private var viewModel = BonjourDiscoveryViewModel()
+    @ObservedObject var viewModel: BonjourDiscoveryViewModel
     @State private var showCopyConfirmation = false
     
     var body: some View {
@@ -461,9 +496,9 @@ struct ServiceDetailView: View {
             Color(.systemGroupedBackground)
                 .ignoresSafeArea()
             
-            if let resolved = viewModel.manager.resolvedService {
+            if let resolved = viewModel.resolvedService {
                 resolvedContent(resolved)
-            } else if let error = viewModel.manager.resolveError {
+            } else if let error = viewModel.resolveError {
                 errorState(error)
             } else {
                 loadingState
@@ -473,7 +508,7 @@ struct ServiceDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItemGroup(placement: .navigationBarTrailing) {
-                if viewModel.manager.resolvedService != nil {
+                if viewModel.resolvedService != nil {
                     Menu {
                         SwiftUI.Button {
                             viewModel.sortAddressesV4First = true

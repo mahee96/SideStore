@@ -351,6 +351,7 @@ struct IPAContentsView: View {
 
 struct FullAppBundleView: View {
     let bundleURL: URL
+    @StateObject private var certificatesViewModel = CertificatesViewModel()
 
     private var infoPlist: [String: Any]? {
         NSDictionary(contentsOf: bundleURL.appendingPathComponent("Info.plist")) as? [String: Any]
@@ -415,7 +416,7 @@ struct FullAppBundleView: View {
             // Provisioning Profile — from embedded.mobileprovision
             if let profile = provisioningProfile {
                 Section(header: Text("Provisioning Profile")) {
-                    NavigationLink(destination: ProvisioningProfileDetailView(profile: profile)) {
+                    NavigationLink(destination: ProvisioningProfileDetailView(profile: profile, certificatesViewModel: certificatesViewModel)) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(profile.name)
                                 .font(.subheadline)
@@ -449,7 +450,7 @@ struct FullAppBundleView: View {
                             ?? extPlist?["CFBundleName"] as? String
                             ?? extURL.deletingPathExtension().lastPathComponent
                         let extBundleID = extPlist?["CFBundleIdentifier"] as? String ?? "Unknown"
-                        NavigationLink(destination: BundleInspectorView(bundleURL: extURL)) {
+                        NavigationLink(destination: BundleInspectorView(bundleURL: extURL, certificatesViewModel: certificatesViewModel)) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(extName)
                                     .font(.subheadline)

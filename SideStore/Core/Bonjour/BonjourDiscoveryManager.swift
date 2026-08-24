@@ -240,7 +240,7 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
         Task { @MainActor [weak self] in
             guard let self = self else { return }
             
-            // Build incoming map
+            var currentTypeInstances: [DiscoveredService] = []
             for result in results {
                 if case .service(let name, _, _, _) = result.endpoint {
                     let discovered = DiscoveredService(
@@ -249,15 +249,14 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
                         domain: domain,
                         result: result
                     )
-                    if let existingIndex = self.instances.firstIndex(where: { $0.id == discovered.id }) {
-                        self.instances[existingIndex] = discovered
-                    } else {
-                        self.instances.append(discovered)
-                    }
+                    currentTypeInstances.append(discovered)
                 }
             }
-            self.instances.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-            self.isSearching = false
+            
+            var otherInstances = self.instances.filter { $0.type != type }
+            otherInstances.append(contentsOf: currentTypeInstances)
+            otherInstances.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            self.instances = otherInstances
         }
     }
     
@@ -292,7 +291,8 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
         }
         activeTxtRecords = txtRecords
         
-        let parameters = NWParameters.tcp
+        let isTCP = service.type.contains("_tcp")
+        let parameters = isTCP ? NWParameters.tcp : NWParameters.udp
         parameters.includePeerToPeer = true
         
         let connection = NWConnection(to: service.result.endpoint, using: parameters)
@@ -312,11 +312,18 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
                         resolvedHost = String(resolvedHost[..<percentIndex])
                     }
                     let portVal = port.rawValue
+                    let directIPs: [String]
+                    if resolvedHost.contains(":") || resolvedHost.filter({ $0 == "." }).count == 3 {
+                        directIPs = [resolvedHost]
+                    } else {
+                        directIPs = Self.resolveHostToIPs(resolvedHost)
+                    }
                     
                     self.finishResolution(
                         service: service,
                         hostname: resolvedHost,
                         port: portVal,
+                        addresses: directIPs,
                         txtRecords: txtRecords
                     )
                 }
@@ -332,6 +339,7 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
         let netDomain = service.domain.isEmpty ? "local." : (service.domain.hasSuffix(".") ? service.domain : service.domain + ".")
         let ns = NetService(domain: netDomain, type: netType, name: service.name)
         ns.delegate = self
+        ns.schedule(in: .main, forMode: .common)
         resolvingNetService = ns
         ns.resolve(withTimeout: 4.0)
         
@@ -339,8 +347,8 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
             try? await Task.sleep(nanoseconds: 5_000_000_000)
             guard let self = self, !Task.isCancelled else { return }
             if self.isSearching && self.resolvedService == nil {
-                self.stopResolving()
                 self.resolveError = "Resolution timed out (no response from endpoint)"
+                self.stopResolving()
             }
         }
     }
@@ -349,13 +357,13 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
         service: DiscoveredService,
         hostname: String,
         port: UInt16,
+        addresses: [String],
         txtRecords: [(key: String, value: String)]
     ) {
         Task { @MainActor [weak self] in
             guard let self = self, self.isSearching, self.resolvedService == nil else { return }
             
-            self.stopResolving()
-            let addresses = Self.resolveHostToIPs(hostname)
+            let finalAddresses = addresses.isEmpty ? Self.resolveHostToIPs(hostname) : addresses
             
             self.resolvedService = ResolvedServiceInfo(
                 name: service.name,
@@ -363,10 +371,11 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
                 domain: service.domain,
                 hostname: hostname,
                 port: port,
-                addresses: addresses,
+                addresses: finalAddresses,
                 txtRecords: txtRecords
             )
             self.isSearching = false
+            self.stopResolving()
         }
     }
     
@@ -412,9 +421,6 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
                 self.serviceTypes.append(info)
                 self.serviceTypes.sort { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
             }
-            if !moreComing {
-                self.isSearching = false
-            }
         }
     }
     
@@ -449,6 +455,9 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
             }
         }
         
+        let netAddresses = Self.addressesFromNetService(sender)
+        let resolvedAddresses = netAddresses.isEmpty ? Self.resolveHostToIPs(cleanHost) : netAddresses
+        
         Task { @MainActor in
             guard let service = self.currentResolvingService else { return }
             let finalRecords = self.activeTxtRecords.isEmpty ? txtRecords : self.activeTxtRecords
@@ -456,6 +465,7 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
                 service: service,
                 hostname: cleanHost.isEmpty ? service.name : cleanHost,
                 port: port,
+                addresses: resolvedAddresses,
                 txtRecords: finalRecords
             )
         }
@@ -463,9 +473,43 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
     
     func netService(_ sender: NetService, didNotResolve errorDict: [String: NSNumber]) {
         debugLog("[BonjourDiscovery] NetService failed to resolve: \(errorDict)")
+        let errorCode = errorDict[NetService.errorCode]?.intValue ?? -1
+        Task { @MainActor in
+            if self.isSearching && self.resolvedService == nil && self.activeConnection == nil {
+                self.resolveError = "NetService resolution failed (error \(errorCode))"
+                self.stopResolving()
+            }
+        }
     }
     
     // Helpers
+    static func addressesFromNetService(_ netService: NetService) -> [String] {
+        var results: [String] = []
+        guard let addresses = netService.addresses else { return results }
+        
+        for addressData in addresses {
+            addressData.withUnsafeBytes { rawBuffer in
+                guard let socketAddress = rawBuffer.baseAddress?.assumingMemoryBound(to: sockaddr.self) else { return }
+                var hostBuffer = [CChar](repeating: 0, count: Int(NI_MAXHOST))
+                let sockLen: socklen_t
+                if socketAddress.pointee.sa_family == sa_family_t(AF_INET) {
+                    sockLen = socklen_t(MemoryLayout<sockaddr_in>.size)
+                } else if socketAddress.pointee.sa_family == sa_family_t(AF_INET6) {
+                    sockLen = socklen_t(MemoryLayout<sockaddr_in6>.size)
+                } else {
+                    return
+                }
+                
+                if getnameinfo(socketAddress, sockLen, &hostBuffer, socklen_t(hostBuffer.count), nil, 0, NI_NUMERICHOST) == 0 {
+                    let ip = String(cString: hostBuffer)
+                    if !ip.isEmpty && !results.contains(ip) {
+                        results.append(ip)
+                    }
+                }
+            }
+        }
+        return results
+    }
     static func friendlyName(for rawType: String) -> String? {
         let normalized = rawType.hasSuffix(".") ? rawType : rawType + "."
         return commonKnownServiceTypes[normalized]
