@@ -81,6 +81,9 @@ final class BonjourDiscoveryManagerV2: NSObject, ObservableObject {
     private var instanceBrowser: NWBrowser?
     private var fallbackBrowsers: [NWBrowser] = []
     private var activeConnection: NWConnection?
+    private var resolvingNetService: NetService?
+    private var activeTxtRecords: [(key: String, value: String)] = []
+    private var currentResolvingService: DiscoveredServiceV2?
     private var timeoutTask: Task<Void, Never>?
     
     private var discoveredTypes = Set<String>()
@@ -264,10 +267,12 @@ final class BonjourDiscoveryManagerV2: NSObject, ObservableObject {
     
     func resolveService(_ service: DiscoveredServiceV2) {
         debugLog("[BonjourDiscoveryV2] Resolving service '\(service.name)'...")
-        activeConnection?.cancel()
+        stopResolving()
+        
         resolvedService = nil
         resolveError = nil
         isSearching = true
+        currentResolvingService = service
         
         // Parse TXT records from browser result metadata
         var txtRecords: [(key: String, value: String)] = []
@@ -278,6 +283,7 @@ final class BonjourDiscoveryManagerV2: NSObject, ObservableObject {
             }
             txtRecords.sort { $0.key.localizedCaseInsensitiveCompare($1.key) == .orderedAscending }
         }
+        activeTxtRecords = txtRecords
         
         // We establish a dummy TCP connection to resolve the IP addresses and port.
         // It will complete the DNS resolution process and give us the endpoint info without needing to authenticate.
@@ -303,47 +309,78 @@ final class BonjourDiscoveryManagerV2: NSObject, ObservableObject {
                         resolvedHost = String(resolvedHost[..<percentIndex])
                     }
                     let portVal = port.rawValue
-                    debugLog("[BonjourDiscoveryV2] Resolved endpoint: \(resolvedHost):\(portVal)")
+                    debugLog("[BonjourDiscoveryV2] Resolved endpoint via NWConnection: \(resolvedHost):\(portVal)")
                     
                     // Cancel connection immediately as we only needed the resolution info
-                    connection.cancel()
-                    self.activeConnection = nil
-                    
-                    let addresses = Self.resolveHostToIPs(resolvedHost)
-                    
-                    Task { @MainActor in
-                        self.resolvedService = ResolvedServiceInfoV2(
-                            name: service.name,
-                            type: service.type,
-                            domain: service.domain,
-                            hostname: resolvedHost,
-                            port: portVal,
-                            addresses: addresses,
-                            txtRecords: txtRecords
-                        )
-                        self.isSearching = false
-                    }
+                    self.finishResolution(
+                        service: service,
+                        hostname: resolvedHost,
+                        port: portVal,
+                        txtRecords: txtRecords
+                    )
                 }
             case .failed(let error):
-                debugLog("[BonjourDiscoveryV2] Resolution failed: \(error)")
-                connection.cancel()
-                self.activeConnection = nil
-                Task { @MainActor in
-                    self.resolveError = "Resolution failed: \(error.localizedDescription)"
-                    self.isSearching = false
-                }
+                debugLog("[BonjourDiscoveryV2] NWConnection resolution failed: \(error)")
             default:
                 break
             }
         }
-        
         connection.start(queue: .main)
+        
+        // 2. Start NetService resolution in parallel
+        let netType = service.type.hasSuffix(".") ? service.type : service.type + "."
+        let netDomain = service.domain.isEmpty ? "local." : (service.domain.hasSuffix(".") ? service.domain : service.domain + ".")
+        let ns = NetService(domain: netDomain, type: netType, name: service.name)
+        ns.delegate = self
+        resolvingNetService = ns
+        ns.resolve(withTimeout: 4.0)
+        
+        // 3. Timeout Watchdog to guarantee the UI never hangs indefinitely
+        timeoutTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            guard let self = self, !Task.isCancelled else { return }
+            if self.isSearching && self.resolvedService == nil {
+                debugLog("[BonjourDiscoveryV2] Resolution timed out for '\(service.name)'")
+                self.stopResolving()
+                self.resolveError = "Resolution timed out (no response from endpoint)"
+            }
+        }
+    }
+    
+    private func finishResolution(
+        service: DiscoveredServiceV2,
+        hostname: String,
+        port: UInt16,
+        txtRecords: [(key: String, value: String)]
+    ) {
+        Task { @MainActor [weak self] in
+            guard let self = self, self.isSearching, self.resolvedService == nil else { return }
+            
+            self.stopResolving()
+            let addresses = Self.resolveHostToIPs(hostname)
+            
+            self.resolvedService = ResolvedServiceInfoV2(
+                name: service.name,
+                type: service.type,
+                domain: service.domain,
+                hostname: hostname,
+                port: port,
+                addresses: addresses,
+                txtRecords: txtRecords
+            )
+            self.isSearching = false
+        }
     }
     
     func stopResolving() {
         debugLog("[BonjourDiscoveryV2] Stopping service resolution.")
+        timeoutTask?.cancel()
+        timeoutTask = nil
         activeConnection?.cancel()
         activeConnection = nil
+        resolvingNetService?.stop()
+        resolvingNetService = nil
+        currentResolvingService = nil
         isSearching = false
     }
     
@@ -539,3 +576,29 @@ extension BonjourDiscoveryManagerV2: NetServiceBrowserDelegate {
         debugLog("[BonjourDiscoveryV2] NetServiceBrowser didNotSearch: \(errorDict)")
     }
 }
+
+extension BonjourDiscoveryManagerV2: NetServiceDelegate {
+    
+    func netServiceDidResolveAddress(_ sender: NetService) {
+        guard let service = currentResolvingService, isSearching, resolvedService == nil else { return }
+        
+        let portVal = UInt16(sender.port)
+        var host = sender.hostName ?? "\(service.name).local"
+        if host.hasSuffix(".") {
+            host = String(host.dropLast())
+        }
+        
+        debugLog("[BonjourDiscoveryV2] Resolved endpoint via NetService: \(host):\(portVal)")
+        finishResolution(
+            service: service,
+            hostname: host,
+            port: portVal,
+            txtRecords: activeTxtRecords
+        )
+    }
+    
+    func netService(_ sender: NetService, didNotResolve errorDict: [String : NSNumber]) {
+        debugLog("[BonjourDiscoveryV2] NetService didNotResolve: \(errorDict)")
+    }
+}
+
