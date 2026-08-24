@@ -9,6 +9,7 @@
 import SwiftUI
 
 enum SideJITConnectionStatus: Equatable {
+    case disabled
     case ready(latencyMs: Int, address: String)
     case discovering
     case disconnected(reason: String)
@@ -16,6 +17,7 @@ enum SideJITConnectionStatus: Equatable {
     
     var color: Color {
         switch self {
+        case .disabled: return .secondary
         case .ready: return .green
         case .discovering, .checking: return .orange
         case .disconnected: return .red
@@ -24,6 +26,7 @@ enum SideJITConnectionStatus: Equatable {
     
     var title: String {
         switch self {
+        case .disabled: return "Disabled"
         case .ready(let latency, _): return "Ready (\(latency) ms)"
         case .discovering: return "Discovering Bonjour…"
         case .checking: return "Checking Connection…"
@@ -56,7 +59,7 @@ struct SideJITServerConfigView: View {
     @State private var isServerEnabled: Bool = UserDefaults.standard.isSideJITServerEnabled
     @State private var customAddress: String = UserDefaults.standard.textInputSideJITServerurl ?? ""
     @State private var resolvedAddress: String = ""
-    @State private var connectionStatus: SideJITConnectionStatus = .checking
+    @State private var connectionStatus: SideJITConnectionStatus = UserDefaults.standard.isSideJITServerEnabled ? .checking : .disabled
     @State private var latestLog: SideJITResponseLog? = nil
     @State private var activeAction: SideJITDiagnosticAction? = nil
     @State private var showCopiedToast = false
@@ -113,6 +116,8 @@ struct SideJITServerConfigView: View {
                 UserDefaults.standard.isSideJITServerEnabled = newValue
                 if newValue {
                     refreshServerState()
+                } else {
+                    connectionStatus = .disabled
                 }
             }
         }
@@ -341,6 +346,10 @@ struct SideJITServerConfigView: View {
     }
     
     private func refreshServerState() {
+        guard isServerEnabled else {
+            connectionStatus = .disabled
+            return
+        }
         connectionStatus = .checking
         Task {
             let serverURL = await SideJITManager.shared.resolveServerURL()
@@ -430,6 +439,9 @@ struct SideJITServerConfigView: View {
                 let payload = String(data: data, encoding: .utf8) ?? ""
                 
                 await MainActor.run {
+                    if status >= 200 && status < 400 {
+                        self.connectionStatus = .ready(latencyMs: latency, address: serverURL)
+                    }
                     self.latestLog = SideJITResponseLog(
                         timestamp: Date(),
                         endpoint: "/re/",

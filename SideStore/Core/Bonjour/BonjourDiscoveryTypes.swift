@@ -145,6 +145,7 @@ public let commonKnownServiceTypes: [String: String] = [
     "_appletv-v2._tcp.":    "Apple TV Companion Remote Protocol",
     "_apple-mobdev._tcp.":  "Apple Mobile Device v1 (Wi-Fi Sync)",
     "_sidejit._tcp.":       "SideJITServer JIT Service",
+    "_sidejitserver._tcp.": "SideJITServer JIT Service",
     "_jitstreamer._tcp.":   "JitStreamer Service",
     "_matter._tcp.":        "Matter Smart Home Device",
     "_matterc._udp.":       "Matter Device Commissioning",
