@@ -741,10 +741,9 @@ struct ServiceDetailView: View {
             Section(header: Text("Connection")) {
                 DetailRow(label: "Hostname", value: resolved.hostname, onCopy: copyWithFeedback)
                 
-                if !resolved.addresses.isEmpty {
-                    ForEach(viewModel.sortedAddresses, id: \.self) { address in
-                        let label = address.contains(":") ? "IPv6 Address" : "IPv4 Address"
-                        DetailRow(label: label, value: address, onCopy: copyWithFeedback)
+                if !viewModel.resolvedAddressItems.isEmpty {
+                    ForEach(viewModel.resolvedAddressItems) { item in
+                        DetailRow(label: item.label, value: item.address, tag: item.interfaceTag, onCopy: copyWithFeedback)
                     }
                 }
                 
@@ -941,13 +940,24 @@ struct ServiceDetailView: View {
 private struct DetailRow: View {
     let label: String
     let value: String
+    var tag: String? = nil
     var onCopy: ((String) -> Void)? = nil
     
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label)
-                .font(.caption)
-                .foregroundColor(.secondary)
+            HStack(spacing: 6) {
+                Text(label)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                if let tag = tag, !tag.isEmpty {
+                    Text(tag)
+                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 1)
+                        .background(Capsule().fill(Color(.tertiarySystemFill)))
+                }
+            }
             Text(value)
                 .font(.body)
                 .lineLimit(nil)

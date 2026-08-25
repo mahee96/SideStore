@@ -473,7 +473,18 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
         Task { @MainActor [weak self] in
             guard let self = self, self.isResolving, self.resolvedService == nil else { return }
             
-            let finalAddresses = addresses.isEmpty ? Self.resolveHostToIPs(hostname) : addresses
+            var allAddresses = addresses
+            let hostsToQuery = [hostname, "\(service.name).local", "\(service.name).\(service.domain)"]
+            for h in hostsToQuery {
+                guard !h.isEmpty, !h.contains(":"), h.filter({ $0 == "." }).count < 3 else { continue }
+                for ip in Self.resolveHostToIPs(h) {
+                    if !allAddresses.contains(ip) {
+                        allAddresses.append(ip)
+                    }
+                }
+            }
+            
+            let finalAddresses = allAddresses.isEmpty ? addresses : allAddresses
             
             self.resolvedService = ResolvedServiceInfo(
                 name: service.name,
@@ -706,10 +717,11 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
     static func resolveFirstService(
         ofType rawType: String,
         namePrefix: String = "",
+        domain: String? = nil,
         timeout: TimeInterval = AppConstants.Bonjour.defaultDiscoveryTimeout
     ) async -> (host: String, port: UInt16)? {
         let typeWithoutDot = rawType.hasSuffix(".") ? String(rawType.dropLast()) : rawType
-        let descriptor = NWBrowser.Descriptor.bonjour(type: typeWithoutDot, domain: AppConstants.Bonjour.defaultDomain)
+        let descriptor = NWBrowser.Descriptor.bonjour(type: typeWithoutDot, domain: domain)
         let parameters = typeWithoutDot.contains("_tcp") ? NWParameters.tcp : NWParameters.udp
         parameters.includePeerToPeer = true
         
@@ -745,13 +757,30 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
                 resolver.setActiveConnection(conn)
                 
                 conn.pathUpdateHandler = { path in
-                    if path.status == .satisfied, let remote = path.remoteEndpoint,
-                       case .hostPort(let host, let port) = remote {
-                        let hostStr = "\(host)"
-                        let ips = resolveHostToIPs(hostStr)
-                        let finalHost = ips.first ?? hostStr
-                        debugLog("[BonjourDiscovery] Auto-resolved '\(name)' via pathUpdate to \(finalHost):\(port.rawValue)")
-                        resolver.resumeOnce((host: finalHost, port: port.rawValue))
+                    debugLog("[BonjourDiscovery] resolveFirstService: conn pathUpdate status=\(path.status), remote=\(String(describing: path.remoteEndpoint))")
+                    if path.status == .satisfied, let remote = path.remoteEndpoint {
+                        var resolvedHost = ""
+                        var portVal: UInt16 = 0
+                        
+                        switch remote {
+                        case .hostPort(let host, let port):
+                            resolvedHost = "\(host)".strippingInterfaceScope
+                            portVal = port.rawValue
+                        case .service(let sName, _, let sDomain, _):
+                            let cleanDomain = sDomain.isEmpty ? "local" : (sDomain.hasSuffix(".") ? String(sDomain.dropLast()) : sDomain)
+                            resolvedHost = "\(sName).\(cleanDomain)"
+                            if let localEndpoint = path.localEndpoint, case .hostPort(_, let p) = localEndpoint {
+                                portVal = p.rawValue
+                            }
+                        default:
+                            resolvedHost = name
+                        }
+                        
+                        guard portVal > 0 else { return }
+                        let ips = resolveHostToIPs(resolvedHost)
+                        let finalHost = ips.first ?? resolvedHost
+                        debugLog("[BonjourDiscovery] Auto-resolved '\(name)' via pathUpdate to \(finalHost):\(portVal)")
+                        resolver.resumeOnce((host: finalHost, port: portVal))
                     }
                 }
                 
@@ -759,14 +788,29 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
                     debugLog("[BonjourDiscovery] resolveFirstService: conn stateUpdate -> \(state)")
                     switch state {
                     case .ready, .waiting:
-                        guard let remote = conn.currentPath?.remoteEndpoint,
-                              case .hostPort(let host, let port) = remote else { return }
+                        guard let remote = conn.currentPath?.remoteEndpoint else { return }
+                        var resolvedHost = ""
+                        var portVal: UInt16 = 0
                         
-                        let hostStr = "\(host)"
-                        let ips = resolveHostToIPs(hostStr)
-                        let finalHost = ips.first ?? hostStr
-                        debugLog("[BonjourDiscovery] Auto-resolved '\(name)' to \(finalHost):\(port.rawValue)")
-                        resolver.resumeOnce((host: finalHost, port: port.rawValue))
+                        switch remote {
+                        case .hostPort(let host, let port):
+                            resolvedHost = "\(host)".strippingInterfaceScope
+                            portVal = port.rawValue
+                        case .service(let sName, _, let sDomain, _):
+                            let cleanDomain = sDomain.isEmpty ? "local" : (sDomain.hasSuffix(".") ? String(sDomain.dropLast()) : sDomain)
+                            resolvedHost = "\(sName).\(cleanDomain)"
+                            if let localEndpoint = conn.currentPath?.localEndpoint, case .hostPort(_, let p) = localEndpoint {
+                                portVal = p.rawValue
+                            }
+                        default:
+                            resolvedHost = name
+                        }
+                        
+                        guard portVal > 0 else { return }
+                        let ips = resolveHostToIPs(resolvedHost)
+                        let finalHost = ips.first ?? resolvedHost
+                        debugLog("[BonjourDiscovery] Auto-resolved '\(name)' to \(finalHost):\(portVal)")
+                        resolver.resumeOnce((host: finalHost, port: portVal))
                         
                     case .failed(let err):
                         debugLog("[BonjourDiscovery] resolveFirstService: conn failed with error: \(err)")

@@ -52,6 +52,14 @@ struct ServiceInstanceSection: Identifiable {
     let items: [DiscoveredService]
 }
 
+struct DiscoveredAddressItem: Identifiable, Hashable {
+    var id: String { rawAddress }
+    let rawAddress: String
+    let address: String
+    let label: String
+    let interfaceTag: String?
+}
+
 @MainActor
 final class BonjourDiscoveryViewModel: ObservableObject {
     let manager = BonjourDiscoveryManager.shared
@@ -272,7 +280,7 @@ final class BonjourDiscoveryViewModel: ObservableObject {
         }
     }
     
-    // Sorted Addresses
+    // Sorted & Parsed Addresses
     var sortedAddresses: [String] {
         guard let resolved = resolvedService else { return [] }
         return resolved.addresses.sorted { a, b in
@@ -282,6 +290,35 @@ final class BonjourDiscoveryViewModel: ObservableObject {
                 return sortAddressesV4First ? !aIsV6 : aIsV6
             }
             return a.localizedStandardCompare(b) == .orderedAscending
+        }
+    }
+    
+    var resolvedAddressItems: [DiscoveredAddressItem] {
+        sortedAddresses.map { raw in
+            let tag: String? = {
+                if let idx = raw.firstIndex(of: "%") {
+                    return String(raw[raw.index(after: idx)...])
+                }
+                return nil
+            }()
+            let clean = raw.strippingInterfaceScope
+            let label: String = {
+                if !clean.contains(":") {
+                    return "IPv4 Address"
+                } else if raw.lowercased().hasPrefix("fe80:") || raw.contains("%") {
+                    return "IPv6 Address (Link-Local)"
+                } else if clean.lowercased().hasPrefix("fd") || clean.lowercased().hasPrefix("fc") {
+                    return "IPv6 Address (Unique-Local)"
+                } else {
+                    return "IPv6 Address"
+                }
+            }()
+            return DiscoveredAddressItem(
+                rawAddress: raw,
+                address: clean,
+                label: label,
+                interfaceTag: tag
+            )
         }
     }
     
