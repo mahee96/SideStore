@@ -7,308 +7,342 @@
 //
 
 import SwiftUI
-
-enum SelectedEndpointOption: Hashable {
-    case discovered(WirelessPairTarget)
-    case configuredFallback
-}
+import Minimuxer
 
 struct WirelessPairTargetDialog: View {
-    @ObservedObject private var manager = WirelessPairManager.shared
-    @Binding var isPresented: Bool
-    
-    @State private var selectedOption: SelectedEndpointOption = .configuredFallback
+    @ObservedObject var viewModel: WirelessPairViewModel
     
     var body: some View {
-        ZStack {
-            Color.black.opacity(0.45)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    dismissDialog()
-                }
-            
-            VStack(spacing: 0) {
-                headerView
-                
-                Divider()
-                    .padding(.horizontal, 16)
-                
-                contentScrollView
-                    .padding(.vertical, 12)
-                
-                Divider()
-                    .padding(.horizontal, 16)
-                
-                footerButtons
-            }
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(.secondarySystemBackground))
-                    .shadow(color: Color.black.opacity(0.3), radius: 24, x: 0, y: 12)
-            )
-            .padding(.horizontal, 24)
-            .transition(.scale(scale: 0.92).combined(with: .opacity))
-        }
-        .onAppear {
-            manager.startDiscovery()
-            if let firstTarget = manager.discoveredTargets.first {
-                selectedOption = .discovered(firstTarget)
-                manager.selectAndResolveTarget(firstTarget)
-            } else {
-                selectedOption = .configuredFallback
-            }
-        }
-        .onDisappear {
-            manager.stopDiscovery()
-        }
-        .animation(.spring(response: 0.32, dampingFraction: 0.76), value: isPresented)
-    }
-    
-    private var headerView: some View {
-        HStack(alignment: .center, spacing: 12) {
-            Image(systemName: "antenna.radiowaves.left.and.right")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(.accentColor)
-            
-            Text("Select Pairing Device")
-                .font(.headline)
-                .foregroundColor(.primary)
-            
-            Spacer()
-            
-            if manager.isScanning {
-                ProgressView()
-                    .scaleEffect(0.8)
-            } else {
-                SwiftUI.Button {
-                    manager.startDiscovery()
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.accentColor)
-                }
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 18)
-        .padding(.bottom, 12)
-    }
-    
-    private var contentScrollView: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                // Section: Discovered Devices
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("DISCOVERED NEARBY")
-                        .font(.caption2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 20)
-                    
-                    if manager.discoveredTargets.isEmpty {
-                        HStack(spacing: 10) {
-                            if manager.isScanning {
-                                ProgressView()
-                                    .scaleEffect(0.7)
-                                Text("Searching local network for devices…")
-                                    .font(.footnote)
-                                    .foregroundColor(.secondary)
-                            } else {
-                                Text("No pairing targets found via Bonjour.")
-                                    .font(.footnote)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 20)
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    if viewModel.dialogMode == .client {
+                        clientModeContent
                     } else {
-                        VStack(spacing: 8) {
-                            ForEach(manager.discoveredTargets) { target in
-                                discoveredTargetRow(for: target)
-                            }
-                        }
-                        .padding(.horizontal, 16)
+                        serverModeContent
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+            }
+            .refreshable {
+                viewModel.refreshDialog()
+            }
+            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .navigationBarTitle(viewModel.dialogMode == .client ? "Select Device To Pair" : "Select Server Interface", displayMode: .inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    SwiftUI.Button {
+                        viewModel.dismissDialog()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 30, height: 30)
+                            .background(Color.white.opacity(0.18))
+                            .clipShape(Circle())
                     }
                 }
                 
-                // Section: Configured Fallback Endpoint
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("CONFIGURED ENDPOINT")
-                        .font(.caption2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 20)
-                    
-                    fallbackEndpointRow
-                        .padding(.horizontal, 16)
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    SwiftUI.Button("Select") {
+                        viewModel.confirmSelection()
+                    }
+                    .font(.headline.weight(.semibold))
+                    .foregroundColor(.accentColor)
                 }
             }
-            .padding(.vertical, 4)
         }
-        .frame(maxHeight: 280)
+        .onAppear {
+            viewModel.onDialogAppear()
+        }
+        .onDisappear {
+            viewModel.onDialogDisappear()
+        }
+    }
+    
+    // MARK: - Server Mode Views
+    
+    @ViewBuilder
+    private var serverModeContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("LOCAL NETWORK INTERFACES")
+                .font(.caption)
+                .fontWeight(.bold)
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 4)
+            
+            if viewModel.activeInterfaces.isEmpty {
+                Text("No active local interfaces detected.")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 4)
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(viewModel.activeInterfaces) { iface in
+                        localInterfaceRow(for: iface)
+                    }
+                }
+            }
+        }
+    }
+    
+    private func interfaceTypeTag(name: String, color: Color) -> some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(color)
+                .frame(width: 5, height: 5)
+            
+            Text(name)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(.secondary)
+        }
+        .padding(.horizontal, 7)
+        .padding(.vertical, 3)
+        .background(
+            Capsule()
+                .fill(Color(.tertiarySystemFill))
+        )
+    }
+    
+    private func localInterfaceRow(for iface: LocalInterfaceInfo) -> some View {
+        let isIpV4 = !iface.ip.contains(":")
+        let v4 = isIpV4 ? iface.ip : nil
+        let v6 = iface.ipv6 ?? (!isIpV4 ? iface.ip : nil)
+        let isSelected = viewModel.selectedServerInterfaceId == iface.id
+        let tagColor: Color = iface.type.isVPN ? .green : (iface.type == .wifi ? .accentColor : .secondary)
+        
+        return SwiftUI.Button {
+            viewModel.selectServerInterface(id: iface.id)
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .center, spacing: 8) {
+                    Image(systemName: iface.type.symbolName)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(isSelected ? .accentColor : .secondary)
+                        .frame(width: 20)
+                    
+                    Text(iface.name)
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                    
+                    interfaceTypeTag(name: iface.type.rawValue, color: tagColor)
+                    
+                    Spacer()
+                    
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 19))
+                        .foregroundColor(isSelected ? .green : Color(.tertiaryLabel))
+                }
+                
+                VStack(alignment: .leading, spacing: 3) {
+                    if let v4 = v4, !v4.isEmpty {
+                        Text("IPv4: \(v4)")
+                            .font(.caption.monospaced())
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                    
+                    if let v6 = v6, !v6.isEmpty {
+                        Text("IPv6: \(v6)")
+                            .font(.caption.monospaced())
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
+                }
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(isSelected ? Color.accentColor.opacity(0.16) : Color(.secondarySystemGroupedBackground))
+                    .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(isSelected ? Color.accentColor.opacity(0.5) : Color.clear, lineWidth: 1.5)
+                )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+    
+    // MARK: - Client Mode Views
+    
+    @ViewBuilder
+    private var clientModeContent: some View {
+        // Section: Configured Fallback Endpoint
+        VStack(alignment: .leading, spacing: 10) {
+            Text("CONFIGURED ENDPOINT")
+                .font(.caption)
+                .fontWeight(.bold)
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 4)
+            
+            fallbackEndpointRow
+        }
+        
+        // Section: Discovered Devices
+        VStack(alignment: .leading, spacing: 10) {
+            Text("DISCOVERED NEARBY")
+                .font(.caption)
+                .fontWeight(.bold)
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 4)
+            
+            if viewModel.discoveredTargets.isEmpty {
+                HStack(spacing: 10) {
+                    if viewModel.isScanning {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                        Text("Searching local network for devices…")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("No pairing targets found via Bonjour.")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 4)
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(viewModel.discoveredTargets) { target in
+                        discoveredTargetRow(for: target)
+                    }
+                }
+            }
+        }
     }
     
     private func discoveredTargetRow(for target: WirelessPairTarget) -> some View {
-        let isSelected: Bool = {
-            if case .discovered(let selected) = selectedOption {
-                return selected.id == target.id
-            }
-            return false
-        }()
+        let isSelected = viewModel.isTargetSelected(target)
+        let portString = target.port > 0 ? String(format: "%u", target.port) : ""
         
         return SwiftUI.Button {
-            selectedOption = .discovered(target)
-            manager.selectAndResolveTarget(target)
+            viewModel.selectTarget(target)
         } label: {
-            HStack(spacing: 12) {
-                Image(systemName: target.iconName)
-                    .font(.system(size: 20))
-                    .foregroundColor(isSelected ? .accentColor : .secondary)
-                    .frame(width: 28)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(target.name)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .center, spacing: 8) {
+                    Image(systemName: target.iconName)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(isSelected ? .accentColor : .secondary)
+                        .frame(width: 20)
                     
-                    HStack(spacing: 6) {
-                        Text(target.typeBadge)
-                            .font(.caption2)
+                    interfaceTypeTag(name: target.rawType, color: .accentColor)
+                    
+                    Spacer()
+                    
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 19))
+                        .foregroundColor(isSelected ? .green : Color(.tertiaryLabel))
+                }
+                
+                Text(target.name)
+                    .font(.footnote)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                
+                VStack(alignment: .leading, spacing: 3) {
+                    if let v4 = target.ipv4, !v4.isEmpty {
+                        let formattedV4 = portString.isEmpty ? v4 : "\(v4):\(portString)"
+                        Text("IPv4: \(formattedV4)")
+                            .font(.caption.monospaced())
                             .foregroundColor(.secondary)
-                        
-                        if let model = target.model {
-                            Text("• \(model)")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        }
+                            .lineLimit(1)
                     }
                     
-                    if isSelected {
-                        if let resolved = manager.resolvedService {
-                            Text("\(resolved.hostname):\(resolved.port)")
-                                .font(.caption2.monospaced())
-                                .foregroundColor(.accentColor)
-                        } else {
+                    if let v6 = target.ipv6, !v6.isEmpty {
+                        let formattedV6 = portString.isEmpty ? v6 : "[\(v6)]:\(portString)"
+                        Text("IPv6: \(formattedV6)")
+                            .font(.caption.monospaced())
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
+                    
+                    if (target.ipv4 == nil || target.ipv4?.isEmpty == true) && (target.ipv6 == nil || target.ipv6?.isEmpty == true) {
+                        if !portString.isEmpty {
+                            Text("Port: \(portString)")
+                                .font(.caption.monospaced())
+                                .foregroundColor(.secondary)
+                        } else if viewModel.isScanning {
                             Text("Resolving IP address…")
-                                .font(.caption2)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text("Address unavailable")
+                                .font(.caption)
                                 .foregroundColor(.secondary)
                         }
                     }
                 }
-                
-                Spacer()
-                
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 18))
-                    .foregroundColor(isSelected ? .accentColor : Color(.tertiaryLabel))
             }
-            .padding(.vertical, 10)
-            .padding(.horizontal, 14)
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.accentColor.opacity(0.12) : Color(.tertiarySystemBackground))
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(isSelected ? Color.accentColor.opacity(0.16) : Color(.secondarySystemGroupedBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(isSelected ? Color.accentColor.opacity(0.5) : Color.clear, lineWidth: 1.5)
+                    )
             )
         }
         .buttonStyle(.plain)
     }
     
     private var fallbackEndpointRow: some View {
-        let fallback = manager.fallbackConfigEndpoint
-        let isSelected: Bool = {
-            if case .configuredFallback = selectedOption {
-                return true
-            }
-            return false
-        }()
+        let fallback = viewModel.fallbackConfigEndpoint
+        let isSelected = viewModel.isFallbackSelected
+        let portString = String(format: "%u", fallback.port)
         
         return SwiftUI.Button {
-            selectedOption = .configuredFallback
-            manager.deselectTarget()
+            viewModel.selectFallbackEndpoint()
         } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "network")
-                    .font(.system(size: 20))
-                    .foregroundColor(isSelected ? .accentColor : .secondary)
-                    .frame(width: 28)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Configured Target")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .center, spacing: 8) {
+                    Image(systemName: "network")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(isSelected ? .accentColor : .secondary)
+                        .frame(width: 20)
                     
-                    Text("\(fallback.ip):\(fallback.port)")
-                        .font(.caption2.monospaced())
-                        .foregroundColor(.secondary)
+                    interfaceTypeTag(name: "Manual", color: .secondary)
+                    
+                    Spacer()
+                    
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 19))
+                        .foregroundColor(isSelected ? .green : Color(.tertiaryLabel))
                 }
                 
-                Spacer()
+                Text("Configured Target")
+                    .font(.footnote)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
                 
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 18))
-                    .foregroundColor(isSelected ? .accentColor : Color(.tertiaryLabel))
+                let isV6 = fallback.ip.contains(":")
+                let label = isV6 ? "IPv6" : "IPv4"
+                let formattedIp = isV6 ? "[\(fallback.ip)]:\(portString)" : "\(fallback.ip):\(portString)"
+                Text("\(label): \(formattedIp)")
+                    .font(.caption.monospaced())
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
             }
-            .padding(.vertical, 10)
-            .padding(.horizontal, 14)
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.accentColor.opacity(0.12) : Color(.tertiarySystemBackground))
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(isSelected ? Color.accentColor.opacity(0.16) : Color(.secondarySystemGroupedBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(isSelected ? Color.accentColor.opacity(0.5) : Color.clear, lineWidth: 1.5)
+                    )
             )
         }
         .buttonStyle(.plain)
-    }
-    
-    private var footerButtons: some View {
-        HStack(spacing: 12) {
-            SwiftUI.Button("Cancel") {
-                dismissDialog()
-            }
-            .font(.subheadline.weight(.medium))
-            .foregroundColor(.secondary)
-            .frame(maxWidth: .infinity)
-            .frame(height: 44)
-            .background(Color(.tertiarySystemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            
-            SwiftUI.Button {
-                triggerPairingAction()
-            } label: {
-                Text("Pair")
-                    .font(.subheadline.weight(.bold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 44)
-                    .background(Color.accentColor)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-    }
-    
-    private func dismissDialog() {
-        manager.stopDiscovery()
-        isPresented = false
-    }
-    
-    private func triggerPairingAction() {
-        dismissDialog()
-        
-        switch selectedOption {
-        case .discovered:
-            if let resolved = manager.resolvedService,
-               let targetIp = resolved.addresses.first ?? resolved.hostname as String?,
-               !targetIp.isEmpty {
-                manager.triggerPairing(targetIp: targetIp, targetPort: resolved.port)
-            } else {
-                let fallback = manager.fallbackConfigEndpoint
-                manager.triggerPairing(targetIp: fallback.ip, targetPort: fallback.port)
-            }
-        case .configuredFallback:
-            let fallback = manager.fallbackConfigEndpoint
-            manager.triggerPairing(targetIp: fallback.ip, targetPort: fallback.port)
-        }
     }
 }
