@@ -47,6 +47,22 @@ struct SideJITResponseLog: Identifiable {
     var isSuccess: Bool {
         statusCode >= 200 && statusCode < 300
     }
+    
+    var prettyPayload: String {
+        rawPayload.prettyPrintedJSON
+    }
+}
+
+public extension String {
+    var prettyPrintedJSON: String {
+        guard let data = self.data(using: .utf8),
+              let jsonObject = try? JSONSerialization.jsonObject(with: data, options: []),
+              let prettyData = try? JSONSerialization.data(withJSONObject: jsonObject, options: [.prettyPrinted, .sortedKeys]),
+              let prettyString = String(data: prettyData, encoding: .utf8) else {
+            return self
+        }
+        return prettyString
+    }
 }
 
 enum SideJITDiagnosticAction: Equatable {
@@ -285,22 +301,29 @@ struct SideJITServerConfigView: View {
                         .foregroundColor(.secondary)
                 }
                 
-                Text(log.rawPayload)
-                    .font(.system(.caption, design: .monospaced))
-                    .foregroundColor(.primary)
-                    .padding(8)
+                ScrollView(.vertical, showsIndicators: true) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        Text(log.prettyPayload)
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundColor(.primary)
+                            .multilineTextAlignment(.leading)
+                            .padding(10)
+                    }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color(UIColor.secondarySystemGroupedBackground))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-                    )
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxHeight: 200)
+                .background(Color(UIColor.secondarySystemGroupedBackground))
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                )
             }
             .padding(.vertical, 4)
             .contextMenu {
                 SwiftUI.Button {
-                    UIPasteboard.general.string = log.rawPayload
+                    UIPasteboard.general.string = log.prettyPayload
                     showCopied()
                 } label: {
                     Label("Copy Response", systemImage: "doc.on.doc")
@@ -382,7 +405,7 @@ struct SideJITServerConfigView: View {
             let latency = Int(Date().timeIntervalSince(start) * 1000)
             let status = (response as? HTTPURLResponse)?.statusCode ?? 200
             let payload = String(data: data, encoding: .utf8) ?? "<binary data>"
-            debugLog("[SideJITConfig] performPing: success from \(url) (status=\(status), latency=\(latency)ms, bytes=\(data.count), payload='\(payload.prefix(120))')")
+            debugLog("[SideJITConfig] performPing: success from \(url) (status=\(status), latency=\(latency)ms, bytes=\(data.count)):\n\(payload.prettyPrintedJSON)")
             
             await MainActor.run {
                 if status >= 200 && status < 400 {
@@ -449,7 +472,7 @@ struct SideJITServerConfigView: View {
                 let latency = Int(Date().timeIntervalSince(start) * 1000)
                 let status = (response as? HTTPURLResponse)?.statusCode ?? 200
                 let payload = String(data: data, encoding: .utf8) ?? ""
-                debugLog("[SideJITConfig] triggerDeviceRefresh: received status=\(status), latency=\(latency)ms, payload='\(payload)'")
+                debugLog("[SideJITConfig] triggerDeviceRefresh: received status=\(status), latency=\(latency)ms:\n\(payload.prettyPrintedJSON)")
                 
                 await MainActor.run {
                     if status >= 200 && status < 400 {
@@ -504,7 +527,7 @@ struct SideJITServerConfigView: View {
                 let latency = Int(Date().timeIntervalSince(start) * 1000)
                 let status = (response as? HTTPURLResponse)?.statusCode ?? 200
                 let payload = String(data: data, encoding: .utf8) ?? ""
-                debugLog("[SideJITConfig] queryVersionEndpoint: received status=\(status), latency=\(latency)ms, payload='\(payload)'")
+                debugLog("[SideJITConfig] queryVersionEndpoint: received status=\(status), latency=\(latency)ms:\n\(payload.prettyPrintedJSON)")
                 
                 await MainActor.run {
                     self.latestLog = SideJITResponseLog(

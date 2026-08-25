@@ -744,7 +744,12 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
                     debugLog("[BonjourDiscovery] resolveFirstService: found endpoint '\(res.endpoint)' (interfaces: \(res.interfaces.map { $0.name }))")
                 }
                 
-                guard let target = results.first(where: {
+                let exactMatch = results.first(where: {
+                    guard case .service(let name, _, _, _) = $0.endpoint else { return false }
+                    return name.localizedCaseInsensitiveCompare(namePrefix) == .orderedSame
+                })
+                
+                guard let target = exactMatch ?? results.first(where: {
                     guard case .service(let name, _, _, _) = $0.endpoint else { return false }
                     return namePrefix.isEmpty || name.localizedCaseInsensitiveContains(namePrefix)
                 }), case .service(let name, _, _, _) = target.endpoint else {
