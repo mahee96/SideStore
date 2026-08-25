@@ -442,7 +442,7 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
                 break
             }
         }
-        connection.start(queue: .main)
+        connection.start(queue: .global(qos: .userInitiated))
         
         let netType = service.type.hasSuffix(".") ? String(service.type.dropLast()) : service.type
         let netDomain = service.domain.isEmpty ? "local." : (service.domain.hasSuffix(".") ? service.domain : service.domain + ".")
@@ -470,33 +470,35 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
         addresses: [String],
         txtRecords: [(key: String, value: String)]
     ) {
-        Task { @MainActor [weak self] in
-            guard let self = self, self.isResolving, self.resolvedService == nil else { return }
+        Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self = self else { return }
             
             var allAddresses = addresses
-            let hostsToQuery = [hostname, "\(service.name).local", "\(service.name).\(service.domain)"]
-            for h in hostsToQuery {
-                guard !h.isEmpty, !h.contains(":"), h.filter({ $0 == "." }).count < 3 else { continue }
-                for ip in Self.resolveHostToIPs(h) {
+            let cleanHost = hostname.strippingInterfaceScope
+            if !cleanHost.isEmpty && !cleanHost.contains(":") && cleanHost.filter({ $0 == "." }).count < 3 {
+                let resolved = Self.resolveHostToIPs(cleanHost)
+                for ip in resolved {
                     if !allAddresses.contains(ip) {
                         allAddresses.append(ip)
                     }
                 }
             }
             
-            let finalAddresses = allAddresses.isEmpty ? addresses : allAddresses
-            
-            self.resolvedService = ResolvedServiceInfo(
-                name: service.name,
-                type: service.type,
-                domain: service.domain,
-                hostname: hostname,
-                port: port,
-                addresses: finalAddresses,
-                txtRecords: txtRecords
-            )
-            self.isResolving = false
-            self.stopResolving()
+            await MainActor.run {
+                guard self.isResolving, self.resolvedService == nil else { return }
+                
+                self.resolvedService = ResolvedServiceInfo(
+                    name: service.name,
+                    type: service.type,
+                    domain: service.domain,
+                    hostname: cleanHost.isEmpty ? service.name : cleanHost,
+                    port: port,
+                    addresses: allAddresses,
+                    txtRecords: txtRecords
+                )
+                self.isResolving = false
+                self.stopResolving()
+            }
         }
     }
     
