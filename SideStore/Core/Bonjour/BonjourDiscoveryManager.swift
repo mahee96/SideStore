@@ -713,6 +713,7 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
         let parameters = typeWithoutDot.contains("_tcp") ? NWParameters.tcp : NWParameters.udp
         parameters.includePeerToPeer = true
         
+        debugLog("[BonjourDiscovery] resolveFirstService: starting NWBrowser for type='\(typeWithoutDot)', namePrefix='\(namePrefix)', domain=\(domain ?? "nil") (timeout: \(timeout)s)")
         let browser = NWBrowser(for: descriptor, using: parameters)
         
         return await withCheckedContinuation { continuation in
@@ -721,15 +722,25 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
             
             Task {
                 try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+                debugLog("[BonjourDiscovery] resolveFirstService: timeout reached after \(timeout)s")
                 resolver.resumeOnce(nil)
             }
             
-            browser.browseResultsChangedHandler = { results, _ in
+            browser.browseResultsChangedHandler = { results, changes in
+                debugLog("[BonjourDiscovery] resolveFirstService: received \(results.count) results (changes: \(changes.count))")
+                for res in results {
+                    debugLog("[BonjourDiscovery] resolveFirstService: found endpoint '\(res.endpoint)' (interfaces: \(res.interfaces.map { $0.name }))")
+                }
+                
                 guard let target = results.first(where: {
                     guard case .service(let name, _, _, _) = $0.endpoint else { return false }
                     return namePrefix.isEmpty || name.localizedCaseInsensitiveContains(namePrefix)
-                }), case .service(let name, _, _, _) = target.endpoint else { return }
+                }), case .service(let name, _, _, _) = target.endpoint else {
+                    debugLog("[BonjourDiscovery] resolveFirstService: no result matched prefix '\(namePrefix)'")
+                    return
+                }
                 
+                debugLog("[BonjourDiscovery] resolveFirstService: matched service '\(name)', initiating NWConnection")
                 let conn = NWConnection(to: target.endpoint, using: parameters)
                 resolver.setActiveConnection(conn)
                 
@@ -745,6 +756,7 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
                 }
                 
                 conn.stateUpdateHandler = { state in
+                    debugLog("[BonjourDiscovery] resolveFirstService: conn stateUpdate -> \(state)")
                     switch state {
                     case .ready, .waiting:
                         guard let remote = conn.currentPath?.remoteEndpoint,
@@ -756,7 +768,8 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
                         debugLog("[BonjourDiscovery] Auto-resolved '\(name)' to \(finalHost):\(port.rawValue)")
                         resolver.resumeOnce((host: finalHost, port: port.rawValue))
                         
-                    case .failed:
+                    case .failed(let err):
+                        debugLog("[BonjourDiscovery] resolveFirstService: conn failed with error: \(err)")
                         resolver.resumeOnce(nil)
                         
                     default:
@@ -768,7 +781,9 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
             }
             
             browser.stateUpdateHandler = { state in
-                if case .failed = state {
+                debugLog("[BonjourDiscovery] resolveFirstService: browser stateUpdate -> \(state)")
+                if case .failed(let err) = state {
+                    debugLog("[BonjourDiscovery] resolveFirstService: browser failed with error: \(err)")
                     resolver.resumeOnce(nil)
                 }
             }
