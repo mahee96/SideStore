@@ -167,6 +167,7 @@ struct WirelessPairView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 SwiftUI.Button {
+                    debugLog("[WirelessPairView] Trailing toolbar bolt button tapped -> openClientDialog()")
                     viewModel.openClientDialog()
                 } label: {
                     Image(systemName: "bolt.horizontal.fill")
@@ -188,6 +189,23 @@ struct WirelessPairView: View {
                     .presentationDragIndicator(.visible)
             } else {
                 WirelessPairTargetDialog(viewModel: viewModel)
+            }
+        }
+        .alert("Enter Pairing PIN", isPresented: $viewModel.isPinPromptPresented) {
+            TextField("6-digit PIN", text: $viewModel.enteredPin)
+                .keyboardType(.numberPad)
+            SwiftUI.Button("Pair") {
+                viewModel.submitEnteredPin()
+            }
+            SwiftUI.Button("Cancel", role: .cancel) {
+                viewModel.cancelPinPrompt()
+            }
+        } message: {
+            Text("Enter the 6-digit code displayed on your Apple TV / device screen.")
+        }
+        .sheet(isPresented: $viewModel.isShareSheetPresented) {
+            if let fileURL = viewModel.shareSheetURL {
+                ActivityViewController(activityItems: [fileURL])
             }
         }
     }

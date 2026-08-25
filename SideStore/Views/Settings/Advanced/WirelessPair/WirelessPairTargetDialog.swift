@@ -33,6 +33,7 @@ struct WirelessPairTargetDialog: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     SwiftUI.Button {
+                        debugLog("[WirelessPairTargetDialog] xmark close button tapped")
                         viewModel.dismissDialog()
                     } label: {
                         Image(systemName: "xmark")
@@ -46,6 +47,7 @@ struct WirelessPairTargetDialog: View {
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     SwiftUI.Button("Select") {
+                        debugLog("[WirelessPairTargetDialog] Select button tapped (mode=\(viewModel.dialogMode.rawValue))")
                         viewModel.confirmSelection()
                     }
                     .font(.headline.weight(.semibold))
@@ -114,6 +116,7 @@ struct WirelessPairTargetDialog: View {
         let tagColor: Color = iface.type.isVPN ? .green : (iface.type == .wifi ? .accentColor : .secondary)
         
         return SwiftUI.Button {
+            debugLog("[WirelessPairTargetDialog] Tapped local interface row: '\(iface.name)' [\(iface.type.rawValue)] (id=\(iface.id))")
             viewModel.selectServerInterface(id: iface.id)
         } label: {
             VStack(alignment: .leading, spacing: 6) {
@@ -222,6 +225,7 @@ struct WirelessPairTargetDialog: View {
         let portString = target.port > 0 ? String(format: "%u", target.port) : ""
         
         return SwiftUI.Button {
+            debugLog("[WirelessPairTargetDialog] Tapped discovered target row: '\(target.name)' [\(target.rawType)] (id=\(target.id))")
             viewModel.selectTarget(target)
         } label: {
             VStack(alignment: .leading, spacing: 6) {
@@ -300,6 +304,7 @@ struct WirelessPairTargetDialog: View {
         let portString = String(format: "%u", fallback.port)
         
         return SwiftUI.Button {
+            debugLog("[WirelessPairTargetDialog] Tapped configured fallback row (\(fallback.ip):\(portString))")
             viewModel.selectFallbackEndpoint()
         } label: {
             VStack(alignment: .leading, spacing: 6) {

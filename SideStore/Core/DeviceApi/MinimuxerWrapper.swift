@@ -580,12 +580,29 @@ public final class WirelessPairWrapper {
         }
     }
     
+    public var onRequestPin: ((@escaping (String) -> Void) -> Void)? {
+        get {
+            #if !targetEnvironment(simulator)
+            return minimuxer.wirelessPair.onRequestPin
+            #else
+            return nil
+            #endif
+        }
+        set {
+            #if !targetEnvironment(simulator)
+            minimuxer.wirelessPair.onRequestPin = newValue
+            #endif
+        }
+    }
+    
     public func start(
         outPath: String,
         completion: @escaping (Result<MinimuxerPairedDevice, Error>) -> Void
     ) {
+        debugLog("[WirelessPairWrapper] start(outPath: '\(outPath)')")
         #if !targetEnvironment(simulator)
         minimuxer.wirelessPair.start(outPath: outPath) { result in
+            debugLog("[WirelessPairWrapper] start callback received: result=\(result)")
             switch result {
             case .success(let device):
                 completion(.success(MinimuxerPairedDevice(
@@ -611,6 +628,7 @@ public final class WirelessPairWrapper {
         outPath: String,
         completion: @escaping (Result<MinimuxerPairedDevice, Error>) -> Void
     ) {
+        debugLog("[WirelessPairWrapper] trigger(targetIp: '\(targetIp)', targetPort: \(targetPort), hostName: '\(hostName)', hostModel: '\(hostModel)', outPath: '\(outPath)')")
         #if !targetEnvironment(simulator)
         minimuxer.wirelessPair.trigger(
             targetIp: targetIp,
@@ -619,6 +637,7 @@ public final class WirelessPairWrapper {
             hostModel: hostModel,
             outPath: outPath
         ) { result in
+            debugLog("[WirelessPairWrapper] trigger callback received: result=\(result)")
             switch result {
             case .success(let device):
                 completion(.success(MinimuxerPairedDevice(
@@ -637,6 +656,7 @@ public final class WirelessPairWrapper {
     }
     
     public func stop() {
+        debugLog("[WirelessPairWrapper] stop() invoked")
         #if !targetEnvironment(simulator)
         minimuxer.wirelessPair.stop()
         #endif
