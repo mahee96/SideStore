@@ -348,11 +348,14 @@ struct SideJITServerConfigView: View {
     private func refreshServerState() {
         guard isServerEnabled else {
             connectionStatus = .disabled
+            debugLog("[SideJITConfig] refreshServerState: SideJITServer is disabled")
             return
         }
         connectionStatus = .checking
+        debugLog("[SideJITConfig] refreshServerState: resolving server URL (customAddress='\(customAddress)')")
         Task {
             let serverURL = await SideJITManager.shared.resolveServerURL()
+            debugLog("[SideJITConfig] refreshServerState: resolved serverURL='\(serverURL)'")
             await MainActor.run {
                 self.resolvedAddress = serverURL
             }
@@ -362,6 +365,7 @@ struct SideJITServerConfigView: View {
     
     private func performPing(to serverURL: String) async {
         guard let url = URL(string: serverURL) else {
+            debugLog("[SideJITConfig] performPing: invalid URL string '\(serverURL)'")
             await MainActor.run {
                 self.connectionStatus = .disconnected(reason: "Invalid URL")
             }
@@ -371,12 +375,14 @@ struct SideJITServerConfigView: View {
         let start = Date()
         var request = URLRequest(url: url)
         request.timeoutInterval = AppConstants.SideJIT.timeout
+        debugLog("[SideJITConfig] performPing: sending GET request to \(url) (timeout: \(AppConstants.SideJIT.timeout)s)")
         
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             let latency = Int(Date().timeIntervalSince(start) * 1000)
             let status = (response as? HTTPURLResponse)?.statusCode ?? 200
             let payload = String(data: data, encoding: .utf8) ?? "<binary data>"
+            debugLog("[SideJITConfig] performPing: success from \(url) (status=\(status), latency=\(latency)ms, bytes=\(data.count), payload='\(payload.prefix(120))')")
             
             await MainActor.run {
                 if status >= 200 && status < 400 {
@@ -394,6 +400,8 @@ struct SideJITServerConfigView: View {
                 )
             }
         } catch {
+            let latency = Int(Date().timeIntervalSince(start) * 1000)
+            debugLog("[SideJITConfig] performPing: request failed for \(url) after \(latency)ms with error: \(error)")
             await MainActor.run {
                 self.connectionStatus = .disconnected(reason: error.localizedDescription)
                 self.latestLog = SideJITResponseLog(
@@ -401,7 +409,7 @@ struct SideJITServerConfigView: View {
                     endpoint: "/",
                     httpMethod: "GET",
                     statusCode: 0,
-                    latencyMs: Int(Date().timeIntervalSince(start) * 1000),
+                    latencyMs: latency,
                     rawPayload: "Error: \(error.localizedDescription)"
                 )
             }
@@ -410,6 +418,7 @@ struct SideJITServerConfigView: View {
     
     private func testHealthCheck() {
         activeAction = .ping
+        debugLog("[SideJITConfig] testHealthCheck: user triggered Test Connection (Ping)")
         Task {
             let serverURL = await SideJITManager.shared.resolveServerURL()
             await performPing(to: serverURL)
@@ -421,9 +430,11 @@ struct SideJITServerConfigView: View {
     
     private func triggerDeviceRefresh() {
         activeAction = .refresh
+        debugLog("[SideJITConfig] triggerDeviceRefresh: user triggered Refresh Devices")
         Task {
             let serverURL = await SideJITManager.shared.resolveServerURL()
             guard let url = URL(string: "\(serverURL)/re/") else {
+                debugLog("[SideJITConfig] triggerDeviceRefresh: invalid URL for '\(serverURL)/re/'")
                 await MainActor.run { self.activeAction = nil }
                 return
             }
@@ -431,12 +442,14 @@ struct SideJITServerConfigView: View {
             let start = Date()
             var request = URLRequest(url: url)
             request.timeoutInterval = AppConstants.SideJIT.timeout
+            debugLog("[SideJITConfig] triggerDeviceRefresh: requesting \(url)")
             
             do {
                 let (data, response) = try await URLSession.shared.data(for: request)
                 let latency = Int(Date().timeIntervalSince(start) * 1000)
                 let status = (response as? HTTPURLResponse)?.statusCode ?? 200
                 let payload = String(data: data, encoding: .utf8) ?? ""
+                debugLog("[SideJITConfig] triggerDeviceRefresh: received status=\(status), latency=\(latency)ms, payload='\(payload)'")
                 
                 await MainActor.run {
                     if status >= 200 && status < 400 {
@@ -453,13 +466,15 @@ struct SideJITServerConfigView: View {
                     self.activeAction = nil
                 }
             } catch {
+                let latency = Int(Date().timeIntervalSince(start) * 1000)
+                debugLog("[SideJITConfig] triggerDeviceRefresh: request failed after \(latency)ms with error: \(error)")
                 await MainActor.run {
                     self.latestLog = SideJITResponseLog(
                         timestamp: Date(),
                         endpoint: "/re/",
                         httpMethod: "GET",
                         statusCode: 0,
-                        latencyMs: Int(Date().timeIntervalSince(start) * 1000),
+                        latencyMs: latency,
                         rawPayload: "Error: \(error.localizedDescription)"
                     )
                     self.activeAction = nil
@@ -470,9 +485,11 @@ struct SideJITServerConfigView: View {
     
     private func queryVersionEndpoint() {
         activeAction = .version
+        debugLog("[SideJITConfig] queryVersionEndpoint: user triggered Query Versions")
         Task {
             let serverURL = await SideJITManager.shared.resolveServerURL()
             guard let url = URL(string: "\(serverURL)/ver/") else {
+                debugLog("[SideJITConfig] queryVersionEndpoint: invalid URL for '\(serverURL)/ver/'")
                 await MainActor.run { self.activeAction = nil }
                 return
             }
@@ -480,12 +497,14 @@ struct SideJITServerConfigView: View {
             let start = Date()
             var request = URLRequest(url: url)
             request.timeoutInterval = AppConstants.SideJIT.timeout
+            debugLog("[SideJITConfig] queryVersionEndpoint: requesting \(url)")
             
             do {
                 let (data, response) = try await URLSession.shared.data(for: request)
                 let latency = Int(Date().timeIntervalSince(start) * 1000)
                 let status = (response as? HTTPURLResponse)?.statusCode ?? 200
                 let payload = String(data: data, encoding: .utf8) ?? ""
+                debugLog("[SideJITConfig] queryVersionEndpoint: received status=\(status), latency=\(latency)ms, payload='\(payload)'")
                 
                 await MainActor.run {
                     self.latestLog = SideJITResponseLog(
@@ -499,13 +518,15 @@ struct SideJITServerConfigView: View {
                     self.activeAction = nil
                 }
             } catch {
+                let latency = Int(Date().timeIntervalSince(start) * 1000)
+                debugLog("[SideJITConfig] queryVersionEndpoint: request failed after \(latency)ms with error: \(error)")
                 await MainActor.run {
                     self.latestLog = SideJITResponseLog(
                         timestamp: Date(),
                         endpoint: "/ver/",
                         httpMethod: "GET",
                         statusCode: 0,
-                        latencyMs: Int(Date().timeIntervalSince(start) * 1000),
+                        latencyMs: latency,
                         rawPayload: "Error: \(error.localizedDescription)"
                     )
                     self.activeAction = nil

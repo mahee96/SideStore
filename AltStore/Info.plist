@@ -166,8 +166,6 @@
 		<string>_coredevice._tcp</string>
 		<string>_appletv-v2._tcp</string>
 		<string>_apple-mobdev._tcp</string>
-		<string>_sidejit._tcp</string>
-		<string>_sidejitserver._tcp</string>
 		<string>_jitstreamer._tcp</string>
 		<string>_matter._tcp</string>
 		<string>_matterc._udp</string>
