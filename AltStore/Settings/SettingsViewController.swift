@@ -877,15 +877,7 @@ extension SettingsViewController
     {
         let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
-        if #available(iOS 14, *) {}
-        else if let cell = cell as? InsetGroupTableViewCell,
-                indexPath.section == Section.appRefresh.rawValue,
-                indexPath.row == AppRefreshRow.backgroundRefresh.rawValue
-        {
-            // Only one row is visible pre-iOS 14.
-            cell.style = .single
-        }
-        
+
         if AppRefreshRow.AllCases().count == 1
         {
             if let cell = cell as? InsetGroupTableViewCell,

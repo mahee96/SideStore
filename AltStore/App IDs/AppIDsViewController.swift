@@ -567,7 +567,7 @@ private extension AppIDsViewController
                 await MainActor.run {
                     if let finalError = finalError
                     {
-                        Logger.sideload.error("Failed to delete App ID: \(finalError.localizedDescription)")
+                        debugLog("[AppIDsViewController] Failed to delete App ID: \(finalError.localizedDescription)")
                         
                         hostingController.dismiss(animated: true) {
                             let alertTitle = NSLocalizedString("Delete Failed", comment: "")

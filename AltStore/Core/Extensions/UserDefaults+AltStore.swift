@@ -343,9 +343,7 @@ public extension UserDefaults
         (ProcessInfo.processInfo.isOperatingSystemAtLeast(ios14) && !ProcessInfo.processInfo.isOperatingSystemAtLeast(ios15_7_2)) ||
         (ProcessInfo.processInfo.isOperatingSystemAtLeast(ios16) && !ProcessInfo.processInfo.isOperatingSystemAtLeast(ios16_2))
         
-        // Pre-iOS 15 doesn't support custom sorting, so default to sorting by name.
-        // Otherwise, default to `default` sorting (a.k.a. "source order").
-        let preferredAppSorting: AppSorting = if #available(iOS 15, *) { .default } else { .name }
+        let preferredAppSorting: AppSorting = .default
         
         let defaults = [
             // TODO: @mahee96: need to retire since irrelevant in ios 15+
