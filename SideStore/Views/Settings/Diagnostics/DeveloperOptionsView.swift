@@ -492,6 +492,7 @@ struct DeveloperOptionsView: View {
     #if DEBUG
     private func showImportAccountPicker() {
         guard let top = topViewController() else { return }
+        #if !os(tvOS)
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [UTType(filenameExtension: "sideconf")!, .json], asCopy: false)
         ImportExport.documentPickerHandler = DocumentPickerHandler { selectedURL in
             guard let url = selectedURL else { return }
@@ -507,6 +508,24 @@ struct DeveloperOptionsView: View {
         }
         picker.delegate = ImportExport.documentPickerHandler
         top.present(picker, animated: true)
+        #else
+        TVWebFileTransferManager.shared.startImport(
+            acceptedExtensions: ["sideconf", "json"],
+            title: "Import Account",
+            presentingVC: top
+        ) { selectedURL in
+            guard let url = selectedURL else { return }
+            do {
+                try ImportExport.importAccountJSON(from: url)
+                let email = AuthManager.shared.currentAppleID ?? ""
+                let toastView = ToastView(text: NSLocalizedString("Successfully imported '\(email)'!", comment: ""), detailText: "SideStore should be fully operational!")
+                toastView.show(in: top)
+            } catch {
+                let toastView = ToastView(text: NSLocalizedString("Failed to import account JSON!", comment: ""), detailText: error.localizedDescription)
+                toastView.show(in: top)
+            }
+        }
+        #endif
     }
     
     private func exportAccountJSON(password: String) {
@@ -526,8 +545,12 @@ struct DeveloperOptionsView: View {
         let tmpPath = FileManager.default.temporaryDirectory.appendingPathComponent("\(account.email).sideconf")
         do {
             try accountData.write(to: tmpPath)
+            #if !os(tvOS)
             let exportVC = UIDocumentPickerViewController(forExporting: [tmpPath], asCopy: false)
             top.present(exportVC, animated: true)
+            #else
+            TVWebFileTransferManager.shared.startExport(fileURL: tmpPath, title: "Export Account", presentingVC: top)
+            #endif
         } catch {
             let toastView = ToastView(text: NSLocalizedString("Failed to export account!", comment: ""), detailText: error.localizedDescription)
             toastView.show(in: top)

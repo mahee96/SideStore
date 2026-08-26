@@ -126,7 +126,11 @@ struct AppInfoView: View {
                     }
                 }
             }
+            #if !os(tvOS)
             .listStyle(InsetGroupedListStyle())
+            #else
+            .listStyle(GroupedListStyle())
+            #endif
             .navigationTitle("App Details")
             .navigationBarItems(trailing: SwiftUI.Button("Close") {
                 presentationMode.wrappedValue.dismiss()
@@ -200,7 +204,11 @@ struct ProvisioningProfileDetailView: View {
                 }
             }
         }
+        #if !os(tvOS)
         .listStyle(InsetGroupedListStyle())
+        #else
+        .listStyle(GroupedListStyle())
+        #endif
         .navigationTitle("Profile Details")
         .interactiveDismissDisabled(true)
     }
@@ -289,6 +297,7 @@ struct ProfileInfoRow: View {
                 .foregroundColor(valueColor)
                 .multilineTextAlignment(.trailing)
         }
+        #if !os(tvOS)
         .contextMenu {
             SwiftUI.Button {
                 UIPasteboard.general.string = value
@@ -296,6 +305,7 @@ struct ProfileInfoRow: View {
                 Label("Copy", systemImage: "doc.on.doc")
             }
         }
+        #endif
     }
 }
 
@@ -314,6 +324,7 @@ struct EntitlementRow: View {
                 .foregroundColor(.primary)
         }
         .padding(.vertical, 4)
+        #if !os(tvOS)
         .contextMenu {
             SwiftUI.Button {
                 UIPasteboard.general.string = formatValue(value)
@@ -326,6 +337,7 @@ struct EntitlementRow: View {
                 Label("Copy Key", systemImage: "doc.on.doc")
             }
         }
+        #endif
     }
     
     private func formatValue(_ val: Any) -> String {
@@ -349,6 +361,7 @@ struct DeviceIDsView: View {
             HStack {
                 Text(udid)
                     .font(.system(.body, design: .monospaced))
+                #if !os(tvOS)
                 Spacer()
                 SwiftUI.Button(action: {
                     UIPasteboard.general.string = udid
@@ -357,6 +370,7 @@ struct DeviceIDsView: View {
                         .foregroundColor(.blue)
                 }
                 .buttonStyle(BorderlessButtonStyle())
+                #endif
             }
         }
         .navigationTitle("Device IDs")
@@ -500,7 +514,11 @@ struct ExtensionInfoView: View {
                 }
             }
         }
+        #if !os(tvOS)
         .listStyle(InsetGroupedListStyle())
+        #else
+        .listStyle(GroupedListStyle())
+        #endif
         .navigationTitle(appExtension.name)
         .interactiveDismissDisabled(true)
     }
@@ -622,9 +640,13 @@ struct BundleInspectorView: View {
                 }
             }
         }
+        #if !os(tvOS)
         .listStyle(InsetGroupedListStyle())
-        .navigationTitle(displayName)
         .navigationBarTitleDisplayMode(.inline)
+        #else
+        .listStyle(GroupedListStyle())
+        #endif
+        .navigationTitle(displayName)
         .interactiveDismissDisabled(true)
     }
 

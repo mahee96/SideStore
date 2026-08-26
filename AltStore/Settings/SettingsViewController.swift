@@ -12,7 +12,9 @@ import SwiftUI
 import MessageUI
 #endif
 import Intents
+#if !os(tvOS)
 import IntentsUI
+#endif
 
 import SemanticVersion
 @preconcurrency import AltSign
@@ -133,9 +135,11 @@ final class SettingsViewController: UITableViewController
     
     @IBOutlet private var recreateDatabaseSwitch: UISwitch!
     
+    #if !os(tvOS)
     override var preferredStatusBarStyle: UIStatusBarStyle {
         return .lightContent
     }
+    #endif
     
     private static var exportDBInProgress = false
     private static var deleteDBInProgress = false
@@ -678,6 +682,7 @@ private extension SettingsViewController
         UserDefaults.standard.responseCachingDisabled = sender.isOn
     }
     
+    #if !os(tvOS)
     func addRefreshAppsShortcut()
     {
         guard let shortcut = INShortcut(intent: INInteraction.refreshAllApps().intent) else { return }
@@ -687,6 +692,7 @@ private extension SettingsViewController
         viewController.modalPresentationStyle = .formSheet
         self.present(viewController, animated: true, completion: nil)
     }
+    #endif
     
     func clearCache()
     {
@@ -983,7 +989,9 @@ extension SettingsViewController
             case .disableAppLimit: break
             case .addToSiri:
 //                guard #available(iOS 14, *) else { return }   // our min deployment is iOS 15 now :) so commented out
+                #if !os(tvOS)
                 self.addRefreshAppsShortcut()
+                #endif
             }
             
         case .techyThings:
@@ -1237,6 +1245,7 @@ extension SettingsViewController: UIGestureRecognizerDelegate
     }
 }
 
+#if !os(tvOS)
 extension SettingsViewController: INUIAddVoiceShortcutViewControllerDelegate
 {
     func addVoiceShortcutViewController(_ controller: INUIAddVoiceShortcutViewController, didFinishWith voiceShortcut: INVoiceShortcut?, error: Error?)
@@ -1264,3 +1273,4 @@ extension SettingsViewController: INUIAddVoiceShortcutViewControllerDelegate
         controller.dismiss(animated: true, completion: nil)
     }
 }
+#endif

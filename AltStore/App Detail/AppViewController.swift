@@ -44,6 +44,7 @@ final class AppViewController: UIViewController
     private var _backgroundBlurEffect: UIBlurEffect?
     private var _backgroundBlurTintColor: UIColor?
     
+    #if !os(tvOS)
     private var _preferredStatusBarStyle: UIStatusBarStyle = .default
     private var isNavigationBarHidden = true
     
@@ -58,6 +59,9 @@ final class AppViewController: UIViewController
             return _preferredStatusBarStyle
         }
     }
+    #else
+    private var isNavigationBarHidden = true
+    #endif
     
     override func viewDidLoad()
     {
@@ -218,6 +222,7 @@ final class AppViewController: UIViewController
                 
         let statusBarHeight: Double
 
+        #if !os(tvOS)
         if let navigationController, navigationController.presentingViewController != nil, navigationController.modalPresentationStyle != .fullScreen
         {
             statusBarHeight = 20
@@ -230,6 +235,9 @@ final class AppViewController: UIViewController
         {
             statusBarHeight = 0
         }
+        #else
+        statusBarHeight = 0
+        #endif
 
         let cornerRadius = self.contentViewControllerShadowView.layer.cornerRadius
         
@@ -467,6 +475,7 @@ private extension AppViewController
         
         self.updateNavigationBarAppearance(isHidden: false)
         
+        #if !os(tvOS)
         if self.traitCollection.userInterfaceStyle == .dark
         {
             self._preferredStatusBarStyle = .lightContent
@@ -480,6 +489,7 @@ private extension AppViewController
         {
             self.navigationController?.setNeedsStatusBarAppearanceUpdate()
         }
+        #endif
     }
     
     func hideNavigationBar()
@@ -494,12 +504,14 @@ private extension AppViewController
         
         self.updateNavigationBarAppearance(isHidden: true)
         
+        #if !os(tvOS)
         self._preferredStatusBarStyle = .lightContent
         
         if #unavailable(iOS 17)
         {
             self.navigationController?.setNeedsStatusBarAppearanceUpdate()
         }
+        #endif
     }
     
     // Copied from HeaderContentViewController

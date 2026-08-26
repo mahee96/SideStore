@@ -940,11 +940,24 @@ private extension MyAppsViewController
     @IBAction func sideloadApp(_ sender: UIBarButtonItem)
     {
         Task { @MainActor in
+            #if !os(tvOS)
             let supportedTypes = UTType.types(tag: "ipa", tagClass: .filenameExtension, conformingTo: nil)
             
             let documentPickerViewController = UIDocumentPickerViewController(forOpeningContentTypes: supportedTypes, asCopy: true)
             documentPickerViewController.delegate = self
             self.present(documentPickerViewController, animated: true, completion: nil)
+            #else
+            TVWebFileTransferManager.shared.startImport(
+                acceptedExtensions: ["ipa"],
+                title: "Sideload IPA",
+                presentingVC: self
+            ) { [weak self] fileURL in
+                guard let fileURL = fileURL else { return }
+                self?.sideloadApp(at: fileURL) { result in
+                    debugLog("Sideloaded app at \(fileURL) with result: \(result)")
+                }
+            }
+            #endif
         }
     }
     
@@ -1562,12 +1575,16 @@ private extension MyAppsViewController
     {
         guard let backupURL = FileManager.default.backupDirectoryURL(for: installedApp) else { return }
         
+        #if !os(tvOS)
         let documentPicker = UIDocumentPickerViewController(forExporting: [backupURL], asCopy: true)
         
         // Don't set delegate to avoid conflicting with import callbacks.
         // documentPicker.delegate = self
         
         self.present(documentPicker, animated: true, completion: nil)
+        #else
+        TVWebFileTransferManager.shared.startExport(fileURL: backupURL, title: "Export App Backup", presentingVC: self)
+        #endif
     }
     
     func deleteBackup(for installedApp: InstalledApp)
@@ -2677,6 +2694,7 @@ extension MyAppsViewController: NSFetchedResultsControllerDelegate
     }
 }
 
+#if !os(tvOS)
 extension MyAppsViewController: UIDocumentPickerDelegate
 {
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL])
@@ -2688,6 +2706,7 @@ extension MyAppsViewController: UIDocumentPickerDelegate
         }
     }
 }
+#endif
 
 extension MyAppsViewController: UIViewControllerPreviewingDelegate
 {

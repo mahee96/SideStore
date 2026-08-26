@@ -163,7 +163,9 @@ final class CollapsingMarkdownView: UIView {
     
     private func initialize() {
         // Configure text view
+        #if !os(tvOS)
         textView.isEditable = false
+        #endif
         textView.isScrollEnabled = false
         textView.textContainerInset = .zero
         textView.textContainer.lineFragmentPadding = 0
@@ -174,8 +176,10 @@ final class CollapsingMarkdownView: UIView {
         textView.isSelectable = true
         textView.delegate = self
         
+        #if !os(tvOS)
         // Important: This prevents selection handles from appearing
         textView.dataDetectorTypes = .link
+        #endif
     
         // Configure markdown parser
         configureMarkdownParser()
@@ -305,12 +309,14 @@ final class CollapsingMarkdownView: UIView {
 }
 
 extension CollapsingMarkdownView: UITextViewDelegate {
+    #if !os(tvOS)
     // This enables tapping on links while preventing text selection
     func textView(_ textView: UITextView, shouldInteractWith URL: URL, in characterRange: NSRange, interaction: UITextItemInteraction) -> Bool {
         // Open the URL using UIApplication
         UIApplication.shared.open(URL)
         return false // Return false to prevent the default behavior
     }
+    #endif
     
     // This prevents text selection
     func textViewDidChangeSelection(_ textView: UITextView) {

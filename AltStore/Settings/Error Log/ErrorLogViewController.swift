@@ -35,9 +35,11 @@ final class ErrorLogViewController: UITableViewController
     
     private var _exportedLogURL: URL?
     
+    #if !os(tvOS)
     override var preferredStatusBarStyle: UIStatusBarStyle {
         return .lightContent
     }
+    #endif
     
     override func viewDidLoad()
     {
@@ -145,7 +147,9 @@ private extension ErrorLogViewController
             cell.appIconImageView.layer.borderWidth = 1.0 / displayScale
                         
             cell.menuButton.isHidden = true
-            cell.menuButton.menu = nil
+            if #available(iOS 14.0, tvOS 17.0, *) {
+                cell.menuButton.menu = nil
+            }
             cell.selectionStyle = .none
 
             // Include errorDescriptionTextView's text in cell summary.
@@ -244,12 +248,14 @@ private extension ErrorLogViewController
         let consoleLogController = UIHostingController(rootView: consoleLogView)
         
         // Configure the bottom sheet presentation
+        #if !os(tvOS)
         consoleLogController.modalPresentationStyle = .pageSheet
         if let sheet = consoleLogController.sheetPresentationController {
             sheet.detents = [.medium(), .large()]  // You can adjust the size of the sheet (medium/large)
             sheet.prefersGrabberVisible = true    // Optional: Shows a grabber at the top of the sheet
             sheet.selectedDetentIdentifier = .large  // Default size when presented
         }
+        #endif
         
         // Present the bottom sheet
         present(consoleLogController, animated: true, completion: nil)
@@ -286,16 +292,20 @@ private extension ErrorLogViewController
     
     func copyErrorMessage(for loggedError: LoggedError)
     {
+        #if !os(tvOS)
         let nsError = loggedError.error as NSError
         let errorMessage = [nsError.localizedDescription, nsError.localizedRecoverySuggestion].compactMap { $0 }.joined(separator: "\n\n")
         
         UIPasteboard.general.string = errorMessage
+        #endif
     }
     
     func copyErrorCode(for loggedError: LoggedError)
     {
+        #if !os(tvOS)
         let errorCode = loggedError.error.localizedErrorCode
         UIPasteboard.general.string = errorCode
+        #endif
     }
     
     func searchFAQ(for loggedError: LoggedError)
@@ -311,6 +321,7 @@ private extension ErrorLogViewController
 
 extension ErrorLogViewController
 {
+    @available(iOS 13.0, tvOS 17.0, *)
     override func tableView(_ tableView: UITableView, contextMenuConfigurationForRowAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration?
     {
         let loggedError = self.dataSource.item(at: indexPath)
@@ -343,6 +354,7 @@ extension ErrorLogViewController
         }
     }
     
+    #if !os(tvOS)
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration?
     {
         let deleteAction = UIContextualAction(style: .destructive, title: NSLocalizedString("Delete", comment: "")) { _, _, completion in
@@ -372,6 +384,7 @@ extension ErrorLogViewController
         configuration.performsFirstActionWithFullSwipe = false
         return configuration
     }
+    #endif
     
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String?
     {
@@ -408,15 +421,17 @@ extension ErrorLogViewController
     }
     private func updateButtonInteractivity()
     {
-        for case let cell as ErrorLogTableViewCell in self.tableView.visibleCells
-        {
-            if self.isScrolling
+        if #available(iOS 14.0, tvOS 17.0, *) {
+            for case let cell as ErrorLogTableViewCell in self.tableView.visibleCells
             {
-                cell.menuButton.showsMenuAsPrimaryAction = false
-            }
-            else
-            {
-                cell.menuButton.showsMenuAsPrimaryAction = true
+                if self.isScrolling
+                {
+                    cell.menuButton.showsMenuAsPrimaryAction = false
+                }
+                else
+                {
+                    cell.menuButton.showsMenuAsPrimaryAction = true
+                }
             }
         }
     }

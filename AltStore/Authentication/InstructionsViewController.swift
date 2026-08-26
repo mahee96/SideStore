@@ -17,9 +17,11 @@ final class InstructionsViewController: UIViewController
     @IBOutlet private var contentStackView: UIStackView!
     @IBOutlet private var dismissButton: UIButton!
     
+    #if !os(tvOS)
     override var preferredStatusBarStyle: UIStatusBarStyle {
         return .lightContent
     }
+    #endif
     
     override func viewDidLoad()
     {

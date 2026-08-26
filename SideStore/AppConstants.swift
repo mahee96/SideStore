@@ -45,9 +45,10 @@ public enum AppConstants {
         public static let defaultServerURL = "http://\(bonjourServiceName).\(bonjourServiceType).local:8080".lowercased()
     }
     
-    public enum PairingWebServer {
+    public enum WebTransferServer {
         public static let defaultPort: UInt16 = 8080
     }
+    public typealias PairingWebServer = WebTransferServer
 
     public static let pairingFileName = "ALTPairingFile.mobiledevicepairing"
     public static let accountConfigurationFileName = "Account.sideconf"

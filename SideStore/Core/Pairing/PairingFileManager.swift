@@ -197,62 +197,45 @@ extension PairingFileManager {
             self.completion = nil
         }
 
-        var webURLString = ""
-        let serverURL = PairingWebUploadServer.shared.start { [weak self, weak vc] pairingString in
+        let title = isRetry ? NSLocalizedString("Invalid Pairing File", comment: "") : NSLocalizedString("Pairing File Required", comment: "")
+        TVWebFileTransferManager.shared.startImport(
+            acceptedExtensions: ["mobiledevicepairing", "plist", "xml"],
+            title: title,
+            presentingVC: vc
+        ) { [weak self] tempURL in
             guard let self = self else { return }
+            guard let tempURL = tempURL,
+                  let data = try? Data(contentsOf: tempURL),
+                  let pairingString = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) else {
+                if let completion = self.completion {
+                    completion(nil)
+                } else {
+                    self.showPairingWarningAndProceed(on: vc)
+                }
+                return
+            }
+
             do {
                 try self.savePairingFile(contents: pairingString)
                 let documentsPath = FileManager.default.documentsDirectory.appendingPathComponent(Self.pairingFileName)
-                PairingWebUploadServer.shared.stop()
-                vc?.presentedViewController?.dismiss(animated: true) {
-                    if let completion = self.completion {
-                        completion(documentsPath)
-                    } else {
-                        Task.detached {
-                            do {
-                                try await AppBootManager.shared.startMinimuxer(pairingFile: pairingString)
-                            } catch {
-                                debugLog("[PairingFile] startMinimuxer failed: \(error)")
-                            }
+                if let completion = self.completion {
+                    completion(documentsPath)
+                } else {
+                    Task.detached {
+                        do {
+                            try await AppBootManager.shared.startMinimuxer(pairingFile: pairingString)
+                        } catch {
+                            debugLog("[PairingFile] startMinimuxer failed: \(error)")
                         }
                     }
                 }
             } catch {
                 debugLog("[PairingFile] Failed to save uploaded pairing file: \(error)")
+                if let completion = self.completion {
+                    completion(nil)
+                }
             }
         }
-
-        if let serverURL = serverURL {
-            webURLString = serverURL
-        }
-
-        let title = isRetry ? NSLocalizedString("Invalid Pairing File", comment: "") : NSLocalizedString("Pairing File Required", comment: "")
-        let message = !webURLString.isEmpty
-            ? NSLocalizedString("To pair SideStore on Apple TV, open this URL on your iPhone, iPad, or Mac on the same Wi-Fi network:\n\n\(webURLString)\n\nand upload your ALTPairingFile.mobiledevicepairing.", comment: "")
-            : NSLocalizedString("Apple TV requires a pairing file. Please upload a pairing file or check Help for instructions.", comment: "")
-
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Help", comment: ""), style: .default) { _ in
-            if let url = URL(string: "https://docs.sidestore.io/docs/advanced/pairing-file") { UIApplication.shared.open(url) }
-            PairingWebUploadServer.shared.stop()
-            if completion == nil {
-                sleep(2); exit(0)
-            } else {
-                completion?(nil)
-            }
-        })
-
-        let cancelTitle = isRetry ? NSLocalizedString("Skip", comment: "") : NSLocalizedString("Cancel", comment: "")
-        alert.addAction(UIAlertAction(title: cancelTitle, style: .cancel) { _ in
-            PairingWebUploadServer.shared.stop()
-            if completion == nil {
-                self.showPairingWarningAndProceed(on: vc)
-            } else {
-                completion?(nil)
-            }
-        })
-
-        vc.present(alert, animated: true)
     }
 
     func showPairingWarningAndProceed(on vc: UIViewController) {
