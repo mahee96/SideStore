@@ -131,6 +131,9 @@
 			membershipExceptions = (
 				Utils/datastructures/SingletonGenericMap.swift,
 				Utils/pagination/PaginationDataHolder.swift,
+				Widget/WidgetData/WidgetDataManager.swift,
+				Widget/WidgetData/WidgetLogManager.swift,
+				Widget/WidgetData/WidgetModels.swift,
 			);
 			target = BF989166250AABF3002ACF50 /* AltWidgetExtension */;
 		};

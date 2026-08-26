@@ -9,7 +9,11 @@
 import SwiftUI
 import CoreData
 import UniformTypeIdentifiers
+#if !os(tvOS)
 import WidgetKit
+#else
+import TVServices
+#endif
 @preconcurrency import AltSign
 
 private extension Color {
@@ -81,7 +85,12 @@ struct DeveloperOptionsView: View {
                         
                         divider
                         
-                        toggleRow(title: "Widget Verbose Logging", isOn: Binding(
+                        #if !os(tvOS)
+                        let title = "Widget Verbose Logging"
+                        #else
+                        let title = "Top Shelf Verbose Logging"
+                        #endif
+                        toggleRow(title: title, isOn: Binding(
                             get: { isAltWidgetVerboseLoggingEnabled },
                             set: { newValue in
                                 isAltWidgetVerboseLoggingEnabled = newValue
@@ -169,7 +178,12 @@ struct DeveloperOptionsView: View {
                 
                 // Section: Widget Options
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("WIDGET OPTIONS")
+                    #if !os(tvOS)
+                    let title = "WIDGET OPTIONS"
+                    #else
+                    let title = "TOP SHELF OPTIONS"
+                    #endif
+                    Text(title)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.6))
                         .padding(.horizontal, 16)
@@ -180,7 +194,13 @@ struct DeveloperOptionsView: View {
                                 Image(systemName: "arrow.clockwise")
                                     .font(.system(size: 18, weight: .semibold))
                                     .foregroundColor(.white)
-                                Text("Reload All Widgets")
+
+                                #if !os(tvOS)
+                                let title = "Reload All Widgets"
+                                #else
+                                let title = "Reload Top Shelf"
+                                #endif
+                                Text(title)
                                     .font(.system(size: 17, weight: .bold))
                                     .foregroundColor(.white)
                                 Spacer()
@@ -196,7 +216,13 @@ struct DeveloperOptionsView: View {
                                 Image(systemName: "arrow.triangle.2.circlepath")
                                     .font(.system(size: 18, weight: .semibold))
                                     .foregroundColor(.white)
-                                Text("Rotate Widget Log")
+                                
+                                #if !os(tvOS)
+                                let title = "Rotate Widget Log"
+                                #else
+                                let title = "Rotate Top Shelf Log"
+                                #endif
+                                Text(title)
                                     .font(.system(size: 17, weight: .bold))
                                     .foregroundColor(.white)
                                 Spacer()
@@ -600,21 +626,34 @@ struct DeveloperOptionsView: View {
     }
     
     private func triggerReloadAllWidgets() {
+        #if !os(tvOS)
         WidgetCenter.shared.reloadAllTimelines()
+        let title = NSLocalizedString("Reloaded All Widgets", comment: "")
+        let detail = "Triggered timeline refresh for all widgets."
+        #else
+        NotificationCenter.default.post(name: .TVTopShelfItemsDidChange, object: nil)
+        let title = NSLocalizedString("Reloaded Top Shelf", comment: "")
+        let detail = "Triggered Top Shelf refresh."
+        #endif
         if let top = topViewController() {
-            let toastView = ToastView(text: NSLocalizedString("Reloaded All Widgets", comment: ""), detailText: "Triggered timeline refresh for all widgets.")
+            let toastView = ToastView(text: title, detailText: detail)
             toastView.show(in: top)
         }
     }
     
     private func triggerRotateWidgetLog() {
         guard let top = topViewController() else { return }
+        #if !os(tvOS)
+        let logName = "Widget"
+        #else
+        let logName = "Top Shelf"
+        #endif
         do {
             if let rotatedURL = try WidgetLogManager.rotateLog() {
-                let toastView = ToastView(text: NSLocalizedString("Rotated Widget Log", comment: ""), detailText: "Saved to WidgetLogs/\(rotatedURL.lastPathComponent)")
+                let toastView = ToastView(text: NSLocalizedString("Rotated \(logName) Log", comment: ""), detailText: "Saved to WidgetLogs/\(rotatedURL.lastPathComponent)")
                 toastView.show(in: top)
             } else {
-                let toastView = ToastView(text: NSLocalizedString("Widget Log Empty", comment: ""), detailText: "Nothing to rotate.")
+                let toastView = ToastView(text: NSLocalizedString("\(logName) Log Empty", comment: ""), detailText: "Nothing to rotate.")
                 toastView.show(in: top)
             }
         } catch {
