@@ -141,10 +141,12 @@ class SourceDetailViewController: HeaderContentViewController<SourceHeaderView, 
             // Users can't remove default AltStore source, so hide buttons.
             self.navigationBarButton.isHidden = true
             
+            #if !os(tvOS)
             if #available(iOS 16, *)
             {
                 self.navigationItem.rightBarButtonItem?.isHidden = true
             }
+            #endif
         }
         else
         {
@@ -160,20 +162,24 @@ class SourceDetailViewController: HeaderContentViewController<SourceHeaderView, 
                 self.navigationBarButton.tintColor = self.source.effectiveTintColor?.adjustedForDisplay ?? .altPrimary
                 self.navigationBarButton.isHidden = false
                 
+                #if !os(tvOS)
                 if #available(iOS 16, *)
                 {
                     self.navigationItem.rightBarButtonItem?.isHidden = false
                 }
+                #endif
                 
             case false?:
                 title = NSLocalizedString("ADD", comment: "")
                 self.navigationBarButton.tintColor = self.source.effectiveTintColor?.adjustedForDisplay ?? .altPrimary
                 self.navigationBarButton.isHidden = false
                 
+                #if !os(tvOS)
                 if #available(iOS 16, *)
                 {
                     self.navigationItem.rightBarButtonItem?.isHidden = false
                 }
+                #endif
                 
             case nil:
                 title = ""

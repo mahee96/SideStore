@@ -100,7 +100,9 @@ private extension SourceDetailContentViewController
                 guard !source.newsItems.isEmpty else { return nil }
                 
                 // Estimate height closer to actual NewsCollectionViewCell height to prevent collapsed cards.
-                let heightDimension: NSCollectionLayoutDimension = if #available(iOS 17, *) { .uniformAcrossSiblings(estimate: 160) } else { .estimated(160) }
+                let heightDimension: NSCollectionLayoutDimension = if #available(iOS 17, tvOS 17, *) {
+                    .uniformAcrossSiblings(estimate: 160) } else { .estimated(160)
+                }
                 let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: heightDimension)
                 let item = NSCollectionLayoutItem(layoutSize: itemSize)
                 

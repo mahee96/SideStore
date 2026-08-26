@@ -33,7 +33,7 @@ extension MyAppsViewController
 
 // @livecontainer
 @objc(MyAppsViewController)
-class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
+class MyAppsViewController: UICollectionViewController
 {
     private let coordinator = NSFileCoordinator()
     private let operationQueue = OperationQueue()
@@ -108,9 +108,11 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
         self.collectionView.register(InstalledAppsCollectionHeaderView.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: "ActiveAppsHeader")
         self.collectionView.register(InstalledAppsCollectionHeaderView.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: "InactiveAppsHeader")
         
+        #if !os(tvOS)
         let refreshControl = UIRefreshControl()
         refreshControl.addTarget(self, action: #selector(MyAppsViewController.checkForUpdates(_:)), for: .primaryActionTriggered)
         self.collectionView.refreshControl = refreshControl
+        #endif
         
         self.sideloadingProgressView = UIProgressView(progressViewStyle: .bar)
         self.sideloadingProgressView.translatesAutoresizingMaskIntoConstraints = false
@@ -125,7 +127,9 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
                                          self.sideloadingProgressView.bottomAnchor.constraint(equalTo: navigationBar.bottomAnchor)])
         }
         
-        (self as PeekPopPreviewing).registerForPreviewing(with: self, sourceView: self.collectionView)
+        #if !os(tvOS)
+        self.registerForPreviewing(with: self, sourceView: self.collectionView)
+        #endif
         
         NotificationCenter.default.addObserver(self, selector: #selector(MyAppsViewController.didChangeAppIcon(_:)), name: UIApplication.didChangeAppIconNotification, object: nil)
         

@@ -38,7 +38,9 @@ final class InstructionsViewController: UIViewController
         
         if self.showsBottomButton
         {
+            #if !os(tvOS)
             self.navigationItem.hidesBackButton = true
+            #endif
         }
         else
         {

@@ -194,7 +194,9 @@ private extension AppIDsViewController
         
         if !isInitialLoading
         {
+            #if !os(tvOS)
             self.collectionView.refreshControl?.endRefreshing()
+            #endif
             self.activityIndicatorBarButtonItem.isIndicatingActivity = false
             
             let activeTeamType = DatabaseManager.shared.activeTeam()?.type
@@ -231,6 +233,7 @@ private extension AppIDsViewController
                 self.navigationItem.rightBarButtonItem = self.doneBarButtonItem
             }
             
+            #if !os(tvOS)
             if self.isEditingMode
             {
                 self.collectionView.refreshControl = nil
@@ -244,6 +247,7 @@ private extension AppIDsViewController
                     self.collectionView.refreshControl = refreshControl
                 }
             }
+            #endif
         }
         else
         {

@@ -39,7 +39,7 @@ private final class AppBannerFooterView: UICollectionReusableView
     }
 }
 
-class NewsViewController: UICollectionViewController, PeekPopPreviewing
+class NewsViewController: UICollectionViewController
 {
     // Nil == Show news from all sources.
     var source: Source?
@@ -101,11 +101,13 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
         self.collectionView.register(NewsCollectionViewCell.nib, forCellWithReuseIdentifier: RSTCellContentGenericCellIdentifier)
         self.collectionView.register(AppBannerFooterView.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionFooter, withReuseIdentifier: "AppBanner")
         
-        (self as PeekPopPreviewing).registerForPreviewing(with: self, sourceView: self.collectionView)
+        #if !os(tvOS)
+        self.registerForPreviewing(with: self, sourceView: self.collectionView)
         
         let refreshControl = UIRefreshControl(frame: .zero)
         refreshControl.addTarget(self, action: #selector(NewsViewController.updateSources), for: .primaryActionTriggered)
         self.collectionView.refreshControl = refreshControl
+        #endif
         
         self.retryButton = UIButton(type: .system)
         self.retryButton.titleLabel?.font = UIFont.preferredFont(forTextStyle: .body)
@@ -237,7 +239,9 @@ private extension NewsViewController
     @objc func updateSources()
     {
         AppManager.shared.updateAllSources() { result in
+            #if !os(tvOS)
             self.collectionView.refreshControl?.endRefreshing()
+            #endif
             
             guard case .failure(let error) = result else { return }
             

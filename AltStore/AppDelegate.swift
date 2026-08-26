@@ -389,6 +389,7 @@ extension AppDelegate
     
     func application(_ application: UIApplication, performFetchWithCompletionHandler backgroundFetchCompletionHandler: @escaping (UIBackgroundFetchResult) -> Void)
     {
+        #if !os(tvOS)
         if UserDefaults.standard.isBackgroundRefreshEnabled && !UserDefaults.standard.presentedLaunchReminderNotification
         {
             let threeHours: TimeInterval = 3 * 60 * 60
@@ -403,6 +404,7 @@ extension AppDelegate
             
             UserDefaults.standard.presentedLaunchReminderNotification = true
         }
+        #endif
         
         BackgroundTaskManager.shared.performExtendedBackgroundTask { (taskResult, taskCompletionHandler) in
             if let error = taskResult.error
@@ -500,6 +502,7 @@ private extension AppDelegate
                 let updates = try context.fetch(updatesFetchRequest)
                 let newsItems = try context.fetch(newsItemsFetchRequest)
                 
+                #if !os(tvOS)
                 for update in updates
                 {
                     guard let storeApp = update.storeApp, let latestSupportedVersion = storeApp.latestSupportedVersion, latestSupportedVersion.isSupported else { continue }
@@ -547,6 +550,18 @@ private extension AppDelegate
                     let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
                     UNUserNotificationCenter.current().add(request)
                 }
+                #else
+                DispatchQueue.main.async {
+                    if UIApplication.shared.applicationState == .active {
+                        if !updates.isEmpty, let window = UIApplication.shared.connectedScenes.compactMap({ ($0 as? UIWindowScene)?.windows.first(where: { $0.isKeyWindow }) }).first {
+                            let toastView = ToastView(text: "New Update Available", detailText: "\(updates.count) update(s) available")
+                            toastView.show(in: window)
+                        }
+                    } else {
+                        NotificationCenter.default.post(name: NSNotification.Name("TVTopShelfItemsDidChangeNotification"), object: nil)
+                    }
+                }
+                #endif
 
                 DispatchQueue.main.async {
                     UIApplication.shared.applicationIconBadgeNumber = updates.count

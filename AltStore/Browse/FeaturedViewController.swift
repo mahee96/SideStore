@@ -103,10 +103,12 @@ class FeaturedViewController: UICollectionViewController
             return nil
         }
         
+        #if !os(tvOS)
         self.navigationItem.searchController = self.searchController
         self.navigationItem.hidesSearchBarWhenScrolling = true
         
         self.navigationItem.largeTitleDisplayMode = .always
+        #endif
     }
     
     override func viewDidAppear(_ animated: Bool) 
@@ -186,7 +188,7 @@ private extension FeaturedViewController
                 return layoutSection
                 
             case _ where section.isFeaturedAppsSection:
-                let itemHeight: NSCollectionLayoutDimension = if #available(iOS 17, *) { .uniformAcrossSiblings(estimate: 350) } else { .estimated(350) }
+                let itemHeight: NSCollectionLayoutDimension = if #available(iOS 17, tvOS 17, *) { .uniformAcrossSiblings(estimate: 350) } else { .estimated(350) }
                 let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: itemHeight)
                 let item = NSCollectionLayoutItem(layoutSize: itemSize)
                 
@@ -627,7 +629,11 @@ extension FeaturedViewController
             
             let headerView = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: kind, for: indexPath) as! UICollectionViewListCell
             
+            #if !os(tvOS)
             var content: UIListContentConfiguration = .prominentInsetGroupedHeader()
+            #else
+            var content: UIListContentConfiguration = .groupedHeader()
+            #endif
             
             switch section
             {

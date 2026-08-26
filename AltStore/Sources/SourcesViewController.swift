@@ -44,8 +44,10 @@ final class SourcesViewController: UICollectionViewController
         super.viewDidLoad()
         
         // Ensure large titles
+        #if !os(tvOS)
         navigationController?.navigationBar.prefersLargeTitles = true
         navigationItem.largeTitleDisplayMode = .automatic
+        #endif
 
         // Set title
         navigationItem.title = "Sources"
@@ -138,9 +140,12 @@ private extension SourcesViewController
     func makeLayout() -> UICollectionViewCompositionalLayout
     {
         var configuration = UICollectionLayoutListConfiguration(appearance: .grouped)
+        #if !os(tvOS)
         configuration.showsSeparators = false
+        #endif
         configuration.backgroundColor = .clear
         
+        #if !os(tvOS)
         configuration.trailingSwipeActionsConfigurationProvider = { [weak self] indexPath in
             guard let self else { return UISwipeActionsConfiguration(actions: []) }
             
@@ -178,6 +183,7 @@ private extension SourcesViewController
             
             return config
         }
+        #endif
         
         let layout = UICollectionViewCompositionalLayout.list(using: configuration)
         return layout
