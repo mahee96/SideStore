@@ -68,23 +68,7 @@ struct CertificatesView: View {
                         showClearKeyConfirmation = true
                     },
                     onAddKeyBin:  { cert in
-                        certificateToAddKeyFor = cert
-                        fileImportMode = .privateKey
-                        #if !os(tvOS)
-                        showFileImporter = true
-                        #else
-                        if let topVC = presentingViewController ?? UIApplication.shared.topViewController() {
-                            TVWebFileTransferManager.shared.startImport(
-                                acceptedExtensions: ["der", "key", "pem", "p12"],
-                                title: "Import Private Key (.der/.pem)",
-                                presentingVC: topVC
-                            ) { fileURL in
-                                guard let fileURL = fileURL else { return }
-                                viewModel.importPrivateKey(url: fileURL, for: cert)
-                                certificateToAddKeyFor = nil
-                            }
-                        }
-                        #endif
+                        importPrivateKeyAction(for: cert)
                     },
                     onAddKeyText: { cert in
                         keyTextImportItem = KeyTextImportItem(id: cert.serialNumber, cert: cert)
@@ -119,21 +103,7 @@ struct CertificatesView: View {
                     .disabled(viewModel.team == nil)
                     
                     SwiftUI.Button {
-                        fileImportMode = .certificate
-                        #if !os(tvOS)
-                        showFileImporter = true
-                        #else
-                        if let topVC = presentingViewController ?? UIApplication.shared.topViewController() {
-                            TVWebFileTransferManager.shared.startImport(
-                                acceptedExtensions: ["p12", "der", "pem", "cer", "crt"],
-                                title: "Import Certificates",
-                                presentingVC: topVC
-                            ) { fileURL in
-                                guard let fileURL = fileURL else { return }
-                                viewModel.startBulkImport(urls: [fileURL])
-                            }
-                        }
-                        #endif
+                        importCertificatesAction()
                     } label: {
                         Image(systemName: "square.and.arrow.down")
                     }
@@ -326,6 +296,47 @@ struct CertificatesView: View {
         alertController.addAction(revokeAction)
         
         presentingViewController?.present(alertController, animated: true)
+    }
+    
+    private func importPrivateKeyAction(for cert: ALTX509Certificate) {
+        certificateToAddKeyFor = cert
+        fileImportMode = .privateKey
+        #if !os(tvOS)
+        showFileImporter = true
+        #else
+        guard let topVC = presentingViewController ?? UIApplication.shared.topViewController() else { return }
+        TVWebFileTransferManager.shared.startImport(
+            acceptedExtensions: ["der", "key", "pem", "p12"],
+            title: "Import Private Key (.der/.pem)",
+            presentingVC: topVC
+        ) { fileURL in
+            guard let fileURL = fileURL else { return }
+            do {
+                let data = try Data(contentsOf: fileURL)
+                viewModel.importPrivateKey(data: data, for: cert)
+            } catch {
+                viewModel.errorMessage = "Failed to read private key: " + error.localizedDescription
+            }
+            certificateToAddKeyFor = nil
+        }
+        #endif
+    }
+    
+    private func importCertificatesAction() {
+        fileImportMode = .certificate
+        #if !os(tvOS)
+        showFileImporter = true
+        #else
+        guard let topVC = presentingViewController ?? UIApplication.shared.topViewController() else { return }
+        TVWebFileTransferManager.shared.startImport(
+            acceptedExtensions: ["p12", "der", "pem", "cer", "crt"],
+            title: "Import Certificates",
+            presentingVC: topVC
+        ) { fileURL in
+            guard let fileURL = fileURL else { return }
+            viewModel.startBulkImport(urls: [fileURL])
+        }
+        #endif
     }
 }
 
