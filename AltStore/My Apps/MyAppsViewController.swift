@@ -96,9 +96,11 @@ class MyAppsViewController: UICollectionViewController
         self.collectionView.dataSource = self.dataSource
         self.collectionView.prefetchDataSource = self.dataSource
         self.dataSource.contentView = self.collectionView
+        #if !os(tvOS)
         self.collectionView.dragDelegate = self
         self.collectionView.dropDelegate = self
         self.collectionView.dragInteractionEnabled = false
+        #endif
                 
         self.prototypeUpdateCell = UpdateCollectionViewCell.instantiate(with: UpdateCollectionViewCell.nib)
         self.prototypeUpdateCell.contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -114,7 +116,11 @@ class MyAppsViewController: UICollectionViewController
         self.collectionView.refreshControl = refreshControl
         #endif
         
+        #if !os(tvOS)
         self.sideloadingProgressView = UIProgressView(progressViewStyle: .bar)
+        #else
+        self.sideloadingProgressView = UIProgressView(progressViewStyle: .default)
+        #endif
         self.sideloadingProgressView.translatesAutoresizingMaskIntoConstraints = false
         self.sideloadingProgressView.progressTintColor = .altPrimary
         self.sideloadingProgressView.progress = 0
@@ -892,12 +898,14 @@ private extension MyAppsViewController
                 }
             }
             
+            #if !os(tvOS)
             let interaction = INInteraction.refreshAllApps()
             do {
                 try await interaction.donate()
             } catch {
                 debugLog("Donate intent failed \(interaction.intent). \(error)")
             }
+            #endif
         }
     }
     
@@ -1624,12 +1632,27 @@ private extension MyAppsViewController
     
     func chooseIcon(for installedApp: InstalledApp)
     {
+        #if !os(tvOS)
         self._imagePickerInstalledApp = installedApp
         
         let imagePicker = UIImagePickerController()
         imagePicker.delegate = self
         imagePicker.allowsEditing = true
         self.present(imagePicker, animated: true, completion: nil)
+        #else
+        TVWebFileTransferManager.shared.startImport(
+            acceptedExtensions: ["png", "jpg", "jpeg"],
+            title: "Upload Custom App Icon",
+            presentingVC: self
+        ) { [weak self] fileURL in
+            guard let self = self, let fileURL = fileURL else { return }
+            if let data = try? Data(contentsOf: fileURL), let image = UIImage(data: data) {
+                DispatchQueue.main.async {
+                    self.changeIcon(for: installedApp, to: image)
+                }
+            }
+        }
+        #endif
     }
     
     func changeIcon(for installedApp: InstalledApp, to image: UIImage?)
@@ -1731,12 +1754,26 @@ private extension MyAppsViewController
         )
     }
     
+    #if !os(tvOS)
     @objc func checkForUpdates(_ sender: UIRefreshControl)
+    {
+        self.performCheckForUpdates {
+            sender.endRefreshing()
+        }
+    }
+    #else
+    @objc func checkForUpdates()
+    {
+        self.performCheckForUpdates(completion: nil)
+    }
+    #endif
+    
+    private func performCheckForUpdates(completion: (() -> Void)? = nil)
     {
         guard !self.isCheckingForUpdates else { return }
         self.isCheckingForUpdates = true
         
-        Task {
+        Task.detached {
             do
             {
                 // async-let so the for-loop below runs first, ensuring we catch didFetchSourceNotification.
@@ -1806,7 +1843,7 @@ private extension MyAppsViewController
             // but _before_ calling sender.endRefreshing() to avoid weird animation.
             self.update()
             
-            sender.endRefreshing()
+            completion?()
         }
     }
     
@@ -2246,6 +2283,7 @@ extension MyAppsViewController
         return menu
     }
     
+    #if !os(tvOS)
     override func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration?
     {
         guard !self.isRefreshingAllApps else { return nil }
@@ -2282,6 +2320,7 @@ extension MyAppsViewController
     {
         return self.collectionView(collectionView, previewForHighlightingContextMenuWithConfiguration: configuration)
     }
+    #endif
 }
 
 extension MyAppsViewController: UICollectionViewDelegateFlowLayout
@@ -2382,6 +2421,7 @@ extension MyAppsViewController: UICollectionViewDelegateFlowLayout
     }
 }
 
+#if !os(tvOS)
 extension MyAppsViewController: UICollectionViewDragDelegate
 {
     func collectionView(_ collectionView: UICollectionView, itemsForBeginning session: UIDragSession, at indexPath: IndexPath) -> [UIDragItem]
@@ -2563,6 +2603,7 @@ extension MyAppsViewController: UICollectionViewDropDelegate
         }
     }
 }
+#endif
 
 extension MyAppsViewController: NSFetchedResultsControllerDelegate
 {
@@ -2731,6 +2772,7 @@ extension MyAppsViewController: UIViewControllerPreviewingDelegate
     }
 }
 
+#if !os(tvOS)
 extension MyAppsViewController: UIImagePickerControllerDelegate, UINavigationControllerDelegate
 {
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any])
@@ -2750,6 +2792,7 @@ extension MyAppsViewController: UIImagePickerControllerDelegate, UINavigationCon
         self._imagePickerInstalledApp = nil
     }
 }
+#endif
 
 extension MyAppsViewController {
     private func presentSetCertificateAlert(for installedApp: InstalledApp) {

@@ -102,7 +102,9 @@ struct OperationsLoggingControlView: View {
         }
         .background(Color(uiColor: .settingsBackground).ignoresSafeArea())
         .navigationTitle("Operations Logging")
+        #if !os(tvOS)
         .navigationBarTitleDisplayMode(.large)
+        #endif
     }
 
     private func stepToggle(_ title: String, step: some OperationStep) -> some View {

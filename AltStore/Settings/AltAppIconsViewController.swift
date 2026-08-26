@@ -122,8 +122,12 @@ private extension AltAppIconsViewController
 {
     func makeLayout() -> UICollectionViewCompositionalLayout
     {
+        #if !os(tvOS)
         var configuration = UICollectionLayoutListConfiguration(appearance: .insetGrouped)
         configuration.showsSeparators = true
+        #else
+        var configuration = UICollectionLayoutListConfiguration(appearance: .grouped)
+        #endif
         configuration.backgroundColor = .clear
         configuration.headerMode = .supplementary
                 

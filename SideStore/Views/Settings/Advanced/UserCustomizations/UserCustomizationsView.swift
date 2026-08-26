@@ -340,7 +340,9 @@ struct UserCustomizationsView: View {
         }
         .background(Color(uiColor: .settingsBackground).ignoresSafeArea())
         .navigationTitle("User Customizations")
+        #if !os(tvOS)
         .navigationBarTitleDisplayMode(.large)
+        #endif
         .alert("Restart Required", isPresented: $showEMPRestartConfirmation) {
             SwiftUI.Button("Restart Now", role: .destructive) {
                 enableEMPforWireguard = pendingEMPOption
@@ -406,8 +408,12 @@ struct UserCustomizationsView: View {
             toastView.show(in: top)
             return
         }
+        #if !os(tvOS)
         let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
         top.present(activityVC, animated: true)
+        #else
+        TVWebFileTransferManager.shared.startExport(fileURL: url, title: "Export SideStore.conf", presentingVC: top)
+        #endif
     }
 
     private func topViewController() -> UIViewController? {

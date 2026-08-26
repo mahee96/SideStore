@@ -100,7 +100,9 @@ struct ExperimentalFeaturesView: View {
         }
         .background(Color(uiColor: .settingsBackground).ignoresSafeArea())
         .navigationTitle("Experimental Features")
+        #if !os(tvOS)
         .navigationBarTitleDisplayMode(.large)
+        #endif
     }
 
     private var divider: some View {

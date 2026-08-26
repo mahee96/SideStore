@@ -187,7 +187,13 @@ final class SettingsViewController: UITableViewController
                          options: [.singleSelection, .displayInline], // Add displayInline
                          children: items
         )
+        #if !os(tvOS)
         betaTrackPopupButton.menu = menu
+        #else
+        if #available(tvOS 17.0, *) {
+            betaTrackPopupButton.menu = menu
+        }
+        #endif
 
         // Set initial state
         updateReleaseChannelButtonTitle()
@@ -214,7 +220,9 @@ final class SettingsViewController: UITableViewController
         let debugModeGestureRecognizer = UISwipeGestureRecognizer(target: self, action: #selector(SettingsViewController.handleDebugModeGesture(_:)))
         debugModeGestureRecognizer.delegate = self
         debugModeGestureRecognizer.direction = .up
+        #if !os(tvOS)
         debugModeGestureRecognizer.numberOfTouchesRequired = 3
+        #endif
         self.tableView.addGestureRecognizer(debugModeGestureRecognizer)
         
         // set the version label to show in settings screen
@@ -274,7 +282,9 @@ final class SettingsViewController: UITableViewController
                 appearance.configureWithDefaultBackground()
                 appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
                 appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
+                #if !os(tvOS)
                 controller.navigationItem.largeTitleDisplayMode = .always
+                #endif
                 controller.navigationItem.standardAppearance = appearance
                 controller.navigationItem.scrollEdgeAppearance = appearance
             }
@@ -331,7 +341,9 @@ private extension SettingsViewController
         let appVersion = Bundle.Info.activeBundleVersion
         let iosVersion = "iOS \(UIDevice.current.systemVersion) (\(ProcessInfo.processInfo.operatingSystemBuild))"
         let fullText = "\(appVersion)\n\(iosVersion)"
+        #if !os(tvOS)
         UIPasteboard.general.string = fullText.hasPrefix("Version ") ? String(fullText.dropFirst("Version ".count)) : fullText
+        #endif
         
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = .center

@@ -117,7 +117,11 @@ struct WirelessPairView: View {
                                 Text(String(char))
                                     .font(.system(size: 34, weight: .bold, design: .monospaced))
                                     .frame(width: 52, height: 68)
+                                    #if !os(tvOS)
                                     .background(RoundedRectangle(cornerRadius: 14).fill(Color(.secondarySystemBackground)))
+                                    #else
+                                    .background(RoundedRectangle(cornerRadius: 14).fill(Color.white.opacity(0.1)))
+                                    #endif
                                     .shadow(color: Color.black.opacity(0.15), radius: 5, x: 0, y: 3)
                                     .overlay(RoundedRectangle(cornerRadius: 14).stroke(LinearGradient(gradient: Gradient(colors: [Color.accentColor.opacity(0.5), Color.clear]), startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1.5))
                             }
@@ -163,7 +167,9 @@ struct WirelessPairView: View {
                 .padding(.bottom, 32)
         }
         .navigationTitle("Wireless Pairing")
+        #if !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 SwiftUI.Button {
@@ -183,7 +189,7 @@ struct WirelessPairView: View {
             debugLog("[WirelessPairView] onDisappear (isAdvertising=\(viewModel.isAdvertising))")
         }
         .sheet(isPresented: $viewModel.isTargetDialogPresented) {
-            if #available(iOS 16.0, *) {
+            if #available(iOS 16.0, tvOS 16.0, *) {
                 WirelessPairTargetDialog(viewModel: viewModel)
                     .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
@@ -263,7 +269,11 @@ struct ConnectionDetailsCard: View {
                                 .padding(.leading, 16)
                         }
                     }
+                    #if !os(tvOS)
                     .background(Color(.secondarySystemBackground))
+                    #else
+                    .background(Color.white.opacity(0.1))
+                    #endif
                     .clipShape(
                         RoundedCorner(
                             radius: 20,
@@ -278,7 +288,9 @@ struct ConnectionDetailsCard: View {
                     .contentShape(Rectangle())
                     .contextMenu {
                         SwiftUI.Button {
+                            #if !os(tvOS)
                             UIPasteboard.general.string = value
+                            #endif
                         } label: {
                             Label("Copy \(label)", systemImage: "doc.on.doc")
                         }

@@ -438,7 +438,9 @@ struct DeveloperOptionsView: View {
         }
         .background(Color(uiColor: .settingsBackground).ignoresSafeArea())
         .navigationTitle("Developer Options")
+        #if !os(tvOS)
         .navigationBarTitleDisplayMode(.large)
+        #endif
         .alert("Delete Database", isPresented: $showDeleteConfirmation) {
             SwiftUI.Button("Delete & Exit", role: .destructive) {
                 _ = DatabaseManager.deleteDatabase()

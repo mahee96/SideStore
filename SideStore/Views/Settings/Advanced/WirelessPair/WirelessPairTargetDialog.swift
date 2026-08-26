@@ -28,8 +28,13 @@ struct WirelessPairTargetDialog: View {
             .refreshable {
                 viewModel.refreshDialog()
             }
+            #if !os(tvOS)
             .background(Color(.systemGroupedBackground).ignoresSafeArea())
             .navigationBarTitle(viewModel.dialogMode == .client ? "Select Device To Pair" : "Select Server Interface", displayMode: .inline)
+            #else
+            .background(Color.black.ignoresSafeArea())
+            .navigationTitle(viewModel.dialogMode == .client ? "Select Device To Pair" : "Select Server Interface")
+            #endif
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     SwiftUI.Button {
@@ -104,7 +109,11 @@ struct WirelessPairTargetDialog: View {
         .padding(.vertical, 3)
         .background(
             Capsule()
+                #if !os(tvOS)
                 .fill(Color(.tertiarySystemFill))
+                #else
+                .fill(Color.white.opacity(0.15))
+                #endif
         )
     }
     
@@ -137,7 +146,11 @@ struct WirelessPairTargetDialog: View {
                     
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: 19))
+                        #if !os(tvOS)
                         .foregroundColor(isSelected ? .green : Color(.tertiaryLabel))
+                        #else
+                        .foregroundColor(isSelected ? .green : Color.secondary)
+                        #endif
                 }
                 
                 VStack(alignment: .leading, spacing: 3) {
@@ -161,7 +174,11 @@ struct WirelessPairTargetDialog: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    #if !os(tvOS)
                     .fill(isSelected ? Color.accentColor.opacity(0.16) : Color(.secondarySystemGroupedBackground))
+                    #else
+                    .fill(isSelected ? Color.accentColor.opacity(0.16) : Color.white.opacity(0.1))
+                    #endif
                     .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .stroke(isSelected ? Color.accentColor.opacity(0.5) : Color.clear, lineWidth: 1.5)
@@ -288,7 +305,11 @@ struct WirelessPairTargetDialog: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    #if !os(tvOS)
                     .fill(isSelected ? Color.accentColor.opacity(0.16) : Color(.secondarySystemGroupedBackground))
+                    #else
+                    .fill(isSelected ? Color.accentColor.opacity(0.16) : Color.white.opacity(0.1))
+                    #endif
                     .overlay(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .stroke(isSelected ? Color.accentColor.opacity(0.5) : Color.clear, lineWidth: 1.5)
@@ -341,7 +362,11 @@ struct WirelessPairTargetDialog: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    #if !os(tvOS)
                     .fill(isSelected ? Color.accentColor.opacity(0.16) : Color(.secondarySystemGroupedBackground))
+                    #else
+                    .fill(isSelected ? Color.accentColor.opacity(0.16) : Color.white.opacity(0.1))
+                    #endif
                     .overlay(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .stroke(isSelected ? Color.accentColor.opacity(0.5) : Color.clear, lineWidth: 1.5)
