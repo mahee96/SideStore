@@ -513,7 +513,9 @@ final class BonjourDiscoveryViewModel: ObservableObject {
         }
         
         let text = lines.joined(separator: "\n")
+        #if !os(tvOS)
         UIPasteboard.general.string = text
+        #endif
         return text
     }
     
@@ -585,7 +587,9 @@ final class BonjourDiscoveryViewModel: ObservableObject {
         dict["txtRecords"] = txtDict
         if let data = try? JSONSerialization.data(withJSONObject: dict, options: .prettyPrinted),
            let str = String(data: data, encoding: .utf8) {
+            #if !os(tvOS)
             UIPasteboard.general.string = str
+            #endif
             return str
         }
         return nil

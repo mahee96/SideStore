@@ -203,9 +203,11 @@ struct ConnectionConfigView: View {
             if showConfirmDialog {
                 Color.black.opacity(0.3)
                     .ignoresSafeArea()
+                    #if !os(tvOS)
                     .onTapGesture {
                         showConfirmDialog = false
                     }
+                    #endif
                 
                 VStack(spacing: 24) {
                     AnimatedCheckmarkView()

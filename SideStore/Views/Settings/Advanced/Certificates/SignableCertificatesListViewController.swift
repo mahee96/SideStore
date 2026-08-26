@@ -127,7 +127,11 @@ final class SignableCertificatesListViewController: UITableViewController {
     init(installedApp: InstalledApp, viewModel: CertificatesViewModel = CertificatesViewModel()) {
         self.installedApp = installedApp
         self.viewModel = viewModel
+        #if !os(tvOS)
         super.init(style: .insetGrouped)
+        #else
+        super.init(style: .grouped)
+        #endif
     }
     
     required init?(coder: NSCoder) {
@@ -175,11 +179,15 @@ final class SignableCertificatesListViewController: UITableViewController {
         }
         
         let nav = UINavigationController(rootViewController: self)
+        #if !os(tvOS)
         nav.modalPresentationStyle = .pageSheet
         if let sheet = nav.sheetPresentationController {
             sheet.detents = [.medium(), .large()]
             sheet.prefersGrabberVisible = true
         }
+        #else
+        nav.modalPresentationStyle = .fullScreen
+        #endif
         presentingViewController.present(nav, animated: true)
     }
     
@@ -195,7 +203,7 @@ final class SignableCertificatesListViewController: UITableViewController {
         
         debugLog("[SignableCertList] cellForRowAt[\(indexPath.row)]: serial='\(cert.serialNumber)', name='\(cert.name)', machineName='\(cert.machineName ?? "nil")', email='\(cert.requesterEmail ?? "nil")'")
         
-        if #available(iOS 16.0, *) {
+        if #available(iOS 16.0, tvOS 16.0, *) {
             cell.contentConfiguration = UIHostingConfiguration {
                 SignableCertificateRowView(cert: cert, appName: installedApp.name, appCertSerial: installedApp.certificateSerialNumber, viewModel: viewModel)
             }

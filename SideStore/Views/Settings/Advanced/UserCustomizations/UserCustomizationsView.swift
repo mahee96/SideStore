@@ -402,7 +402,7 @@ struct UserCustomizationsView: View {
     }
 
     private func exportWireGuardConfig() {
-        guard let top = topViewController() else { return }
+        guard let top = UIApplication.shared.topViewController() else { return }
         guard let url = Bundle.main.url(forResource: "SideStore", withExtension: "conf") else {
             let toastView = ToastView(text: NSLocalizedString("SideStore.conf missing!", comment: ""), detailText: "Unable to locate SideStore.conf in bundle resources.")
             toastView.show(in: top)
@@ -414,17 +414,5 @@ struct UserCustomizationsView: View {
         #else
         TVWebFileTransferManager.shared.startExport(fileURL: url, title: "Export SideStore.conf", presentingVC: top)
         #endif
-    }
-
-    private func topViewController() -> UIViewController? {
-        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = scene.windows.first(where: { $0.isKeyWindow }),
-              var top = window.rootViewController else {
-            return nil
-        }
-        while let presented = top.presentedViewController {
-            top = presented
-        }
-        return top
     }
 }

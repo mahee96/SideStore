@@ -405,7 +405,7 @@ struct DeveloperOptionsView: View {
                             if AuthManager.shared.currentAppleID == nil ||
                                AuthManager.shared.password == nil ||
                                CertificateManager.shared.activeCertificate == nil {
-                                if let top = topViewController() {
+                                if let top = UIApplication.shared.topViewController() {
                                     let toastView = ToastView(text: NSLocalizedString("Failed to export account!", comment: ""), detailText: "Account not found or missing credentials.")
                                     toastView.show(in: top)
                                 }
@@ -479,21 +479,9 @@ struct DeveloperOptionsView: View {
         }
     }
     
-    private func topViewController() -> UIViewController? {
-        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = scene.windows.first(where: { $0.isKeyWindow }),
-              var top = window.rootViewController else {
-            return nil
-        }
-        while let presented = top.presentedViewController {
-            top = presented
-        }
-        return top
-    }
-    
     #if DEBUG
     private func showImportAccountPicker() {
-        guard let top = topViewController() else { return }
+        guard let top = UIApplication.shared.topViewController() else { return }
         #if !os(tvOS)
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [UTType(filenameExtension: "sideconf")!, .json], asCopy: false)
         ImportExport.documentPickerHandler = DocumentPickerHandler { selectedURL in
@@ -531,7 +519,7 @@ struct DeveloperOptionsView: View {
     }
     
     private func exportAccountJSON(password: String) {
-        guard let top = topViewController() else { return }
+        guard let top = UIApplication.shared.topViewController() else { return }
         guard let account = ImportExport.exportAccountJSON(password: password) else {
             let toastView = ToastView(text: NSLocalizedString("Failed to export account!", comment: ""), detailText: "Account not found or missing credentials.")
             toastView.show(in: top)
@@ -615,7 +603,7 @@ struct DeveloperOptionsView: View {
 
     
     private func triggerStartEMProxy() {
-        guard let top = topViewController() else { return }
+        guard let top = UIApplication.shared.topViewController() else { return }
         Task {
             do {
                 try await startEMProxy()
@@ -633,7 +621,7 @@ struct DeveloperOptionsView: View {
     }
     
     private func triggerStopEMProxy() {
-        guard let top = topViewController() else { return }
+        guard let top = UIApplication.shared.topViewController() else { return }
         Task {
             do {
                 try await stopEMProxy()
@@ -660,14 +648,14 @@ struct DeveloperOptionsView: View {
         let title = NSLocalizedString("Reloaded Top Shelf", comment: "")
         let detail = "Triggered Top Shelf refresh."
         #endif
-        if let top = topViewController() {
+        if let top = UIApplication.shared.topViewController() {
             let toastView = ToastView(text: title, detailText: detail)
             toastView.show(in: top)
         }
     }
     
     private func triggerRotateWidgetLog() {
-        guard let top = topViewController() else { return }
+        guard let top = UIApplication.shared.topViewController() else { return }
         #if !os(tvOS)
         let logName = "Widget"
         #else

@@ -91,9 +91,13 @@ struct SideJITServerConfigView: View {
             }
             aboutSection
         }
+        #if !os(tvOS)
         .listStyle(.insetGrouped)
-        .navigationTitle("SideJITServer")
         .navigationBarTitleDisplayMode(.inline)
+        #else
+        .listStyle(.grouped)
+        #endif
+        .navigationTitle("SideJITServer")
         .overlay(
             Group {
                 if showCopiedToast {
@@ -167,8 +171,10 @@ struct SideJITServerConfigView: View {
             .contextMenu {
                 if !resolvedAddress.isEmpty {
                     SwiftUI.Button {
+                        #if !os(tvOS)
                         UIPasteboard.general.string = resolvedAddress
                         showCopied()
+                        #endif
                     } label: {
                         Label("Copy Address", systemImage: "doc.on.doc")
                     }
@@ -213,7 +219,7 @@ struct SideJITServerConfigView: View {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(.secondary)
                     }
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -235,7 +241,7 @@ struct SideJITServerConfigView: View {
                 }
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(.plain)
             .disabled(activeAction != nil)
             
             SwiftUI.Button {
@@ -252,7 +258,7 @@ struct SideJITServerConfigView: View {
                 }
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(.plain)
             .disabled(activeAction != nil)
             
             SwiftUI.Button {
@@ -269,7 +275,7 @@ struct SideJITServerConfigView: View {
                 }
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(.plain)
             .disabled(activeAction != nil)
         }
     }
@@ -313,7 +319,11 @@ struct SideJITServerConfigView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .frame(maxHeight: 200)
+                #if !os(tvOS)
                 .background(Color(UIColor.secondarySystemGroupedBackground))
+                #else
+                .background(Color.white.opacity(0.1))
+                #endif
                 .cornerRadius(8)
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
@@ -323,8 +333,10 @@ struct SideJITServerConfigView: View {
             .padding(.vertical, 4)
             .contextMenu {
                 SwiftUI.Button {
+                    #if !os(tvOS)
                     UIPasteboard.general.string = log.prettyPayload
                     showCopied()
+                    #endif
                 } label: {
                     Label("Copy Response", systemImage: "doc.on.doc")
                 }

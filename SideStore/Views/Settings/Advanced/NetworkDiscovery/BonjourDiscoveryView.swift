@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import Network
 
 // MARK: - Root View (Domains List)
 
@@ -17,11 +18,19 @@ struct BonjourDiscoveryView: View {
     @State private var selectedDomain: String? = nil
     @State private var isAutoRefreshEnabled = true
     @State private var refreshTask: Task<Void, Never>? = nil
+    #if os(tvOS)
+    @State private var showFilterDialog = false
+    #endif
     
     var body: some View {
         ZStack {
+            #if !os(tvOS)
             Color(.systemGroupedBackground)
                 .ignoresSafeArea()
+            #else
+            Color.clear
+                .ignoresSafeArea()
+            #endif
             
             if viewModel.isSearching && viewModel.domains.isEmpty {
                 ProgressView("Searching for domains…")
@@ -32,7 +41,9 @@ struct BonjourDiscoveryView: View {
             }
         }
         .navigationTitle("Discovery")
+        #if !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar {
             ToolbarItemGroup(placement: .navigationBarTrailing) {
                 SwiftUI.Button {
@@ -48,6 +59,7 @@ struct BonjourDiscoveryView: View {
                         .foregroundColor(isAutoRefreshEnabled ? .blue : .secondary)
                 }
                 
+                #if !os(tvOS)
                 Menu {
                     Menu {
                         SwiftUI.Button {
@@ -81,6 +93,21 @@ struct BonjourDiscoveryView: View {
                 } label: {
                     Image(systemName: "line.3.horizontal.decrease.circle")
                 }
+                #else
+                SwiftUI.Button {
+                    showFilterDialog = true
+                } label: {
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                }
+                .confirmationDialog("Filter & Sort", isPresented: $showFilterDialog) {
+                    SwiftUI.Button(viewModel.domainGroupByFirstLetter ? "Group: None" : "Group: First Letter") {
+                        viewModel.domainGroupByFirstLetter.toggle()
+                    }
+                    SwiftUI.Button(viewModel.domainSortAscending ? "Sort: Name (Z to A)" : "Sort: Name (A to Z)") {
+                        viewModel.domainSortAscending.toggle()
+                    }
+                }
+                #endif
             }
         }
         .onAppear {
@@ -170,7 +197,11 @@ struct BonjourDiscoveryView: View {
                 }
             }
         }
+        #if !os(tvOS)
         .listStyle(.insetGrouped)
+        #else
+        .listStyle(.grouped)
+        #endif
         .refreshable {
             await performManualRefresh()
         }
@@ -188,11 +219,20 @@ struct ServiceTypesView: View {
     @State private var selectedType: String? = nil
     @State private var isAutoRefreshEnabled = true
     @State private var refreshTask: Task<Void, Never>? = nil
+    #if os(tvOS)
+    @State private var showGroupDialog = false
+    @State private var showSortDialog = false
+    #endif
     
     var body: some View {
         ZStack {
+            #if !os(tvOS)
             Color(.systemGroupedBackground)
                 .ignoresSafeArea()
+            #else
+            Color.clear
+                .ignoresSafeArea()
+            #endif
             
             if viewModel.isSearching && viewModel.serviceTypes.isEmpty {
                 ProgressView("Searching for service types…")
@@ -203,7 +243,9 @@ struct ServiceTypesView: View {
             }
         }
         .navigationTitle(domain)
+        #if !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar {
             ToolbarItemGroup(placement: .navigationBarTrailing) {
                 SwiftUI.Button {
@@ -219,6 +261,7 @@ struct ServiceTypesView: View {
                         .foregroundColor(isAutoRefreshEnabled ? .blue : .secondary)
                 }
                 
+                #if !os(tvOS)
                 Menu {
                     Menu {
                         ForEach(ServiceTypeGroupOption.allCases, id: \.self) { opt in
@@ -246,6 +289,33 @@ struct ServiceTypesView: View {
                 } label: {
                     Image(systemName: "line.3.horizontal.decrease.circle")
                 }
+                #else
+                SwiftUI.Button {
+                    showGroupDialog = true
+                } label: {
+                    Image(systemName: "rectangle.3.group")
+                }
+                .confirmationDialog("Group By", isPresented: $showGroupDialog) {
+                    ForEach(ServiceTypeGroupOption.allCases, id: \.self) { opt in
+                        SwiftUI.Button(opt.rawValue) {
+                            viewModel.serviceTypeGroupOption = opt
+                        }
+                    }
+                }
+                
+                SwiftUI.Button {
+                    showSortDialog = true
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
+                }
+                .confirmationDialog("Sort By", isPresented: $showSortDialog) {
+                    ForEach(ServiceTypeSortOption.allCases, id: \.self) { opt in
+                        SwiftUI.Button(opt.rawValue) {
+                            viewModel.serviceTypeSortOption = opt
+                        }
+                    }
+                }
+                #endif
             }
         }
         .onAppear {
@@ -358,7 +428,11 @@ struct ServiceTypesView: View {
                 }
             }
         }
+        #if !os(tvOS)
         .listStyle(.insetGrouped)
+        #else
+        .listStyle(.grouped)
+        #endif
         .refreshable {
             await performManualRefresh()
         }
@@ -391,11 +465,20 @@ struct ServiceInstancesView: View {
     @State private var selectedInstanceId: String? = nil
     @State private var isAutoRefreshEnabled = true
     @State private var refreshTask: Task<Void, Never>? = nil
+    #if os(tvOS)
+    @State private var showGroupDialog = false
+    @State private var showSortDialog = false
+    #endif
     
     var body: some View {
         ZStack {
+            #if !os(tvOS)
             Color(.systemGroupedBackground)
                 .ignoresSafeArea()
+            #else
+            Color.clear
+                .ignoresSafeArea()
+            #endif
             
             if viewModel.isSearching && viewModel.instances.isEmpty {
                 ProgressView("Searching for instances…")
@@ -406,7 +489,9 @@ struct ServiceInstancesView: View {
             }
         }
         .navigationTitle(friendlyName ?? serviceType)
+        #if !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar {
             ToolbarItemGroup(placement: .navigationBarTrailing) {
                 SwiftUI.Button {
@@ -422,6 +507,7 @@ struct ServiceInstancesView: View {
                         .foregroundColor(isAutoRefreshEnabled ? .blue : .secondary)
                 }
                 
+                #if !os(tvOS)
                 Menu {
                     Menu {
                         ForEach(ServiceInstanceGroupOption.allCases, id: \.self) { opt in
@@ -449,6 +535,33 @@ struct ServiceInstancesView: View {
                 } label: {
                     Image(systemName: "line.3.horizontal.decrease.circle")
                 }
+                #else
+                SwiftUI.Button {
+                    showGroupDialog = true
+                } label: {
+                    Image(systemName: "rectangle.3.group")
+                }
+                .confirmationDialog("Group By", isPresented: $showGroupDialog) {
+                    ForEach(ServiceInstanceGroupOption.allCases, id: \.self) { opt in
+                        SwiftUI.Button(opt.rawValue) {
+                            viewModel.instanceGroupOption = opt
+                        }
+                    }
+                }
+                
+                SwiftUI.Button {
+                    showSortDialog = true
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
+                }
+                .confirmationDialog("Sort By", isPresented: $showSortDialog) {
+                    ForEach(ServiceInstanceSortOption.allCases, id: \.self) { opt in
+                        SwiftUI.Button(opt.rawValue) {
+                            viewModel.instanceSortOption = opt
+                        }
+                    }
+                }
+                #endif
             }
         }
         .onAppear {
@@ -544,7 +657,11 @@ struct ServiceInstancesView: View {
                 }
             }
         }
+        #if !os(tvOS)
         .listStyle(.insetGrouped)
+        #else
+        .listStyle(.grouped)
+        #endif
         .refreshable {
             await performManualRefresh()
         }
@@ -586,8 +703,13 @@ struct ServiceDetailView: View {
     
     var body: some View {
         ZStack {
+            #if !os(tvOS)
             Color(.systemGroupedBackground)
                 .ignoresSafeArea()
+            #else
+            Color.clear
+                .ignoresSafeArea()
+            #endif
             
             if let resolved = viewModel.resolvedService {
                 resolvedContent(resolved)
@@ -598,7 +720,9 @@ struct ServiceDetailView: View {
             }
         }
         .navigationTitle("Service Details")
+        #if !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar {
             ToolbarItemGroup(placement: .navigationBarTrailing) {
                 SwiftUI.Button {
@@ -614,6 +738,7 @@ struct ServiceDetailView: View {
                         .foregroundColor(isAutoRefreshEnabled ? .blue : .secondary)
                 }
                 
+                #if !os(tvOS)
                 Menu {
                     SwiftUI.Button {
                         viewModel.sortAddressesV4First = true
@@ -629,6 +754,14 @@ struct ServiceDetailView: View {
                     Image(systemName: "arrow.up.arrow.down")
                 }
                 .disabled(viewModel.resolvedService == nil)
+                #else
+                SwiftUI.Button {
+                    viewModel.sortAddressesV4First.toggle()
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
+                }
+                .disabled(viewModel.resolvedService == nil)
+                #endif
             }
         }
         .onAppear {
@@ -695,6 +828,26 @@ struct ServiceDetailView: View {
         }
     }
     
+    private func iconForInterfaceType(_ type: NWInterface.InterfaceType) -> String {
+        switch type {
+        case .wifi: return "wifi"
+        case .loopback: return "arrow.triangle.2.circlepath"
+        case .wiredEthernet: return "cable.connector"
+        case .cellular: return "antenna.radiowaves.left.and.right"
+        default: return "network"
+        }
+    }
+    
+    private func nameForInterfaceType(_ type: NWInterface.InterfaceType) -> String {
+        switch type {
+        case .wifi: return "Wi-Fi"
+        case .loopback: return "Loopback"
+        case .wiredEthernet: return "Ethernet"
+        case .cellular: return "Cellular"
+        default: return "\(type)"
+        }
+    }
+    
     private func resolvedContent(_ resolved: ResolvedServiceInfo) -> some View {
         List {
             // Service Name Header
@@ -729,7 +882,11 @@ struct ServiceDetailView: View {
                             .foregroundColor(.secondary)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
+                            #if !os(tvOS)
                             .background(Capsule().fill(Color(.tertiarySystemFill)))
+                            #else
+                            .background(Capsule().fill(Color.white.opacity(0.15)))
+                            #endif
                     }
                     .padding(.top, 2)
                 }
@@ -757,23 +914,25 @@ struct ServiceDetailView: View {
                 Section(header: Text("Discovered Interfaces (\(service.interfaces.count))")) {
                     ForEach(service.interfaces, id: \.index) { iface in
                         HStack {
-                            Image(systemName: iface.type == .wifi ? "wifi" : (iface.type == .loopback ? "arrow.triangle.2.circlepath" : "cable.connector"))
+                            Image(systemName: iconForInterfaceType(iface.type))
                                 .foregroundColor(.secondary)
                                 .frame(width: 24)
                             Text(iface.name)
                                 .font(.body)
                             Spacer()
-                            Text(iface.type == .wifi ? "Wi-Fi" : (iface.type == .loopback ? "Loopback" : "\(iface.type)"))
+                            Text(nameForInterfaceType(iface.type))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
                         .contentShape(Rectangle())
+                        #if !os(tvOS)
                         .onTapGesture {
-                            copyWithFeedback("\(iface.name) (\(iface.type == .wifi ? "Wi-Fi" : "\(iface.type)"))")
+                            copyWithFeedback("\(iface.name) (\(nameForInterfaceType(iface.type)))")
                         }
+                        #endif
                         .contextMenu {
                             SwiftUI.Button {
-                                copyWithFeedback("\(iface.name) (\(iface.type == .wifi ? "Wi-Fi" : "\(iface.type)"))")
+                                copyWithFeedback("\(iface.name) (\(nameForInterfaceType(iface.type)))")
                             } label: {
                                 Label("Copy Interface", systemImage: "doc.on.doc")
                             }
@@ -814,9 +973,11 @@ struct ServiceDetailView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .contentShape(Rectangle())
                         .padding(.vertical, 2)
+                        #if !os(tvOS)
                         .onTapGesture {
                             copyWithFeedback("\(record.key) = \(record.value)")
                         }
+                        #endif
                         .contextMenu {
                             SwiftUI.Button {
                                 copyWithFeedback("\(record.key) = \(record.value)")
@@ -844,9 +1005,11 @@ struct ServiceDetailView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
                     .padding(.vertical, 2)
+                    #if !os(tvOS)
                     .onTapGesture {
                         copyWithFeedback(rec.content)
                     }
+                    #endif
                     .contextMenu {
                         SwiftUI.Button {
                             copyWithFeedback(rec.content)
@@ -895,7 +1058,11 @@ struct ServiceDetailView: View {
                 }
             }
         }
+        #if !os(tvOS)
         .listStyle(.insetGrouped)
+        #else
+        .listStyle(.grouped)
+        #endif
         .refreshable {
             viewModel.resolveService(service)
         }
@@ -908,7 +1075,9 @@ struct ServiceDetailView: View {
     }
     
     private func copyWithFeedback(_ string: String) {
+        #if !os(tvOS)
         UIPasteboard.general.string = string
+        #endif
         withAnimation(.spring(response: 0.3)) {
             showCopyConfirmation = true
         }
@@ -955,7 +1124,11 @@ private struct DetailRow: View {
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 1)
+                        #if !os(tvOS)
                         .background(Capsule().fill(Color(.tertiarySystemFill)))
+                        #else
+                        .background(Capsule().fill(Color.white.opacity(0.15)))
+                        #endif
                 }
             }
             Text(value)
@@ -965,9 +1138,11 @@ private struct DetailRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .padding(.vertical, 2)
+        #if !os(tvOS)
         .onTapGesture {
             onCopy?(value)
         }
+        #endif
         .contextMenu {
             SwiftUI.Button {
                 onCopy?(value)

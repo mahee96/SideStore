@@ -73,7 +73,6 @@ public final class TVWebFileTransferManager: @unchecked Sendable {
         }
     }
 
-    @MainActor
     public func startExport(
         fileURL: URL,
         title: String = "Export File",
@@ -89,18 +88,20 @@ public final class TVWebFileTransferManager: @unchecked Sendable {
             return
         }
 
-        let alert = UIAlertController(
-            title: title,
-            message: NSLocalizedString("Open this URL on your iPhone, iPad, or Mac on the same Wi-Fi network to download '\(fileURL.lastPathComponent)':\n\n\(serverURL)", comment: ""),
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Done", comment: ""), style: .default) { [weak self] _ in
-            self?.stop()
-            completion?()
-        })
+        DispatchQueue.main.async {
+            let alert = UIAlertController(
+                title: title,
+                message: NSLocalizedString("Open this URL on your iPhone, iPad, or Mac on the same Wi-Fi network to download '\(fileURL.lastPathComponent)':\n\n\(serverURL)", comment: ""),
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: NSLocalizedString("Done", comment: ""), style: .default) { [weak self] _ in
+                self?.stop()
+                completion?()
+            })
 
-        self.activeAlert = alert
-        presentingVC.present(alert, animated: true)
+            self.activeAlert = alert
+            presentingVC.present(alert, animated: true)
+        }
     }
 
     public func stop() {

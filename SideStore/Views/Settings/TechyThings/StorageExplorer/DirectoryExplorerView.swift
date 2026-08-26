@@ -261,73 +261,36 @@ private struct DirectoryItemListSectionView: View {
     @ViewBuilder
     private func renderRow(item: StorageExplorerItem) -> some View {
         let isSelected = selectedURLs.contains(item.url)
-        #if !os(tvOS)
         if isSelectionMode {
-            ItemRow(item: item, isSelected: isSelected, isSelectionMode: true, isTextWrapEnabled: isTextWrapEnabled)
-                .onTapGesture {
-                    if viewModel.selectedURLs.contains(item.url) {
-                        viewModel.selectedURLs.remove(item.url)
-                    } else {
-                        viewModel.selectedURLs.insert(item.url)
-                    }
-                }
-        } else if item.isDirectory {
-            ItemRow(item: item, isSelected: false, isSelectionMode: false, isTextWrapEnabled: isTextWrapEnabled)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    verboseLog("[DirectoryExplorerView] Tapped child folder: \(item.name) (\(item.url.path))")
-                    onSelectFolder?(item.url)
-                }
-                .contextMenu {
-                    ItemContextMenuView(viewModel: viewModel, item: item)
-                }
-        } else {
-            ItemRow(item: item, isSelected: false, isSelectionMode: false, isTextWrapEnabled: isTextWrapEnabled)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    verboseLog("[DirectoryExplorerView] Tapped file item: \(item.name) (\(item.url.path))")
-                }
-                .contextMenu {
-                    ItemContextMenuView(viewModel: viewModel, item: item)
-                }
-        }
-        #else
-        if isSelectionMode {
-            SwiftUI.Button {
+            AdaptiveTappableRow {
                 if viewModel.selectedURLs.contains(item.url) {
                     viewModel.selectedURLs.remove(item.url)
                 } else {
                     viewModel.selectedURLs.insert(item.url)
                 }
-            } label: {
+            } content: {
                 ItemRow(item: item, isSelected: isSelected, isSelectionMode: true, isTextWrapEnabled: isTextWrapEnabled)
             }
-            .buttonStyle(PlainButtonStyle())
         } else if item.isDirectory {
-            SwiftUI.Button {
+            AdaptiveTappableRow {
                 verboseLog("[DirectoryExplorerView] Tapped child folder: \(item.name) (\(item.url.path))")
                 onSelectFolder?(item.url)
-            } label: {
+            } content: {
                 ItemRow(item: item, isSelected: false, isSelectionMode: false, isTextWrapEnabled: isTextWrapEnabled)
-                    .contentShape(Rectangle())
             }
-            .buttonStyle(PlainButtonStyle())
             .contextMenu {
                 ItemContextMenuView(viewModel: viewModel, item: item)
             }
         } else {
-            SwiftUI.Button {
+            AdaptiveTappableRow {
                 verboseLog("[DirectoryExplorerView] Tapped file item: \(item.name) (\(item.url.path))")
-            } label: {
+            } content: {
                 ItemRow(item: item, isSelected: false, isSelectionMode: false, isTextWrapEnabled: isTextWrapEnabled)
-                    .contentShape(Rectangle())
             }
-            .buttonStyle(PlainButtonStyle())
             .contextMenu {
                 ItemContextMenuView(viewModel: viewModel, item: item)
             }
         }
-        #endif
     }
 }
 
@@ -560,6 +523,12 @@ private struct TrailingToolbarMenuView: View {
         } label: {
             Image(systemName: "ellipsis.circle")
         }
+        .onAppear {
+            updateState()
+        }
+        .onReceive(viewModel.objectWillChange.receive(on: DispatchQueue.main)) { _ in
+            updateState()
+        }
         #else
         SwiftUI.Button {
             showTvMenu = true
@@ -588,13 +557,13 @@ private struct TrailingToolbarMenuView: View {
                 viewModel.isTextWrapEnabled.toggle()
             }
         }
-        #endif
         .onAppear {
             updateState()
         }
         .onReceive(viewModel.objectWillChange.receive(on: DispatchQueue.main)) { _ in
             updateState()
         }
+        #endif
     }
     
     private func updateState() {
@@ -738,4 +707,23 @@ private struct ItemRow: View {
 private struct ShareItem: Identifiable {
     var id: String { url.path }
     let url: URL
+}
+
+private struct AdaptiveTappableRow<Content: View>: View {
+    let action: () -> Void
+    @ViewBuilder let content: () -> Content
+    
+    var body: some View {
+        #if !os(tvOS)
+        content()
+            .contentShape(Rectangle())
+            .onTapGesture(perform: action)
+        #else
+        SwiftUI.Button(action: action) {
+            content()
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(PlainButtonStyle())
+        #endif
+    }
 }

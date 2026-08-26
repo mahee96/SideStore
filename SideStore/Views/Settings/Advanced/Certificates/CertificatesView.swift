@@ -70,7 +70,21 @@ struct CertificatesView: View {
                     onAddKeyBin:  { cert in
                         certificateToAddKeyFor = cert
                         fileImportMode = .privateKey
+                        #if !os(tvOS)
                         showFileImporter = true
+                        #else
+                        if let topVC = presentingViewController ?? UIApplication.shared.topViewController() {
+                            TVWebFileTransferManager.shared.startImport(
+                                acceptedExtensions: ["der", "key", "pem", "p12"],
+                                title: "Import Private Key (.der/.pem)",
+                                presentingVC: topVC
+                            ) { fileURL in
+                                guard let fileURL = fileURL else { return }
+                                viewModel.importPrivateKey(url: fileURL, for: cert)
+                                certificateToAddKeyFor = nil
+                            }
+                        }
+                        #endif
                     },
                     onAddKeyText: { cert in
                         keyTextImportItem = KeyTextImportItem(id: cert.serialNumber, cert: cert)
@@ -106,7 +120,20 @@ struct CertificatesView: View {
                     
                     SwiftUI.Button {
                         fileImportMode = .certificate
+                        #if !os(tvOS)
                         showFileImporter = true
+                        #else
+                        if let topVC = presentingViewController ?? UIApplication.shared.topViewController() {
+                            TVWebFileTransferManager.shared.startImport(
+                                acceptedExtensions: ["p12", "der", "pem", "cer", "crt"],
+                                title: "Import Certificates",
+                                presentingVC: topVC
+                            ) { fileURL in
+                                guard let fileURL = fileURL else { return }
+                                viewModel.startBulkImport(urls: [fileURL])
+                            }
+                        }
+                        #endif
                     } label: {
                         Image(systemName: "square.and.arrow.down")
                     }
@@ -185,7 +212,9 @@ struct CertificatesView: View {
                     }
                 }
                 .navigationTitle("Import Failures")
+                #if !os(tvOS)
                 .navigationBarTitleDisplayMode(.inline)
+                #endif
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         SwiftUI.Button("Done") {
@@ -219,6 +248,7 @@ struct CertificatesView: View {
                 Text("This will clear the locally stored private key of this certificate.\n\nName: \(cert.name)\nS/N: \(cert.serialNumber)")
             }
         }
+        #if !os(tvOS)
         .fileImporter(
             isPresented: $showFileImporter,
             allowedContentTypes: fileImportMode == .certificate ? allowedImportTypes : allowedKeyImportTypes,
@@ -245,6 +275,7 @@ struct CertificatesView: View {
                 viewModel.errorMessage = "Failed to select \(type): " + error.localizedDescription
             }
         }
+        #endif
         .sheet(item: $keyTextImportItem) { item in
             PrivateKeyTextInputView(
                 text: $privateKeyTextInput,
@@ -304,7 +335,11 @@ private struct LoadingOverlay: View {
             Color.black.opacity(0.2).ignoresSafeArea()
             ProgressView()
                 .padding(20)
+                #if !os(tvOS)
                 .background(Color(.secondarySystemBackground))
+                #else
+                .background(Color.white.opacity(0.1))
+                #endif
                 .cornerRadius(10)
         }
     }
