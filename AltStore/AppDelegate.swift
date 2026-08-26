@@ -12,11 +12,7 @@ import AVFoundation
 import Intents
 @preconcurrency import AltSign
 import CoreData
-
-
 import Nuke
-
-extension UIApplication: LegacyBackgroundFetching {}
 
 extension AppDelegate
 {
@@ -365,10 +361,8 @@ extension AppDelegate
 {
     private func prepareForBackgroundFetch()
     {
-        // "Fetch" every hour, but then refresh only those that need to be refreshed (so we don't drain the battery).
-        (UIApplication.shared as LegacyBackgroundFetching).setMinimumBackgroundFetchInterval(1 * 60 * 60)
-        
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { (success, error) in
+            // no-op
         }
         
         #if DEBUG && targetEnvironment(simulator)
