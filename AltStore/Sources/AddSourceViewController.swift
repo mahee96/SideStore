@@ -977,12 +977,3 @@ extension AddSourceViewController: UITextFieldDelegate
     }
 }
 
-@available(iOS 17.0, *)
-#Preview(traits: .portrait) {
-    DatabaseManager.shared.startForPreview()
-    
-    let storyboard = UIStoryboard(name: "Sources", bundle: .main)
-    
-    let addSourceNavigationController = storyboard.instantiateViewController(withIdentifier: "addSourceNavigationController")
-    return addSourceNavigationController
-}

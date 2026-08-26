@@ -683,15 +683,3 @@ extension BrowseViewController: UIViewControllerPreviewingDelegate
     }
 }
 
-@available(iOS 17, *)
-#Preview(traits: .portrait) {
-    DatabaseManager.shared.startForPreview()
-   
-    let storyboard = UIStoryboard(name: "Main", bundle: .main)
-    let browseViewController = storyboard.instantiateViewController(identifier: "browseViewController") { coder in
-        BrowseViewController(source: nil, coder: coder)
-    }
-    
-    let navigationController = UINavigationController(rootViewController: browseViewController)
-    return navigationController
-}

@@ -234,10 +234,3 @@ extension AltAppIconsViewController
     }
 }
 
-@available(iOS 17, *)
-#Preview(traits: .portrait) {
-    let altAppIconsViewController = AltAppIconsViewController(collectionViewLayout: UICollectionViewFlowLayout())
-    
-    let navigationController = UINavigationController(rootViewController: altAppIconsViewController)
-    return navigationController
-}

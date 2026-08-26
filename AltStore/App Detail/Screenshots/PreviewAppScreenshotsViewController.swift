@@ -215,15 +215,3 @@ private extension PreviewAppScreenshotsViewController
     }
 }
 
-@available(iOS 17, *)
-#Preview(traits: .portrait) {
-    DatabaseManager.shared.startForPreview()
-    
-    let fetchRequest = StoreApp.fetchRequest()
-    let storeApp = try! DatabaseManager.shared.viewContext.fetch(fetchRequest).first!
-    
-    let previewViewController = PreviewAppScreenshotsViewController(app: storeApp)
-    
-    let navigationController = UINavigationController(rootViewController: previewViewController)
-    return navigationController
-}
