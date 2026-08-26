@@ -7,8 +7,8 @@
 //
 
 @preconcurrency import UIKit
-import SafariServices
 import Combine
+import SafariServices
 import CoreData
 
 import Nuke

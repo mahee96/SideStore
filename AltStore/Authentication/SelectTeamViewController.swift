@@ -7,11 +7,6 @@
 //
 
 @preconcurrency import UIKit
-import SafariServices
-import MessageUI
-import Intents
-import IntentsUI
-
 @preconcurrency import AltSign
 
 final class SelectTeamViewController: UITableViewController

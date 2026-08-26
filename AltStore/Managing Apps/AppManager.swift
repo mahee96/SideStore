@@ -14,7 +14,6 @@ import UserNotifications
 import MobileCoreServices
 import Intents
 import Combine
-import WidgetKit
 import UniformTypeIdentifiers
 
 extension AppManager

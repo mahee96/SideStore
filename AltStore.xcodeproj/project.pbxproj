@@ -11,12 +11,12 @@
 		A84596F62F7DC4C90000B8CD /* SideStore.conf in Resources */ = {isa = PBXBuildFile; fileRef = A84596F52F7DC4C90000B8CD /* SideStore.conf */; };
 		A87939D3303A89CA004D9227 /* Minimuxer in Frameworks */ = {isa = PBXBuildFile; productRef = A87939D2303A89CA004D9227 /* Minimuxer */; };
 		A87939D6303A89EB004D9227 /* AltSign-Static in Frameworks */ = {isa = PBXBuildFile; productRef = A87939D5303A89EB004D9227 /* AltSign-Static */; };
-		A8C37029302DA7F30010213A /* MarkdownKit in Frameworks */ = {isa = PBXBuildFile; productRef = A8C37028302DA7F30010213A /* MarkdownKit */; };
+		A8C37029302DA7F30010213A /* MarkdownKit in Frameworks */ = {isa = PBXBuildFile; platformFilter = ios; productRef = A8C37028302DA7F30010213A /* MarkdownKit */; };
 		A8C3702C302DA80D0010213A /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = A8C3702B302DA80D0010213A /* KeychainAccess */; };
 		A8C3702F302DA82A0010213A /* Nuke in Frameworks */ = {isa = PBXBuildFile; productRef = A8C3702E302DA82A0010213A /* Nuke */; };
 		A8C37035302DA84D0010213A /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = A8C37034302DA84D0010213A /* Starscream */; };
 		A8C37039302DA8D90010213A /* SemanticVersion in Frameworks */ = {isa = PBXBuildFile; productRef = A8C37038302DA8D90010213A /* SemanticVersion */; };
-		BF989177250AABF4002ACF50 /* AltWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BF989167250AABF3002ACF50 /* AltWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		BF989177250AABF4002ACF50 /* AltWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BF989167250AABF3002ACF50 /* AltWidgetExtension.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -426,11 +426,13 @@
 /* Begin PBXTargetDependency section */
 		0ED4AEC92E6DDB2A0039E2C0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
+			platformFilter = ios;
 			target = BF58047A246A28F7008AE704 /* SideBackup */;
 			targetProxy = 0ED4AEC82E6DDB2A0039E2C0 /* PBXContainerItemProxy */;
 		};
 		BF989176250AABF4002ACF50 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
+			platformFilter = ios;
 			target = BF989166250AABF3002ACF50 /* AltWidgetExtension */;
 			targetProxy = BF989175250AABF4002ACF50 /* PBXContainerItemProxy */;
 		};
@@ -749,12 +751,13 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_ENFORCE_EXCLUSIVE_ACCESS = "debug-only";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = "1,2,3";
 			};
 			name = Debug;
 		};
@@ -796,13 +799,14 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_ENFORCE_EXCLUSIVE_ACCESS = "debug-only";
 				SWIFT_OPTIMIZATION_LEVEL = "-Osize";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = "1,2,3";
 			};
 			name = Release;
 		};

@@ -8,8 +8,8 @@
 
 @preconcurrency import UIKit
 import SwiftUI
-import SafariServices
 import MessageUI
+import SafariServices
 import Intents
 import IntentsUI
 

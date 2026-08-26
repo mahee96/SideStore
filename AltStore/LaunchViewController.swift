@@ -8,8 +8,6 @@
 
 @preconcurrency import UIKit
 
-import WidgetKit
-
 @preconcurrency import AltSign
 import UniformTypeIdentifiers
 import CryptoKit

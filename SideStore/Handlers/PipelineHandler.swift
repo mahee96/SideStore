@@ -118,6 +118,7 @@ class PipelineHandler: PipelineExecutionHandler,
                 
                 let suiview = popoverContentController.view!
                 suiview.translatesAutoresizingMaskIntoConstraints = false
+                #if !os(tvOS)
                 popoverContentController.modalPresentationStyle = .popover
                 
                 if let popoverPresentationController = popoverContentController.popoverPresentationController {
@@ -128,6 +129,10 @@ class PipelineHandler: PipelineExecutionHandler,
                 } else {
                     continuation.resume(throwing: OperationError.invalidParameters("RemoveAppExtensionsOperation: popoverContentController.popoverPresentationController is nil"))
                 }
+                #else
+                popoverContentController.modalPresentationStyle = .formSheet
+                presenter.present(popoverContentController, animated: true)
+                #endif
             })
             
             presenter.present(alertController, animated: true) {

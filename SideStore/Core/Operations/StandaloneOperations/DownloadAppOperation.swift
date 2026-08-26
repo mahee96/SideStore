@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import WebKit
 import UniformTypeIdentifiers
 @preconcurrency import AltSign
 
