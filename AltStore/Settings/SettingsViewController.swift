@@ -8,8 +8,9 @@
 
 @preconcurrency import UIKit
 import SwiftUI
+#if !os(tvOS)
 import MessageUI
-import SafariServices
+#endif
 import Intents
 import IntentsUI
 
@@ -764,10 +765,7 @@ private extension SettingsViewController
             else
             {
                 let safariURL = URL(string: "https://twitter.com/" + username)!
-                
-                let safariViewController = SFSafariViewController(url: safariURL)
-                safariViewController.preferredControlTintColor = .altPrimary
-                self.present(safariViewController, animated: true, completion: nil)
+                self.openWebURL(safariURL, preferredTintColor: .altPrimary)
             }
         }
     }
@@ -1056,21 +1054,18 @@ extension SettingsViewController
                 // Option 1: GitHub
                 alertController.addAction(UIAlertAction(title: "GitHub", style: .default) { _ in
                     if let githubURL = URL(string: "https://github.com/SideStore/SideStore/issues") {
-                        let safariViewController = SFSafariViewController(url: githubURL)
-                        safariViewController.preferredControlTintColor = .altPrimary
-                        self.present(safariViewController, animated: true, completion: nil)
+                        self.openWebURL(githubURL, preferredTintColor: .altPrimary)
                     }
                 })
                 
                 // Option 2: Discord
                 alertController.addAction(UIAlertAction(title: "Discord", style: .default) { _ in
                     if let discordURL = URL(string: "https://discord.gg/sidestore-949183273383395328") {
-                        let safariViewController = SFSafariViewController(url: discordURL)
-                        safariViewController.preferredControlTintColor = .altPrimary
-                        self.present(safariViewController, animated: true, completion: nil)
+                        self.openWebURL(discordURL, preferredTintColor: .altPrimary)
                     }
                 })
                 
+                #if !os(tvOS)
                 // Option 3: Mail
                 alertController.addAction(UIAlertAction(title: "Send Email", style: .default) { _ in
                     if MFMailComposeViewController.canSendMail() {
@@ -1091,6 +1086,7 @@ extension SettingsViewController
                       toastView.show(in: self)
                     }
                 })
+                #endif
                 
                 // Cancel action
                 alertController.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
@@ -1217,6 +1213,7 @@ extension SettingsViewController
     }
 }
 
+#if !os(tvOS)
 extension SettingsViewController: MFMailComposeViewControllerDelegate
 {
     func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?)
@@ -1230,6 +1227,7 @@ extension SettingsViewController: MFMailComposeViewControllerDelegate
         controller.dismiss(animated: true, completion: nil)
     }
 }
+#endif
 
 extension SettingsViewController: UIGestureRecognizerDelegate
 {

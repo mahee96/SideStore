@@ -11,21 +11,20 @@ import Foundation
 import UIKit
 import TVServices
 
-public final class SideStoreTopShelfProvider: NSObject, TVTopShelfProvider {
+public final class SideStoreTopShelfProvider: TVTopShelfContentProvider {
 
-    public var topShelfContent: (any TVTopShelfContent)? {
+    public override func loadTopShelfContent(completionHandler: @escaping (TVTopShelfContent?) -> Void) {
         let snapshot = WidgetDataManager.shared.fetchSnapshot()
         guard !snapshot.activeApps.isEmpty else {
-            return nil
+            completionHandler(nil)
+            return
         }
 
         let items: [TVTopShelfSectionedItem] = snapshot.activeApps.map { app in
             let item = TVTopShelfSectionedItem(identifier: app.bundleIdentifier)
-            item.title = app.name
-            item.imageShape = .square
-
             let daysLeft = max(0, Calendar.current.dateComponents([.day], from: Date(), to: app.expirationDate).day ?? 0)
-            item.topShelfContentDescription = "\(daysLeft)d left • Expires \(app.expirationDate.formatted(date: .abbreviated, time: .omitted))"
+            item.title = "\(app.name) (\(daysLeft)d)"
+            item.imageShape = .square
 
             if let iconDir = FileManager.default.altstoreSharedDirectory?.appendingPathComponent("WidgetIcons", isDirectory: true) {
                 let iconURL = iconDir.appendingPathComponent("\(app.bundleIdentifier).png")
@@ -46,7 +45,7 @@ public final class SideStoreTopShelfProvider: NSObject, TVTopShelfProvider {
         section.title = "Installed Apps"
 
         let content = TVTopShelfSectionedContent(sections: [section])
-        return content
+        completionHandler(content)
     }
 }
 #endif

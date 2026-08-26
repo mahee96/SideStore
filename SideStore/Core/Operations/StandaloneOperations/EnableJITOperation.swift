@@ -126,6 +126,7 @@ func enableJITSideJITServer(serverURL: URL, bundleIdentifier: String, appName: S
     let cleanString = dataString.trimmingCharacters(in: CharacterSet(charactersIn: "\"'\n\r\t "))
 
     if cleanString.contains("Enabled JIT for") {
+        #if !os(tvOS)
         let content = UNMutableNotificationContent()
         content.title = "JIT Successfully Enabled"
         content.subtitle = "JIT Enabled For \(appName)"
@@ -133,6 +134,14 @@ func enableJITSideJITServer(serverURL: URL, bundleIdentifier: String, appName: S
 
         let request = UNNotificationRequest(identifier: "EnabledJIT", content: content, trigger: nil)
         try? await UNUserNotificationCenter.current().add(request)
+        #else
+        DispatchQueue.main.async {
+            if let window = UIApplication.shared.connectedScenes.compactMap({ ($0 as? UIWindowScene)?.windows.first(where: { $0.isKeyWindow }) }).first {
+                let toastView = ToastView(text: "JIT Successfully Enabled for \(appName)", detailText: nil)
+                toastView.show(in: window)
+            }
+        }
+        #endif
     } else {
         let errorType: SideJITServerErrorType = cleanString.contains("Could not find device")
             ? .deviceNotFound

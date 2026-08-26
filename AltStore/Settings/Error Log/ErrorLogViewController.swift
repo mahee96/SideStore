@@ -8,12 +8,10 @@
 
 @preconcurrency import UIKit
 import CoreData
-import SafariServices
-import QuickLook
 import Nuke
 import SwiftUI
 
-final class ErrorLogViewController: UITableViewController, QLPreviewControllerDelegate
+final class ErrorLogViewController: UITableViewController
 {
     private lazy var dataSource = self.makeDataSource()
     private var expandedErrorIDs = Set<NSManagedObjectID>()
@@ -232,14 +230,6 @@ private extension ErrorLogViewController
     enum LogView: String {
         case consoleLog = "console-log"
 
-        // Method to get the QLPreviewController for this log type
-        func getViewController(_ dataSource: QLPreviewControllerDataSource) -> QLPreviewController {
-            let previewController = QLPreviewController()
-            previewController.restorationIdentifier = self.rawValue
-            previewController.dataSource = dataSource
-            return previewController
-        }
-        
         func getLogPath() -> URL {
             let appDelegate = UIApplication.shared.delegate as! AppDelegate
             return appDelegate.consoleLog.logFileURL
@@ -311,9 +301,7 @@ private extension ErrorLogViewController
     func searchFAQ(for loggedError: LoggedError)
     {
         let staticURL = URL(string: "https://docs.sidestore.io/docs/troubleshooting/error-codes")!
-        let safariViewController = SFSafariViewController(url: staticURL)
-        safariViewController.preferredControlTintColor = .altPrimary
-        self.present(safariViewController, animated: true)
+        self.openWebURL(staticURL, preferredTintColor: .altPrimary)
     }
 
     func viewMoreDetails(for loggedError: LoggedError) {
@@ -401,24 +389,7 @@ extension ErrorLogViewController
     }
 }
 
-extension ErrorLogViewController: QLPreviewControllerDataSource {
-    func numberOfPreviewItems(in controller: QLPreviewController) -> Int {
-        return 1
-    }
 
-    func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> QLPreviewItem
-    {
-        guard let identifier = controller.restorationIdentifier,
-              let logView = LogView(rawValue: identifier) else
-        {
-            let errorURL = FileManager.default.temporaryDirectory.appendingPathComponent("LogPreviewError.txt")
-            let errorMessage = "Error: Failed to load log for '\(controller.restorationIdentifier ?? "unknown")'."
-            try? errorMessage.write(to: errorURL, atomically: true, encoding: .utf8)
-            return errorURL as QLPreviewItem
-        }
-        return logView.getLogPath() as QLPreviewItem
-    }
-}
 
 extension ErrorLogViewController
 {
@@ -450,34 +421,3 @@ extension ErrorLogViewController
         }
     }
 }
-
-//extension ErrorLogViewController: QLPreviewControllerDataSource, QLPreviewControllerDelegate
-//{
-//    func numberOfPreviewItems(in controller: QLPreviewController) -> Int
-//    {
-//        return 1
-//    }
-//    
-//    func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> QLPreviewItem
-//    {
-//        return (_exportedLogURL as? NSURL) ?? NSURL()
-//    }
-//    
-//    func previewControllerDidDismiss(_ controller: QLPreviewController)
-//    {
-//        guard let exportedLogURL = _exportedLogURL else { return }
-//        
-//        let parentDirectory = exportedLogURL.deletingLastPathComponent()
-//        
-//        do
-//        {
-//            try FileManager.default.removeItem(at: parentDirectory)
-//        }
-//        catch
-//        {
-//            debugLog("Failed to remove temporary log directory \(parentDirectory.lastPathComponent). \(error.localizedDescription)")
-//        }
-//        
-//        _exportedLogURL = nil
-//    }
-//}

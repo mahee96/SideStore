@@ -7,7 +7,9 @@
 //
 
 import SwiftUI
+#if !os(tvOS)
 import QuickLook
+#endif
 @preconcurrency import AltSign
 
 // MARK: - Bundle Item Model
@@ -78,6 +80,7 @@ struct BundleResourceBrowserView: View {
                     }
                 }
             }
+            #if !os(tvOS)
             // Leading Share
             ToolbarItem(placement: .navigationBarLeading) {
                 if isSelecting && !selectedURLs.isEmpty {
@@ -88,10 +91,13 @@ struct BundleResourceBrowserView: View {
                     }
                 }
             }
+            #endif
         }
+        #if !os(tvOS)
         .sheet(isPresented: $showingShareSheet) {
             ActivityView(items: Array(selectedURLs))
         }
+        #endif
         .onAppear {
             guard !isLoaded else { return }
             isLoaded = true
@@ -199,7 +205,11 @@ struct BundleItemRow: View {
         } else if textExtensions.contains(ext) {
             ResourceTextViewer(url: item.url)
         } else {
+            #if !os(tvOS)
             QLPreviewControllerView(url: item.url)
+            #else
+            ResourceTextViewer(url: item.url)
+            #endif
         }
     }
 
@@ -582,6 +592,7 @@ struct ResourceTextViewer: View {
     }
 }
 
+#if !os(tvOS)
 // MARK: - QuickLook Preview Controller Bridge
 
 struct QLPreviewControllerView: UIViewControllerRepresentable {
@@ -622,3 +633,4 @@ struct ActivityView: UIViewControllerRepresentable {
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
+#endif

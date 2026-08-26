@@ -8,7 +8,6 @@
 
 @preconcurrency import UIKit
 import Combine
-import SafariServices
 
 import Nuke
 
@@ -248,10 +247,7 @@ class SourceDetailViewController: HeaderContentViewController<SourceHeaderView, 
     @objc private func showWebsite()
     {
         guard let websiteURL = self.source.websiteURL else { return }
-        
-        let safariViewController = SFSafariViewController(url: websiteURL)
-        safariViewController.preferredControlTintColor = self.source.effectiveTintColor ?? .altPrimary
-        self.present(safariViewController, animated: true, completion: nil)
+        self.openWebURL(websiteURL, preferredTintColor: self.source.effectiveTintColor ?? .altPrimary)
     }
 }
 

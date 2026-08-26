@@ -61,6 +61,7 @@ class HeaderContentViewController<Header: UIView, Content: ScrollableContentView
         return isViewingHeader
     }
     
+    #if !os(tvOS)
     override var preferredStatusBarStyle: UIStatusBarStyle {
         if #available(iOS 17, *)
         {
@@ -73,6 +74,7 @@ class HeaderContentViewController<Header: UIView, Content: ScrollableContentView
         }
     }
     private var _preferredStatusBarStyle: UIStatusBarStyle = .default
+    #endif
     
     init()
     {
@@ -107,7 +109,9 @@ class HeaderContentViewController<Header: UIView, Content: ScrollableContentView
         self.view.backgroundColor = .altBackground
         self.view.clipsToBounds = true
         
+        #if !os(tvOS)
         self.navigationItem.largeTitleDisplayMode = .never
+        #endif
         self.navigationController?.presentationController?.delegate = self
         
         
@@ -128,11 +132,15 @@ class HeaderContentViewController<Header: UIView, Content: ScrollableContentView
         self.ignoreBackGestureRecognizer = UIPanGestureRecognizer(target: self, action: nil)
         self.ignoreBackGestureRecognizer.delegate = self
         self.headerContainerView.addGestureRecognizer(self.ignoreBackGestureRecognizer)
+        #if !os(tvOS)
         self.navigationController?.interactivePopGestureRecognizer?.require(toFail: self.ignoreBackGestureRecognizer) // So we can disable back gesture when viewing header.
+        #endif
         
         self.headerScrollView = UIScrollView(frame: .zero)
         self.headerScrollView.delegate = self
+        #if !os(tvOS)
         self.headerScrollView.isPagingEnabled = true
+        #endif
         self.headerScrollView.clipsToBounds = false
         self.headerScrollView.indicatorStyle = .white
         self.headerScrollView.showsVerticalScrollIndicator = false
@@ -295,6 +303,7 @@ class HeaderContentViewController<Header: UIView, Content: ScrollableContentView
         
         let statusBarHeight: Double
         
+        #if !os(tvOS)
         if let navigationController, navigationController.presentingViewController != nil, navigationController.modalPresentationStyle != .fullScreen
         {
             statusBarHeight = 20
@@ -307,6 +316,9 @@ class HeaderContentViewController<Header: UIView, Content: ScrollableContentView
         {
             statusBarHeight = 0
         }
+        #else
+        statusBarHeight = 0
+        #endif
         
         let cornerRadius = self.contentViewControllerShadowView.layer.cornerRadius
         
@@ -498,6 +510,7 @@ private extension HeaderContentViewController
         
         self.updateNavigationBarAppearance(isHidden: false)
         
+        #if !os(tvOS)
         if self.traitCollection.userInterfaceStyle == .dark
         {
             self._preferredStatusBarStyle = .lightContent
@@ -511,6 +524,7 @@ private extension HeaderContentViewController
         {
             self.navigationController?.setNeedsStatusBarAppearanceUpdate()
         }
+        #endif
     }
     
     func hideNavigationBar()
@@ -521,12 +535,14 @@ private extension HeaderContentViewController
         
         self.updateNavigationBarAppearance(isHidden: true)
         
+        #if !os(tvOS)
         self._preferredStatusBarStyle = .lightContent
         
         if #unavailable(iOS 17)
         {
             self.navigationController?.setNeedsStatusBarAppearanceUpdate()
         }
+        #endif
     }
     
     func updateNavigationBarAppearance(isHidden: Bool)

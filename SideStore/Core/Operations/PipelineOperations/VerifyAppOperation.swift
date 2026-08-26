@@ -227,7 +227,7 @@ final class VerifyAppOperation: BasePipelineOperation<InstallAppOperationContext
     private func privacyPermissions(for appBundle: ALTApplication) -> [ALTAppPrivacyPermission] {
         return ([appBundle] + appBundle.appExtensions).flatMap { (app) in
             let permissions = app.bundle.infoDictionary?.keys.compactMap { key -> ALTAppPrivacyPermission? in
-                if #available(iOS 16, *) {
+                if #available(iOS 16, tvOS 16, *) {
                     guard key.wholeMatch(of: Regex.privacyPermission) != nil else { return nil }
                 } else {
                     guard key.contains("UsageDescription") else { return nil }
@@ -249,7 +249,7 @@ final class VerifyAppOperation: BasePipelineOperation<InstallAppOperationContext
             if sourcePermissions.contains(AnyHashable(permission)) {
                 return false
             } else if permission.type == .privacy {
-                guard #available(iOS 16, *) else {
+                guard #available(iOS 16, tvOS 16, *) else {
                     return false
                 }
                 

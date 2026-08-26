@@ -379,6 +379,7 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
             let delaySeconds = Self.selfInstallSuspendDelayNs / 1_000_000_000
             self.debugLog("[InstallAppOperation] We are still installing after \(delaySeconds) seconds")
             
+            #if !os(tvOS)
             let settings = await UNUserNotificationCenter.current().notificationSettings()
             switch settings.authorizationStatus {
                 case .authorized, .ephemeral, .provisional:
@@ -399,6 +400,12 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
                         self.suspendToHomeScreen()
                     }
                 }
+            #else
+            NotificationCenter.default.post(name: NSNotification.Name("TVTopShelfItemsDidChangeNotification"), object: nil)
+            handler.requestBackgroundSuspension {
+                self.suspendToHomeScreen()
+            }
+            #endif
         }
     }
     

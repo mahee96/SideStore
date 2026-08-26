@@ -173,6 +173,7 @@ final class BackgroundRefreshAppsOperation: BaseStandaloneOperation<OperationCon
     
     private func scheduleFinishedRefreshingNotification(for result: Result<[String: Result<InstalledApp, Error>], Error>, delay: TimeInterval = 5) {
         func scheduleFinishedRefreshingNotification() {
+            #if !os(tvOS)
             self.cancelFinishedRefreshingNotification()
             
             let content = UNMutableNotificationContent()
@@ -226,6 +227,9 @@ final class BackgroundRefreshAppsOperation: BaseStandaloneOperation<OperationCon
                     }
                 }
             }
+            #else
+            NotificationCenter.default.post(name: NSNotification.Name("TVTopShelfItemsDidChangeNotification"), object: nil)
+            #endif
         }
         
         if self.presentsFinishedNotification {

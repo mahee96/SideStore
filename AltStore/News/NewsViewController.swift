@@ -8,7 +8,6 @@
 
 @preconcurrency import UIKit
 import Combine
-import SafariServices
 import CoreData
 
 import Nuke
@@ -398,9 +397,7 @@ extension NewsViewController
         
         if let externalURL = newsItem.externalURL
         {
-            let safariViewController = SFSafariViewController(url: externalURL)
-            safariViewController.preferredControlTintColor = newsItem.tintColor
-            self.present(safariViewController, animated: true, completion: nil)
+            self.openWebURL(externalURL, preferredTintColor: newsItem.tintColor)
         }
         else if let storeApp = newsItem.storeApp
         {
@@ -488,6 +485,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
     }
 }
 
+#if !os(tvOS)
 extension NewsViewController: UIViewControllerPreviewingDelegate
 {
     @available(iOS, deprecated: 13.0)
@@ -503,9 +501,7 @@ extension NewsViewController: UIViewControllerPreviewingDelegate
             
             if let externalURL = newsItem.externalURL
             {
-                let safariViewController = SFSafariViewController(url: externalURL)
-                safariViewController.preferredControlTintColor = newsItem.tintColor
-                return safariViewController
+                return self.makeWebViewController(for: externalURL, preferredTintColor: newsItem.tintColor)
             }
             else if let storeApp = newsItem.storeApp
             {
@@ -540,13 +536,14 @@ extension NewsViewController: UIViewControllerPreviewingDelegate
     @available(iOS, deprecated: 13.0)
     func previewingContext(_ previewingContext: UIViewControllerPreviewing, commit viewControllerToCommit: UIViewController)
     {
-        if let safariViewController = viewControllerToCommit as? SFSafariViewController
-        {
-            self.present(safariViewController, animated: true, completion: nil)
-        }
-        else
+        if viewControllerToCommit is AppViewController
         {
             self.navigationController?.pushViewController(viewControllerToCommit, animated: true)
         }
+        else
+        {
+            self.present(viewControllerToCommit, animated: true, completion: nil)
+        }
     }
 }
+#endif

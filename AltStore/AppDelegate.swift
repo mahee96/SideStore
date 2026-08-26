@@ -67,8 +67,10 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
     
+    #if !os(tvOS)
     private let intentHandler = IntentHandler()
     private let viewAppIntentHandler = ViewAppIntentHandler()
+    #endif
     
     public let consoleLog = ConsoleLog()
 
@@ -238,6 +240,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         return self.open(url)
     }
     
+    #if !os(tvOS)
     func application(_ application: UIApplication, handlerFor intent: INIntent) -> Any?
     {
         switch intent
@@ -247,6 +250,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         default: return nil
         }
     }
+    #endif
     
     func applicationWillTerminate(_ application: UIApplication) {
         // Stop console logging and clean up resources

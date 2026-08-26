@@ -130,7 +130,7 @@ class PipelineHandler: PipelineExecutionHandler,
                     continuation.resume(throwing: OperationError.invalidParameters("RemoveAppExtensionsOperation: popoverContentController.popoverPresentationController is nil"))
                 }
                 #else
-                popoverContentController.modalPresentationStyle = .formSheet
+                popoverContentController.modalPresentationStyle = .blurOverFullScreen
                 presenter.present(popoverContentController, animated: true)
                 #endif
             })

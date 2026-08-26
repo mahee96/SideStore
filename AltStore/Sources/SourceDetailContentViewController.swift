@@ -8,7 +8,6 @@
 
 @preconcurrency import UIKit
 import CoreData
-import SafariServices
 
 import Nuke
 
@@ -350,9 +349,7 @@ extension SourceDetailContentViewController
         case (.news, let newsItem as NewsItem):
             if let externalURL = newsItem.externalURL
             {
-                let safariViewController = SFSafariViewController(url: externalURL)
-                safariViewController.preferredControlTintColor = newsItem.tintColor
-                self.present(safariViewController, animated: true, completion: nil)
+                self.openWebURL(externalURL, preferredTintColor: newsItem.tintColor)
             }
             else if let storeApp = newsItem.storeApp
             {

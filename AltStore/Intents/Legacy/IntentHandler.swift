@@ -6,6 +6,7 @@
 //  Copyright © 2020 Riley Testut. All rights reserved.
 //
 
+#if !os(tvOS)
 @preconcurrency import UIKit
 import Foundation
 
@@ -162,3 +163,4 @@ private extension IntentHandler
         self.operations[intent] = operation
     }
 }
+#endif
