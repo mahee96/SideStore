@@ -309,7 +309,7 @@ private extension AppDelegate
         
         ImagePipeline.shared = pipeline
         
-        if let dataCache = ImagePipeline.shared.configuration.dataCache as? DataCache, #available(iOS 15, *)
+        if let dataCache = ImagePipeline.shared.configuration.dataCache as? DataCache
         {
             debugLog("[AppDelegate] Current image cache size: \(dataCache.totalSize.formatted(.byteCount(style: .file)))")
         }

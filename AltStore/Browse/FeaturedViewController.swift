@@ -627,12 +627,7 @@ extension FeaturedViewController
             
             let headerView = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: kind, for: indexPath) as! UICollectionViewListCell
             
-            var content: UIListContentConfiguration = if #available(iOS 15, *) {
-                .prominentInsetGroupedHeader()
-            }
-            else {
-                .groupedHeader()
-            }
+            var content: UIListContentConfiguration = .prominentInsetGroupedHeader()
             
             switch section
             {

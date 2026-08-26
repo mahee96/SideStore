@@ -272,16 +272,8 @@ private extension SourcesViewController
             cell.bannerView.subtitleLabel.text = text
             cell.bannerView.subtitleLabel.numberOfLines = 1
             
-            let numberOfAppsText: String
-            if #available(iOS 15, *)
-            {
-                let attributedOutput = AttributedString(localized: "^[\(numberOfApps) app](inflect: true)")
-                numberOfAppsText = String(attributedOutput.characters)
-            }
-            else
-            {
-                numberOfAppsText = ""
-            }
+            let attributedOutput = AttributedString(localized: "^[\(numberOfApps) app](inflect: true)")
+            let numberOfAppsText = String(attributedOutput.characters)
             
             let accessibilityLabel = source.name + "\n" + text + ".\n" + numberOfAppsText
             cell.bannerView.accessibilityLabel = accessibilityLabel

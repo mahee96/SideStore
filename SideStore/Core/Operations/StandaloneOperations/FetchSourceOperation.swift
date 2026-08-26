@@ -144,9 +144,7 @@ final class FetchSourceOperation: BaseStandaloneOperation<StandaloneOperationCon
         decoder.managedObjectContext = childContext
         decoder.sourceURL = self.sourceURL
         
-        if #available(iOS 15, *) {
-            decoder.allowsJSON5 = true
-        }
+        decoder.allowsJSON5 = true
         
         let source: Source
         

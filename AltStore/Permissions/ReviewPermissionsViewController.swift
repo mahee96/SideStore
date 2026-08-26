@@ -11,7 +11,6 @@ import SwiftUI
 
 @preconcurrency import AltSign
 
-@available(iOS 15, *)
 extension ReviewPermissionsViewController
 {
     private enum Section: Int
@@ -22,7 +21,6 @@ extension ReviewPermissionsViewController
     }
 }
 
-@available(iOS 15, *)
 class ReviewPermissionsViewController: UICollectionViewController
 {
     let app: AppProtocol
@@ -111,7 +109,6 @@ class ReviewPermissionsViewController: UICollectionViewController
     }
 }
 
-@available(iOS 15, *)
 extension ReviewPermissionsViewController
 {
     func makeLayout() -> UICollectionViewCompositionalLayout
@@ -310,7 +307,6 @@ extension ReviewPermissionsViewController
     }
 }
 
-@available(iOS 15, *)
 private extension ReviewPermissionsViewController
 {
     @objc
@@ -321,7 +317,6 @@ private extension ReviewPermissionsViewController
     }
 }
 
-@available(iOS 15, *)
 extension ReviewPermissionsViewController
 {
     override func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView

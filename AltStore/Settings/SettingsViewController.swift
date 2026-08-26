@@ -230,26 +230,23 @@ final class SettingsViewController: UITableViewController
         
         self.update()
         
-        if #available(iOS 15, *)
+        if let appearance = self.tabBarController?.tabBar.standardAppearance
         {
-            if let appearance = self.tabBarController?.tabBar.standardAppearance
-            {
-                appearance.stackedLayoutAppearance.normal.badgeBackgroundColor = .altPrimary
-                self.navigationController?.tabBarItem.scrollEdgeAppearance = appearance
-            }
+            appearance.stackedLayoutAppearance.normal.badgeBackgroundColor = .altPrimary
+            self.navigationController?.tabBarItem.scrollEdgeAppearance = appearance
+        }
+        
+        // We can only configure the contentMode for a button's background image from Interface Builder.
+        // This works, but it means buttons don't visually highlight because there's no foreground image.
+        // As a workaround, we manually set the foreground image + contentMode here.
+        for button in [self.mastodonButton!, self.threadsButton!, self.twitterButton!, self.githubButton!]
+        {
+            // Get the assigned image from Interface Builder.
+            let image = button.configuration?.background.image
             
-            // We can only configure the contentMode for a button's background image from Interface Builder.
-            // This works, but it means buttons don't visually highlight because there's no foreground image.
-            // As a workaround, we manually set the foreground image + contentMode here.
-            for button in [self.mastodonButton!, self.threadsButton!, self.twitterButton!, self.githubButton!]
-            {
-                // Get the assigned image from Interface Builder.
-                let image = button.configuration?.background.image
-                
-                button.configuration = nil
-                button.setImage(image, for: .normal)
-                button.imageView?.contentMode = .scaleAspectFit
-            }
+            button.configuration = nil
+            button.setImage(image, for: .normal)
+            button.imageView?.contentMode = .scaleAspectFit
         }
         
         configureReleaseChannelButton()

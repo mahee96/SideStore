@@ -241,11 +241,8 @@ class HeaderContentViewController<Header: UIView, Content: ScrollableContentView
         NotificationCenter.default.addObserver(self, selector: #selector(HeaderContentViewController.willEnterForeground(_:)), name: UIApplication.willEnterForegroundNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(HeaderContentViewController.didBecomeActive(_:)), name: UIApplication.didBecomeActiveNotification, object: nil)
         
-        if #available(iOS 15, *)
-        {
-            // Fix navigation bar + tab bar appearance on iOS 15.
-            self.setContentScrollView(self.scrollView)
-        }
+        // Fix navigation bar + tab bar appearance on iOS 15.
+        self.setContentScrollView(self.scrollView)
         
         // Start with navigation bar hidden.
         self.hideNavigationBar()

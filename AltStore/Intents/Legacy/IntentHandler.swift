@@ -10,7 +10,6 @@
 @preconcurrency import UIKit
 import Foundation
 
-@available(iOS 14, *)
 final class IntentHandler: NSObject, RefreshAllIntentHandling
 {
     private let queue = DispatchQueue(label: "io.sidestore.IntentHandler")

@@ -245,13 +245,10 @@ private extension AppDetailCollectionViewController
                 content.image = UIImage(systemName: appPermission.effectiveSymbolName)
                 content.imageProperties.tintColor = tintColor
                 
-                if #available(iOS 15.4, *) /*, let self */ // Capturing self leads to strong-reference cycle.
-                {
-                    let detailAccessory = UICellAccessory.detail(options: .init(tintColor: tintColor)) {
-                        self?.showPermissionAlert(for: appPermission)
-                    }
-                    cell.accessories = [detailAccessory]
+                let detailAccessory = UICellAccessory.detail(options: .init(tintColor: tintColor)) {
+                    self?.showPermissionAlert(for: appPermission)
                 }
+                cell.accessories = [detailAccessory]
             }
             
             cell.contentConfiguration = content

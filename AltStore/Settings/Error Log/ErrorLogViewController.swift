@@ -147,7 +147,7 @@ private extension ErrorLogViewController
             cell.appIconImageView.layer.borderWidth = 1.0 / displayScale
                         
             cell.menuButton.isHidden = true
-            if #available(iOS 14.0, tvOS 17.0, *) {
+            if #available(tvOS 17.0, *) {
                 cell.menuButton.menu = nil
             }
             cell.selectionStyle = .none
@@ -321,7 +321,7 @@ private extension ErrorLogViewController
 
 extension ErrorLogViewController
 {
-    @available(iOS 13.0, tvOS 17.0, *)
+    @available(tvOS 17.0, *)
     override func tableView(_ tableView: UITableView, contextMenuConfigurationForRowAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration?
     {
         let loggedError = self.dataSource.item(at: indexPath)
@@ -421,7 +421,7 @@ extension ErrorLogViewController
     }
     private func updateButtonInteractivity()
     {
-        if #available(iOS 14.0, tvOS 17.0, *) {
+        if #available(tvOS 17.0, *) {
             for case let cell as ErrorLogTableViewCell in self.tableView.visibleCells
             {
                 if self.isScrolling

@@ -134,10 +134,7 @@ class BrowseViewController: UICollectionViewController, PeekPopPreviewing
             self.navigationItem.preferredSearchBarPlacement = .automatic
         }
         
-        if #available(iOS 15, *)
-        {
-            self.prepareAppSorting()
-        }
+        self.prepareAppSorting()
         
         self.preparePipeline()
         
@@ -490,7 +487,6 @@ private extension BrowseViewController
         }
     }
     
-    @available(iOS 15, *)
     func prepareAppSorting()
     {
         if self.preferredAppSorting == .default && self.source == nil

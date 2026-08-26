@@ -1280,7 +1280,7 @@ private extension MyAppsViewController
                 }
             }
                     
-            if !UserDefaults.standard.isAppLimitDisabled && UserDefaults.standard.activeAppsLimit != nil, #available(iOS 13, *)
+            if !UserDefaults.standard.isAppLimitDisabled && UserDefaults.standard.activeAppsLimit != nil
             {
                 guard let appBundle = ALTApplication(fileURL: installedApp.fileURL) else { return finish(.failure(OperationError.invalidApp)) }
                 
@@ -1738,15 +1738,12 @@ private extension MyAppsViewController
                 // async-let so the for-loop below runs first, ensuring we catch didFetchSourceNotification.
                 async let result = try await AppManager.shared.fetchSources()
                                 
-                if #available(iOS 15, *)
+                // .map { $0.name } to avoid "non-sendable type 'Notification?' cannot cross actor boundary" warning.
+                for await _ in NotificationCenter.default.notifications(named: AppManager.didFetchSourceNotification).map({ $0.name })
                 {
-                    // .map { $0.name } to avoid "non-sendable type 'Notification?' cannot cross actor boundary" warning.
-                    for await _ in NotificationCenter.default.notifications(named: AppManager.didFetchSourceNotification).map({ $0.name })
-                    {
-                        // Wait until _after_ didFetchSourceNotification
-                        // to prevent incorrect update() animations.
-                        break
-                    }
+                    // Wait until _after_ didFetchSourceNotification
+                    // to prevent incorrect update() animations.
+                    break
                 }
                 
                 do
@@ -1821,28 +1818,14 @@ private extension MyAppsViewController
         {
             let indexPath = IndexPath(item: indexPath.item, section: Section.activeApps.rawValue)
             
-            if #available(iOS 15, *)
-            {
-                self.collectionView.reconfigureItems(at: [indexPath])
-            }
-            else
-            {
-                self.collectionView.reloadItems(at: [indexPath])
-            }
+            self.collectionView.reconfigureItems(at: [indexPath])
         }
         
         if let indexPath = self.inactiveAppsDataSource.fetchedResultsController.indexPath(forObject: altStoreApp)
         {
             let indexPath = IndexPath(item: indexPath.item, section: Section.inactiveApps.rawValue)
             
-            if #available(iOS 15, *)
-            {
-                self.collectionView.reconfigureItems(at: [indexPath])
-            }
-            else
-            {
-                self.collectionView.reloadItems(at: [indexPath])
-            }
+            self.collectionView.reconfigureItems(at: [indexPath])
         }
     }
 }

@@ -18,7 +18,6 @@ enum SideJITServerErrorType: Error {
     case other(String)
 }
 
-@available(iOS 14, *)
 final class EnableJITOperation: BaseStandaloneOperation<StandaloneOperationContext, Bool>, @unchecked Sendable
 {
     let installedApp: InstalledApp
