@@ -105,6 +105,83 @@
 				Info.plist,
 				Resources/ReleaseEntitlements.plist,
 			);
+			platformFiltersByRelativePath = {
+				Authentication/Authentication.storyboard = (
+					ios,
+				);
+				Authentication/tvOS/Authentication.storyboard = (
+					tvos,
+				);
+				Components/AppBannerView.xib = (
+					ios,
+				);
+				Components/tvOS/AppBannerView.xib = (
+					tvos,
+				);
+				Core/Resources/RSTPlaceholderView.xib = (
+					ios,
+				);
+				Core/Resources/tvOS/RSTPlaceholderView.xib = (
+					tvos,
+				);
+				"iOS/LaunchScreen.storyboard" = (
+					ios,
+				);
+				"iOS/Main.storyboard" = (
+					ios,
+				);
+				"tvOS/Main.storyboard" = (
+					tvos,
+				);
+				"My Apps/InstalledAppsCollectionHeaderView.xib" = (
+					ios,
+				);
+				"My Apps/UpdateCollectionViewCell.xib" = (
+					ios,
+				);
+				"My Apps/tvOS/InstalledAppsCollectionHeaderView.xib" = (
+					tvos,
+				);
+				"My Apps/tvOS/UpdateCollectionViewCell.xib" = (
+					tvos,
+				);
+				News/NewsCollectionViewCell.xib = (
+					ios,
+				);
+				News/tvOS/NewsCollectionViewCell.xib = (
+					tvos,
+				);
+				Settings/AboutPatreonHeaderView.xib = (
+					ios,
+				);
+				Settings/Settings.storyboard = (
+					ios,
+				);
+				Settings/SettingsHeaderFooterView.xib = (
+					ios,
+				);
+				Settings/tvOS/AboutPatreonHeaderView.xib = (
+					tvos,
+				);
+				Settings/tvOS/Settings.storyboard = (
+					tvos,
+				);
+				Settings/tvOS/SettingsHeaderFooterView.xib = (
+					tvos,
+				);
+				Sources/Components/SourceHeaderView.xib = (
+					ios,
+				);
+				Sources/Components/tvOS/SourceHeaderView.xib = (
+					tvos,
+				);
+				Sources/Sources.storyboard = (
+					ios,
+				);
+				Sources/tvOS/Sources.storyboard = (
+					tvos,
+				);
+			};
 			target = BFD247692284B9A500981D42 /* SideStore */;
 		};
 		A8EEC8CD2F4B146B00F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
