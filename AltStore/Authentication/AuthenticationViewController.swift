@@ -49,9 +49,20 @@ final class AuthenticationViewController: UIViewController
         
         for view in [self.appleIDBackgroundView!, self.passwordBackgroundView!, self.signInButton!]
         {
+            #if !os(tvOS)
             view.clipsToBounds = true
+            #endif
             view.layer.cornerRadius = 16
         }
+
+        #if os(tvOS)
+        self.appleIDBackgroundView.backgroundColor = .clear
+        self.passwordBackgroundView.backgroundColor = .clear
+        self.appleIDBackgroundView.isUserInteractionEnabled = true
+        self.passwordBackgroundView.isUserInteractionEnabled = true
+        self.appleIDTextField.borderStyle = .roundedRect
+        self.passwordTextField.borderStyle = .roundedRect
+        #endif
 
         if UIScreen.main.isExtraCompactHeight
         {
@@ -194,4 +205,16 @@ extension AuthenticationViewController
     {
         self.update()
     }
+
+    #if os(tvOS)
+    @objc private func focusAppleID()
+    {
+        self.appleIDTextField.becomeFirstResponder()
+    }
+    
+    @objc private func focusPassword()
+    {
+        self.passwordTextField.becomeFirstResponder()
+    }
+    #endif
 }

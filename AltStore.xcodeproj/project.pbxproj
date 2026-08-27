@@ -506,7 +506,6 @@
 /* Begin PBXTargetDependency section */
 		0ED4AEC92E6DDB2A0039E2C0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			platformFilter = ios;
 			target = BF58047A246A28F7008AE704 /* SideBackup */;
 			targetProxy = 0ED4AEC82E6DDB2A0039E2C0 /* PBXContainerItemProxy */;
 		};

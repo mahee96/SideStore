@@ -245,14 +245,21 @@ final class AppViewController: UIViewController
         var backButtonFrame = CGRect(x: inset, y: statusBarHeight,
                                      width: backButtonSize.width + 20, height: backButtonSize.height + 20)
         
+        #if os(tvOS)
+        let maximumContentY = self.view.bounds.height * 0.35
+        var headerFrame = CGRect(x: inset, y: 0, width: self.view.bounds.width - inset * 2, height: self.bannerView.bounds.height)
+        var contentFrame = CGRect(x: 0, y: 0, width: self.view.bounds.width, height: self.view.bounds.height)
+        var backgroundIconFrame = CGRect(x: 0, y: 0, width: self.view.bounds.width, height: self.view.bounds.height * 0.5)
+        #else
         var headerFrame = CGRect(x: inset, y: 0, width: self.view.bounds.width - inset * 2, height: self.bannerView.bounds.height)
         var contentFrame = CGRect(x: 0, y: 0, width: self.view.bounds.width, height: self.view.bounds.height)
         var backgroundIconFrame = CGRect(x: 0, y: 0, width: self.view.bounds.width, height: self.view.bounds.width)
+        let maximumContentY = self.view.bounds.width * 0.667
+        #endif
         
         let minimumHeaderY = backButtonFrame.maxY + 8
         
         let minimumContentY = minimumHeaderY + headerFrame.height + padding
-        let maximumContentY = self.view.bounds.width * 0.667
         
         // A full blur is too much, so we reduce the visible blur by 0.3, resulting in 70% blur.
         let minimumBlurFraction = 0.3 as CGFloat
@@ -727,3 +734,29 @@ extension AppViewController: UIScrollViewDelegate
         self.view.layoutIfNeeded()
     }
 }
+
+#if os(tvOS)
+extension AppViewController
+{
+    override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?)
+    {
+        guard let press = presses.first, press.type == .menu else {
+            super.pressesBegan(presses, with: event)
+            return
+        }
+        
+        if let navigationController = self.navigationController, navigationController.viewControllers.count > 1
+        {
+            navigationController.popViewController(animated: true)
+        }
+        else if self.presentingViewController != nil
+        {
+            self.dismiss(animated: true)
+        }
+        else
+        {
+            super.pressesBegan(presses, with: event)
+        }
+    }
+}
+#endif

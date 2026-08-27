@@ -91,10 +91,10 @@
                                                                                 <edgeInsets key="layoutMargins" top="0.0" left="14" bottom="0.0" right="0.0"/>
                                                                             </stackView>
                                                                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="gNe-dC-oI1">
-                                                                                <rect key="frame" x="0.0" y="21" width="343" height="51"/>
+                                                                                <rect key="frame" x="0.0" y="21" width="343" height="60"/>
                                                                                 <subviews>
                                                                                     <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" placeholder="name@email.com" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="DBu-vt-hlo">
-                                                                                        <rect key="frame" x="14" y="0.0" width="315" height="51"/>
+                                                                                        <rect key="frame" x="0.0" y="0.0" width="343" height="60"/>
                                                                                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                                         <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                                         <fontDescription key="fontDescription" type="boldSystem" pointSize="19"/>
@@ -104,20 +104,19 @@
                                                                                         </connections>
                                                                                     </textField>
                                                                                 </subviews>
-                                                                                <color key="backgroundColor" white="1" alpha="0.29999999999999999" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                                 <constraints>
-                                                                                    <constraint firstAttribute="trailingMargin" secondItem="DBu-vt-hlo" secondAttribute="trailing" id="0Lf-vH-juh"/>
-                                                                                    <constraint firstItem="DBu-vt-hlo" firstAttribute="centerY" secondItem="gNe-dC-oI1" secondAttribute="centerY" id="kgs-hg-ECM"/>
-                                                                                    <constraint firstItem="DBu-vt-hlo" firstAttribute="height" secondItem="gNe-dC-oI1" secondAttribute="height" id="n7y-Xg-8MP"/>
-                                                                                    <constraint firstItem="DBu-vt-hlo" firstAttribute="leading" secondItem="gNe-dC-oI1" secondAttribute="leadingMargin" id="sat-rb-OIu"/>
-                                                                                    <constraint firstAttribute="height" constant="51" id="tuP-Uo-6qp"/>
+                                                                                    <constraint firstAttribute="trailing" secondItem="DBu-vt-hlo" secondAttribute="trailing" id="0Lf-vH-juh"/>
+                                                                                    <constraint firstItem="DBu-vt-hlo" firstAttribute="top" secondItem="gNe-dC-oI1" secondAttribute="top" id="kgs-hg-ECM"/>
+                                                                                    <constraint firstAttribute="bottom" secondItem="DBu-vt-hlo" secondAttribute="bottom" id="n7y-Xg-8MP"/>
+                                                                                    <constraint firstItem="DBu-vt-hlo" firstAttribute="leading" secondItem="gNe-dC-oI1" secondAttribute="leading" id="sat-rb-OIu"/>
+                                                                                    <constraint firstAttribute="height" constant="60" id="tuP-Uo-6qp"/>
                                                                                 </constraints>
-                                                                                <edgeInsets key="layoutMargins" top="0.0" left="14" bottom="0.0" right="14"/>
                                                                             </view>
                                                                         </subviews>
                                                                     </stackView>
                                                                     <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="4" translatesAutoresizingMaskIntoConstraints="NO" id="hd5-yc-rcq" userLabel="Password">
-                                                                        <rect key="frame" x="0.0" y="87" width="343" height="72"/>
+                                                                        <rect key="frame" x="0.0" y="96" width="343" height="81"/>
                                                                         <subviews>
                                                                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" translatesAutoresizingMaskIntoConstraints="NO" id="lvX-im-C95">
                                                                                 <rect key="frame" x="0.0" y="0.0" width="343" height="17"/>
@@ -132,10 +131,10 @@
                                                                                 <edgeInsets key="layoutMargins" top="0.0" left="14" bottom="0.0" right="0.0"/>
                                                                             </stackView>
                                                                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="cLc-iA-yq5">
-                                                                                <rect key="frame" x="0.0" y="21" width="343" height="51"/>
+                                                                                <rect key="frame" x="0.0" y="21" width="343" height="60"/>
                                                                                 <subviews>
                                                                                     <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" placeholder="••••••••" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="R77-TQ-lVT">
-                                                                                        <rect key="frame" x="14" y="0.0" width="315" height="51"/>
+                                                                                        <rect key="frame" x="0.0" y="0.0" width="343" height="60"/>
                                                                                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                                         <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                                         <fontDescription key="fontDescription" type="boldSystem" pointSize="19"/>
@@ -145,25 +144,24 @@
                                                                                         </connections>
                                                                                     </textField>
                                                                                 </subviews>
-                                                                                <color key="backgroundColor" white="1" alpha="0.29999999999999999" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                                 <constraints>
-                                                                                    <constraint firstItem="R77-TQ-lVT" firstAttribute="leading" secondItem="cLc-iA-yq5" secondAttribute="leadingMargin" id="130-RD-MwU"/>
-                                                                                    <constraint firstAttribute="height" constant="51" id="9Jw-2V-fgf"/>
-                                                                                    <constraint firstItem="R77-TQ-lVT" firstAttribute="height" secondItem="cLc-iA-yq5" secondAttribute="height" id="FFf-Bp-LPT"/>
-                                                                                    <constraint firstItem="R77-TQ-lVT" firstAttribute="centerY" secondItem="cLc-iA-yq5" secondAttribute="centerY" id="agB-KM-ba3"/>
-                                                                                    <constraint firstAttribute="trailingMargin" secondItem="R77-TQ-lVT" secondAttribute="trailing" id="jB5-Ye-cJB"/>
+                                                                                    <constraint firstItem="R77-TQ-lVT" firstAttribute="leading" secondItem="cLc-iA-yq5" secondAttribute="leading" id="130-RD-MwU"/>
+                                                                                    <constraint firstAttribute="height" constant="60" id="9Jw-2V-fgf"/>
+                                                                                    <constraint firstAttribute="bottom" secondItem="R77-TQ-lVT" secondAttribute="bottom" id="FFf-Bp-LPT"/>
+                                                                                    <constraint firstItem="R77-TQ-lVT" firstAttribute="top" secondItem="cLc-iA-yq5" secondAttribute="top" id="agB-KM-ba3"/>
+                                                                                    <constraint firstAttribute="trailing" secondItem="R77-TQ-lVT" secondAttribute="trailing" id="jB5-Ye-cJB"/>
                                                                                 </constraints>
-                                                                                <edgeInsets key="layoutMargins" top="0.0" left="14" bottom="0.0" right="14"/>
                                                                             </view>
                                                                         </subviews>
                                                                     </stackView>
                                                                 </subviews>
                                                             </stackView>
                                                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="2N5-zd-fUj">
-                                                                <rect key="frame" x="0.0" y="191" width="343" height="51"/>
+                                                                <rect key="frame" x="0.0" y="200" width="343" height="60"/>
                                                                 <color key="backgroundColor" name="SettingsHighlighted"/>
                                                                 <constraints>
-                                                                    <constraint firstAttribute="height" constant="51" id="4BK-Un-5pl"/>
+                                                                    <constraint firstAttribute="height" constant="60" id="4BK-Un-5pl"/>
                                                                 </constraints>
                                                                 <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="19"/>
                                                                 <state key="normal" title="Sign in">
@@ -197,11 +195,13 @@
                                             </stackView>
                                         </subviews>
                                         <constraints>
-                                            <constraint firstItem="DBk-rT-ZE8" firstAttribute="leading" secondItem="2wp-qG-f0Z" secondAttribute="leadingMargin" id="5AT-nV-ZP9"/>
                                             <constraint firstAttribute="bottomMargin" secondItem="DBk-rT-ZE8" secondAttribute="bottom" id="HgY-oY-8KM"/>
-                                            <constraint firstAttribute="trailingMargin" secondItem="DBk-rT-ZE8" secondAttribute="trailing" id="VCf-bW-2K4"/>
-                                            <constraint firstItem="YmX-7v-pxh" firstAttribute="top" secondItem="2wp-qG-f0Z" secondAttribute="top" constant="6" id="iUr-Nd-tkt"/>
-                                            <constraint firstItem="DBk-rT-ZE8" firstAttribute="top" relation="greaterThanOrEqual" secondItem="YmX-7v-pxh" secondAttribute="bottom" constant="8" symbolic="YES" id="zTU-eY-DWd"/>
+                                            <constraint firstItem="YmX-7v-pxh" firstAttribute="top" secondItem="2wp-qG-f0Z" secondAttribute="top" constant="30" id="iUr-Nd-tkt"/>
+                                            <constraint firstItem="YmX-7v-pxh" firstAttribute="centerX" secondItem="2wp-qG-f0Z" secondAttribute="centerX" id="YmX-centerX"/>
+                                            <constraint firstItem="YmX-7v-pxh" firstAttribute="width" constant="800" id="YmX-width"/>
+                                            <constraint firstItem="DBk-rT-ZE8" firstAttribute="centerX" secondItem="2wp-qG-f0Z" secondAttribute="centerX" id="DBk-centerX"/>
+                                            <constraint firstItem="DBk-rT-ZE8" firstAttribute="width" constant="800" id="DBk-width"/>
+                                            <constraint firstItem="DBk-rT-ZE8" firstAttribute="top" relation="greaterThanOrEqual" secondItem="YmX-7v-pxh" secondAttribute="bottom" constant="16" symbolic="YES" id="zTU-eY-DWd"/>
                                         </constraints>
                                     </view>
                                 </subviews>
@@ -217,15 +217,13 @@
                         <color key="backgroundColor" name="SettingsBackground"/>
                         <constraints>
                             <constraint firstAttribute="bottom" secondItem="WXx-hX-AXv" secondAttribute="bottom" id="0jL-Ky-ju6"/>
-                            <constraint firstAttribute="leadingMargin" secondItem="YmX-7v-pxh" secondAttribute="leading" id="2PO-lG-dmB"/>
-                            <constraint firstItem="oyW-Fd-ojD" firstAttribute="top" secondItem="zMn-DV-fpy" secondAttribute="top" id="730-db-ukB"/>
-                            <constraint firstItem="zMn-DV-fpy" firstAttribute="trailing" secondItem="oyW-Fd-ojD" secondAttribute="trailing" id="KGE-CN-SWf"/>
                             <constraint firstItem="WXx-hX-AXv" firstAttribute="top" secondItem="mjy-4S-hyH" secondAttribute="top" id="LPQ-bF-ic0"/>
-                            <constraint firstItem="zMn-DV-fpy" firstAttribute="trailing" secondItem="WXx-hX-AXv" secondAttribute="trailing" id="MG7-A6-pKp"/>
-                            <constraint firstAttribute="trailingMargin" secondItem="YmX-7v-pxh" secondAttribute="trailing" id="O4T-nu-o3e"/>
+                            <constraint firstItem="WXx-hX-AXv" firstAttribute="leading" secondItem="mjy-4S-hyH" secondAttribute="leading" id="d08-zF-5X6"/>
+                            <constraint firstAttribute="trailing" secondItem="WXx-hX-AXv" secondAttribute="trailing" id="MG7-A6-pKp"/>
+                            <constraint firstItem="oyW-Fd-ojD" firstAttribute="top" secondItem="zMn-DV-fpy" secondAttribute="top" id="730-db-ukB"/>
                             <constraint firstItem="zMn-DV-fpy" firstAttribute="bottom" secondItem="oyW-Fd-ojD" secondAttribute="bottom" id="PuX-ab-cEq"/>
                             <constraint firstItem="oyW-Fd-ojD" firstAttribute="leading" secondItem="zMn-DV-fpy" secondAttribute="leading" id="SzC-gC-Nvi"/>
-                            <constraint firstItem="WXx-hX-AXv" firstAttribute="leading" secondItem="zMn-DV-fpy" secondAttribute="leading" id="d08-zF-5X6"/>
+                            <constraint firstItem="zMn-DV-fpy" firstAttribute="trailing" secondItem="oyW-Fd-ojD" secondAttribute="trailing" id="KGE-CN-SWf"/>
                             <constraint firstItem="2wp-qG-f0Z" firstAttribute="height" secondItem="oyW-Fd-ojD" secondAttribute="height" id="dFN-pw-TWt"/>
                             <constraint firstItem="2wp-qG-f0Z" firstAttribute="width" secondItem="oyW-Fd-ojD" secondAttribute="width" id="rYO-GN-0Lk"/>
                         </constraints>

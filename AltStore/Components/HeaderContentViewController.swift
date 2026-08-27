@@ -495,6 +495,29 @@ class HeaderContentViewController<Header: UIView, Content: ScrollableContentView
     {
         return true
     }
+
+    #if os(tvOS)
+    override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?)
+    {
+        guard let press = presses.first, press.type == .menu else {
+            super.pressesBegan(presses, with: event)
+            return
+        }
+        
+        if let navigationController = self.navigationController, navigationController.viewControllers.count > 1
+        {
+            navigationController.popViewController(animated: true)
+        }
+        else if self.presentingViewController != nil
+        {
+            self.dismiss(animated: true)
+        }
+        else
+        {
+            super.pressesBegan(presses, with: event)
+        }
+    }
+    #endif
 }
 
 private extension HeaderContentViewController
