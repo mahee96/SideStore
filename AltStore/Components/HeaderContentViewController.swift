@@ -544,6 +544,7 @@ private extension HeaderContentViewController
     
     func updateNavigationBarAppearance(isHidden: Bool)
     {
+        #if !os(tvOS)
         let barAppearance = self.navigationItem.standardAppearance as? NavigationBarAppearance ?? NavigationBarAppearance()
         
         if isHidden
@@ -577,6 +578,7 @@ private extension HeaderContentViewController
         
         self.navigationItem.standardAppearance = barAppearance
         self.navigationItem.scrollEdgeAppearance = barAppearance
+        #endif
     }
     
     func prepareBlur()

@@ -204,6 +204,7 @@ final class SettingsViewController: UITableViewController
     {
         super.viewDidLoad()
         
+        #if !os(tvOS)
         // --- iOS 26 fix ---
         if #available(iOS 26.0, *) {
             let appearance = UINavigationBarAppearance()
@@ -211,7 +212,8 @@ final class SettingsViewController: UITableViewController
             appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
             navigationController?.navigationBar.standardAppearance = appearance
             navigationController?.navigationBar.scrollEdgeAppearance = appearance       // required for iOS 26, maybe enforce it in storyboard?
-        } 
+        }
+        #endif 
         let nib = UINib(nibName: "SettingsHeaderFooterView", bundle: nil)
         self.prototypeHeaderFooterView = nib.instantiate(withOwner: nil, options: nil)[0] as? SettingsHeaderFooterView
         
@@ -238,11 +240,13 @@ final class SettingsViewController: UITableViewController
         
         self.update()
         
+        #if !os(tvOS)
         if let appearance = self.tabBarController?.tabBar.standardAppearance
         {
             appearance.stackedLayoutAppearance.normal.badgeBackgroundColor = .altPrimary
             self.navigationController?.tabBarItem.scrollEdgeAppearance = appearance
         }
+        #endif
         
         // We can only configure the contentMode for a button's background image from Interface Builder.
         // This works, but it means buttons don't visually highlight because there's no foreground image.
@@ -274,6 +278,7 @@ final class SettingsViewController: UITableViewController
         if segue.identifier == "anisetteServers" || segue.identifier == "certificateManagement" || segue.identifier == "diagnostics" {
             let controller = segue.destination
             
+        #if !os(tvOS)
             if segue.identifier == "anisetteServers"        || 
                 segue.identifier == "certificateManagement" || 
                 segue.identifier == "diagnostics"
@@ -282,12 +287,11 @@ final class SettingsViewController: UITableViewController
                 appearance.configureWithDefaultBackground()
                 appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
                 appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
-                #if !os(tvOS)
                 controller.navigationItem.largeTitleDisplayMode = .always
-                #endif
                 controller.navigationItem.standardAppearance = appearance
                 controller.navigationItem.scrollEdgeAppearance = appearance
             }
+        #endif
             
             // disable bottom tab bar since 'back' button is already available
 //            controller.hidesBottomBarWhenPushed = true
@@ -1011,10 +1015,12 @@ extension SettingsViewController
                 let healthCheckView = HealthCheckView()
                 let vc = UIHostingController(rootView: healthCheckView)
                 
+                #if !os(tvOS)
                 let appearance = UINavigationBarAppearance()
                 appearance.configureWithDefaultBackground()
                 vc.navigationItem.scrollEdgeAppearance = appearance
                 vc.navigationItem.standardAppearance = appearance
+                #endif
                 
                 navigationController?.pushViewController(vc, animated: true)
                 
@@ -1120,10 +1126,12 @@ extension SettingsViewController
             case .refreshSideJITServer:
                 let jitConfigView = SideJITServerConfigView()
                 let vc = UIHostingController(rootView: jitConfigView)
+                #if !os(tvOS)
                 let appearance = UINavigationBarAppearance()
                 appearance.configureWithDefaultBackground()
                 vc.navigationItem.scrollEdgeAppearance = appearance
                 vc.navigationItem.standardAppearance = appearance
+                #endif
                 self.navigationController?.pushViewController(vc, animated: true)
                 self.tableView.deselectRow(at: indexPath, animated: true)
                 
@@ -1173,10 +1181,12 @@ extension SettingsViewController
                 let connectionConfigView = ConnectionConfigView()
                 let vc = UIHostingController(rootView: connectionConfigView)
 
+                #if !os(tvOS)
                 let appearance = UINavigationBarAppearance()
                 appearance.configureWithDefaultBackground()   // gives solid background
                 vc.navigationItem.scrollEdgeAppearance = appearance
                 vc.navigationItem.standardAppearance = appearance
+                #endif
 
                 navigationController?.pushViewController(vc, animated: true)
 

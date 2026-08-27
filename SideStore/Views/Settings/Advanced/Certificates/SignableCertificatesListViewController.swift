@@ -147,12 +147,14 @@ final class SignableCertificatesListViewController: UITableViewController {
         self.view.backgroundColor = .settingsBackground
         self.tableView.backgroundColor = .settingsBackground
         
+        #if !os(tvOS)
         let appearance = UINavigationBarAppearance()
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = .settingsBackground
         appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
         self.navigationItem.standardAppearance = appearance
         self.navigationItem.scrollEdgeAppearance = appearance
+        #endif
         
         self.navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(cancelTapped))
         self.navigationItem.leftBarButtonItem?.tintColor = .white

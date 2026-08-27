@@ -120,6 +120,7 @@ class NewsViewController: UICollectionViewController
             let tintColor = source.effectiveTintColor ?? .altPrimary
             self.view.tintColor = tintColor
             
+            #if !os(tvOS)
             let appearance = NavigationBarAppearance()
             appearance.configureWithTintColor(tintColor)
             appearance.configureWithDefaultBackground()
@@ -129,6 +130,7 @@ class NewsViewController: UICollectionViewController
             
             self.navigationItem.standardAppearance = appearance
             self.navigationItem.scrollEdgeAppearance = edgeAppearance
+            #endif
         }
         
         self.preparePipeline()

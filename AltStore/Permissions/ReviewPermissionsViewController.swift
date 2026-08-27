@@ -66,6 +66,7 @@ class ReviewPermissionsViewController: UICollectionViewController
     {
         super.viewDidLoad()
         
+        #if !os(tvOS)
         let buttonAppearance = UIBarButtonItemAppearance(style: .plain)
         buttonAppearance.normal.titleTextAttributes = [.foregroundColor: UIColor.white]
         
@@ -75,6 +76,7 @@ class ReviewPermissionsViewController: UICollectionViewController
         appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
         appearance.buttonAppearance = buttonAppearance
         self.navigationItem.standardAppearance = appearance
+        #endif
         
         self.title = NSLocalizedString("Review Permissions", comment: "")
         

@@ -268,10 +268,12 @@ struct CertificatesView: View {
             requesterEmail: cert.requesterEmail
         )
         let detailVC = UIHostingController(rootView: CertificateDetailView(certificate: cert, portalMetadata: metadata, viewModel: viewModel))
+        #if !os(tvOS)
         let appearance = UINavigationBarAppearance()
         appearance.configureWithDefaultBackground()
         detailVC.navigationItem.scrollEdgeAppearance = appearance
         detailVC.navigationItem.standardAppearance   = appearance
+        #endif
         presentingViewController?.navigationController?.pushViewController(detailVC, animated: true)
     }
     

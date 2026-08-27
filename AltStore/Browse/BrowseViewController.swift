@@ -431,6 +431,7 @@ private extension BrowseViewController
         
         self.view.tintColor = tintColor
         
+        #if !os(tvOS)
         let appearance = NavigationBarAppearance()
         appearance.configureWithTintColor(tintColor)
         appearance.configureWithDefaultBackground()
@@ -440,6 +441,7 @@ private extension BrowseViewController
         
         self.navigationItem.standardAppearance = appearance
         self.navigationItem.scrollEdgeAppearance = edgeAppearance
+        #endif
         
         // Necessary to tint UISearchController's inline bar button.
         self.navigationController?.navigationBar.tintColor = tintColor
