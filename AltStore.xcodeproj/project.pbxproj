@@ -124,15 +124,6 @@
 				Core/Resources/tvOS/RSTPlaceholderView.xib = (
 					tvos,
 				);
-				"iOS/LaunchScreen.storyboard" = (
-					ios,
-				);
-				"iOS/Main.storyboard" = (
-					ios,
-				);
-				"tvOS/Main.storyboard" = (
-					tvos,
-				);
 				"My Apps/InstalledAppsCollectionHeaderView.xib" = (
 					ios,
 				);
@@ -179,6 +170,15 @@
 					ios,
 				);
 				Sources/tvOS/Sources.storyboard = (
+					tvos,
+				);
+				iOS/LaunchScreen.storyboard = (
+					ios,
+				);
+				iOS/Main.storyboard = (
+					ios,
+				);
+				tvOS/Main.storyboard = (
 					tvos,
 				);
 			};
