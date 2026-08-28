@@ -975,126 +975,38 @@ private extension MyAppsViewController
     
     func sideloadApp(at url: URL, completion: @escaping (Result<Void, Error>) -> Void)
     {
-        let progress = Progress.discreteProgress(totalUnitCount: 100)
-        
+        self.pendingImportURL = nil
         self.navigationItem.leftBarButtonItem?.isIndicatingActivity = true
         
-        let temporaryDirectory = FileManager.default.uniqueTemporaryURL()
-        let unzippedAppDirectory = temporaryDirectory.appendingPathComponent("App")
-        
-        let downloadProgress = Progress.discreteProgress(totalUnitCount: 100)
-        let unzipProgress = Progress.discreteProgress(totalUnitCount: 1)
-        let installProgress = Progress.discreteProgress(totalUnitCount: 100)
-        
-        if url.isFileURL
-        {
-            progress.totalUnitCount -= 20
-        }
-        else
-        {
-            progress.addChild(downloadProgress, withPendingUnitCount: 20)
-        }
-        progress.addChild(unzipProgress, withPendingUnitCount: 10)
-        progress.addChild(installProgress, withPendingUnitCount: 70)
-        
-        self.sideloadingProgress = progress
-        self.sideloadingProgressView.progress = 0
-        self.sideloadingProgressView.isHidden = false
-        self.sideloadingProgressView.observedProgress = self.sideloadingProgress
-        
-        Task.detached { [weak self] in
-            guard let self else { return }
-            
-            var localFileURL = url
-            
-            do
-            {
-                // 1. Download if remote
-                if !url.isFileURL
-                {
-                    localFileURL = try await withCheckedThrowingContinuation { continuation in
-                        let downloadTask = URLSession.shared.downloadTask(with: url) { (fileURL, response, error) in
-                            do
-                            {
-                                let (fileURL, _) = try Result((fileURL, response), error).get()
-                                try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true, attributes: nil)
-                                let destinationURL = temporaryDirectory.appendingPathComponent("App.ipa")
-                                try FileManager.default.moveItem(at: fileURL, to: destinationURL)
-                                continuation.resume(returning: destinationURL)
-                            }
-                            catch
-                            {
-                                continuation.resume(throwing: error)
-                            }
-                        }
-                        downloadProgress.addChild(downloadTask.progress, withPendingUnitCount: 100)
-                        downloadTask.resume()
-                    }
-                }
+        let group = AppManager.shared.installIPA(at: url, presentingViewController: self) { [weak self] result in
+            Task { @MainActor in
+                self?.navigationItem.leftBarButtonItem?.isIndicatingActivity = false
+                self?.sideloadingProgressView.observedProgress = nil
+                self?.sideloadingProgressView.setHidden(true, animated: true)
                 
-                // 2. Unzip
-                defer {
-                    if !url.isFileURL {
-                        try? FileManager.default.removeItem(at: localFileURL)
-                    }
-                }
-                
-                try FileManager.default.createDirectory(at: unzippedAppDirectory, withIntermediateDirectories: true, attributes: nil)
-                let unzippedApplicationURL = try FileManager.default.unzipAppBundle(at: localFileURL, toDirectory: unzippedAppDirectory)
-                
-                guard let appBundle = ALTApplication(fileURL: unzippedApplicationURL) else { throw OperationError.invalidApp }
-                unzipProgress.completedUnitCount = 1
-                
-                // 3. Install app
-                let installedApp = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<InstalledApp, Error>) in
-                    DispatchQueue.main.async {
-                        let group = AppManager.shared.install(appBundle, presentingViewController: self) { (result) in
-                            switch result
-                            {
-                            case .success(let installedApp): continuation.resume(returning: installedApp)
-                            case .failure(let error): continuation.resume(throwing: error)
-                            }
-                        }
-                        installProgress.addChild(group.progress, withPendingUnitCount: 100)
-                    }
-                }
-                
-                // 4. Success UI callback
-                try? FileManager.default.removeItem(at: temporaryDirectory)
-                
-                await MainActor.run {
-                    self.navigationItem.leftBarButtonItem?.isIndicatingActivity = false
-                    self.sideloadingProgressView.observedProgress = nil
-                    self.sideloadingProgressView.setHidden(true, animated: true)
-                    
+                switch result {
+                case .success(let installedApp):
                     completion(.success(()))
-                    
                     installedApp.managedObjectContext?.perform {
                         debugLog("Successfully installed app: \(installedApp.bundleIdentifier)")
                     }
-                }
-            }
-            catch
-            {
-                try? FileManager.default.removeItem(at: temporaryDirectory)
-                
-                await MainActor.run {
-                    self.navigationItem.leftBarButtonItem?.isIndicatingActivity = false
-                    self.sideloadingProgressView.observedProgress = nil
-                    self.sideloadingProgressView.setHidden(true, animated: true)
-                    
-                    if error is CancellationError
-                    {
+                case .failure(let error):
+                    if error is CancellationError {
                         completion(.failure(OperationError.cancelled))
-                    }
-                    else
-                    {
-                        ToastView(error: error, opensLog: true).show(in: self)
+                    } else {
+                        if let self {
+                            ToastView(error: error, opensLog: true).show(in: self)
+                        }
                         completion(.failure(error))
                     }
                 }
             }
         }
+        
+        self.sideloadingProgress = group.progress
+        self.sideloadingProgressView.progress = 0
+        self.sideloadingProgressView.isHidden = false
+        self.sideloadingProgressView.observedProgress = group.progress
     }
     
     @IBAction func activateApp(_ sender: UIButton)
@@ -1728,29 +1640,13 @@ private extension MyAppsViewController
 
     private func presentImportDialog(for url: URL)
     {
-        let cleanup = {
-            guard url.isFileURL else { return }
-            do
-            {
-                try FileManager.default.removeItem(at: url)
-            }
-            catch
-            {
-                debugLog("Unable to remove imported .ipa. \(error)")
-            }
-        }
-        
         InstallAppDialog.present(
             ipaURL: url,
             from: self,
             onConfirm: { [weak self] in
-                self?.sideloadApp(at: url) { _ in
-                    cleanup()
-                }
+                self?.sideloadApp(at: url) { _ in }
             },
-            onCancel: {
-                cleanup()
-            }
+            onCancel: {}
         )
     }
     
@@ -1832,18 +1728,22 @@ private extension MyAppsViewController
             catch let error as NSError
             {
                 debugLog("\(error)")
-                let toastView = ToastView(error: error.withLocalizedTitle(NSLocalizedString("Unable to Check for Updates", comment: "")))
-                toastView.addTarget(nil, action: #selector(TabBarController.presentSources), for: .touchUpInside)
-                toastView.show(in: self)
+                await MainActor.run {
+                    let toastView = ToastView(error: error.withLocalizedTitle(NSLocalizedString("Unable to Check for Updates", comment: "")))
+                    toastView.addTarget(nil, action: #selector(TabBarController.presentSources), for: .touchUpInside)
+                    toastView.show(in: self)
+                }
             }
             
-            self.isCheckingForUpdates = false
-            
-            // Call update() _after_ setting isCheckingForUpdates to false so it will actually update collection view,
-            // but _before_ calling sender.endRefreshing() to avoid weird animation.
-            self.update()
-            
-            completion?()
+            await MainActor.run {
+                self.isCheckingForUpdates = false
+                
+                // Call update() _after_ setting isCheckingForUpdates to false so it will actually update collection view,
+                // but _before_ calling sender.endRefreshing() to avoid weird animation.
+                self.update()
+                
+                completion?()
+            }
         }
     }
     

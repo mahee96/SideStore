@@ -646,27 +646,69 @@ final class AppManager: ObservableObject, @unchecked Sendable
         )
     }
 
-    func installIPA(at ipaURL: URL, progressHandler: ((Progress) -> Void)? = nil) async throws -> InstalledApp
+    @discardableResult
+    func installIPA(at ipaURL: URL,
+                    presentingViewController: UIViewController? = nil,
+                    context: AuthenticatedOperationContext? = nil,
+                    completionHandler: @escaping (Result<InstalledApp, Error>) -> Void) -> RefreshGroup
     {
         debugLog("[AppManager] installIPA() called for file: \(ipaURL.lastPathComponent)")
-        guard ipaURL.pathExtension.lowercased() == "ipa" else { throw OperationError.invalidApp }
+        let group = RefreshGroup(context: self.makeAuthenticatedContext(presentingViewController: presentingViewController, baseContext: context))
+        group.completionHandler = { results in
+            if let result = results.values.first {
+                completionHandler(result)
+            } else {
+                completionHandler(.failure(OperationError.unknown()))
+            }
+        }
 
-        let temporaryDirectory = FileManager.default.uniqueTemporaryURL()
-        defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+        group.activeTask = Task.detached {
+            do {
+                guard ipaURL.pathExtension.lowercased() == "ipa" else { throw OperationError.invalidApp }
 
-        let unzippedAppDirectory = temporaryDirectory.appendingPathComponent("App")
-        try FileManager.default.createDirectory(at: unzippedAppDirectory, withIntermediateDirectories: true)
+                let temporaryDirectory = FileManager.default.uniqueTemporaryURL()
+                let unzippedAppDirectory = temporaryDirectory.appendingPathComponent("App")
+                try FileManager.default.createDirectory(at: unzippedAppDirectory, withIntermediateDirectories: true)
 
-        let unzippedApplicationURL = try FileManager.default.unzipAppBundle(at: ipaURL, toDirectory: unzippedAppDirectory)
-        guard let appBundle = ALTApplication(fileURL: unzippedApplicationURL) else { throw OperationError.invalidApp }
+                var localURL = ipaURL
+                if !ipaURL.isFileURL {
+                    localURL = try await withCheckedThrowingContinuation { continuation in
+                        let downloadTask = URLSession.shared.downloadTask(with: ipaURL) { (fileURL, response, error) in
+                            do {
+                                let (fileURL, _) = try Result((fileURL, response), error).get()
+                                let dest = temporaryDirectory.appendingPathComponent("App.ipa")
+                                try FileManager.default.moveItem(at: fileURL, to: dest)
+                                continuation.resume(returning: dest)
+                            } catch {
+                                continuation.resume(throwing: error)
+                            }
+                        }
+                        downloadTask.resume()
+                    }
+                }
 
-        let context = self.makeAuthenticatedContext(presentingViewController: nil)
+                let unzippedApplicationURL = try FileManager.default.unzipAppBundle(at: localURL, toDirectory: unzippedAppDirectory)
+                guard let appBundle = ALTApplication(fileURL: unzippedApplicationURL) else { throw OperationError.invalidApp }
 
-        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<InstalledApp, Error>) in
-            let group = self.install(appBundle, presentingViewController: nil, context: context) { result in
+                let subGroup = self.install(appBundle, presentingViewController: presentingViewController, context: group.context) { result in
+                    try? FileManager.default.removeItem(at: temporaryDirectory)
+                    completionHandler(result)
+                }
+                group.progress.addChild(subGroup.progress, withPendingUnitCount: 100)
+            } catch {
+                completionHandler(.failure(error))
+            }
+        }
+
+        return group
+    }
+
+    func installIPA(at ipaURL: URL, progressHandler: ((Progress) -> Void)? = nil) async throws -> InstalledApp
+    {
+        return try await withCheckedThrowingContinuation { continuation in
+            let group = self.installIPA(at: ipaURL) { result in
                 continuation.resume(with: result)
             }
-
             progressHandler?(group.progress)
         }
     }
