@@ -145,30 +145,12 @@ final class AppManager: ObservableObject, @unchecked Sendable
             }
             #endif
         
-            do {
-                let installedAppBundleIDs = await dbBackgroundContext.perform {
-                    InstalledApp.all(in: dbBackgroundContext).map { $0.bundleIdentifier }
-                }
-                            
-                let cachedAppDirectories = try FileManager.default.contentsOfDirectory(at: InstalledApp.appsDirectoryURL,
-                                                                                        includingPropertiesForKeys: [.isDirectoryKey, .nameKey],
-                                                                                        options: [.skipsSubdirectoryDescendants, .skipsHiddenFiles])
-                for appDirectory in cachedAppDirectories {
-                    do {
-                        let resourceValues = try appDirectory.resourceValues(forKeys: [.isDirectoryKey, .nameKey])
-                        guard let isDirectory = resourceValues.isDirectory, let bundleID = resourceValues.name else { continue }
-                    
-                        if isDirectory && !installedAppBundleIDs.contains(bundleID) && !self.isActivelyManagingApp(withBundleID: bundleID)
-                        {
-                            debugLog("DELETING CACHED APP: \(bundleID)")
-                            try FileManager.default.removeItem(at: appDirectory)
-                        }
-                    } catch {
-                        debugLog("Failed to remove cached app directory. \(error)")
-                    }
-                }
-            } catch {
-                debugLog("Failed to remove cached apps. \(error)")
+            let installedAppBundleIDs = await dbBackgroundContext.perform {
+                Set(InstalledApp.all(in: dbBackgroundContext).map { $0.bundleIdentifier })
+            }
+            
+            CacheAppOperation.pruneUnusedCaches(activeBundleIDs: installedAppBundleIDs) { bundleID in
+                self.isActivelyManagingApp(withBundleID: bundleID)
             }
         }.value
     }

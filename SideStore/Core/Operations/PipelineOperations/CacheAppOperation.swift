@@ -35,4 +35,29 @@ final class CacheAppOperation: BasePipelineOperation<InstallAppOperationContext,
         self.setProgress(100)
         return targetFileURL
     }
+
+    static func pruneUnusedCaches(activeBundleIDs: Set<String>, isActivelyManaging: (String) -> Bool) {
+        do {
+            let cachedAppDirectories = try FileManager.default.contentsOfDirectory(
+                at: InstalledApp.appsDirectoryURL,
+                includingPropertiesForKeys: [.isDirectoryKey, .nameKey],
+                options: [.skipsSubdirectoryDescendants, .skipsHiddenFiles]
+            )
+            for appDirectory in cachedAppDirectories {
+                do {
+                    let resourceValues = try appDirectory.resourceValues(forKeys: [.isDirectoryKey, .nameKey])
+                    guard let isDirectory = resourceValues.isDirectory, let bundleID = resourceValues.name else { continue }
+                    
+                    if isDirectory && !activeBundleIDs.contains(bundleID) && !isActivelyManaging(bundleID) {
+                        debugLog("[CacheAppOperation] DELETING CACHED APP: \(bundleID)")
+                        try FileManager.default.removeItem(at: appDirectory)
+                    }
+                } catch {
+                    debugLog("[CacheAppOperation] Failed to remove cached app directory: \(error)")
+                }
+            }
+        } catch {
+            debugLog("[CacheAppOperation] Failed to remove cached apps: \(error)")
+        }
+    }
 }
