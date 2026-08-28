@@ -27,8 +27,7 @@ final class CacheAppOperation: BasePipelineOperation<InstallAppOperationContext,
         }
 
         self.setProgress(40)
-        let updatedApp = AnyApp(from: appBundle, bundleId: context.targetBundleIdentifier)
-        let targetFileURL = InstalledApp.fileURL(for: updatedApp)
+        let targetFileURL = InstalledApp.fileURL(for: appBundle)
         
         self.setProgress(70)
         try FileManager.default.copyItem(at: appBundle.fileURL, to: targetFileURL, shouldReplace: true)

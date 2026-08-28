@@ -103,10 +103,14 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
     }
     
     private func preferredBundleID(for targetAppBundle: ALTApplication, team: ALTTeam, in context: NSManagedObjectContext) -> String? {
-        // Check if we have already installed this app with this team before.
-        let predicate = NSPredicate(format: "%K == %@", #keyPath(InstalledApp.bundleIdentifier), targetAppBundle.bundleIdentifier)
+        let target = self.context.targetBundleIdentifier
+        let predicate = NSPredicate(
+            format: "(%K == %@) OR (%K == %@)",
+            #keyPath(InstalledApp.customBundleIdentifier), target,
+            #keyPath(InstalledApp.resignedBundleIdentifier), target
+        )
         guard let installedApp = InstalledApp.first(satisfying: predicate, in: context) else {
-            self.verboseLog("[FetchProvisioningProfiles] No existing InstalledApp found for bundleID: \(targetAppBundle.bundleIdentifier)")
+            self.verboseLog("[FetchProvisioningProfiles] No existing InstalledApp found for target: \(target)")
             return nil
         }
         

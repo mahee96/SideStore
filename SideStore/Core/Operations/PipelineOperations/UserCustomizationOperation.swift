@@ -36,6 +36,8 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
         
         if customID != context.bundleIdentifier {
             context.customBundleIdentifier = customID
+        } else {
+            context.customBundleIdentifier = nil
         }
         
         self.setProgress(100)
