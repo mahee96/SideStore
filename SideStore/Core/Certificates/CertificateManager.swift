@@ -8,7 +8,6 @@
 
 import Foundation
 @preconcurrency import AltSign
-import Security
 
 public struct ActiveSigningCertificate: Sendable {
     public let certificate: ALTCertificate

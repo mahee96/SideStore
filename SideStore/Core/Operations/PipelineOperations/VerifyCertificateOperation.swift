@@ -9,7 +9,6 @@
 @preconcurrency import UIKit
 import Foundation
 import CoreData
-import Security
 @preconcurrency import AltSign
 
 final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContext, Void>, @unchecked Sendable {

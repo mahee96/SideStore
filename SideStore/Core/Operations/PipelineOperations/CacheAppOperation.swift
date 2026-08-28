@@ -49,15 +49,15 @@ final class CacheAppOperation: BasePipelineOperation<InstallAppOperationContext,
                     guard let isDirectory = resourceValues.isDirectory, let bundleID = resourceValues.name else { continue }
                     
                     if isDirectory && !activeBundleIDs.contains(bundleID) && !isActivelyManaging(bundleID) {
-                        debugLog("[CacheAppOperation] DELETING CACHED APP: \(bundleID)")
+                        SideStore.debugLog("[CacheAppOperation] DELETING CACHED APP: \(bundleID)")
                         try FileManager.default.removeItem(at: appDirectory)
                     }
                 } catch {
-                    debugLog("[CacheAppOperation] Failed to remove cached app directory: \(error)")
+                    SideStore.debugLog("[CacheAppOperation] Failed to remove cached app directory: \(error)")
                 }
             }
         } catch {
-            debugLog("[CacheAppOperation] Failed to remove cached apps: \(error)")
+            SideStore.debugLog("[CacheAppOperation] Failed to remove cached apps: \(error)")
         }
     }
 }

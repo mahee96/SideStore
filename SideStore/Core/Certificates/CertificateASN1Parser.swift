@@ -9,7 +9,6 @@
 import Foundation
 @preconcurrency import AltSign
 import CommonCrypto
-import Security
 
 public struct ASN1Item {
     public let tag: UInt8
