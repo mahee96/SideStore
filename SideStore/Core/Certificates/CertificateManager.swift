@@ -328,13 +328,13 @@ public final class CertificateManager: @unchecked Sendable {
             return nil
         }
         
-        let secCertChain = parser.certificates()
-        debugLog("[CertificateManager] readBinaryCertificate: Found \(secCertChain.count) certificate(s) in Mach-O chain.")
+        let certChain = parser.x509Certificates()
+
+        debugLog("[CertificateManager] readBinaryCertificate: Found \(certChain.count) certificate(s) in Mach-O chain.")
         
-        for (index, secCert) in secCertChain.enumerated() {
-            let derData = SecCertificateCopyData(secCert) as Data
+        for (index, x509Cert) in certChain.enumerated() {
+            guard let derData = x509Cert.data else { continue }
             let details = parseCertificate(derData: derData)
-            let x509Cert = ALTX509Certificate(data: derData)
             
             // Filter out Root & Intermediate CA certificates
             let subjectDN = details.subject
@@ -348,17 +348,15 @@ public final class CertificateManager: @unchecked Sendable {
               - Valid From: \(details.validFrom?.description ?? "N/A")
               - Valid Until: \(details.validUntil?.description ?? "N/A")
               - Filtered Out: \(isFilteredOut)
-              - Parsed ALTX509Certificate: \(x509Cert != nil ? "Success (serial: \(x509Cert?.serialNumber ?? "nil"))" : "FAILED")
+              - Parsed ALTX509Certificate: Success (serial: \(x509Cert.serialNumber))
             """)
             
             if isFilteredOut {
                 continue
             }
             
-            if let cert = x509Cert {
-                debugLog("[CertificateManager] readBinaryCertificate: Extracted leaf signing certificate from Mach-O (\(executableURL.lastPathComponent))")
-                return cert
-            }
+            debugLog("[CertificateManager] readBinaryCertificate: Extracted leaf signing certificate from Mach-O (\(executableURL.lastPathComponent))")
+            return x509Cert
         }
         return nil
     }
