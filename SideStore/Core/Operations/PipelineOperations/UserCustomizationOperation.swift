@@ -30,15 +30,17 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
         let initialBundleID = context.targetBundleIdentifier
         self.setProgress(40)
         
-        guard let customID = try await handler.resolveBundleIDOverride(initialBundleID: initialBundleID) else {
+        guard let result = try await handler.resolveBundleIDOverride(initialBundleID: initialBundleID) else {
             throw OperationError.cancelled
         }
         
-        if customID != context.bundleIdentifier {
-            context.customBundleIdentifier = customID
+        context.appendTeamID = result.appendTeamID
+        if result.customID != context.bundleIdentifier {
+            context.customBundleIdentifier = result.customID
         } else {
             context.customBundleIdentifier = nil
         }
+
         
         self.setProgress(100)
         return context.targetBundleIdentifier

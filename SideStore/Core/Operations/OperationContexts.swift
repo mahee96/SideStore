@@ -284,8 +284,10 @@ class AppOperationContext: PipelineOperationContext
 
     var overrideCertificate: ALTCertificate?
     var targetCertStatus: CertificateStatus?
+    var appendTeamID: Bool = true
 
     var targetBundleIdentifier: String { customBundleIdentifier ?? bundleIdentifier }
+
 
     override var error: Error? {
         get { _error ?? authenticatedContext.error }

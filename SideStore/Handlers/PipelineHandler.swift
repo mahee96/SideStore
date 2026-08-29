@@ -217,9 +217,9 @@ class PipelineHandler: PipelineExecutionHandler,
     }
     
     @MainActor
-    func resolveBundleIDOverride(initialBundleID: String) async throws -> String? {
+    func resolveBundleIDOverride(initialBundleID: String) async throws -> (customID: String, appendTeamID: Bool)? {
         guard let presenter = self.presentingViewController else {
-            return initialBundleID
+            return (initialBundleID, true)
         }
         
         let titleText = NSLocalizedString("AppID Customization", comment: "")
@@ -235,11 +235,63 @@ class PipelineHandler: PipelineExecutionHandler,
             textField.text = initialBundleID
             textField.autocapitalizationType = .none
             textField.autocorrectionType = .no
+            textField.clearButtonMode = .whileEditing
+        }
+        
+        alert.addTextField { textField in
+            textField.isUserInteractionEnabled = false
+        }
+        
+        let checkboxView = AppendTeamIDCheckboxView(isChecked: true)
+        checkboxView.translatesAutoresizingMaskIntoConstraints = false
+        
+        _ = alert.view
+        if let tf1 = alert.textFields?.first, let tf1View = tf1.superview {
+            tf1View.layer.cornerRadius = 20
+            tf1View.layer.cornerCurve = .continuous
+            tf1View.layer.maskedCorners = [
+                .layerMinXMinYCorner,
+                .layerMaxXMinYCorner,
+                .layerMinXMaxYCorner,
+                .layerMaxXMaxYCorner
+            ]
+            tf1View.layer.masksToBounds = true
+            tf1View.clipsToBounds = true
+            
+            // Clear outer table grouping container so it doesn't draw flat bottom edges
+            tf1View.superview?.backgroundColor = .clear
+            tf1View.superview?.layer.borderWidth = 0
+            tf1View.superview?.layer.borderColor = UIColor.clear.cgColor
+        }
+        
+        if (alert.textFields?.count ?? 0) >= 2,
+           let tf1 = alert.textFields?.first,
+           let tf2 = alert.textFields?[1],
+           let container = tf2.superview {
+            tf2.isHidden = true
+            container.backgroundColor = .clear
+            container.layer.borderWidth = 0
+            container.layer.borderColor = UIColor.clear.cgColor
+            
+            for subview in container.subviews where subview !== checkboxView && subview !== tf2 {
+                subview.isHidden = true
+                subview.alpha = 0
+            }
+            
+            container.addSubview(checkboxView)
+            NSLayoutConstraint.activate([
+                checkboxView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+                checkboxView.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor, constant: -16),
+                checkboxView.centerYAnchor.constraint(equalTo: container.centerYAnchor)
+            ])
         }
         
         return await withCheckedContinuation { continuation in
             let okAction = UIAlertAction(title: NSLocalizedString("Confirm", comment: ""), style: .default) { _ in
-                continuation.resume(returning: alert.textFields?.first?.text ?? initialBundleID)
+                let text = alert.textFields?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+                let customID = (text?.isEmpty == false) ? text! : initialBundleID
+                let appendTeamID = checkboxView.isChecked
+                continuation.resume(returning: (customID, appendTeamID))
             }
             
             let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { _ in
@@ -250,6 +302,7 @@ class PipelineHandler: PipelineExecutionHandler,
             presenter.present(alert, animated: true)
         }
     }
+
 
     @MainActor
     func resolveAppGroupMismatch(originalGroup: String, correctedGroup: String) async throws -> AppGroupResolution {

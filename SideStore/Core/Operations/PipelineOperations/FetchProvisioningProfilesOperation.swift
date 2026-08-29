@@ -152,7 +152,7 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
         } else {
             let parentBundleID = parentAppBundle?.bundleIdentifier ?? targetAppBundle.bundleIdentifier
             let effectiveParentBundleID = self.context.targetBundleIdentifier
-            let updatedParentBundleID = effectiveParentBundleID + "." + team.identifier
+            let updatedParentBundleID = self.context.appendTeamID ? (effectiveParentBundleID + "." + team.identifier) : effectiveParentBundleID
 
             if parentAppBundle != nil,
                targetAppBundle.bundleIdentifier.hasPrefix(parentBundleID + ".") {
@@ -161,7 +161,8 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
             } else {
                 bundleID = updatedParentBundleID
             }
-            self.debugLog("[FetchProvisioningProfiles] Constructed mangled bundleID: \(bundleID) (effectiveParent: \(effectiveParentBundleID), team: \(team.identifier))")
+            self.debugLog("[FetchProvisioningProfiles] Constructed mangled bundleID: \(bundleID) (effectiveParent: \(effectiveParentBundleID), appendTeamID: \(self.context.appendTeamID), team: \(team.identifier))")
+
         }
         
         let preferredName: String

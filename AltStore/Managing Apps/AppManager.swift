@@ -447,6 +447,7 @@ final class AppManager: ObservableObject, @unchecked Sendable
             }
             
             var taskResults = [(NSManagedObjectID, Result<NSManagedObjectID, Error>)]()
+            
             await withTaskGroup(of: (NSManagedObjectID, Result<NSManagedObjectID, Error>).self) { taskGroup in
                 for data in sourceData {
                     taskGroup.addTask {
@@ -464,6 +465,7 @@ final class AppManager: ObservableObject, @unchecked Sendable
                     taskResults.append(result)
                 }
             }
+            
             
             await managedObjectContext.perform {
                 var fetchedSources = Set<Source>()
