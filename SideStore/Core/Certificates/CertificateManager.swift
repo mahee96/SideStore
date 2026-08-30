@@ -191,7 +191,7 @@ public final class CertificateManager: @unchecked Sendable {
         if let data = Keychain.shared[certificateSerial: serialNumber] {
             if data.isPKCS12 {
                 let savedPassword = getPassword(for: serialNumber)
-                if let cert = try? Self.parse(data, password: savedPassword) {
+                if var cert = try? Self.parse(data, password: savedPassword) {
                     if let metadata = getCertificateMetadata(for: serialNumber) {
                         cert.machineIdentifier = metadata["machineIdentifier"]
                         cert.machineName = metadata["machineName"]
@@ -212,7 +212,7 @@ public final class CertificateManager: @unchecked Sendable {
             let x509: ALTX509Certificate? = data.isPKCS12
                 ? (try? Self.parse(data, password: getPassword(for: serialNumber)))?.x509
                 : ALTX509Certificate(data: data)
-            if let x509 {
+            if var x509 {
                 if let metadata = getCertificateMetadata(for: serialNumber) {
                     x509.machineIdentifier = metadata["machineIdentifier"]
                     x509.machineName = metadata["machineName"]

@@ -129,7 +129,7 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             do {
                 let result: AuthenticationResult
 
-                if let session = AuthManager.shared.session,
+                if var session = AuthManager.shared.session,
                    let team = AuthManager.shared.team,
                    (self.skipCertificateProvisioning || CertificateManager.shared.activeCertificate != nil)
                 {
