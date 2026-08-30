@@ -7,7 +7,7 @@
 //
 
 import Foundation
-@preconcurrency import AltSign
+import SideSign
 import CoreData
 
 class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperationContext, [String: ALTProvisioningProfile]>, @unchecked Sendable {

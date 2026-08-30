@@ -10,7 +10,7 @@ import Foundation
 import CommonCrypto
 import Compression
 import AnisetteKit
-@preconcurrency import AltSign
+import SideSign
 
 public struct ODAInfo: Codable, Equatable, Sendable {
     public let url: String?

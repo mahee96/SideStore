@@ -10,7 +10,7 @@
 import Foundation
 import Network
 import CoreData
-@preconcurrency import AltSign
+import SideSign
 
 enum RevokeDecision: Sendable {
     case revokeSelected([ALTX509Certificate])

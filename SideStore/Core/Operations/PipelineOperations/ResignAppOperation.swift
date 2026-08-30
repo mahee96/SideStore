@@ -8,7 +8,7 @@
 
 @preconcurrency import UIKit
 import Foundation
-@preconcurrency import AltSign
+import SideSign
 
 final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
     

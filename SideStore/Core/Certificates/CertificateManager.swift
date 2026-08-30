@@ -7,7 +7,8 @@
 //
 
 import Foundation
-@preconcurrency import AltSign
+import SideSign
+import CodeSignKit
 
 public struct ActiveSigningCertificate: Sendable {
     public let certificate: ALTCertificate

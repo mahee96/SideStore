@@ -10,7 +10,7 @@ import SwiftUI
 #if !os(tvOS)
 import QuickLook
 #endif
-@preconcurrency import AltSign
+import SideSign
 
 // MARK: - Bundle Item Model
 

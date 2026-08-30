@@ -8,7 +8,7 @@
 
 import Foundation
 import CryptoKit
-@preconcurrency import AltSign
+import SideSign
 
 public enum ArchiveFingerprint {
 

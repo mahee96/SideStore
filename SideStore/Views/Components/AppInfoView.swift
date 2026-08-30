@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-@preconcurrency import AltSign
+import SideSign
 
 struct AppInfoView: View {
     let installedApp: InstalledApp

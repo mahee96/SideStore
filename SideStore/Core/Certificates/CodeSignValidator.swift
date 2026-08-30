@@ -7,7 +7,7 @@
 //
 
 import Foundation
-@preconcurrency import AltSign
+import SideSign
 
 public enum CodeSignValidationReason: Error {
     /// The certificate used to sign the current installation has expired.

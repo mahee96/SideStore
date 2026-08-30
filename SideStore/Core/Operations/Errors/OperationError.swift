@@ -7,7 +7,7 @@
 //
 
 import Foundation
-@preconcurrency import AltSign
+import SideSign
 
 extension OperationError
 {

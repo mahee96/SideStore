@@ -8,7 +8,7 @@
 
 import Foundation
 import UniformTypeIdentifiers
-@preconcurrency import AltSign
+import SideSign
 
 final class DownloadAppOperation: BasePipelineOperation<InstallAppOperationContext, ALTApplication>, @unchecked Sendable {
     private(set) var app: AppProtocol

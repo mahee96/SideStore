@@ -8,7 +8,7 @@
 
 import Foundation
 import CoreData
-@preconcurrency import AltSign
+import SideSign
 
 final class SyncAppIDsOperation: BaseStandaloneOperation<AuthenticatedOperationContext, Void>, @unchecked Sendable {
     

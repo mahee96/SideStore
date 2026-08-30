@@ -10,7 +10,7 @@
 import Foundation
 import CoreData
 import Network
-@preconcurrency import AltSign
+import SideSign
 
 
 enum AlternateIconMode {

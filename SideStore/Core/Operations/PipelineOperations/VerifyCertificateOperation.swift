@@ -9,7 +9,7 @@
 @preconcurrency import UIKit
 import Foundation
 import CoreData
-@preconcurrency import AltSign
+import SideSign
 
 final class VerifyCertificateOperation: BasePipelineOperation<AppOperationContext, Void>, @unchecked Sendable {
     private let willResign: Bool

@@ -8,7 +8,7 @@
 
 @preconcurrency import UIKit
 import Foundation
-@preconcurrency import AltSign
+import SideSign
 
 public final class AuthManager: @unchecked Sendable {
     public static let shared = AuthManager()

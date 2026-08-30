@@ -7,7 +7,7 @@
 //
 
 import Foundation
-@preconcurrency import AltSign
+import SideSign
 import CommonCrypto
 
 public struct ASN1Item {

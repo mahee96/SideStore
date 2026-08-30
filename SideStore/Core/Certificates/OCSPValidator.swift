@@ -8,7 +8,7 @@
 
 import Foundation
 import CommonCrypto
-@preconcurrency import AltSign
+import SideSign
 
 public enum OCSPValidationError: Error, LocalizedError {
     case expired

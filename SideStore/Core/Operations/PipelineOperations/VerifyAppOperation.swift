@@ -9,7 +9,7 @@
 
 import Foundation
 import CryptoKit
-@preconcurrency import AltSign
+import SideSign
 
 import RegexBuilder
 

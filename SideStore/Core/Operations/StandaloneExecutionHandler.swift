@@ -7,7 +7,7 @@
 //
 
 import Foundation
-@preconcurrency import AltSign
+import SideSign
 
 protocol AnisetteServerHandler: AnyObject {
     func warnOutdatedAnisetteServer() async throws -> Bool

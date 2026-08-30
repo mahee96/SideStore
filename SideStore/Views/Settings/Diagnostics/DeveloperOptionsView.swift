@@ -14,7 +14,7 @@ import WidgetKit
 #else
 import TVServices
 #endif
-@preconcurrency import AltSign
+import SideSign
 
 private extension Color {
     static let settingsRowBackground = Color.white.opacity(0.15)

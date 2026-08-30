@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-@preconcurrency import AltSign
+import SideSign
 
 struct PendingImport {
     let url: URL

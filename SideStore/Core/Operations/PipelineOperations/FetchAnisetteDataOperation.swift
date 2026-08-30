@@ -10,7 +10,7 @@
 import Foundation
 import CommonCrypto
 import Starscream
-@preconcurrency import AltSign
+import SideSign
 
 final class FetchAnisetteDataOperation: BaseStandaloneOperation<AuthenticatedOperationContext, ALTAnisetteData>, @unchecked Sendable {
     public static let defaultClientInfo = "<MacBookPro18,3> <macOS;26.6;25F84> <com.apple.AuthKit/1 (com.apple.dt.Xcode/26.0)>"

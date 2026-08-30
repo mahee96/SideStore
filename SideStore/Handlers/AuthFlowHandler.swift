@@ -7,7 +7,7 @@
 //
 
 import UIKit
-import AltSign
+import SideSign
 
 class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
     

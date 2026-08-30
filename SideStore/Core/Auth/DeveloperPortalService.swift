@@ -7,39 +7,7 @@
 //
 
 @preconcurrency import UIKit
-@preconcurrency import AltSign
-
-enum DeveloperPortalError: LocalizedError {
-    case missingAccount
-    case missingSession
-    case noTeams(appleID: String)
-    case noCertificates(teamName: String)
-    case missingCertificate(machineName: String)
-    case revocationFailed(serialNumber: String)
-    case noDevices(teamName: String)
-    case deviceRegistrationFailed(name: String, identifier: String)
-    
-    var errorDescription: String? {
-        switch self {
-        case .missingAccount:
-            return NSLocalizedString("Authentication failed: Account was nil after authentication.", comment: "")
-        case .missingSession:
-            return NSLocalizedString("Authentication failed: Session was nil after authentication.", comment: "")
-        case .noTeams(let appleID):
-            return String(format: NSLocalizedString("Failed to fetch teams: No developer teams were returned for account '%@'.", comment: ""), appleID)
-        case .noCertificates(let teamName):
-            return String(format: NSLocalizedString("Failed to fetch certificates: Response contained no certificates for team '%@'.", comment: ""), teamName)
-        case .missingCertificate(let machineName):
-            return String(format: NSLocalizedString("Failed to create certificate: Certificate response was nil for machine '%@'.", comment: ""), machineName)
-        case .revocationFailed(let serialNumber):
-            return String(format: NSLocalizedString("Failed to revoke certificate '%@': Revocation failed.", comment: ""), serialNumber)
-        case .noDevices(let teamName):
-            return String(format: NSLocalizedString("Failed to fetch devices: No devices returned for team '%@'.", comment: ""), teamName)
-        case .deviceRegistrationFailed(let name, let identifier):
-            return String(format: NSLocalizedString("Failed to register device '%@' (%@): Device response was nil.", comment: ""), name, identifier)
-        }
-    }
-}
+import SideSign
 
 public class DeveloperPortalService {
     public static let shared: DeveloperPortalService = DeveloperPortalAuthService()

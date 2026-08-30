@@ -9,7 +9,7 @@
 @preconcurrency import UIKit
 import CoreData
 import SwiftUI
-@preconcurrency import AltSign
+import SideSign
 
 extension AppIDsViewController {
     static let didDismissNotification = Notification.Name("AppIDsViewControllerDidDismissNotification")
