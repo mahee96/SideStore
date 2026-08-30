@@ -111,6 +111,23 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
             throw OperationError.invalidOperationContext("AuthFlowHandler: Cannot prompt for 2FA verification code because presenting view controller is unavailable")
         }
 
+        let errorMessage: String?
+        switch mode {
+        case .trustedDevice(let error):
+            errorMessage = error
+        case .sms(_, _, let error):
+            errorMessage = error
+        case .voice(_, _, let error):
+            errorMessage = error
+        }
+
+        if let errorMessage, !errorMessage.isEmpty {
+            let shouldRetry = try await showErrorRetryAlert(message: errorMessage)
+            guard shouldRetry else {
+                return .cancel
+            }
+        }
+
         switch mode {
         case .trustedDevice:
             return try await promptCodeEntry(
@@ -121,7 +138,7 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
                 isTrustedDevice: true
             )
 
-        case .sms(let phoneNumbers, let activeID):
+        case .sms(let phoneNumbers, let activeID, _):
             let activePhone = phoneNumbers.first(where: { $0.id == activeID })
             let title: String
             if let activePhone, !activePhone.number.isEmpty {
@@ -137,7 +154,7 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
                 isTrustedDevice: false
             )
 
-        case .voice(let phoneNumbers, let activeID):
+        case .voice(let phoneNumbers, let activeID, _):
             let activePhone = phoneNumbers.first(where: { $0.id == activeID })
             let title: String
             if let activePhone, !activePhone.number.isEmpty {
@@ -152,6 +169,27 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
                 currentDeliveryMode: .voice,
                 isTrustedDevice: false
             )
+        }
+    }
+
+    @MainActor
+    private func showErrorRetryAlert(message: String) async throws -> Bool {
+        return try await withCheckedThrowingContinuation { continuation in
+            let alert = UIAlertController(
+                title: NSLocalizedString("Verification Failed", comment: ""),
+                message: message,
+                preferredStyle: .alert
+            )
+            
+            alert.addAction(UIAlertAction(title: NSLocalizedString("Retry", comment: ""), style: .default) { _ in
+                continuation.resume(returning: true)
+            })
+
+            alert.addAction(UIAlertAction(title: RSTSystemLocalizedString("Cancel"), style: .cancel) { _ in
+                continuation.resume(returning: false)
+            })
+
+            self.present(alert)
         }
     }
 
