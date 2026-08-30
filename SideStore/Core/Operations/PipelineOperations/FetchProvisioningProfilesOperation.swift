@@ -230,25 +230,32 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
                 self.context.sharedContext?.appendAppID(appID)
                 self.debugLog("[FetchProvisioningProfiles] Successfully registered new App ID '\(appID.bundleIdentifier)' on Apple portal.")
                 return appID
-            } catch ALTAppleAPIError.maximumAppIDLimitReached {
-                self.debugLog("[FetchProvisioningProfiles] addAppID failed: maximumAppIDLimitReached")
-                if let expirationDate = sortedExpirationDates.first {
-                    throw OperationError.maximumAppIDLimitReached(appName: targetAppBundle.name, requiredAppIDs: requiredAppIDs, availableAppIDs: availableAppIDs, expirationDate: expirationDate)
-                } else {
-                    throw ALTAppleAPIError(.maximumAppIDLimitReached)
-                }
-            } catch ALTAppleAPIError.bundleIdentifierUnavailable {
-                self.debugLog("[FetchProvisioningProfiles] addAppID failed: bundleIdentifierUnavailable for '\(bundleIdentifier)'. Re-checking portal...")
-                let appIDs = try await TaskChainCoalescer.shared.coalesce(key: "fetch_app_ids_\(team.identifier)") {
-                    try await ALTAppleAPI.shared.fetchAppIDs(for: team, session: session)
-                }
-                self.context.sharedContext?.appIDs = appIDs
-                if let appID = appIDs.first(where: { $0.bundleIdentifier == bundleIdentifier }) {
-                    self.debugLog("[FetchProvisioningProfiles] Found App ID on secondary fetch after bundleIdentifierUnavailable: \(appID.bundleIdentifier)")
-                    return appID
-                } else {
-                    self.debugLog("[FetchProvisioningProfiles] App ID '\(bundleIdentifier)' unavailable and not found in secondary fetch.")
-                    throw ALTError(.unknown)
+            } catch let error as DeveloperPortalError {
+                switch error {
+                case .maximumAppIDLimitReached:
+                    self.debugLog("[FetchProvisioningProfiles] addAppID failed: maximumAppIDLimitReached")
+                    if let expirationDate = sortedExpirationDates.first {
+                        throw OperationError.maximumAppIDLimitReached(appName: targetAppBundle.name, requiredAppIDs: requiredAppIDs, availableAppIDs: availableAppIDs, expirationDate: expirationDate)
+                    }
+                    throw error
+
+                case .bundleIdentifierUnavailable:
+                    self.debugLog("[FetchProvisioningProfiles] addAppID failed: bundleIdentifierUnavailable for '\(bundleIdentifier)'. Re-checking portal...")
+                    let appIDs = try await TaskChainCoalescer.shared.coalesce(key: "fetch_app_ids_\(team.identifier)") {
+                        try await ALTAppleAPI.shared.fetchAppIDs(for: team, session: session)
+                    }
+                    self.context.sharedContext?.appIDs = appIDs
+                    if let appID = appIDs.first(where: { $0.bundleIdentifier == bundleIdentifier }) {
+                        self.debugLog("[FetchProvisioningProfiles] Found App ID on secondary fetch after bundleIdentifierUnavailable: \(appID.bundleIdentifier)")
+                        return appID
+                    } else {
+                        self.debugLog("[FetchProvisioningProfiles] App ID '\(bundleIdentifier)' unavailable and not found in secondary fetch.")
+                        throw SignerError.unknown(cause: "App ID unavailable")
+                    }
+
+                default:
+                    self.debugLog("[FetchProvisioningProfiles] addAppID failed with error: \(error.localizedDescription)")
+                    throw error
                 }
             } catch {
                 self.debugLog("[FetchProvisioningProfiles] addAppID failed with error: \(error.localizedDescription)")
@@ -281,29 +288,30 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
             entitlements[key] = value
         }
         
-        let requiredFeatures = entitlements.compactMap { (entitlement, value) -> (ALTFeature, Any)? in
-            guard let feature = ALTFeature(entitlement: entitlement) else { return nil }
-            return (feature, value)
+        let requiredFeatures = entitlements.compactMap { (entitlement, value) -> (ALTFeature, String)? in
+            guard let feature = ALTFeature(entitlement: ALTEntitlement(rawValue: entitlement)) else { return nil }
+            let strVal = (value as? Bool == true) ? "true" : ((value as? Bool == false) ? "false" : "\(value)")
+            return (feature, strVal)
         }
         
-        var features = requiredFeatures.reduce(into: [ALTFeature: Any]()) { $0[$1.0] = $1.1 }
+        var features = requiredFeatures.reduce(into: [ALTFeature: String]()) { $0[$1.0] = $1.1 }
         
-        if let applicationGroups = entitlements[.appGroups] as? [String], !applicationGroups.isEmpty {
+        if let applicationGroups = entitlements[ALTEntitlement.appGroups.rawValue] as? [String], !applicationGroups.isEmpty {
             // App uses app groups, so assign `true` to enable the feature.
-            features[.appGroups] = true
+            features[.appGroups] = "true"
         } else {
             // App has no app groups, so assign `false` to disable the feature.
-            features[.appGroups] = false
+            features[.appGroups] = "false"
         }
         
         var updateFeatures = false
         
         // Determine whether the required features are already enabled for the AppID.
         for (feature, value) in features {
-            if let appIDValue = appID.features[feature] as AnyObject?, (value as AnyObject).isEqual(appIDValue) {
+            if let appIDValue = appID.features[feature], appIDValue == value {
                 // AppID already has this feature enabled and the values are the same.
                 continue
-            } else if appID.features[feature] == nil, let shouldEnableFeature = value as? Bool, !shouldEnableFeature {
+            } else if appID.features[feature] == nil, value == "false" {
                 // AppID doesn't already have this feature enabled, but we want it disabled anyway.
                 continue
             } else {
@@ -314,10 +322,8 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
             }
         }
         
-        appID.entitlements = entitlements
-        
         if updateFeatures || true {
-            let appIDCopy = appID.copy() as! ALTAppID
+            var appIDCopy = appID
             appIDCopy.features = features
             
             do {
@@ -339,7 +345,7 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
             entitlements[key] = value
         }
                 
-        guard var applicationGroups = entitlements[.appGroups] as? [String], !applicationGroups.isEmpty else {
+        guard var applicationGroups = entitlements[ALTEntitlement.appGroups.rawValue] as? [String], !applicationGroups.isEmpty else {
             verboseLog("[FetchProvisioningProfiles] App ID \(appID.bundleIdentifier) has no app groups, skipping assignment.")
             // Assigning an App ID to an empty app group array fails,
             // so just do nothing if there are no app groups.

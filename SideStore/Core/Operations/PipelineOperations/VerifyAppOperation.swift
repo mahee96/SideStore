@@ -185,9 +185,9 @@ final class VerifyAppOperation: BasePipelineOperation<InstallAppOperationContext
             let installedAppURL = InstalledApp.fileURL(for: appBundle)
             guard let previousApp = ALTApplication(fileURL: installedAppURL) else { throw OperationError.appNotFound(name: appBundle.name) }
             
-            var previousEntitlements = Set(previousApp.entitlements.keys)
+            var previousEntitlements = Set(previousApp.entitlements.keys.map { ALTEntitlement(rawValue: $0) })
             for appExtension in previousApp.appExtensions {
-                previousEntitlements.formUnion(appExtension.entitlements.keys)
+                previousEntitlements.formUnion(appExtension.entitlements.keys.map { ALTEntitlement(rawValue: $0) })
             }
             
             // Make sure all entitlements already exist in previousApp.
@@ -210,14 +210,14 @@ final class VerifyAppOperation: BasePipelineOperation<InstallAppOperationContext
     }
 
     private func entitlements(for appBundle: ALTApplication) -> Set<ALTEntitlement> {
-        var allEntitlements = Set(appBundle.entitlements.keys)
+        var allEntitlements = Set(appBundle.entitlements.keys.map { ALTEntitlement(rawValue: $0) })
         for appExtension in appBundle.appExtensions {
-            allEntitlements.formUnion(appExtension.entitlements.keys)
+            allEntitlements.formUnion(appExtension.entitlements.keys.map { ALTEntitlement(rawValue: $0) })
         }
         
         allEntitlements = allEntitlements.filter { !ALTEntitlement.ignoredEntitlements.contains($0) }
         
-        if let isDebuggable = appBundle.entitlements[.getTaskAllow] as? Bool, !isDebuggable {
+        if let isDebuggable = appBundle.entitlements[ALTEntitlement.getTaskAllow.rawValue] as? Bool, !isDebuggable {
             allEntitlements.remove(.getTaskAllow)
         }
         

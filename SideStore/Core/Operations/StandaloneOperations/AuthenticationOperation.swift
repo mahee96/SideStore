@@ -353,14 +353,14 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             password: password,
             anisetteData: anisetteData,
             xcodeVersion: xcodeVersion
-        ) { completionHandler in
+        ) { mode, completionHandler in
 
             Task.detached {
                 do {
-                    let code = try await handler.verificationCode()
-                    completionHandler(code)
+                    let action = try await handler.verificationCode(for: mode)
+                    completionHandler(action)
                 } catch {
-                    completionHandler(nil)
+                    completionHandler(.cancel)
                 }
             }
         }
@@ -425,10 +425,14 @@ private extension AuthenticationOperation {
             let account: Account
             let team: Team
             
-            if let tempAccount = Account.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(Account.identifier), altTeam.account.identifier), in: context) {
+            let accountIdentifier = altTeam.account?.identifier ?? altTeam.identifier
+            if let tempAccount = Account.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(Account.identifier), accountIdentifier), in: context) {
                 account = tempAccount
+            } else if let altAccount = altTeam.account {
+                account = Account(altAccount, context: context)
             } else {
-                account = Account(altTeam.account, context: context)
+                let altAccount = ALTAccount(appleID: self.appleIDEmailAddress ?? "", identifier: accountIdentifier)
+                account = Account(altAccount, context: context)
             }
             
             if let tempTeam = Team.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(Team.identifier), altTeam.identifier), in: context) {
@@ -437,7 +441,9 @@ private extension AuthenticationOperation {
                 team = Team(altTeam, account: account, context: context)
             }
             
-            account.update(account: altTeam.account)
+            if let altAccount = altTeam.account {
+                account.update(account: altAccount)
+            }
 
             if let providedEmailAddress = self.appleIDEmailAddress {
                 account.appleID = providedEmailAddress
@@ -567,21 +573,22 @@ private extension AuthenticationOperation {
         if let activeCert = CertificateManager.shared.activeCertificate,
            let certificate = portalCertificates.first(where: { $0.serialNumber == activeCert.serialNumber }) 
         {
-            activeCert.certificate.machineIdentifier = certificate.machineIdentifier
+            var keyStoreCert = activeCert.certificate
+            keyStoreCert.machineIdentifier = certificate.machineIdentifier
 
             if let mainBundleCertSerial = mainBundleCertSerial, 
                 mainBundleCertSerial.lowercased() != activeCert.serialNumber.lowercased() 
             {
                 self.debugLog("[Authentication] Active certificate (\(activeCert.serialNumber)) and running bundle certificate (\(mainBundleCertSerial)) mismatch detected. Running Bundle Certificate is still active on the Paid account portal. Using active Keychain certificate.")
             }
-            return activeCert.certificate
+            return keyStoreCert
         }
         
         // TODO: @mahee96: we have moved away from machineID as password for certs, but external/thirdparty like iloader might not have, 
         //                 so we still support the machineId as fallback for now 
         if let mainBundleCertSerial = mainBundleCertSerial,
            let certificate = portalCertificates.first(where: { $0.serialNumber.lowercased() == mainBundleCertSerial.lowercased() }),
-           let cert = CertificateManager.shared.getSignableCertificate(for: mainBundleCertSerial, fallbackPassword: certificate.machineIdentifier) 
+           var cert = CertificateManager.shared.getSignableCertificate(for: mainBundleCertSerial, fallbackPassword: certificate.machineIdentifier) 
         {
             cert.machineIdentifier = certificate.machineIdentifier
             self.debugLog("[Authentication] Using running bundle certificate (\(cert.serialNumber)) with valid private key from signable cache.")
@@ -600,7 +607,8 @@ private extension AuthenticationOperation {
 
     private func requestCertificate(for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTCertificate {
         let deviceName = await UIDevice.current.name
-        let machineName: String = "SideStore - \(team.account.firstName)'s \(deviceName)"
+        let accountName = team.account?.firstName ?? team.name
+        let machineName: String = "SideStore - \(accountName)'s \(deviceName)"
         self.verboseLog("[Authentication] Requesting certificate for machineName '\(machineName)'...")
 
         do {
@@ -622,10 +630,7 @@ private extension AuthenticationOperation {
             return finalCert
         } catch {
             self.debugLog("[Authentication] requestCertificate: Failed with error: \(error)")
-            let underlying = error as NSError
-            if underlying.domain == ALTAppleAPIErrorDomain && 
-               underlying.code == ALTAppleAPIError.tooManyCertificates.rawValue 
-            {
+            if case .tooManyCertificates = error as? DeveloperPortalError {
                 let friendlyError: AuthenticationError = (team.type == .free) 
                                         ? AuthenticationError(.certificateLimitReachedFree) 
                                         : AuthenticationError(.certificateLimitReachedPaid)
@@ -636,7 +641,7 @@ private extension AuthenticationOperation {
                     userInfo: [
                         NSLocalizedDescriptionKey: friendlyError.localizedDescription,
                         NSLocalizedFailureReasonErrorKey: friendlyError.failureReason ?? "",
-                        NSUnderlyingErrorKey: underlying
+                        NSUnderlyingErrorKey: error as NSError
                     ]
                 )
                 throw wrappedError

@@ -30,6 +30,14 @@ class PipelineHandler: PipelineExecutionHandler,
     init(presentingViewController: UIViewController?) {
         self.presentingViewController = presentingViewController
     }
+
+    private var isPresenterAvailable: Bool {
+        return self.activePresenter != nil
+    }
+
+    private var activePresenter: UIViewController? {
+        return self.presentingViewController?.presentedViewController ?? self.presentingViewController
+    }
     
     var isResignActive: Bool {
         return presentingViewController is ResignAltStoreViewController
@@ -37,7 +45,7 @@ class PipelineHandler: PipelineExecutionHandler,
     
     @MainActor
     func resolveBundleIDMismatch(targetID: String, activeEffectiveID: String) async -> Bool {
-        guard let presenter = self.presentingViewController else {
+        guard let presenter = self.activePresenter else {
             return false
         }
         
@@ -58,8 +66,8 @@ class PipelineHandler: PipelineExecutionHandler,
     
     @MainActor
     func reviewPermissions(_ permissions: [ALTEntitlement], for app: AppProtocol, mode: PermissionReviewMode) async throws {
-        guard let presenter = self.presentingViewController else {
-            throw OperationError.cancelled
+        guard let presenter = self.activePresenter else {
+            throw OperationError.invalidOperationContext("PipelineHandler: Cannot review permissions because presenting view controller is unavailable")
         }
         let reviewPermissionsViewController = ReviewPermissionsViewController(app: app, permissions: permissions, mode: mode)
         let navigationController = UINavigationController(rootViewController: reviewPermissionsViewController)
@@ -83,7 +91,7 @@ class PipelineHandler: PipelineExecutionHandler,
         localAppExtensions: [ALTApplication],
         excessExtensions: Set<ALTApplication>
     ) async throws -> ExtensionRemovalDecision {
-        guard let presenter = self.presentingViewController else {
+        guard let presenter = self.activePresenter else {
             return .keepAll(useMainProfile: false)
         }
         
@@ -147,7 +155,7 @@ class PipelineHandler: PipelineExecutionHandler,
     
     @MainActor
     func resolveUnsupportediOSVersion(errorDescription: String, appName: String, compatibleVersion: String) async throws -> Bool {
-        guard let presenter = self.presentingViewController else {
+        guard let presenter = self.activePresenter else {
             return false
         }
         
@@ -180,7 +188,7 @@ class PipelineHandler: PipelineExecutionHandler,
                 completion()
             }))
             
-            let presenter = self.presentingViewController
+            let presenter = self.activePresenter
                             ?? UIApplication.shared.connectedScenes
                                 .compactMap { ($0 as? UIWindowScene)?.keyWindow }
                                 .first?.rootViewController
@@ -218,7 +226,7 @@ class PipelineHandler: PipelineExecutionHandler,
     
     @MainActor
     func resolveBundleIDOverride(initialBundleID: String) async throws -> (customID: String, appendTeamID: Bool)? {
-        guard let presenter = self.presentingViewController else {
+        guard let presenter = self.activePresenter else {
             return (initialBundleID, true)
         }
         
@@ -306,7 +314,7 @@ class PipelineHandler: PipelineExecutionHandler,
 
     @MainActor
     func resolveAppGroupMismatch(originalGroup: String, correctedGroup: String) async throws -> AppGroupResolution {
-        guard let presenter = self.presentingViewController else {
+        guard let presenter = self.activePresenter else {
             return .correctAndProceed(correctedGroup)
         }
         

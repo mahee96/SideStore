@@ -211,7 +211,7 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
     
     private func resignAppBundle(at fileURL: URL, team: ALTTeam, certificate: ALTCertificate, profiles: [ALTProvisioningProfile]) async throws -> URL {
         let signer = ALTSigner(team: team, certificate: certificate)
-        try await signer.signApp(at: fileURL, provisioningProfiles: profiles, parentProgress: self.progress)
+        try await signer.signApp(at: fileURL, provisioningProfiles: profiles, progress: self.progress)
         return try FileManager.default.zipAppBundle(at: fileURL)
     }
     
@@ -236,20 +236,5 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         
         // Save updated Manifest.plist to disk.
         try manifestPlist.write(to: manifestPlistURL)
-    }
-}
-
-extension ALTSigner {
-    func signApp(at fileURL: URL, provisioningProfiles: [ALTProvisioningProfile], parentProgress: Progress) async throws {
-        try await withCheckedThrowingContinuation { continuation in
-            let progress = self.signApp(at: fileURL, provisioningProfiles: provisioningProfiles) { (success, error) in
-                if success {
-                    continuation.resume(returning: ())
-                } else {
-                    continuation.resume(throwing: error ?? OperationError.unknown())
-                }
-            }
-            parentProgress.addChild(progress, withPendingUnitCount: 50)
-        }
     }
 }

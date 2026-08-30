@@ -27,11 +27,22 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
     init(presentingViewController: UIViewController?) {
         self.presentingViewController = presentingViewController
     }
+
+    private var isPresenterAvailable: Bool {
+        return self.presentingViewController != nil || self.navigationController.presentingViewController != nil
+    }
+
+    private var activePresenter: UIViewController? {
+        if self.navigationController.presentingViewController != nil {
+            return self.navigationController
+        }
+        return self.presentingViewController?.presentedViewController ?? self.presentingViewController
+    }
     
     @MainActor
     func credentials() async throws -> (String, String) {
         guard let presentingViewController = self.presentingViewController else {
-            throw OperationError.cancelled
+            throw OperationError.invalidOperationContext("AuthFlowHandler: Cannot prompt for credentials because presentingViewController is nil")
         }
         
         if let _ = self.presentedAuthVC {
@@ -95,9 +106,64 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
     }
     
     @MainActor
-    func verificationCode() async throws -> String? {
+    func verificationCode(for mode: TwoFactorMode) async throws -> TwoFactorAction {
+        guard self.isPresenterAvailable else {
+            throw OperationError.invalidOperationContext("AuthFlowHandler: Cannot prompt for 2FA verification code because presenting view controller is unavailable")
+        }
+
+        switch mode {
+        case .trustedDevice:
+            return try await promptCodeEntry(
+                title: NSLocalizedString("Please enter the 6-digit verification code that was sent to your Apple devices.", comment: ""),
+                phoneNumbers: [],
+                activePhoneID: "",
+                currentDeliveryMode: nil,
+                isTrustedDevice: true
+            )
+
+        case .sms(let phoneNumbers, let activeID):
+            let activePhone = phoneNumbers.first(where: { $0.id == activeID })
+            let title: String
+            if let activePhone, !activePhone.number.isEmpty {
+                title = String(format: NSLocalizedString("Please enter the 6-digit verification code sent via SMS to %@.", comment: ""), activePhone.number)
+            } else {
+                title = NSLocalizedString("Please enter the 6-digit verification code sent via SMS to your phone.", comment: "")
+            }
+            return try await promptCodeEntry(
+                title: title,
+                phoneNumbers: phoneNumbers,
+                activePhoneID: activeID,
+                currentDeliveryMode: .sms,
+                isTrustedDevice: false
+            )
+
+        case .voice(let phoneNumbers, let activeID):
+            let activePhone = phoneNumbers.first(where: { $0.id == activeID })
+            let title: String
+            if let activePhone, !activePhone.number.isEmpty {
+                title = String(format: NSLocalizedString("Please enter the 6-digit verification code sent via phone call to %@.", comment: ""), activePhone.number)
+            } else {
+                title = NSLocalizedString("Please enter the 6-digit verification code sent via phone call.", comment: "")
+            }
+            return try await promptCodeEntry(
+                title: title,
+                phoneNumbers: phoneNumbers,
+                activePhoneID: activeID,
+                currentDeliveryMode: .voice,
+                isTrustedDevice: false
+            )
+        }
+    }
+
+    @MainActor
+    private func promptCodeEntry(title: String,
+                                 phoneNumbers: [TrustedPhoneNumber],
+                                 activePhoneID: String,
+                                 currentDeliveryMode: TwoFactorDeliveryMode?,
+                                 isTrustedDevice: Bool) async throws -> TwoFactorAction
+    {
         return try await withCheckedThrowingContinuation { continuation in
-            let alertController = UIAlertController(title: NSLocalizedString("Please enter the 6-digit verification code that was sent to your Apple devices.", comment: ""), message: nil, preferredStyle: .alert)
+            let alertController = UIAlertController(title: title, message: nil, preferredStyle: .alert)
             var observer: NSObjectProtocol?
             alertController.addTextField { (textField) in
                 textField.autocorrectionType = .no
@@ -110,30 +176,159 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
                 }
             }
             
-            let submitAction = UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .default) { (action) in
+            let submitAction = UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .default) { _ in
                 if let observer = observer {
                     NotificationCenter.default.removeObserver(observer)
                 }
                 let textField = alertController.textFields?.first
                 let code = textField?.text ?? ""
-                continuation.resume(returning: code)
+                continuation.resume(returning: .code(code))
             }
             submitAction.isEnabled = false
             alertController.addAction(submitAction)
+
+            if isTrustedDevice {
+                let smsAction = UIAlertAction(title: NSLocalizedString("Send Code to Phone", comment: ""), style: .default) { [weak self] _ in
+                    if let observer = observer {
+                        NotificationCenter.default.removeObserver(observer)
+                    }
+                    guard let self = self else {
+                        continuation.resume(returning: .cancel)
+                        return
+                    }
+                    self.showDeliveryMethodDialog(phoneNumbers: phoneNumbers, activeID: activePhoneID.isEmpty ? "1" : activePhoneID, continuation: continuation)
+                }
+                alertController.addAction(smsAction)
+            } else if let mode = currentDeliveryMode {
+                let resendTitle = (mode == .sms)
+                    ? NSLocalizedString("Resend SMS", comment: "")
+                    : NSLocalizedString("Call Again", comment: "")
+                let resendAction = UIAlertAction(title: resendTitle, style: .default) { _ in
+                    if let observer = observer {
+                        NotificationCenter.default.removeObserver(observer)
+                    }
+                    continuation.resume(returning: .requestPhone(id: activePhoneID, mode: mode))
+                }
+                alertController.addAction(resendAction)
+
+                let switchTitle = (mode == .sms)
+                    ? NSLocalizedString("Call Me Instead", comment: "")
+                    : NSLocalizedString("Send SMS Instead", comment: "")
+                let oppositeMode: TwoFactorDeliveryMode = (mode == .sms) ? .voice : .sms
+                let switchModeAction = UIAlertAction(title: switchTitle, style: .default) { _ in
+                    if let observer = observer {
+                        NotificationCenter.default.removeObserver(observer)
+                    }
+                    continuation.resume(returning: .requestPhone(id: activePhoneID, mode: oppositeMode))
+                }
+                alertController.addAction(switchModeAction)
+
+                if phoneNumbers.count > 1 {
+                    let changeNumberAction = UIAlertAction(title: NSLocalizedString("Choose Different Number", comment: ""), style: .default) { [weak self] _ in
+                        if let observer = observer {
+                            NotificationCenter.default.removeObserver(observer)
+                        }
+                        guard let self = self else {
+                            continuation.resume(returning: .cancel)
+                            return
+                        }
+                        self.showPhoneNumberSelectionDialog(phoneNumbers: phoneNumbers, activeID: activePhoneID, mode: mode, continuation: continuation)
+                    }
+                    alertController.addAction(changeNumberAction)
+                }
+            }
             
-            alertController.addAction(UIAlertAction(title: RSTSystemLocalizedString("Cancel"), style: .cancel) { (action) in
+            alertController.addAction(UIAlertAction(title: RSTSystemLocalizedString("Cancel"), style: .cancel) { _ in
                 if let observer = observer {
                     NotificationCenter.default.removeObserver(observer)
                 }
-                continuation.resume(returning: nil)
+                continuation.resume(returning: .cancel)
             })
             
             self.present(alertController)
         }
     }
+
+    @MainActor
+    private func showDeliveryMethodDialog(phoneNumbers: [TrustedPhoneNumber],
+                                          activeID: String,
+                                          continuation: CheckedContinuation<TwoFactorAction, Error>)
+    {
+        let alert = UIAlertController(
+            title: NSLocalizedString("Verification Method", comment: ""),
+            message: NSLocalizedString("How would you like to receive your verification code?", comment: ""),
+            preferredStyle: .alert
+        )
+
+        let smsAction = UIAlertAction(title: NSLocalizedString("Text Message (SMS)", comment: ""), style: .default) { [weak self] _ in
+            guard let self = self else {
+                continuation.resume(returning: .cancel)
+                return
+            }
+            if phoneNumbers.count > 1 {
+                self.showPhoneNumberSelectionDialog(phoneNumbers: phoneNumbers, activeID: activeID, mode: .sms, continuation: continuation)
+            } else {
+                let targetID = phoneNumbers.first?.id ?? activeID
+                continuation.resume(returning: .requestPhone(id: targetID, mode: .sms))
+            }
+        }
+        alert.addAction(smsAction)
+
+        let voiceAction = UIAlertAction(title: NSLocalizedString("Phone Call", comment: ""), style: .default) { [weak self] _ in
+            guard let self = self else {
+                continuation.resume(returning: .cancel)
+                return
+            }
+            if phoneNumbers.count > 1 {
+                self.showPhoneNumberSelectionDialog(phoneNumbers: phoneNumbers, activeID: activeID, mode: .voice, continuation: continuation)
+            } else {
+                let targetID = phoneNumbers.first?.id ?? activeID
+                continuation.resume(returning: .requestPhone(id: targetID, mode: .voice))
+            }
+        }
+        alert.addAction(voiceAction)
+
+        alert.addAction(UIAlertAction(title: RSTSystemLocalizedString("Cancel"), style: .cancel) { _ in
+            continuation.resume(returning: .cancel)
+        })
+
+        self.present(alert)
+    }
+
+    @MainActor
+    private func showPhoneNumberSelectionDialog(phoneNumbers: [TrustedPhoneNumber],
+                                                 activeID: String,
+                                                 mode: TwoFactorDeliveryMode,
+                                                 continuation: CheckedContinuation<TwoFactorAction, Error>)
+    {
+        let alert = UIAlertController(
+            title: NSLocalizedString("Select Phone Number", comment: ""),
+            message: NSLocalizedString("Choose a phone number to receive your verification code:", comment: ""),
+            preferredStyle: .alert
+        )
+
+        for phone in phoneNumbers {
+            let isCurrent = (phone.id == activeID)
+            let buttonTitle = isCurrent ? "\(phone.number) (Current)" : phone.number
+            let action = UIAlertAction(title: buttonTitle, style: .default) { _ in
+                continuation.resume(returning: .requestPhone(id: phone.id, mode: mode))
+            }
+            alert.addAction(action)
+        }
+
+        alert.addAction(UIAlertAction(title: RSTSystemLocalizedString("Cancel"), style: .cancel) { _ in
+            continuation.resume(returning: .cancel)
+        })
+
+        self.present(alert)
+    }
     
     @MainActor
     func resolveRevocation(certificates: [ALTX509Certificate], teamType: ALTTeamType) async throws -> RevokeDecision {
+        guard self.isPresenterAvailable else {
+            throw OperationError.invalidOperationContext("AuthFlowHandler: Cannot resolve certificate revocation because presenting view controller is unavailable")
+        }
+
         return try await withCheckedThrowingContinuation { continuation in
             let alertController = UIAlertController(
                 title: NSLocalizedString("Revoke Certificates", comment: ""),
@@ -190,6 +385,10 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
     
     @MainActor
     func resolveTeam(_ teams: [ALTTeam]) async throws -> ALTTeam {
+        guard self.isPresenterAvailable else {
+            throw OperationError.invalidOperationContext("AuthFlowHandler: Cannot resolve team selection because presenting view controller is unavailable")
+        }
+
         return try await withCheckedThrowingContinuation { continuation in
             let storyboard = UIStoryboard(name: "Authentication", bundle: nil)
             let selectTeamViewController = storyboard.instantiateViewController(withIdentifier: "selectTeamViewController") as! SelectTeamViewController
@@ -250,6 +449,10 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
     
     @MainActor
     func resolveResign(mismatchReason: CodeSignValidationReason, context: AuthenticatedOperationContext) async throws -> Bool {
+        guard self.isPresenterAvailable else {
+            throw OperationError.invalidOperationContext("AuthFlowHandler: Cannot resolve resign prompt because presenting view controller is unavailable")
+        }
+
         return try await withCheckedThrowingContinuation { continuation in
             var hasResumed = false
             let storyboard = UIStoryboard(name: "Authentication", bundle: nil)
@@ -282,8 +485,8 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
     
     @MainActor
     private func present(_ viewController: UIViewController) {
+        let anchorVC = self.activePresenter
         if viewController is UIAlertController {
-            let anchorVC = self.navigationController.presentingViewController != nil ? self.navigationController : (self.presentingViewController?.presentedViewController ?? self.presentingViewController)
             anchorVC?.present(viewController, animated: true)
             return
         }
@@ -297,17 +500,14 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
             }
         } else {
             self.navigationController.setViewControllers([viewController], animated: false)
-            let anchorVC = self.presentingViewController?.presentedViewController ?? self.presentingViewController
             anchorVC?.present(self.navigationController, animated: true)
         }
     }
 
-
-
     @MainActor
     func warnOutdatedAnisetteServer() async throws -> Bool {
-        guard let presenter = self.presentingViewController else {
-            return false
+        guard let presenter = self.activePresenter else {
+            throw OperationError.invalidOperationContext("AuthFlowHandler: Cannot show outdated anisette warning because presenting view controller is unavailable")
         }
         
         return await withCheckedContinuation { continuation in

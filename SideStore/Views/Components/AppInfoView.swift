@@ -84,7 +84,7 @@ struct AppInfoView: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(profile.name)
                                     .font(.subheadline)
-                                Text("UUID: \(profile.UUID.uuidString)")
+                                Text("UUID: \(profile.uuid.uuidString)")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
@@ -161,7 +161,7 @@ struct ProvisioningProfileDetailView: View {
         List {
             Section(header: Text("Profile Metadata")) {
                 ProfileInfoRow(label: "Name", value: profile.name)
-                ProfileInfoRow(label: "UUID", value: profile.UUID.uuidString)
+                ProfileInfoRow(label: "UUID", value: profile.uuid.uuidString)
                 if let identifier = profile.identifier {
                     ProfileInfoRow(label: "Identifier", value: identifier)
                 }
@@ -198,9 +198,9 @@ struct ProvisioningProfileDetailView: View {
             }
             
             Section(header: Text("Entitlements (\(profile.entitlements.count))")) {
-                let sortedEntitlements = profile.entitlements.sorted { $0.key.rawValue < $1.key.rawValue }
-                ForEach(sortedEntitlements, id: \.key.rawValue) { entitlement, value in
-                    EntitlementRow(key: entitlement.rawValue, value: value)
+                let sortedEntitlements = profile.entitlements.sorted { $0.key < $1.key }
+                ForEach(sortedEntitlements, id: \.key) { entitlement, value in
+                    EntitlementRow(key: entitlement, value: value)
                 }
             }
         }
@@ -471,7 +471,7 @@ struct ExtensionInfoView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(profile.name)
                                 .font(.subheadline)
-                            Text("UUID: \(profile.UUID.uuidString)")
+                            Text("UUID: \(profile.uuid.uuidString)")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                             Text("Expires: \(formatDate(profile.expirationDate))")
@@ -591,7 +591,7 @@ struct BundleInspectorView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(profile.name)
                                 .font(.subheadline)
-                            Text("UUID: \(profile.UUID.uuidString)")
+                            Text("UUID: \(profile.uuid.uuidString)")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                             Text("Expires: \(formatDate(profile.expirationDate))")

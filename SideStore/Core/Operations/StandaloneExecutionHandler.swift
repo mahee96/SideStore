@@ -20,7 +20,7 @@ enum ProvisioningErrorDecision {
 
 protocol AuthenticationHandler: AnyObject {
     func credentials() async throws -> (String, String)
-    func verificationCode() async throws -> String?
+    func verificationCode(for mode: TwoFactorMode) async throws -> TwoFactorAction
     func handleSignInResult(_ result: Result<(ALTAccount, ALTAppleAPISession), Error>) async
     
     func resolveTeam(_ teams: [ALTTeam]) async throws -> ALTTeam

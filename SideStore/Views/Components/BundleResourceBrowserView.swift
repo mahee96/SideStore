@@ -446,7 +446,7 @@ struct FullAppBundleView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(profile.name)
                                 .font(.subheadline)
-                            Text("UUID: \(profile.UUID.uuidString)")
+                            Text("UUID: \(profile.uuid.uuidString)")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                             Text("Expires: \(formatDate(profile.expirationDate))")
