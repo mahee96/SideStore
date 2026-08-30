@@ -16,7 +16,7 @@
       "location" : "https://github.com/mahee96/CodeSignKit.git",
       "state" : {
         "branch" : "main",
-        "revision" : "11f06bdee10c0d0be4786be8f2712b8f35b0507a"
+        "revision" : "e5968d729b4095c2a862c02c5a4c439f37193410"
       }
     },
     {
@@ -25,7 +25,7 @@
       "location" : "https://github.com/mahee96/GSACryptoKit.git",
       "state" : {
         "branch" : "main",
-        "revision" : "c7c9b9b0b004248d40b13bc0234cffec3651bb88"
+        "revision" : "dc4e1ecc983764cd72292141f3bb77d66e98af47"
       }
     },
     {

@@ -34,7 +34,7 @@ final class SyncAppIDsOperation: BaseStandaloneOperation<AuthenticatedOperationC
         }
         
         let fetchedAppIDs = try await TaskChainCoalescer.shared.coalesce(key: "fetch_app_ids_\(team.identifier)") {
-            try await ALTAppleAPI.shared.fetchAppIDs(for: team, session: session)
+            try await DeveloperPortal.shared.fetchAppIDs(for: team, session: session)
         }
         self.setProgress(50)
         
@@ -93,26 +93,12 @@ final class SyncAppIDsOperation: BaseStandaloneOperation<AuthenticatedOperationC
             if let existingAppID = existingAppIDsByIdentifier[altAppID.identifier] {
                 existingAppID.name = altAppID.name
                 existingAppID.bundleIdentifier = altAppID.bundleIdentifier
-                existingAppID.features = altAppID.features
+                existingAppID.features = altAppID.features.reduce(into: [:]) { $0[$1.key] = $1.value }
                 existingAppID.expirationDate = altAppID.expirationDate
                 appIDs.append(existingAppID)
             } else {
                 let newAppID = AppID(altAppID, team: team, context: dbContext)
                 appIDs.append(newAppID)
-            }
-        }
-    }
-}
-
-extension ALTAppleAPI {
-    func fetchAppIDs(for team: ALTTeam, session: ALTAppleAPISession) async throws -> [ALTAppID] {
-        try await withCheckedThrowingContinuation { continuation in
-            self.fetchAppIDs(for: team, session: session) { appIDs, error in
-                if let appIDs = appIDs {
-                    continuation.resume(returning: appIDs)
-                } else {
-                    continuation.resume(throwing: error ?? OperationError.unknown())
-                }
             }
         }
     }

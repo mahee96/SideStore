@@ -523,8 +523,8 @@ private extension AppIDsViewController
                         }
                         
                         let altAppID = ALTAppID(
-                            name: appID.name,
                             identifier: appID.identifier,
+                            name: appID.name,
                             bundleIdentifier: appID.bundleIdentifier,
                             expirationDate: appID.expirationDate,
                             features: appID.features
