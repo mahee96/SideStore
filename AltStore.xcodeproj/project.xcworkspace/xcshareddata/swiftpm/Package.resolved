@@ -16,7 +16,7 @@
       "location" : "https://github.com/mahee96/CodeSignKit.git",
       "state" : {
         "branch" : "main",
-        "revision" : "0aa25774a4f0b980508f090989b28451c4ff30f8"
+        "revision" : "11f06bdee10c0d0be4786be8f2712b8f35b0507a"
       }
     },
     {
@@ -70,7 +70,7 @@
       "location" : "https://github.com/mahee96/RemotePairingKit.git",
       "state" : {
         "branch" : "main",
-        "revision" : "e72cd0272ab7b4548b5cd22ed4a81008b2b52717"
+        "revision" : "7b9d269ec64027d73a50faa917cb18fa218c1fc9"
       }
     },
     {
