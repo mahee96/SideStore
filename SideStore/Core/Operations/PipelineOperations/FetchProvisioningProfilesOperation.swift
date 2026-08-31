@@ -288,54 +288,64 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
             entitlements[key] = value
         }
         
-        let requiredFeatures = entitlements.compactMap { (entitlement, value) -> (ALTFeature, String)? in
-            guard let feature = ALTFeature(entitlement: ALTEntitlement(rawValue: entitlement)) else { return nil }
-            let strVal = (value as? Bool == true) ? "true" : ((value as? Bool == false) ? "false" : "\(value)")
-            return (feature, strVal)
+        guard let allowedFeatures = team.type.allowedFeatures else {
+            throw OperationError.invalidParameters("Cannot update features for unknown team type.")
         }
         
-        var features = requiredFeatures.reduce(into: [ALTFeature: String]()) { $0[$1.0] = $1.1 }
+        var targetFeatures: [ALTFeature: String] = [:]
+        var droppedFeatures: Set<ALTFeature> = []
         
-        if let applicationGroups = entitlements[ALTEntitlement.appGroups.rawValue] as? [String], !applicationGroups.isEmpty {
-            // App uses app groups, so assign 'true' to enable the feature.
-            features[.appGroups] = "true"
-        } else {
-            // App has no app groups, so assign 'false' to disable the feature.
-            features[.appGroups] = "false"
-        }
-        
-        var updateFeatures = false
-        
-        // Determine whether the required features are already enabled for the AppID.
-        for (feature, value) in features {
-            if let appIDValue = appID.features[feature], appIDValue == value {
-                // AppID already has this feature enabled and the values are the same.
-                continue
-            } else if appID.features[feature] == nil, value == "false" {
-                // AppID doesn't already have this feature enabled, but we want it disabled anyway.
-                continue
-            } else {
-                // AppID either doesn't have this feature enabled or the value has changed,
-                // so we need to update it to reflect new values.
-                updateFeatures = true
-                break
+        // Filter applicable features
+        for (key, value) in entitlements {
+            guard let feature = ALTFeature(entitlement: ALTEntitlement(rawValue: key)) else { 
+                continue 
             }
-        }
-        
-        if updateFeatures {
-            var appIDCopy = appID
-            appIDCopy.features = features
+            let isEnabled = (value as? [Any])?.isEmpty == false || (value as? Bool) ?? true
             
-            do {
-                let updated = try await ALTAppleAPI.shared.updateAppID(appIDCopy, team: team, session: session)
-                self.verboseLog("[FetchProvisioningProfiles] Updated features for App ID \(updated.bundleIdentifier).")
-                return updated
-            } catch {
-                self.debugLog("[FetchProvisioningProfiles] Failed to update features for App ID \(appIDCopy.bundleIdentifier). \(error.localizedDescription)")
-                throw error
+            if allowedFeatures.contains(feature) {
+                targetFeatures[feature] = isEnabled ? "true" : "false"
+            } else {
+                droppedFeatures.insert(feature)
             }
-        } else {
-            return appID
+        }
+        
+        // Force apply mandatory features
+        for feature in AppConstants.mandatoryFeatures {
+            if allowedFeatures.contains(feature) {
+                targetFeatures[feature] = "true"
+            } else {
+                droppedFeatures.insert(feature)
+            }
+        }
+        
+        if !droppedFeatures.isEmpty {
+            let bulleted = droppedFeatures.map { "  • \($0.rawValue)" }.joined(separator: "\n")
+            self.debugLog("[FetchProvisioningProfiles] Dropped non-applicable features for team type \(team.type):\n\(bulleted)")
+        }
+        
+        // check if we really need to make a update on portal
+        let currentFeatures = appID.features
+        let needsUpdate = targetFeatures.contains { feature, targetValue in
+            // if not available yet assume feature = off
+            let currentValue = currentFeatures[feature] ?? "false"
+            return currentValue != targetValue
+        }
+        guard needsUpdate else { 
+            self.debugLog("[FetchProvisioningProfiles] Features for App ID \(appID.bundleIdentifier) are already satisfied. Skipping portal update.")
+            return appID 
+        }
+        
+        // set for requesting and send request
+        var appID = appID
+        appID.features = targetFeatures
+        
+        do {
+            let updated = try await ALTAppleAPI.shared.updateAppID(appID, team: team, session: session)
+            self.verboseLog("[FetchProvisioningProfiles] Updated features for App ID \(updated.bundleIdentifier).")
+            return updated
+        } catch {
+            self.debugLog("[FetchProvisioningProfiles] Failed to update features for App ID \(appID.bundleIdentifier). \(error.localizedDescription)")
+            throw error
         }
     }
     
