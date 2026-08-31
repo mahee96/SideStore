@@ -297,10 +297,10 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
         var features = requiredFeatures.reduce(into: [ALTFeature: String]()) { $0[$1.0] = $1.1 }
         
         if let applicationGroups = entitlements[ALTEntitlement.appGroups.rawValue] as? [String], !applicationGroups.isEmpty {
-            // App uses app groups, so assign `true` to enable the feature.
+            // App uses app groups, so assign 'true' to enable the feature.
             features[.appGroups] = "true"
         } else {
-            // App has no app groups, so assign `false` to disable the feature.
+            // App has no app groups, so assign 'false' to disable the feature.
             features[.appGroups] = "false"
         }
         
@@ -322,12 +322,12 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
             }
         }
         
-        if updateFeatures || true {
+        if updateFeatures {
             var appIDCopy = appID
             appIDCopy.features = features
             
             do {
-                let updated = try await ALTAppleAPI.shared.update(appIDCopy, team: team, session: session)
+                let updated = try await ALTAppleAPI.shared.updateAppID(appIDCopy, team: team, session: session)
                 self.verboseLog("[FetchProvisioningProfiles] Updated features for App ID \(updated.bundleIdentifier).")
                 return updated
             } catch {
