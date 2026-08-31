@@ -1,5 +1,5 @@
 {
-  "originHash" : "eb6eb40dbf18de84c9e89370316f8b21281d8619c73de87ff822208d9f434002",
+  "originHash" : "69ef50e98469f665fd222dd23c3fdcdd9d71e0ff7e9c23097cb0742a7b0fc571",
   "pins" : [
     {
       "identity" : "anisettekit",
@@ -7,7 +7,7 @@
       "location" : "https://github.com/mahee96/AnisetteKit.git",
       "state" : {
         "branch" : "main",
-        "revision" : "57a20dcd95c2680865187a8e210bd2d4b2f58c58"
+        "revision" : "433084d91c1ddbca84f988f0e3b204eedc0fda27"
       }
     },
     {
@@ -16,7 +16,7 @@
       "location" : "https://github.com/mahee96/CodeSignKit.git",
       "state" : {
         "branch" : "main",
-        "revision" : "e5968d729b4095c2a862c02c5a4c439f37193410"
+        "revision" : "c242c59255bd4ef465b535da7cbd21f1cce2e51f"
       }
     },
     {
@@ -25,7 +25,7 @@
       "location" : "https://github.com/mahee96/GSACryptoKit.git",
       "state" : {
         "branch" : "main",
-        "revision" : "dc4e1ecc983764cd72292141f3bb77d66e98af47"
+        "revision" : "e7dd1055d684a62456de8c382e14743f06e6ecba"
       }
     },
     {
@@ -52,7 +52,7 @@
       "location" : "https://github.com/SideStore/minizip-ng",
       "state" : {
         "branch" : "develop",
-        "revision" : "a0268765711f8cd666d5603ca38372d92571b175"
+        "revision" : "12a8ab8ccac4a36d4a45340921c7de5f18b0efab"
       }
     },
     {
@@ -96,8 +96,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-asn1.git",
       "state" : {
-        "revision" : "a9a5efd40eaf558a2bcd48d64b1d1646be686008",
-        "version" : "1.7.1"
+        "revision" : "9f542610331815e29cc3821d3b6f488db8715517",
+        "version" : "1.6.0"
       }
     },
     {
@@ -105,8 +105,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-crypto.git",
       "state" : {
-        "revision" : "47d3869a7291f085c1fb9fb1e6d3b97a793f45c6",
-        "version" : "4.5.1"
+        "revision" : "bb4ba815dab96d4edc1e0b86d7b9acf9ff973a84",
+        "version" : "4.3.1"
       }
     },
     {

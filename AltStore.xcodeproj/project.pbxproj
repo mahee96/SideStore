@@ -15,7 +15,6 @@
 		A8C37035302DA84D0010213A /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = A8C37034302DA84D0010213A /* Starscream */; };
 		A8C37039302DA8D90010213A /* SemanticVersion in Frameworks */ = {isa = PBXBuildFile; productRef = A8C37038302DA8D90010213A /* SemanticVersion */; };
 		A8F5E9AF30422E3600DBD7E1 /* SideSign in Frameworks */ = {isa = PBXBuildFile; productRef = A8F5E9AE30422E3600DBD7E1 /* SideSign */; };
-		A8F5E9B130422E3F00DBD7E1 /* AnisetteKit in Frameworks */ = {isa = PBXBuildFile; productRef = A8F5E9B030422E3F00DBD7E1 /* AnisetteKit */; };
 		BF989177250AABF4002ACF50 /* AltWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BF989167250AABF3002ACF50 /* AltWidgetExtension.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -244,7 +243,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A8F5E9B130422E3F00DBD7E1 /* AnisetteKit in Frameworks */,
 				A8F5E9AF30422E3600DBD7E1 /* SideSign in Frameworks */,
 				A8C37029302DA7F30010213A /* MarkdownKit in Frameworks */,
 				A8C3702C302DA80D0010213A /* KeychainAccess in Frameworks */,
@@ -364,7 +362,6 @@
 				A8C37038302DA8D90010213A /* SemanticVersion */,
 				A87939D2303A89CA004D9227 /* Minimuxer */,
 				A8F5E9AE30422E3600DBD7E1 /* SideSign */,
-				A8F5E9B030422E3F00DBD7E1 /* AnisetteKit */,
 			);
 			productName = AltStore;
 			productReference = BFD2476A2284B9A500981D42 /* SideStore.app */;
@@ -1025,11 +1022,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A8C37021302DA7A70010213A /* XCLocalSwiftPackageReference "Dependencies/SideSign" */;
 			productName = SideSign;
-		};
-		A8F5E9B030422E3F00DBD7E1 /* AnisetteKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A8C37021302DA7A70010213A /* XCLocalSwiftPackageReference "Dependencies/SideSign" */;
-			productName = AnisetteKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
