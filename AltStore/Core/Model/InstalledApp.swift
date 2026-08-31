@@ -451,7 +451,7 @@ public extension InstalledApp
     class func refreshedIPAURL(for app: AppProtocol) -> URL
     {
         let ipaURL = self.directoryURL(for: app).appendingPathComponent("Refreshed.ipa")
-        debugLog("`ipaURL`: \(ipaURL.absoluteString)")
+        debugLog("[InstalledApp] 'ipaURL': \(ipaURL.absoluteString)")
         return ipaURL
     }
     
