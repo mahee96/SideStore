@@ -88,8 +88,8 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
             try FileManager.default.copyItem(at: fileURL, to: appBundleURL)
         }
         
-        guard let appBundle = Bundle(url: appBundleURL) else { throw ALTError(.missingAppBundle) }
-        guard let infoDictionary = appBundle.completeInfoDictionary else { throw ALTError(.missingInfoPlist) }
+        guard let appBundle = Bundle(url: appBundleURL) else { throw OperationError.missingAppBundle }
+        guard let infoDictionary = appBundle.completeInfoDictionary else { throw OperationError.missingInfoPlist }
         
         // replace scheme targets to match the bundle suffix so multiple instances can be correctly routed for helper apps like SideBackup
         var allURLSchemes = infoDictionary[Bundle.Info.urlTypes] as? [[String: Any]] ?? []
@@ -140,7 +140,7 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
                 }
                 #endif
                 
-                guard let appExtension = Bundle(url: fileURL) else { throw ALTError(.missingAppBundle) }
+                guard let appExtension = Bundle(url: fileURL) else { throw OperationError.missingAppBundle }
                 let updatedAppExBundleId = appExtension.bundleIdentifier?.replacingOccurrences(of: targetAppBundle.bundleIdentifier, with: bundleIdentifier)
                 try self.prepare(appExtension, bundleID: updatedAppExBundleId, profiles: profiles, appexBundleIds: appexBundleIds)
             }
@@ -151,13 +151,13 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
     
     private func prepare(_ bundle: Bundle, bundleID identifier: String?, additionalInfoDictionaryValues: [String: Any] = [:], profiles: [String: ALTProvisioningProfile], appexBundleIds: [String: String]) throws {
         guard let identifier else {
-            throw ALTError(.missingAppBundle)
+            throw OperationError.missingAppBundle
         }
         guard let profile = context.useMainProfile ? profiles.values.first : profiles[identifier] else {
-            throw ALTError(.missingProvisioningProfile)
+            throw OperationError.missingProvisioningProfile
         }
         guard var infoDictionary = bundle.completeInfoDictionary else {
-            throw ALTError(.missingInfoPlist)
+            throw OperationError.missingInfoPlist
         }
         
         if let forcedBundleIdentifier = appexBundleIds[identifier] {

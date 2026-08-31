@@ -250,7 +250,7 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
                         return appID
                     } else {
                         self.debugLog("[FetchProvisioningProfiles] App ID '\(bundleIdentifier)' unavailable and not found in secondary fetch.")
-                        throw SignerError.unknown(cause: "App ID unavailable")
+                        throw OperationError.appIDUnavailable
                     }
 
                 default:
