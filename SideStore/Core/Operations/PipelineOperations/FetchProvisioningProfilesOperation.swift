@@ -11,7 +11,6 @@ import SideSign
 import CoreData
 
 class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperationContext, [String: ALTProvisioningProfile]>, @unchecked Sendable {
-    // this class is abstract or shouldn't be extended outside, use the subclasses
     
     override func execute(parentProgress: Progress?) async throws -> [String: ALTProvisioningProfile] {
         let startTime = CFAbsoluteTimeGetCurrent()
@@ -88,10 +87,19 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
     }
 
     
-    internal func fetchProvisioningProfile(for appID: ALTAppID, targetAppBundle: ALTApplication, team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTProvisioningProfile {
+    private func fetchProvisioningProfile(for appID: ALTAppID,
+                                          targetAppBundle: ALTApplication,
+                                          team: ALTTeam,
+                                          session: ALTAppleAPISession) async throws -> ALTProvisioningProfile {
+        self.debugLog("[FetchProvisioningProfiles] Updating features for App ID \(appID.bundleIdentifier)...")
+        let updatedAppID = try await self.updateFeatures(for: appID, targetAppBundle: targetAppBundle, team: team, session: session)
+        
+        self.debugLog("[FetchProvisioningProfiles] Updating app groups for App ID \(updatedAppID.bundleIdentifier)...")
+        let groupAppID = try await self.updateAppGroups(for: updatedAppID, targetAppBundle: targetAppBundle, team: team, session: session)
+        
         verboseLog(targetAppBundle.dumpMachOInfo())
-        debugLog("[FetchProvisioningProfiles] Fetching existing provisioning profile to get its identifier for App ID \(appID.bundleIdentifier).")
-        let profile = try await ALTAppleAPI.shared.fetchProvisioningProfile(for: appID, deviceType: .iphone, team: team, session: session)
+        self.debugLog("[FetchProvisioningProfiles] Fetching provisioning profile from Apple for App ID \(groupAppID.bundleIdentifier)...")
+        let profile = try await ALTAppleAPI.shared.fetchProvisioningProfile(for: groupAppID, deviceType: .iphone, team: team, session: session)
         return profile
     }
     
@@ -262,24 +270,6 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
                 throw error
             }
         }
-    }
-}
-
-class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperation, @unchecked Sendable {
-    
-    // modify Operations are allowed for the app groups and other stuffs
-    override func fetchProvisioningProfile(for appID: ALTAppID,
-                                    targetAppBundle: ALTApplication,
-                                    team: ALTTeam,
-                                    session: ALTAppleAPISession) async throws -> ALTProvisioningProfile {
-        self.debugLog("[FetchProvisioningProfilesInstall] Updating features for App ID \(appID.bundleIdentifier)...")
-        let updatedAppID = try await self.updateFeatures(for: appID, targetAppBundle: targetAppBundle, team: team, session: session)
-        
-        self.debugLog("[FetchProvisioningProfilesInstall] Updating app groups for App ID \(updatedAppID.bundleIdentifier)...")
-        let groupAppID = try await self.updateAppGroups(for: updatedAppID, targetAppBundle: targetAppBundle, team: team, session: session)
-        
-        self.debugLog("[FetchProvisioningProfilesInstall] Fetching profile from Apple for App ID \(groupAppID.bundleIdentifier)...")
-        return try await super.fetchProvisioningProfile(for: groupAppID, targetAppBundle: targetAppBundle, team: team, session: session)
     }
     
     private func updateFeatures(for appID: ALTAppID, targetAppBundle: ALTApplication, team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTAppID {
@@ -489,8 +479,3 @@ class FetchProvisioningProfilesInstallOperation: FetchProvisioningProfilesOperat
         return groupIdentifier + "." + team.identifier
     }
 }
-
-class FetchProvisioningProfilesRefreshOperation: FetchProvisioningProfilesInstallOperation, @unchecked Sendable {
-}
-
-
