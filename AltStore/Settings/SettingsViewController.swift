@@ -80,9 +80,10 @@ extension SettingsViewController
         case resetPairingFile       // row 3 - Reset Pairing File
         case anisetteServers        // row 4 - Anisette Servers
         case connectionConfig       // row 5 - Connection Configuration
-        case certificateManagement  // row 6 - Certificate Management
-        case backupAndRestore       // row 7 - Backup & Restore
-        case userCustomizations     // row 8 - User Customizations
+        case developerServices      // row 6 - Developer Portal Services
+        case certificateManagement  // row 7 - Certificate Management
+        case backupAndRestore       // row 8 - Backup & Restore
+        case userCustomizations     // row 9 - User Customizations
     }
 
     private enum BetaTestingRow: Int, CaseIterable {
@@ -275,11 +276,12 @@ final class SettingsViewController: UITableViewController
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "anisetteServers" || segue.identifier == "certificateManagement" || segue.identifier == "diagnostics" {
+        if segue.identifier == "anisetteServers" || segue.identifier == "developerServices" || segue.identifier == "certificateManagement" || segue.identifier == "diagnostics" {
             let controller = segue.destination
             
         #if !os(tvOS)
             if segue.identifier == "anisetteServers"        || 
+                segue.identifier == "developerServices"      ||
                 segue.identifier == "certificateManagement" || 
                 segue.identifier == "diagnostics"
             {
@@ -1189,6 +1191,11 @@ extension SettingsViewController
                 #endif
 
                 navigationController?.pushViewController(vc, animated: true)
+
+            case .developerServices:
+                let developerServicesView = DeveloperServicesView(presentingViewController: self)
+                let vc = UIHostingController(rootView: developerServicesView)
+                self.prepare(for: UIStoryboardSegue(identifier: "developerServices", source: self, destination: vc), sender: nil)
 
             case .certificateManagement:
                 let certificateManagementView = CertificatesView(presentingViewController: self)
