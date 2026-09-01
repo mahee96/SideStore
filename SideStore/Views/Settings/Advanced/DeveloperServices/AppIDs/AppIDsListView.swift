@@ -164,6 +164,7 @@ struct AppIDsListView: View {
                 secondaryButton: .cancel()
             )
         }
+        .developerServicesToast(viewModel: viewModel)
     }
 
     private func formatDate(_ date: Date) -> String {

@@ -9,6 +9,18 @@
 import SwiftUI
 import SideSign
 
+enum ActiveDeviceAlert: Identifiable {
+    case disable(ALTDevice)
+    case delete(ALTDevice)
+
+    var id: String {
+        switch self {
+        case .disable(let dev): return "disable-\(dev.identifier)"
+        case .delete(let dev): return "delete-\(dev.identifier)"
+        }
+    }
+}
+
 struct DevicesListView: View {
     @ObservedObject var viewModel: DeveloperServicesViewModel
     weak var presentingViewController: UIViewController?
@@ -18,16 +30,14 @@ struct DevicesListView: View {
     @State private var newDeviceName = ""
     @State private var newDeviceUDID = ""
     @State private var selectedDeviceType: ALTDeviceType = .iphone
+    @State private var isFetchingUDID = false
 
     @State private var deviceToEdit: ALTDevice? = nil
     @State private var editDeviceName = ""
-    @State private var showEditSheet = false
+    @State private var showSheetDeleteAlert = false
+    @State private var showSheetDisableAlert = false
 
-    @State private var deviceToDisable: ALTDevice? = nil
-    @State private var showDisableConfirmation = false
-
-    @State private var deviceToDelete: ALTDevice? = nil
-    @State private var showDeleteConfirmation = false
+    @State private var activeAlert: ActiveDeviceAlert? = nil
 
     private var filteredDevices: [ALTDevice] {
         if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -57,11 +67,10 @@ struct DevicesListView: View {
                             .font(.subheadline)
                     }
                 } else {
-                    ForEach(filteredDevices, id: \.identifier) { device in
+                    ForEach(filteredDevices, id: \.self) { device in
                         SwiftUI.Button {
-                            deviceToEdit = device
                             editDeviceName = device.name
-                            showEditSheet = true
+                            deviceToEdit = device
                         } label: {
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
@@ -97,16 +106,14 @@ struct DevicesListView: View {
                         }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             SwiftUI.Button(role: .destructive) {
-                                deviceToDelete = device
-                                showDeleteConfirmation = true
+                                activeAlert = .delete(device)
                             } label: {
                                 Label("Delete", systemImage: "trash")
                             }
 
                             if device.status != "d" {
                                 SwiftUI.Button {
-                                    deviceToDisable = device
-                                    showDisableConfirmation = true
+                                    activeAlert = .disable(device)
                                 } label: {
                                     Label("Disable", systemImage: "slash.circle")
                                 }
@@ -114,9 +121,8 @@ struct DevicesListView: View {
                             }
 
                             SwiftUI.Button {
-                                deviceToEdit = device
                                 editDeviceName = device.name
-                                showEditSheet = true
+                                deviceToEdit = device
                             } label: {
                                 Label("Edit", systemImage: "pencil")
                             }
@@ -125,9 +131,8 @@ struct DevicesListView: View {
                         #if !os(tvOS)
                         .contextMenu {
                             SwiftUI.Button {
-                                deviceToEdit = device
                                 editDeviceName = device.name
-                                showEditSheet = true
+                                deviceToEdit = device
                             } label: {
                                 Label("Edit Name", systemImage: "pencil")
                             }
@@ -138,15 +143,13 @@ struct DevicesListView: View {
                             }
                             if device.status != "d" {
                                 SwiftUI.Button {
-                                    deviceToDisable = device
-                                    showDisableConfirmation = true
+                                    activeAlert = .disable(device)
                                 } label: {
                                     Label("Disable Device", systemImage: "slash.circle")
                                 }
                             }
                             SwiftUI.Button(role: .destructive) {
-                                deviceToDelete = device
-                                showDeleteConfirmation = true
+                                activeAlert = .delete(device)
                             } label: {
                                 Label("Delete Device", systemImage: "trash")
                             }
@@ -201,15 +204,63 @@ struct DevicesListView: View {
                         SwiftUI.Button {
                             #if !os(tvOS)
                             newDeviceName = UIDevice.current.name
+                            if UIDevice.current.userInterfaceIdiom == .pad {
+                                selectedDeviceType = .ipad
+                            } else {
+                                selectedDeviceType = .iphone
+                            }
                             #else
                             newDeviceName = "Apple TV"
+                            selectedDeviceType = .appleTV
                             #endif
                         } label: {
                             HStack {
-                                Image(systemName: "iphone")
+                                Image(systemName: "pencil")
                                 Text("Fill Current Device Name")
                             }
                         }
+
+                        SwiftUI.Button {
+                            Task {
+                                isFetchingUDID = true
+                                defer { isFetchingUDID = false }
+                                var udid = try? await fetchUDID()
+                                if udid == nil || udid?.isEmpty == true {
+                                    udid = try? await fetchUDID(useStatic: true)
+                                }
+                                if let foundUDID = udid, !foundUDID.isEmpty, foundUDID != "XXXXX-XXXX-XXXXX-XXXX" {
+                                    newDeviceUDID = foundUDID
+                                    if newDeviceName.isEmpty {
+                                        #if !os(tvOS)
+                                        newDeviceName = UIDevice.current.name
+                                        #else
+                                        newDeviceName = "Apple TV"
+                                        #endif
+                                    }
+                                    #if !os(tvOS)
+                                    if UIDevice.current.userInterfaceIdiom == .pad {
+                                        selectedDeviceType = .ipad
+                                    } else {
+                                        selectedDeviceType = .iphone
+                                    }
+                                    #endif
+                                    viewModel.showToastMessage("Fetched Device UDID: \(foundUDID.prefix(8))...")
+                                } else {
+                                    viewModel.showToastMessage("Current Device UDID not available")
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                if isFetchingUDID {
+                                    ProgressView()
+                                        .padding(.trailing, 4)
+                                } else {
+                                    Image(systemName: "iphone.and.arrow.forward")
+                                }
+                                Text("Fetch Current Device UDID")
+                            }
+                        }
+                        .disabled(isFetchingUDID)
                     }
                 }
                 .navigationTitle("Register Device")
@@ -232,9 +283,10 @@ struct DevicesListView: View {
                               newDeviceUDID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
                               viewModel.isActionLoading)
                 )
+                .developerServicesToast(viewModel: viewModel)
             }
         }
-        .sheet(isPresented: $showEditSheet) {
+        .sheet(item: $deviceToEdit) { device in
             NavigationView {
                 Form {
                     Section(header: Text("Device Name")) {
@@ -242,27 +294,23 @@ struct DevicesListView: View {
                     }
 
                     Section(header: Text("Device Identifier (UDID)")) {
-                        Text(deviceToEdit?.identifier ?? "")
+                        Text(device.identifier.isEmpty ? "Not Available" : device.identifier)
                             .font(.system(.subheadline, design: .monospaced))
                             .foregroundColor(.secondary)
                     }
 
                     Section(header: Text("Device Details")) {
-                        InfoRow(label: "Type", value: deviceToEdit?.type.displayName ?? "Device")
-                        InfoRow(label: "Status", value: deviceToEdit?.status == "d" ? "Disabled" : "Active", valueColor: deviceToEdit?.status == "d" ? .red : .green)
-                        if let devID = deviceToEdit?.deviceID {
+                        InfoRow(label: "Type", value: device.type.displayName)
+                        InfoRow(label: "Status", value: device.status == "d" ? "Disabled" : "Active", valueColor: device.status == "d" ? .red : .green)
+                        if let devID = device.deviceID, !devID.isEmpty {
                             InfoRow(label: "Portal ID", value: devID)
                         }
                     }
 
                     Section {
-                        if deviceToEdit?.status != "d" {
+                        if device.status != "d" {
                             SwiftUI.Button {
-                                if let target = deviceToEdit {
-                                    showEditSheet = false
-                                    deviceToDisable = target
-                                    showDisableConfirmation = true
-                                }
+                                showSheetDisableAlert = true
                             } label: {
                                 HStack {
                                     Spacer()
@@ -276,11 +324,7 @@ struct DevicesListView: View {
                         }
 
                         SwiftUI.Button(role: .destructive) {
-                            if let target = deviceToEdit {
-                                showEditSheet = false
-                                deviceToDelete = target
-                                showDeleteConfirmation = true
-                            }
+                            showSheetDeleteAlert = true
                         } label: {
                             HStack {
                                 Spacer()
@@ -295,51 +339,80 @@ struct DevicesListView: View {
                 .navigationTitle("Edit Device")
                 .navigationBarItems(
                     leading: SwiftUI.Button("Cancel") {
-                        showEditSheet = false
+                        deviceToEdit = nil
                     },
                     trailing: SwiftUI.Button("Save") {
                         let trimmed = editDeviceName.trimmingCharacters(in: .whitespacesAndNewlines)
-                        guard let target = deviceToEdit, !trimmed.isEmpty else { return }
+                        guard !trimmed.isEmpty else { return }
                         Task {
-                            let success = await viewModel.updateDevice(target, newName: trimmed, presentingViewController: presentingViewController)
+                            let success = await viewModel.updateDevice(device, newName: trimmed, presentingViewController: presentingViewController)
                             if success {
-                                showEditSheet = false
+                                deviceToEdit = nil
                             }
                         }
                     }
                     .disabled(editDeviceName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-                              editDeviceName == deviceToEdit?.name ||
+                              editDeviceName == device.name ||
                               viewModel.isActionLoading)
+                )
+                .alert(isPresented: $showSheetDisableAlert) {
+                    Alert(
+                        title: Text("Disable Device?"),
+                        message: Text("Are you sure you want to disable '\(device.name)' on the Apple Developer Portal? Disabled devices will not be included in newly generated provisioning profiles."),
+                        primaryButton: .default(Text("Disable")) {
+                            Task {
+                                let success = await viewModel.disableDevice(device, presentingViewController: presentingViewController)
+                                if success {
+                                    deviceToEdit = nil
+                                }
+                            }
+                        },
+                        secondaryButton: .cancel()
+                    )
+                }
+                .alert(isPresented: $showSheetDeleteAlert) {
+                    Alert(
+                        title: Text("Delete Device?"),
+                        message: Text("Are you sure you want to delete '\(device.name)' (\(device.identifier)) from the Apple Developer Portal?"),
+                        primaryButton: .destructive(Text("Delete")) {
+                            Task {
+                                let success = await viewModel.deleteDevice(device, presentingViewController: presentingViewController)
+                                if success {
+                                    deviceToEdit = nil
+                                }
+                            }
+                        },
+                        secondaryButton: .cancel()
+                    )
+                }
+            }
+        }
+        .alert(item: $activeAlert) { alert in
+            switch alert {
+            case .disable(let device):
+                return Alert(
+                    title: Text("Disable Device?"),
+                    message: Text("Are you sure you want to disable '\(device.name)' on the Apple Developer Portal? Disabled devices will not be included in newly generated provisioning profiles."),
+                    primaryButton: .default(Text("Disable")) {
+                        Task {
+                            _ = await viewModel.disableDevice(device, presentingViewController: presentingViewController)
+                        }
+                    },
+                    secondaryButton: .cancel()
+                )
+            case .delete(let device):
+                return Alert(
+                    title: Text("Delete Device?"),
+                    message: Text("Are you sure you want to delete '\(device.name)' (\(device.identifier)) from the Apple Developer Portal?"),
+                    primaryButton: .destructive(Text("Delete")) {
+                        Task {
+                            _ = await viewModel.deleteDevice(device, presentingViewController: presentingViewController)
+                        }
+                    },
+                    secondaryButton: .cancel()
                 )
             }
         }
-        .alert(isPresented: $showDisableConfirmation) {
-            Alert(
-                title: Text("Disable Device?"),
-                message: Text("Are you sure you want to disable '\(deviceToDisable?.name ?? "this device")' on the Apple Developer Portal? Disabled devices will not be included in newly generated provisioning profiles."),
-                primaryButton: .default(Text("Disable")) {
-                    if let target = deviceToDisable {
-                        Task {
-                            _ = await viewModel.disableDevice(target, presentingViewController: presentingViewController)
-                        }
-                    }
-                },
-                secondaryButton: .cancel()
-            )
-        }
-        .alert(isPresented: $showDeleteConfirmation) {
-            Alert(
-                title: Text("Delete Device?"),
-                message: Text("Are you sure you want to delete '\(deviceToDelete?.name ?? "this device")' (\(deviceToDelete?.identifier ?? "")) from the Apple Developer Portal?"),
-                primaryButton: .destructive(Text("Delete")) {
-                    if let target = deviceToDelete {
-                        Task {
-                            _ = await viewModel.deleteDevice(target, presentingViewController: presentingViewController)
-                        }
-                    }
-                },
-                secondaryButton: .cancel()
-            )
-        }
+        .developerServicesToast(viewModel: viewModel)
     }
 }

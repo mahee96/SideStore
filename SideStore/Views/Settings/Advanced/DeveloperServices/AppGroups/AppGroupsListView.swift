@@ -20,7 +20,6 @@ struct AppGroupsListView: View {
 
     @State private var groupToEdit: ALTAppGroup? = nil
     @State private var editGroupName = ""
-    @State private var showEditSheet = false
     @State private var showSheetDeleteConfirmation = false
 
     @State private var groupToDelete: ALTAppGroup? = nil
@@ -56,9 +55,8 @@ struct AppGroupsListView: View {
                 } else {
                     ForEach(filteredGroups, id: \.identifier) { group in
                         SwiftUI.Button {
-                            groupToEdit = group
                             editGroupName = group.name
-                            showEditSheet = true
+                            groupToEdit = group
                         } label: {
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
@@ -91,9 +89,8 @@ struct AppGroupsListView: View {
                             }
 
                             SwiftUI.Button {
-                                groupToEdit = group
                                 editGroupName = group.name
-                                showEditSheet = true
+                                groupToEdit = group
                             } label: {
                                 Label("Edit", systemImage: "pencil")
                             }
@@ -102,9 +99,8 @@ struct AppGroupsListView: View {
                         #if !os(tvOS)
                         .contextMenu {
                             SwiftUI.Button {
-                                groupToEdit = group
                                 editGroupName = group.name
-                                showEditSheet = true
+                                groupToEdit = group
                             } label: {
                                 Label("Edit Name", systemImage: "pencil")
                             }
@@ -179,7 +175,7 @@ struct AppGroupsListView: View {
                 )
             }
         }
-        .sheet(isPresented: $showEditSheet) {
+        .sheet(item: $groupToEdit) { group in
             NavigationView {
                 Form {
                     Section(header: Text("Description"), footer: Text("You cannot use special characters such as @, &, *, ', \", -, .")) {
@@ -187,7 +183,7 @@ struct AppGroupsListView: View {
                     }
 
                     Section(header: Text("Identifier")) {
-                        Text(groupToEdit?.groupIdentifier ?? "")
+                        Text(group.groupIdentifier)
                             .foregroundColor(.secondary)
                     }
 
@@ -208,33 +204,31 @@ struct AppGroupsListView: View {
                 .navigationTitle("Edit Identifier Configuration")
                 .navigationBarItems(
                     leading: SwiftUI.Button("Cancel") {
-                        showEditSheet = false
+                        groupToEdit = nil
                     },
                     trailing: SwiftUI.Button("Save") {
                         let trimmed = editGroupName.trimmingCharacters(in: .whitespacesAndNewlines)
-                        guard let target = groupToEdit, !trimmed.isEmpty else { return }
+                        guard !trimmed.isEmpty else { return }
                         Task {
-                            let success = await viewModel.updateAppGroup(target, newName: trimmed, presentingViewController: presentingViewController)
+                            let success = await viewModel.updateAppGroup(group, newName: trimmed, presentingViewController: presentingViewController)
                             if success {
-                                showEditSheet = false
+                                groupToEdit = nil
                             }
                         }
                     }
                     .disabled(editGroupName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-                              editGroupName == groupToEdit?.name ||
+                              editGroupName == group.name ||
                               viewModel.isActionLoading)
                 )
                 .alert(isPresented: $showSheetDeleteConfirmation) {
                     Alert(
                         title: Text("Delete App Group?"),
-                        message: Text("Are you sure you want to delete '\(groupToEdit?.name ?? "this App Group")' (\(groupToEdit?.groupIdentifier ?? "")) from Apple Developer Portal?"),
+                        message: Text("Are you sure you want to delete '\(group.name)' (\(group.groupIdentifier)) from Apple Developer Portal?"),
                         primaryButton: .destructive(Text("Delete")) {
-                            if let target = groupToEdit {
-                                Task {
-                                    let success = await viewModel.deleteAppGroup(target, presentingViewController: presentingViewController)
-                                    if success {
-                                        showEditSheet = false
-                                    }
+                            Task {
+                                let success = await viewModel.deleteAppGroup(group, presentingViewController: presentingViewController)
+                                if success {
+                                    groupToEdit = nil
                                 }
                             }
                         },
@@ -257,5 +251,6 @@ struct AppGroupsListView: View {
                 secondaryButton: .cancel()
             )
         }
+        .developerServicesToast(viewModel: viewModel)
     }
 }

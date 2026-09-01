@@ -155,8 +155,17 @@ struct DeveloperServicesView: View {
                 dismissButton: .default(Text("OK"))
             )
         }
-        .overlay(
-            DeveloperServicesToastView(isShowing: $viewModel.showToast, message: viewModel.toastMessage)
+        .developerServicesToast(viewModel: viewModel)
+    }
+}
+
+extension View {
+    func developerServicesToast(viewModel: DeveloperServicesViewModel) -> some View {
+        self.overlay(
+            DeveloperServicesToastView(isShowing: Binding(
+                get: { viewModel.showToast },
+                set: { viewModel.showToast = $0 }
+            ), message: viewModel.toastMessage)
         )
     }
 }

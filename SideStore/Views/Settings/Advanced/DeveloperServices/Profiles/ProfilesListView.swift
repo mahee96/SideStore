@@ -193,6 +193,7 @@ struct ProfilesListView: View {
         } message: {
             Text("This will permanently delete all \(viewModel.profiles.count) provisioning profile(s) for team '\(viewModel.team?.name ?? "")' on Apple's developer portal. SideStore will automatically generate fresh profiles on next app install or refresh.")
         }
+        .developerServicesToast(viewModel: viewModel)
     }
 
     private func formatDate(_ date: Date) -> String {
