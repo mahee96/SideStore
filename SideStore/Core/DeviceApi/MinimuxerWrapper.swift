@@ -121,64 +121,24 @@ func getDeviceConnectionMode() async -> DeviceConnectionMode {
     return await minimuxer.core.getConnectionMode()
 }
 
-enum MinimuxerStatus: Equatable {
-    case ready
-    case noDevice(String?)
-    case noConnection(String?)
-    case notReachable(String)
-    case noVPN(String?)
-    case invalidVPN(String?)
-    case invalidPairing(String?)
-    case notStarted(String?)
-    case pairingNotLoaded(String?)
-    case unknown
-    
-    init(from error: MinimuxerError) {
-        switch error {
-        case .noVPN(let reason):                    self = .noVPN(reason)
-        case .invalidVPN(let reason):               self = .invalidVPN(reason)
-        case .invalidPairing(_, let reason):        self = .invalidPairing(reason)
-        case .noDevice(let reason):                 self = .noDevice(reason)
-        case .noConnection(let reason):             self = .noConnection(reason)
-        case .notReachable(let reason):             self = .notReachable(reason)
-        case .notStarted(let reason):               self = .notStarted(reason)
-        case .pairingNotLoaded(let reason):         self = .pairingNotLoaded(reason)
-        default:                                    self = .unknown
-        }
-    }
-    
-    var operationError: OperationError? {
+public func isMinimuxerReady() async -> Result<Bool, MinimuxerError> {
+    return await minimuxer.core.isReady()
+}
+
+extension MinimuxerError {
+    var asOperationError: OperationError {
         switch self {
-        case .unknown, .ready:                  return nil
         case .noDevice(let reason):             return .noDevice(reason: reason)
         case .noConnection(let reason):         return .noConnection(reason: reason)
         case .notReachable(let reason):         return .notReachable(reason: reason)
         case .noVPN(let reason):                return .noVPN(reason: reason)
         case .invalidVPN(let reason):           return .invalidVPN(reason: reason)
-        case .invalidPairing(let reason):       return .invalidPairingFile(reason: reason)
+        case .invalidPairing(_, let reason):    return .invalidPairingFile(reason: reason)
         case .notStarted(let reason):           return .minimuxerNotStarted(reason: reason)
         case .pairingNotLoaded(let reason):     return .pairingNotComplete(reason: reason)
+        default:                                return .unknown(failureReason: self.localizedDescription)
         }
     }
-
-    static func from(_ result: Result<Bool, Error>) -> MinimuxerStatus {
-        switch result {
-        case .success:
-            return .ready
-        case .failure(let error):
-            guard let error = error as? MinimuxerError else { return .unknown }
-            return MinimuxerStatus(from: error)
-        }
-    }
-}
-
-func getMinimuxerStatus() async -> MinimuxerStatus {
-    // #if targetEnvironment(simulator)
-    // debugLog("[SideStore] getMinimuxerStatus() = .ready on simulator")
-    // return .ready
-    // #endif
-    let result = await minimuxer.core.isReady()
-    return MinimuxerStatus.from(result.mapError { $0 as Error })
 }
 
 func reinitializePairingData(_ pairingFile: String) async throws {

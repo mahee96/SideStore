@@ -289,6 +289,11 @@ struct OperationError: ALTLocalizedError {
                 return String(format: NSLocalizedString("SideStore is unable to reach the device endpoint:\n%@\n\nPlease check your Connection Configuration in Settings.", comment: ""), reason)
             }
             return NSLocalizedString("SideStore is unable to reach the device endpoint.\n\nPlease check your Connection Configuration in Settings to ensure the IP and endpoint are correct.", comment: "")
+        case .notReachable:
+            if let reason = self._failureReason, !reason.isEmpty {
+                return reason
+            }
+            return NSLocalizedString("Device is not reachable at the specified IP or Endpoint.", comment: "")
         case .invalidPairingFile:
             if let reason = self._failureReason, !reason.isEmpty {
                 return String(format: NSLocalizedString("The current pairing file is invalid or missing. Reason: %@\n\nPlease make sure to input a valid pairing file! If the issue persists, replace your pairing with iloader.", comment: ""), reason)
