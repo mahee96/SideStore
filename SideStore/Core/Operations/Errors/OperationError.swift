@@ -56,7 +56,6 @@ public enum OperationError: LocalizedError, CustomNSError, Sendable, Equatable {
     case missingAppBundle
     case missingInfoPlist
     case missingProvisioningProfile
-    case appIDUnavailable
 
     public static var cancelled: CancellationError { CancellationError() }
 
@@ -163,8 +162,6 @@ public enum OperationError: LocalizedError, CustomNSError, Sendable, Equatable {
             return "The app's Info.plist could not be found."
         case .missingProvisioningProfile:
             return "A provisioning profile for the app could not be found."
-        case .appIDUnavailable:
-            return "The App ID is unavailable on the developer portal."
         }
     }
 
