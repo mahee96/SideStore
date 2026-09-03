@@ -134,44 +134,16 @@ extension PairingFileManager: UIDocumentPickerDelegate {
             let data = try Data(contentsOf: url)
             guard let pairingString = String(data: data, encoding: .utf8) else {
                 debugLog("[PairingFile] Unable to read pairing file")
-                if let completion = self.completion {
-                    completion(nil)
-                } else {
-                    if let rootVC = UIApplication.shared.alt_keyWindow?.rootViewController {
-                        self.presentPairingFileAlert(on: rootVC, isRetry: true)
-                    }
-                }
+                self.completion?(nil)
                 return
             }
             
             // Delegate file operations to the main class
             try savePairingFile(contents: pairingString)
-            
-            if let completion = self.completion {
-                completion(url)
-            } else {
-                Task.detached {
-                    do {
-                        try await AppBootManager.shared.startMinimuxer(pairingFile: pairingString)
-                    } catch {
-                        debugLog("[PairingFile] startMinimuxer failed: \(error)")
-                        await MainActor.run {
-                            if let rootVC = UIApplication.shared.alt_keyWindow?.rootViewController {
-                                self.presentPairingFileAlert(on: rootVC, isRetry: true)
-                            }
-                        }
-                    }
-                }
-            }
+            self.completion?(url)
         } catch {
             debugLog("[PairingFile] Error importing pairing file: \(error)")
-            if let completion = self.completion {
-                completion(nil)
-            } else {
-                if let rootVC = UIApplication.shared.alt_keyWindow?.rootViewController {
-                    self.presentPairingFileAlert(on: rootVC, isRetry: true)
-                }
-            }
+            self.completion?(nil)
         }
         
         controller.dismiss(animated: true, completion: nil)
@@ -179,13 +151,7 @@ extension PairingFileManager: UIDocumentPickerDelegate {
 
     @MainActor
     func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
-        if let completion = self.completion {
-            completion(nil)
-        } else {
-            if let rootVC = UIApplication.shared.alt_keyWindow?.rootViewController {
-                self.presentPairingFileAlert(on: rootVC, isRetry: true)
-            }
-        }
+        self.completion?(nil)
     }
 }
 #else
