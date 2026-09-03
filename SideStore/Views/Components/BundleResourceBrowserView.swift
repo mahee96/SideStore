@@ -11,6 +11,7 @@ import SwiftUI
 import QuickLook
 #endif
 import SideSign
+import CodeSignKit
 
 // MARK: - Bundle Item Model
 
@@ -199,11 +200,17 @@ struct BundleItemRow: View {
         .contentShape(Rectangle())
     }
 
+    private var isMachOItem: Bool {
+        !item.isDirectory && CodeSignKit.MachOParser.isMachOBinary(at: item.url)
+    }
+
     @ViewBuilder
     private var destination: some View {
         let ext = item.url.pathExtension.lowercased()
         if item.isDirectory {
             BundleResourceBrowserView(rootURL: item.url, title: item.name)
+        } else if isMachOItem {
+            MachOResourceViewer(url: item.url)
         } else if ext == "ipa" {
             IPAContentsView(ipaURL: item.url)
         } else if ext == "plist" {
@@ -241,6 +248,9 @@ struct BundleItemRow: View {
             default: return "folder.fill"
             }
         }
+        if isMachOItem {
+            return "cpu.fill"
+        }
         switch item.url.pathExtension.lowercased() {
         case "png", "jpg", "jpeg", "gif", "webp", "tiff", "heic", "bmp", "ico": return "photo"
         case "mp3", "wav", "aac", "m4a", "aiff", "caf": return "music.note"
@@ -268,6 +278,7 @@ struct BundleItemRow: View {
 
     private var iconColor: Color {
         if item.isDirectory { return .blue }
+        if isMachOItem { return .indigo }
         switch item.url.pathExtension.lowercased() {
         case "png", "jpg", "jpeg", "gif", "webp", "tiff", "heic", "bmp", "ico": return .orange
         case "mp3", "wav", "aac", "m4a", "aiff", "caf": return .pink
@@ -435,7 +446,22 @@ struct FullAppBundleView: View {
                     InfoRow(label: "Min iOS", value: minOS)
                 }
                 if let exec = plist?["CFBundleExecutable"] as? String {
-                    InfoRow(label: "Executable", value: exec)
+                    let execURL = bundleURL.appendingPathComponent(exec)
+                    if FileManager.default.fileExists(atPath: execURL.path) && CodeSignKit.MachOParser.isMachOBinary(at: execURL) {
+                        NavigationLink(destination: MachOResourceViewer(url: execURL)) {
+                            HStack {
+                                Text("Executable")
+                                    .font(.subheadline)
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                Text(exec)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    } else {
+                        InfoRow(label: "Executable", value: exec)
+                    }
                 }
             }
 
@@ -592,10 +618,13 @@ struct ResourceImageViewer: View {
 // MARK: - Resource Text Viewer
 
 struct ResourceTextViewer: View {
-    let url: URL
+    var url: URL? = nil
+    var title: String? = nil
+    var explicitContent: String? = nil
 
     @State private var content: String = ""
     @State private var isLoaded = false
+    @State private var showingShareSheet = false
 
     var body: some View {
         ScrollView {
@@ -604,16 +633,31 @@ struct ResourceTextViewer: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
         }
-        .navigationTitle(url.lastPathComponent)
+        .navigationTitle(title ?? url?.lastPathComponent ?? "Text")
         #if !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if !content.isEmpty {
+                    SwiftUI.Button {
+                        UIPasteboard.general.string = content
+                    } label: {
+                        Image(systemName: "doc.on.doc")
+                    }
+                }
+            }
+        }
         #endif
         .onAppear {
             guard !isLoaded else { return }
             isLoaded = true
-            content = (try? String(contentsOf: url, encoding: .utf8))
-                ?? (try? String(contentsOf: url, encoding: .isoLatin1))
-                ?? "(Cannot decode file as text)"
+            if let explicit = explicitContent {
+                content = explicit
+            } else if let url = url {
+                content = (try? String(contentsOf: url, encoding: .utf8))
+                    ?? (try? String(contentsOf: url, encoding: .isoLatin1))
+                    ?? "(Cannot decode file as text)"
+            }
         }
     }
 }
