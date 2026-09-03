@@ -37,23 +37,15 @@ extension OperationError
         /* Connection */
         case serverNotFound = 1200
         case connectionFailed = 1201
-        case connectionDropped = 1202
         
         /* Pledges */
-        case pledgeRequired = 1401
         case pledgeInactive = 1402
 
         /* SideStore Only */
         case unableToConnectSideJIT
         case unableToRespondSideJITDevice
-        case wrongSideJITIP
         case SideJITIssue // (error: String)
-        case refreshsidejit
-        case refreshAppFailed
-        case tooNewError
-        case anisetteV1Error//(message: String)
         case provisioningError//(result: String, message: String?)
-        case anisetteV3Error//(message: String)
         case cacheClearError//(errors: [String])
         case noConnection
         case noVPN
@@ -64,7 +56,6 @@ extension OperationError
         case pairingNotComplete
 
         case invalidOperationContext
-        case sideStoreBundleIDMismatch
         case missingAppBundle
         case missingInfoPlist
         case missingProvisioningProfile
@@ -77,7 +68,6 @@ extension OperationError
     static let timedOut: OperationError = .init(code: .timedOut)
     static let unableToConnectSideJIT: OperationError = .init(code: .unableToConnectSideJIT)
     static let unableToRespondSideJITDevice: OperationError = .init(code: .unableToRespondSideJITDevice)
-    static let wrongSideJITIP: OperationError = .init(code: .wrongSideJITIP)
     static let notAuthenticated: OperationError = .init(code: .notAuthenticated)
     static let unknownUDID: OperationError = .init(code: .unknownUDID)
     static let invalidApp: OperationError = .init(code: .invalidApp)
@@ -98,10 +88,7 @@ extension OperationError
     static func invalidPairingFile(reason: String? = nil) -> OperationError { OperationError(code: .invalidPairingFile, failureReason: reason) }
     static func minimuxerNotStarted(reason: String? = nil) -> OperationError { OperationError(code: .minimuxerNotStarted, failureReason: reason) }
     static func pairingNotComplete(reason: String? = nil) -> OperationError { OperationError(code: .pairingNotComplete, failureReason: reason) }
-    static let tooNewError: OperationError = .init(code: .tooNewError)
     static let provisioningError: OperationError = .init(code: .provisioningError)
-    static let anisetteV1Error: OperationError = .init(code: .anisetteV1Error)
-    static let anisetteV3Error: OperationError = .init(code: .anisetteV3Error)
     
     static let cacheClearError: OperationError = .init(code: .cacheClearError)
 
@@ -162,24 +149,8 @@ extension OperationError
         OperationError(code: .cacheClearError, failureReason: errors.joined(separator: "\n"))
     }
 
-    static func anisetteV1Error(message: String) -> OperationError {
-        OperationError(code: .anisetteV1Error, failureReason: message)
-    }
-
-    static func anisetteV3Error(message: String) -> OperationError {
-        OperationError(code: .anisetteV3Error, failureReason: message)
-    }
-
-    static func refreshAppFailed(message: String) -> OperationError {
-        OperationError(code: .refreshAppFailed, failureReason: message)
-    }
-
     static func invalidParameters(_ message: String? = nil) -> OperationError {
         OperationError(code: .invalidParameters, failureReason: message)
-    }
-    
-    static func sideStoreBundleIDMismatch(targetBundleID: String, activeBundleID: String) -> OperationError {
-        OperationError(code: .sideStoreBundleIDMismatch, failureReason: String(format: NSLocalizedString("Target bundle ID '%@' does not match active SideStore instance '%@'.\n\nThis operation is not allowed because SideStore cannot manage database containers other than its own.", comment: ""), targetBundleID, activeBundleID))
     }
     
     static func invalidOperationContext(_ message: String? = nil) -> OperationError {
@@ -192,10 +163,6 @@ extension OperationError
     
     static func sourceNotAdded(@Managed _ source: Source, file: String = #fileID, line: UInt = #line) -> OperationError {
         OperationError(code: .sourceNotAdded, sourceName: $source.name, sourceFile: file, sourceLine: line)
-    }
-    
-    static func pledgeRequired(appName: String, file: String = #fileID, line: UInt = #line) -> OperationError {
-        OperationError(code: .pledgeRequired, appName: appName, sourceFile: file, sourceLine: line)
     }
     
     static func pledgeInactive(appName: String, file: String = #fileID, line: UInt = #line) -> OperationError {
@@ -301,33 +268,20 @@ struct OperationError: ALTLocalizedError {
             return NSLocalizedString("The current pairing file is invalid or missing.\n\nPlease make sure to input a valid pairing file! If the issue persists, replace your pairing with iloader.", comment: "")
         case .minimuxerNotStarted: return NSLocalizedString("Minimuxer has not been started yet.\n\nPlease complete pairing or start minimuxer before performing operations.", comment: "")
         case .pairingNotComplete: return NSLocalizedString("Pairing Required:\nWithout a valid pairing file, SideStore operations cannot connect to your device. Please pair your device or import a valid pairing file.", comment: "")
-        case .tooNewError: return NSLocalizedString("iOS 17.0-17.3.1 changed how JIT is enabled so SideStore cannot enable JIT without SideJITServer on these versions, sorry for any inconvenience.", comment: "")
         case .unableToConnectSideJIT: return NSLocalizedString("Unable to connect to SideJITServer. Please check that you are on the same Wi-Fi of and your Firewall has been set correctly on your server.", comment: "")
         case .unableToRespondSideJITDevice: return NSLocalizedString("SideJITServer is unable to connect to your iDevice. Please make sure you have paired your iDevice by running 'SideJITServer -y', or try refreshing SideJITServer from Settings.", comment: "")
-        case .wrongSideJITIP: return NSLocalizedString("Incorrect SideJITServer IP. Please make sure that you are on the same Wi-Fi as SideJITServer", comment: "")
-        case .refreshsidejit: return NSLocalizedString("Unable to find app; Please try refreshing SideJITServer from Settings.", comment: "")
-        case .anisetteV1Error:
-            let message = self._failureReason ?? ""
-            return String(format: NSLocalizedString("An error occurred while getting anisette data from a V1 server: %@. Try using another anisette server.", comment: ""), message)
         case .provisioningError:
             let result = self._failureReason ?? ""
             let message = self.errorTitle ?? ""
             let combined = message.isEmpty ? result : "\(result) \(message)"
             let trimmed = combined.trimmingCharacters(in: CharacterSet(charactersIn: " ."))
             return String(format: NSLocalizedString("An error occurred while provisioning: %@. Please try again. If the issue persists, report it on GitHub Issues!", comment: ""), trimmed)
-        case .anisetteV3Error:
-            let message = self._failureReason ?? ""
-            return String(format: NSLocalizedString("An error occurred while getting anisette data from a V3 server: %@. Please try again. If the issue persists, report it on GitHub Issues!", comment: ""), message)
         case .cacheClearError:
             let message = self._failureReason ?? ""
             return String(format: NSLocalizedString("An error occurred while clearing the cache: %@", comment: ""), message)
         case .SideJITIssue:
             let message = self.errorFailure ?? ""
             return String(format: NSLocalizedString("An error occurred while using SideJIT: %@", comment: ""), message)
-            
-        case .refreshAppFailed:
-            let message = self._failureReason ?? ""
-            return String(format: NSLocalizedString("Unable to refresh App\n%@", comment: ""), message)
 
         case .invalidParameters:
             let message = self._failureReason.map { ": \n\($0)" } ?? "."
@@ -335,16 +289,8 @@ struct OperationError: ALTLocalizedError {
         case .invalidOperationContext:
             let message = self._failureReason.map { ": \n\($0)" } ?? "."
             return String(format: NSLocalizedString("Invalid Operation Context%@", comment: ""), message)
-        case .sideStoreBundleIDMismatch:
-            let message = self._failureReason ?? ""
-            return String(format: NSLocalizedString("Bundle ID Mismatch: %@", comment: ""), message)
         case .serverNotFound: return NSLocalizedString("AltServer could not be found.", comment: "")
         case .connectionFailed: return NSLocalizedString("A connection to AltServer could not be established.", comment: "")
-        case .connectionDropped: return NSLocalizedString("The connection to AltServer was dropped.", comment: "")
-            
-        case .pledgeRequired:
-            let appName = self.appName ?? NSLocalizedString("This app", comment: "")
-            return String(format: NSLocalizedString("%@ requires an active pledge in order to be installed.", comment: ""), appName)
             
         case .pledgeInactive:
             let appName = self.appName ?? NSLocalizedString("this app", comment: "")
