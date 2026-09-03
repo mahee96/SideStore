@@ -139,7 +139,7 @@ struct DeveloperServicesView: View {
                     .shadow(radius: 6)
             }
         }
-        .navigationTitle("Developer Portal Services")
+        .navigationTitle("Developer Portal")
         .onAppear {
             if viewModel.appIDs.isEmpty && viewModel.profiles.isEmpty {
                 viewModel.loadAll(presentingViewController: presentingViewController)
