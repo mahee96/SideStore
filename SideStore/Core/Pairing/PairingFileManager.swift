@@ -8,18 +8,26 @@
 
 @preconcurrency import UIKit
 import UniformTypeIdentifiers
+import MinimuxerCommon
 
 final class PairingFileManager: NSObject {
     static let shared = PairingFileManager()
-    static let pairingFileName = "ALTPairingFile.mobiledevicepairing"
+    static let pairingFileName = AppConstants.Pairing.fileName
 
     private var completion: ((URL?) -> Void)?
 
     nonisolated var pairingUDID: String? {
-        guard let contents = fetchPairingFile() else { return nil }
-        guard let data = contents.data(using: .utf8) else { return nil }
-        guard let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any] else { return nil }
-        return plist["UDID"] as? String ?? plist["identifier"] as? String
+        guard let contents = fetchPairingFile() else {
+            debugLog("[PairingFile] pairingUDID: fetchPairingFile() returned nil")
+            return nil
+        }
+        do {
+            let pairing = try PairingFileParser.parse(content: contents)
+            return pairing.deviceIdentifier
+        } catch {
+            debugLog("[PairingFile] pairingUDID: failed to parse pairing file: \(error)")
+            return nil
+        }
     }
 
     nonisolated func fetchPairingFile() -> String? {
@@ -29,13 +37,13 @@ final class PairingFileManager: NSObject {
            let contents = try? String(contentsOf: documentsPath), !contents.isEmpty {
             return contents
         }
-        if let url = Bundle.main.url(forResource: "ALTPairingFile", withExtension: "mobiledevicepairing"),
+        if let url = Bundle.main.url(forResource: AppConstants.Pairing.bundleResourceName, withExtension: AppConstants.Pairing.fileExtension),
            fm.fileExists(atPath: url.path),
            let data = fm.contents(atPath: url.path),
            let contents = String(data: data, encoding: .utf8),
            !contents.isEmpty, !UserDefaults.standard.isPairingReset { return contents }
-        if let plistString = Bundle.main.object(forInfoDictionaryKey: "ALTPairingFile") as? String,
-           !plistString.isEmpty, !plistString.contains("insert pairing file here"), !UserDefaults.standard.isPairingReset { return plistString }
+        if let plistString = Bundle.main.object(forInfoDictionaryKey: AppConstants.Pairing.bundleResourceName) as? String,
+           !plistString.isEmpty, !plistString.contains(AppConstants.Pairing.placeholderString), !UserDefaults.standard.isPairingReset { return plistString }
         return nil
     }
 
