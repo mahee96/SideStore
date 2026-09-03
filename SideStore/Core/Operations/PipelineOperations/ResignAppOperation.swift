@@ -131,15 +131,6 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         if let directory = appBundle.builtInPlugInsURL,
            let enumerator = FileManager.default.enumerator(at: directory, includingPropertiesForKeys: nil, options: [.skipsSubdirectoryDescendants]) {
             while let fileURL = enumerator.nextObject() as? URL {
-                // for both sim and device, in debug mode builds, remove the tests bundles (if any)
-                #if DEBUG
-                guard !fileURL.lastPathComponent.lowercased().contains(".xctest") else {
-                    // Remove embedded XCTest (+ dSYM) bundle from copied app bundle.
-                    try FileManager.default.removeItem(at: fileURL)
-                    continue
-                }
-                #endif
-                
                 guard let appExtension = Bundle(url: fileURL) else { throw OperationError.missingAppBundle }
                 let updatedAppExBundleId = appExtension.bundleIdentifier?.replacingOccurrences(of: targetAppBundle.bundleIdentifier, with: bundleIdentifier)
                 try self.prepare(appExtension, bundleID: updatedAppExBundleId, profiles: profiles, appexBundleIds: appexBundleIds)
