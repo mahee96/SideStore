@@ -399,11 +399,11 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
             let initialCount = revokeVC.getSelectedCertificates().count
             let initialTitle: String
             if isPaid {
-                initialTitle = (initialCount == 0) ? NSLocalizedString("Continue", comment: "") : "Revoke Selected (\(initialCount))"
+                initialTitle = (initialCount == 0) ? NSLocalizedString("Continue Without Revoking", comment: "") : "Revoke Selected (\(initialCount))"
             } else {
                 initialTitle = NSLocalizedString("Revoke", comment: "")
             }
-            let revokeAction = UIAlertAction(title: initialTitle, style: (isPaid && initialCount == 0) ? .default : .destructive) { _ in
+            let revokeAction = UIAlertAction(title: initialTitle, style: .destructive) { _ in
                 alertController.dismiss(animated: true) {
                     let selected = revokeVC.getSelectedCertificates()
                     continuation.resume(returning: .revokeSelected(selected))
@@ -414,7 +414,7 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
                 revokeAction.isEnabled = true
                 revokeVC.onSelectionChanged = { selected in
                     if selected.isEmpty {
-                        revokeAction.setValue(NSLocalizedString("Continue", comment: ""), forKey: "title")
+                        revokeAction.setValue(NSLocalizedString("Continue Without Revoking", comment: ""), forKey: "title")
                     } else {
                         revokeAction.setValue("Revoke Selected (\(selected.count))", forKey: "title")
                     }
