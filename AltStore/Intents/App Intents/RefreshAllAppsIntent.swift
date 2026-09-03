@@ -227,7 +227,7 @@ private extension RefreshAllAppsIntent
                     
                     continuation.resume()
                 }
-                catch ~RefreshErrorCode.noInstalledApps
+                catch OperationError.noInstalledApps
                 {
                     continuation.resume()
                 }

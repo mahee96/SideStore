@@ -10,7 +10,7 @@ import Foundation
 
 public enum OperationError: LocalizedError, CustomNSError, Sendable, Equatable {
     // General
-    case unknown(reason: String? = nil, file: String = #fileID, line: UInt = #line)
+    case unknown(failureReason: String? = nil, file: String = #fileID, line: UInt = #line)
     case unknownResult
     case timedOut
     case notAuthenticated
@@ -21,6 +21,7 @@ public enum OperationError: LocalizedError, CustomNSError, Sendable, Equatable {
     case invalidOperationContext(String? = nil)
     case maximumAppIDLimitReached(appName: String, requiredAppIDs: Int, availableAppIDs: Int, expirationDate: Date)
     case noSources
+    case noInstalledApps
     case openAppFailed(name: String? = nil)
     case missingAppGroup
     case forbidden(failureReason: String? = nil, file: String = #fileID, line: UInt = #line)
@@ -32,7 +33,7 @@ public enum OperationError: LocalizedError, CustomNSError, Sendable, Equatable {
     // SideStore & Connectivity
     case unableToConnectSideJIT
     case unableToRespondSideJITDevice
-    case sideJITIssue(error: String?)
+    case SideJITIssue(error: String?)
     case provisioningError(result: String, message: String? = nil)
     case certificateRevoked(appName: String)
     case customCertificateRevoked(appName: String, activeTeam: String)
@@ -65,8 +66,8 @@ public enum OperationError: LocalizedError, CustomNSError, Sendable, Equatable {
 
     public var rawDescription: String {
         switch self {
-        case .unknown(let reason, let file, let line):
-            let base = reason ?? "An unknown error occurred."
+        case .unknown(let failureReason, let file, let line):
+            let base = failureReason ?? "An unknown error occurred."
             return "\(base) (\(file) line \(line))"
         case .unknownResult:
             return "The operation returned an unknown result."
@@ -88,6 +89,8 @@ public enum OperationError: LocalizedError, CustomNSError, Sendable, Equatable {
             return "Cannot register more than 10 App IDs within a 7 day period."
         case .noSources:
             return "There are no SideStore sources."
+        case .noInstalledApps:
+            return "There are no active sideloaded apps to refresh."
         case .openAppFailed(let name):
             let app = name ?? "The app"
             return "SideStore was denied permission to launch \(app)."
@@ -110,7 +113,7 @@ public enum OperationError: LocalizedError, CustomNSError, Sendable, Equatable {
             return "Unable to connect to SideJITServer. Please check that you are on the same Wi-Fi of and your Firewall has been set correctly on your server."
         case .unableToRespondSideJITDevice:
             return "SideJITServer is unable to connect to your iDevice. Please make sure you have paired your iDevice by running 'SideJITServer -y', or try refreshing SideJITServer from Settings."
-        case .sideJITIssue(let error):
+        case .SideJITIssue(let error):
             return "An error occurred while using SideJIT: \(error ?? "")"
         case .provisioningError(let result, let message):
             let combined = (message?.isEmpty ?? true) ? result : "\(result) \(message!)"
