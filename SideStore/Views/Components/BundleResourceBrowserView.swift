@@ -204,6 +204,14 @@ struct BundleItemRow: View {
         !item.isDirectory && CodeSignKit.MachOParser.isMachOBinary(at: item.url)
     }
 
+    private var isCodeResourcesItem: Bool {
+        !item.isDirectory && (item.name.lowercased() == "coderesources" || item.url.pathExtension.lowercased() == "coderesources")
+    }
+
+    private var isMobileProvisionItem: Bool {
+        !item.isDirectory && (item.url.pathExtension.lowercased() == "mobileprovision" || item.name.hasSuffix(".mobileprovision"))
+    }
+
     @ViewBuilder
     private var destination: some View {
         let ext = item.url.pathExtension.lowercased()
@@ -211,6 +219,10 @@ struct BundleItemRow: View {
             BundleResourceBrowserView(rootURL: item.url, title: item.name)
         } else if isMachOItem {
             MachOResourceViewer(url: item.url)
+        } else if isCodeResourcesItem {
+            CodeResourcesViewer(url: item.url)
+        } else if isMobileProvisionItem {
+            ProvisioningProfileResourceViewer(url: item.url)
         } else if ext == "ipa" {
             IPAContentsView(ipaURL: item.url)
         } else if ext == "plist" {
@@ -251,6 +263,12 @@ struct BundleItemRow: View {
         if isMachOItem {
             return "cpu.fill"
         }
+        if isCodeResourcesItem {
+            return "doc.badge.gearshape.fill"
+        }
+        if isMobileProvisionItem {
+            return "lock.shield.fill"
+        }
         switch item.url.pathExtension.lowercased() {
         case "png", "jpg", "jpeg", "gif", "webp", "tiff", "heic", "bmp", "ico": return "photo"
         case "mp3", "wav", "aac", "m4a", "aiff", "caf": return "music.note"
@@ -279,6 +297,8 @@ struct BundleItemRow: View {
     private var iconColor: Color {
         if item.isDirectory { return .blue }
         if isMachOItem { return .indigo }
+        if isCodeResourcesItem { return .teal }
+        if isMobileProvisionItem { return .yellow }
         switch item.url.pathExtension.lowercased() {
         case "png", "jpg", "jpeg", "gif", "webp", "tiff", "heic", "bmp", "ico": return .orange
         case "mp3", "wav", "aac", "m4a", "aiff", "caf": return .pink
@@ -553,7 +573,7 @@ struct PlistResourceViewer: View {
     var body: some View {
         Group {
             if let dict = plistDict {
-                InfoPlistContainerView(plist: dict)
+                InfoPlistContainerView(plist: dict, title: url.lastPathComponent)
             } else {
                 ScrollView {
                     Text(rawText.isEmpty ? "Loading\u{2026}" : rawText)
@@ -704,3 +724,32 @@ struct ActivityView: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 #endif
+
+// Provisioning Profile Resource Viewer Bridge
+struct ProvisioningProfileResourceViewer: View {
+    let url: URL
+    @StateObject private var certificatesViewModel = CertificatesViewModel()
+
+    var body: some View {
+        Group {
+            if let profile = ALTProvisioningProfile(url: url) {
+                ProvisioningProfileDetailView(profile: profile, certificatesViewModel: certificatesViewModel)
+            } else {
+                VStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 44))
+                        .foregroundColor(.orange)
+                    Text("Invalid Provisioning Profile")
+                        .font(.headline)
+                    Text("Could not decode provisioning profile from \(url.lastPathComponent).")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .navigationTitle(url.lastPathComponent)
+            }
+        }
+    }
+}
