@@ -356,65 +356,6 @@ extension Result {
 }
 
 
-public enum MinimuxerWrapperError: Error, LocalizedError {
-    case profileInstall
-    case restartAlreadyInProgress
-    case pairingFile
-    
-    public var errorDescription: String? {
-        switch self {
-        case .profileInstall:
-            return NSLocalizedString("Unable to manage profiles on the device", comment: "")
-        case .restartAlreadyInProgress:
-            return NSLocalizedString("Restart already in progress", comment: "")
-        case .pairingFile:
-            return NSLocalizedString("Invalid pairing file. Your pairing file either didn't have a UDID, or it wasn't a valid plist. Please use iloader to replace it.", comment: "")
-        }
-    }
-
-    public var failureReason: String? {
-        return errorDescription
-    }
-}
-
-extension Error {
-    public var isMinimuxerNoConnection: Bool {
-        if let minimuxerErr = self as? MinimuxerError,
-           case .noConnection = minimuxerErr { return true }
-        return false
-    }
-    public var isMinimuxerNotReachable: Bool {
-        if let minimuxerErr = self as? MinimuxerError,
-           case .notReachable = minimuxerErr { return true }
-        return false
-    }
-    public var isMinimuxerNoVPN: Bool {
-        if let minimuxerErr = self as? MinimuxerError,
-           case .noVPN = minimuxerErr { return true }
-        return false
-    }
-    public var isMinimuxerProfileInstall: Bool {
-        if let minimuxerErr = self as? MinimuxerError,
-           case .profileInstall = minimuxerErr { return true }
-        return (self as? MinimuxerWrapperError) == .profileInstall
-    }
-    public var isMinimuxerPairingFile: Bool {
-        if let minimuxerErr = self as? MinimuxerError,
-           case .invalidPairing = minimuxerErr { return true }
-        return (self as? MinimuxerWrapperError) == .pairingFile
-    }
-    public var isMinimuxerRestartInProgress: Bool {
-        if let minimuxerErr = self as? MinimuxerError,
-           case .restartAlreadyInProgressError = minimuxerErr { return true }
-        return (self as? MinimuxerWrapperError) == .restartAlreadyInProgress
-    }
-    public var isMinimuxerNotStarted: Bool {
-        if let minimuxerErr = self as? MinimuxerError,
-           case .notStarted = minimuxerErr { return true }
-        return false
-    }
-}
-
 func minimuxerRestart() async throws {
     #if !targetEnvironment(simulator)
     try await withRemotePairingRetry {
@@ -508,7 +449,7 @@ public final class WirelessPairWrapper {
             }
         }
         #else
-        completion(.failure(MinimuxerWrapperError.pairingFile))
+        completion(.failure(OperationError.invalidPairingFile()))
         #endif
     }
 
@@ -543,7 +484,7 @@ public final class WirelessPairWrapper {
             }
         }
         #else
-        completion(.failure(MinimuxerWrapperError.pairingFile))
+        completion(.failure(OperationError.invalidPairingFile()))
         #endif
     }
     

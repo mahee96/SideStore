@@ -28,11 +28,7 @@ final class RefreshAppOperation: BasePipelineOperation<InstallAppOperationContex
         guard let appBundle = self.context.targetAppBundle else { throw OperationError(.appNotFound(name: nil)) }
         self.setProgress(10)
         for p in profiles {
-            do {
-                try await installProvisioningProfiles(p.value.data)
-            } catch {
-                throw MinimuxerWrapperError.profileInstall
-            }
+            try await installProvisioningProfiles(p.value.data)
         }
         
         self.setProgress(80)

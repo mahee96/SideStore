@@ -8,6 +8,7 @@
 
 import Foundation
 import UIKit
+import Minimuxer
 
 public final class AppBootManager {
     public static let shared = AppBootManager()
@@ -47,7 +48,7 @@ public final class AppBootManager {
             debugLog("[AppBootManager] startMinimuxer(): Minimuxer fetchUDID() based connection test SUCCEEDED. UDID: \(deviceUDID ?? "nil")")
             self.needsPairingPrompt = false
         } catch {
-            if error.isMinimuxerPairingFile {
+            if case MinimuxerError.invalidPairing = error {
                 debugLog("[AppBootManager] startMinimuxer(): Minimuxer fetchUDID() based connection test FAILED. \(error)")
                 self.needsPairingPrompt = true
                 throw error
