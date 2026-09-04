@@ -392,36 +392,38 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
             let delaySeconds = AppConstants.Installation.selfInstallSuspendDelayNs / 1_000_000_000
             self.debugLog("[InstallAppOperation] We are still installing after \(delaySeconds) seconds")
             
-            #if !os(tvOS)
-            let settings = await UNUserNotificationCenter.current().notificationSettings()
-            switch settings.authorizationStatus {
-                case .authorized, .ephemeral, .provisional:
-                    self.verboseLog("[InstallAppOperation] Notifications are enabled")
-
-                    let content = UNMutableNotificationContent()
-                    content.title = "Refreshing..."
-                    content.body = "SideStore will automatically move to the homescreen to finish refreshing!"
-                    let notification = UNNotificationRequest(identifier: Bundle.Info.appbundleIdentifier + ".FinishRefreshNotification", content: content, trigger: UNTimeIntervalNotificationTrigger(timeInterval: 2, repeats: false))
-                    try? await UNUserNotificationCenter.current().add(notification)
-                    
-                    await self.suspendToHomeScreen()
-
-                default:
-                    self.verboseLog("[InstallAppOperation] Notifications are not enabled")
-
-                    await withTaskGroup(of: Void.self) { group in
-                        group.addTask { await handler.requestBackgroundSuspension() }
-                        group.addTask { try? await Task.sleep(nanoseconds: 5_000_000_000) }
-                        _ = await group.next()
-                        group.cancelAll()
-                    }
-                    await self.suspendToHomeScreen()
-                }
-            #else
-            NotificationCenter.default.post(name: NSNotification.Name("TVTopShelfItemsDidChangeNotification"), object: nil)
-            await handler.requestBackgroundSuspension()
             await self.suspendToHomeScreen()
-            #endif
+
+            // #if !os(tvOS)
+            // let settings = await UNUserNotificationCenter.current().notificationSettings()
+            // switch settings.authorizationStatus {
+            //     case .authorized, .ephemeral, .provisional:
+            //         self.verboseLog("[InstallAppOperation] Notifications are enabled")
+            //
+            //         let content = UNMutableNotificationContent()
+            //         content.title = "Refreshing..."
+            //         content.body = "SideStore will automatically move to the homescreen to finish refreshing!"
+            //         let notification = UNNotificationRequest(identifier: Bundle.Info.appbundleIdentifier + ".FinishRefreshNotification", content: content, trigger: UNTimeIntervalNotificationTrigger(timeInterval: 2, repeats: false))
+            //         try? await UNUserNotificationCenter.current().add(notification)
+            //         
+            //         await self.suspendToHomeScreen()
+            //
+            //     default:
+            //         self.verboseLog("[InstallAppOperation] Notifications are not enabled")
+            //
+            //         await withTaskGroup(of: Void.self) { group in
+            //             group.addTask { await handler.requestBackgroundSuspension() }
+            //             group.addTask { try? await Task.sleep(nanoseconds: 5_000_000_000) }
+            //             _ = await group.next()
+            //             group.cancelAll()
+            //         }
+            //         await self.suspendToHomeScreen()
+            //     }
+            // #else
+            // NotificationCenter.default.post(name: NSNotification.Name("TVTopShelfItemsDidChangeNotification"), object: nil)
+            // await handler.requestBackgroundSuspension()
+            // await self.suspendToHomeScreen()
+            // #endif
         }
     }
     

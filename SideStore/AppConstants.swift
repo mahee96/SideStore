@@ -78,10 +78,9 @@ public enum AppConstants {
     }
 
     public enum Installation {
-        public static let selfInstallSuspendDelayNs: UInt64 = 4_000_000_000
+        public static let selfInstallSuspendDelayNs: UInt64 = 500_000_000
     }
 
-    public static let selfInstallSuspendDelayNs = Installation.selfInstallSuspendDelayNs
     public static let pairingFileName = Pairing.fileName
     public static let accountConfigurationFileName = "Account.sideconf"
 }

@@ -142,7 +142,7 @@ class MyAppsViewController: UICollectionViewController
         if minimuxerStatusCheckTask == nil {
             minimuxerStatusCheckTask = Task {
                 let status = await isMinimuxerReady()
-                await updateStatusDot(isReady: status.isSuccess)
+                updateStatusDot(isReady: status.isSuccess)
                 // Listen to subsequent updates reactively
                 for await result in minimuxerStatusPublisher.values {
                     guard !Task.isCancelled else { break }
