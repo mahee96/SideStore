@@ -74,6 +74,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A82BE360304AAF490055C3DE /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Extensions/ALTApplication+AltStoreApp.swift",
+			);
+			target = BF989166250AABF3002ACF50 /* AltWidgetExtension */;
+		};
 		A8EEC36B2F4B0D8700F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -216,7 +223,7 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		A8EEC3482F4B0D8600F2436D /* Shared */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC36B2F4B0D8700F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Shared; sourceTree = "<group>"; };
+		A8EEC3482F4B0D8600F2436D /* Shared */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC36B2F4B0D8700F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, A82BE360304AAF490055C3DE /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Shared; sourceTree = "<group>"; };
 		A8EEC3B92F4B0EFC00F2436D /* AltWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC3CA2F4B0EFC00F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = AltWidget; sourceTree = "<group>"; };
 		A8EEC3D92F4B0FC800F2436D /* SideBackup */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A8EEC3E22F4B0FC800F2436D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = SideBackup; sourceTree = "<group>"; };
 		A8EEC71D2F4B10D900F2436D /* xcconfigs */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = xcconfigs; sourceTree = "<group>"; };

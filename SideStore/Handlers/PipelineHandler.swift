@@ -36,13 +36,14 @@ final class PipelineHandler: PipelineExecutionHandler,
         self.presenterProvider = presenterProvider
     }
 
+    @MainActor
     private var isPresenterAvailable: Bool {
         return self.activePresenter != nil
     }
 
     @MainActor
     private var activePresenter: UIViewController? {
-        return self.presenterProvider?() ?? UIApplication.shared.topViewController()
+        return self.presenterProvider?()
     }
     
     @MainActor
@@ -210,16 +211,13 @@ final class PipelineHandler: PipelineExecutionHandler,
     func suspendToHomeScreen() async {
         await CellularRefreshManager.shared.turnOnDataIfNeeded()
         await MainActor.run {
-            UIApplication.shared.perform(#selector(NSXPCConnection.suspend))
+            _ = UIApplication.shared.perform(#selector(NSXPCConnection.suspend))
         }
     }
     
-    var isAppInForeground: Bool {
-        get async {
-            await MainActor.run {
-                UIApplication.shared.applicationState == .active
-            }
-        }
+    @MainActor
+    func isAppInForeground() -> Bool {
+        UIApplication.shared.applicationState == .active
     }
     
     @MainActor
