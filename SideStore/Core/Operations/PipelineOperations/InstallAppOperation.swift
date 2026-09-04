@@ -12,8 +12,6 @@ import Network
 import CoreData
 import SideSign
 
-let shortcutURLonDelay = URL(string: "shortcuts://run-shortcut?name=TurnOnDataDelay")!
-
 final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
     private static let selfInstallSuspendDelayNs: UInt64 = 2_000_000_000
 
@@ -367,9 +365,9 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
         }
     }
         
-    private func suspendToHomeScreen() {
+    private func suspendToHomeScreen() async {
         let handler = self.context.handler.installAppHandler
-        handler.suspendToHomeScreen(shouldTurnOffData: self.context.shouldTurnOffData)
+        await handler.suspendToHomeScreen()
     }
 
     private func handleSelfReinstallation(for installedApp: InstalledApp) {
@@ -378,11 +376,11 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
             try? await Task.sleep(nanoseconds: Self.selfInstallSuspendDelayNs)
 
             let handler = self.context.handler.installAppHandler
-            guard handler.isAppInForeground else {
+            guard await handler.isAppInForeground() else {
                 self.debugLog("[InstallAppOperation] We are not in the foreground, let's not do anything")
                 return
             }
-                
+            
             let delaySeconds = Self.selfInstallSuspendDelayNs / 1_000_000_000
             self.debugLog("[InstallAppOperation] We are still installing after \(delaySeconds) seconds")
             
@@ -398,20 +396,18 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
                     let notification = UNNotificationRequest(identifier: Bundle.Info.appbundleIdentifier + ".FinishRefreshNotification", content: content, trigger: UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false))
                     try await UNUserNotificationCenter.current().add(notification)
                     
-                    self.suspendToHomeScreen()
+                    await self.suspendToHomeScreen()
 
                 default:
                     self.verboseLog("[InstallAppOperation] Notifications are not enabled")
 
-                    handler.requestBackgroundSuspension {
-                        self.suspendToHomeScreen()
-                    }
+                    await handler.requestBackgroundSuspension()
+                    await self.suspendToHomeScreen()
                 }
             #else
             NotificationCenter.default.post(name: NSNotification.Name("TVTopShelfItemsDidChangeNotification"), object: nil)
-            handler.requestBackgroundSuspension {
-                self.suspendToHomeScreen()
-            }
+            await handler.requestBackgroundSuspension()
+            await self.suspendToHomeScreen()
             #endif
         }
     }

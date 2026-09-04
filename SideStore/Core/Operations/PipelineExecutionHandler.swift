@@ -48,10 +48,10 @@ protocol UnsupportedVersionHandler: AnyObject {
     func resolveUnsupportediOSVersion(errorDescription: String, appName: String, compatibleVersion: String) async throws -> Bool
 }
 
-protocol InstallAppHandler: AnyObject {
-    func requestBackgroundSuspension(completion: @escaping () -> Void)
-    func suspendToHomeScreen(shouldTurnOffData: Bool)
-    var isAppInForeground: Bool { get }
+protocol InstallAppHandler: AnyObject, Sendable {
+    func requestBackgroundSuspension() async
+    func suspendToHomeScreen() async
+    var isAppInForeground: Bool { get async }
 }
 
 enum AppGroupResolution: Sendable {

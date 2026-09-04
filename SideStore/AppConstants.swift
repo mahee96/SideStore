@@ -72,6 +72,11 @@ public enum AppConstants {
         public static let placeholderString = "insert pairing file here"
     }
 
+    public enum Shortcuts {
+        public static let turnOffDataURL = URL(string: "shortcuts://run-shortcut?name=TurnOffData")!
+        public static let turnOnDataURL = URL(string: "shortcuts://run-shortcut?name=turnOnData")!
+    }
+
     public static let pairingFileName = Pairing.fileName
     public static let accountConfigurationFileName = "Account.sideconf"
 }

@@ -27,22 +27,11 @@ final class SendAppOperation: BasePipelineOperation<InstallAppOperationContext, 
             throw OperationError.invalidParameters("SendAppOperation.main: self.resignedAppBundle is nil")
         }
 
-        let app = AnyApp(name: resignedAppBundle.name, bundleIdentifier: self.context.targetBundleIdentifier, url: resignedAppBundle.fileURL, storeApp: nil)
-        verboseLog("[SendAppOperation] AFC App Bundle `fileURL`: \(resignedAppBundle.fileURL.absoluteString)")
+        let bundleIdentifier = self.context.targetBundleIdentifier
+        let appURL = resignedAppBundle.fileURL
+        verboseLog("[SendAppOperation] AFC App Bundle `fileURL`: \(appURL.absoluteString)")
 
-        // Cellular shortcut should only be executed below iOS 16.4 AND when explicitly enabled in settings
-        if #available(iOS 16.4, *) {
-            context.shouldTurnOffData = false
-        } else {
-            context.shouldTurnOffData = UserDefaults.standard.isCellularRefreshEnabled
-        }
-        
-        if self.context.shouldTurnOffData {
-            // Wait for Shortcut to Finish Before Proceeding
-            let shortcutURLoff = URL(string: "shortcuts://run-shortcut?name=TurnOffData")!
-            await UIApplication.shared.open(shortcutURLoff)
-            self.debugLog("[SendAppOperation] Shortcut finished execution. Proceeding with file transfer.")
-        }
+        await CellularRefreshManager.shared.turnOffDataIfNeeded()
         
         
         do {
