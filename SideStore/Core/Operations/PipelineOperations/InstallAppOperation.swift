@@ -7,14 +7,13 @@
 //
 
 import UserNotifications
+import UIKit
 import Foundation
 import Network
 import CoreData
 import SideSign
 
 final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
-    private static let selfInstallSuspendDelayNs: UInt64 = 2_000_000_000
-
     let storeApp: StoreApp?
     var backgroundContext: NSManagedObjectContext?
     
@@ -373,7 +372,16 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
     private func handleSelfReinstallation(for installedApp: InstalledApp) {
         // Reinstalling ourself will hang until we leave the app, so we need to exit it without force closing
         Task.detached {
-            try? await Task.sleep(nanoseconds: Self.selfInstallSuspendDelayNs)
+            let bgTaskID = await MainActor.run {
+                UIApplication.shared.beginBackgroundTask(withName: "SelfReinstall", expirationHandler: nil)
+            }
+            defer {
+                if bgTaskID != .invalid {
+                    Task { @MainActor in UIApplication.shared.endBackgroundTask(bgTaskID) }
+                }
+            }
+
+            try? await Task.sleep(nanoseconds: AppConstants.Installation.selfInstallSuspendDelayNs)
 
             let handler = self.context.handler.installAppHandler
             guard handler.isAppInForeground() else {
@@ -381,7 +389,7 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
                 return
             }
             
-            let delaySeconds = Self.selfInstallSuspendDelayNs / 1_000_000_000
+            let delaySeconds = AppConstants.Installation.selfInstallSuspendDelayNs / 1_000_000_000
             self.debugLog("[InstallAppOperation] We are still installing after \(delaySeconds) seconds")
             
             #if !os(tvOS)
@@ -393,15 +401,20 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
                     let content = UNMutableNotificationContent()
                     content.title = "Refreshing..."
                     content.body = "SideStore will automatically move to the homescreen to finish refreshing!"
-                    let notification = UNNotificationRequest(identifier: Bundle.Info.appbundleIdentifier + ".FinishRefreshNotification", content: content, trigger: UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false))
-                    try await UNUserNotificationCenter.current().add(notification)
+                    let notification = UNNotificationRequest(identifier: Bundle.Info.appbundleIdentifier + ".FinishRefreshNotification", content: content, trigger: UNTimeIntervalNotificationTrigger(timeInterval: 2, repeats: false))
+                    try? await UNUserNotificationCenter.current().add(notification)
                     
                     await self.suspendToHomeScreen()
 
                 default:
                     self.verboseLog("[InstallAppOperation] Notifications are not enabled")
 
-                    await handler.requestBackgroundSuspension()
+                    await withTaskGroup(of: Void.self) { group in
+                        group.addTask { await handler.requestBackgroundSuspension() }
+                        group.addTask { try? await Task.sleep(nanoseconds: 5_000_000_000) }
+                        _ = await group.next()
+                        group.cancelAll()
+                    }
                     await self.suspendToHomeScreen()
                 }
             #else

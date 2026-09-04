@@ -77,6 +77,11 @@ public enum AppConstants {
         public static let turnOnDataURL  = URL(string: "shortcuts://run-shortcut?name=turnOnData")!
     }
 
+    public enum Installation {
+        public static let selfInstallSuspendDelayNs: UInt64 = 4_000_000_000
+    }
+
+    public static let selfInstallSuspendDelayNs = Installation.selfInstallSuspendDelayNs
     public static let pairingFileName = Pairing.fileName
     public static let accountConfigurationFileName = "Account.sideconf"
 }

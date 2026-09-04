@@ -33,6 +33,7 @@ public final class CellularRefreshManager: @unchecked Sendable {
         return UserDefaults.standard.isCellularRefreshEnabled
     }
 
+    @MainActor
     private func openShortcut(url: URL) async -> Bool {
         debugLog("[CellularRefreshManager] Opening shortcut URL: \(url.absoluteString)")
         let success = await UIApplication.shared.open(url)
