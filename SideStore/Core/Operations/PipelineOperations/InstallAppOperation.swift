@@ -389,7 +389,7 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
             try? await Task.sleep(nanoseconds: AppConstants.Installation.selfInstallSuspendDelayNs)
 
             let handler = self.context.handler.installAppHandler
-            guard handler.isAppInForeground() else {
+            guard await handler.isAppInForeground() else {
                 self.debugLog("[InstallAppOperation] We are not in the foreground, let's not do anything")
                 return
             }

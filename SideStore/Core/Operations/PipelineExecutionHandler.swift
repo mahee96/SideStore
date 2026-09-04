@@ -51,7 +51,7 @@ protocol UnsupportedVersionHandler: AnyObject, Sendable {
 protocol InstallAppHandler: AnyObject, Sendable {
     func requestBackgroundSuspension() async
     func suspendToHomeScreen() async
-    func isAppInForeground() -> Bool
+    func isAppInForeground() async -> Bool
 }
 
 enum AppGroupResolution: Sendable {

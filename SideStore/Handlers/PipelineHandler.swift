@@ -215,9 +215,10 @@ final class PipelineHandler: PipelineExecutionHandler,
         }
     }
     
-    @MainActor
-    func isAppInForeground() -> Bool {
-        UIApplication.shared.applicationState == .active
+    func isAppInForeground() async -> Bool {
+        await MainActor.run {
+            UIApplication.shared.applicationState == .active
+        }
     }
     
     @MainActor
