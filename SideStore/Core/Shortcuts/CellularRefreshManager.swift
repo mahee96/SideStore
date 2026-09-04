@@ -142,11 +142,11 @@ public final class CellularRefreshManager: @unchecked Sendable {
             return true
         }
 
-        try? await Task.sleep(nanoseconds: 500_000_000)
         let success = await turnOnData()
         if success {
             didTurnOffData = false
         }
+        try? await Task.sleep(nanoseconds: 500_000_000)
         return success
     }
 }
