@@ -869,7 +869,12 @@ final class AppManager: ObservableObject, @unchecked Sendable
 extension AppManager: PipelineProgress, PipelineExecutionContext, PipelineErrorLogger {
     
     private func makePipelineHandler(presentingViewController: UIViewController?) -> PipelineExecutionHandler {
-        return PipelineHandler(presentingViewController: presentingViewController)
+        return PipelineHandler(
+            isResignActive: presentingViewController is ResignAltStoreViewController,
+            presenterProvider: { [weak presentingViewController] in
+                presentingViewController?.presentedViewController ?? presentingViewController
+            }
+        )
     }
 
     private func makeAuthenticatedContext(presentingViewController: UIViewController?,

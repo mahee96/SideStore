@@ -9,7 +9,7 @@
 import Foundation
 import SideSign
 
-protocol PipelineExecutionHandler: AnyObject {
+protocol PipelineExecutionHandler: AnyObject, Sendable {
     var preflightChecksHandler: PreflightChecksHandler { get }
     var entitlementsReviewHandler: EntitlementsReviewHandler { get }
     var extensionRemovalHandler: ExtensionRemovalHandler { get }
@@ -20,12 +20,12 @@ protocol PipelineExecutionHandler: AnyObject {
 
 
 
-protocol PreflightChecksHandler: AnyObject {
+protocol PreflightChecksHandler: AnyObject, Sendable {
     func resolveBundleIDMismatch(targetID: String, activeEffectiveID: String) async -> Bool
     var isResignActive: Bool { get }
 }
 
-protocol EntitlementsReviewHandler: AnyObject {
+protocol EntitlementsReviewHandler: AnyObject, Sendable {
     func reviewPermissions(_ permissions: [ALTEntitlement], for app: AppProtocol, mode: PermissionReviewMode) async throws
 }
 
@@ -36,7 +36,7 @@ enum ExtensionRemovalDecision: Sendable {
     case removeSelected(Set<ALTApplication>)
 }
 
-protocol ExtensionRemovalHandler: AnyObject {
+protocol ExtensionRemovalHandler: AnyObject, Sendable {
     func selectAppExtensionsToRemove(
         appBundle: ALTApplication,
         localAppExtensions: [ALTApplication],
@@ -44,7 +44,7 @@ protocol ExtensionRemovalHandler: AnyObject {
     ) async throws -> ExtensionRemovalDecision
 }
 
-protocol UnsupportedVersionHandler: AnyObject {
+protocol UnsupportedVersionHandler: AnyObject, Sendable {
     func resolveUnsupportediOSVersion(errorDescription: String, appName: String, compatibleVersion: String) async throws -> Bool
 }
 
@@ -59,7 +59,7 @@ enum AppGroupResolution: Sendable {
     case keepOriginal(String)
 }
 
-protocol UserCustomizationHandler: AnyObject {
+protocol UserCustomizationHandler: AnyObject, Sendable {
     func resolveBundleIDOverride(initialBundleID: String) async throws -> (customID: String, appendTeamID: Bool)?
     func resolveAppGroupMismatch(originalGroup: String, correctedGroup: String) async throws -> AppGroupResolution
 }

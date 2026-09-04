@@ -9,15 +9,15 @@
 import UIKit
 import SideSign
 
-class PipelineHandler: PipelineExecutionHandler, 
-                         PreflightChecksHandler, 
-                         EntitlementsReviewHandler, 
-                         ExtensionRemovalHandler, 
-                         UnsupportedVersionHandler, 
-                         InstallAppHandler, 
-                         UserCustomizationHandler 
+final class PipelineHandler: PipelineExecutionHandler, 
+                             PreflightChecksHandler, 
+                             EntitlementsReviewHandler, 
+                             ExtensionRemovalHandler, 
+                             UnsupportedVersionHandler, 
+                             InstallAppHandler, 
+                             UserCustomizationHandler,
+                             Sendable
 {
-    
     var preflightChecksHandler: PreflightChecksHandler { self }
     var entitlementsReviewHandler: EntitlementsReviewHandler { self }
     var extensionRemovalHandler: ExtensionRemovalHandler { self }
@@ -25,22 +25,24 @@ class PipelineHandler: PipelineExecutionHandler,
     var installAppHandler: InstallAppHandler { self }
     var userCustomizationHandler: UserCustomizationHandler { self }
     
-    private weak var presentingViewController: UIViewController?
+    let isResignActive: Bool
+    private let presenterProvider: PresenterProvider?
     
-    init(presentingViewController: UIViewController?) {
-        self.presentingViewController = presentingViewController
+    init(
+        isResignActive: Bool = false,
+        presenterProvider: PresenterProvider? = nil
+    ) {
+        self.isResignActive = isResignActive
+        self.presenterProvider = presenterProvider
     }
 
     private var isPresenterAvailable: Bool {
         return self.activePresenter != nil
     }
 
+    @MainActor
     private var activePresenter: UIViewController? {
-        return self.presentingViewController?.presentedViewController ?? self.presentingViewController
-    }
-    
-    var isResignActive: Bool {
-        return presentingViewController is ResignAltStoreViewController
+        return self.presenterProvider?() ?? UIApplication.shared.topViewController()
     }
     
     @MainActor
@@ -174,51 +176,47 @@ class PipelineHandler: PipelineExecutionHandler,
         }
     }
     
-    func requestBackgroundSuspension(completion: @escaping () -> Void) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            let alert = UIAlertController(
-                title: "Finish Refresh",
-                message: """
-                To finish refreshing, SideStore must be moved to the background. To do this, you can either go to the Home Screen manually or by hitting Continue. Please reopen SideStore after doing this.
-                """,
-                preferredStyle: .alert
-            )
-            alert.addAction(UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .default, handler: { _ in
-                completion()
-            }))
-            
-            let presenter = self.activePresenter
-                            ?? UIApplication.shared.connectedScenes
-                                .compactMap { ($0 as? UIWindowScene)?.keyWindow }
-                                .first?.rootViewController
-                                
-            if var topVC = presenter {
-                while let presented = topVC.presentedViewController {
-                    topVC = presented
+    func requestBackgroundSuspension() async {
+        await withCheckedContinuation { continuation in
+            Task { @MainActor in
+                let alert = UIAlertController(
+                    title: "Finish Refresh",
+                    message: """
+                    To finish refreshing, SideStore must be moved to the background. To do this, you can either go to the Home Screen manually or by hitting Continue. Please reopen SideStore after doing this.
+                    """,
+                    preferredStyle: .alert
+                )
+                alert.addAction(UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .default, handler: { _ in
+                    continuation.resume()
+                }))
+                
+                let presenter = self.activePresenter
+                                ?? UIApplication.shared.connectedScenes
+                                    .compactMap { ($0 as? UIWindowScene)?.keyWindow }
+                                    .first?.rootViewController
+                                    
+                if var topVC = presenter {
+                    while let presented = topVC.presentedViewController {
+                        topVC = presented
+                    }
+                    topVC.present(alert, animated: true)
+                } else {
+                    continuation.resume()
                 }
-                topVC.present(alert, animated: true)
-            } else {
-                completion()
             }
         }
     }
     
-    func suspendToHomeScreen(shouldTurnOffData: Bool) {
-        DispatchQueue.main.async {
-            if shouldTurnOffData {
-                let shortcutURLonDelay = URL(string: "shortcuts://run-shortcut?name=TurnOnDataDelay")!
-                UIApplication.shared.open(shortcutURLonDelay, options: [:])
-            }
+    func suspendToHomeScreen() async {
+        await CellularRefreshManager.shared.turnOnDataIfNeeded()
+        await MainActor.run {
             UIApplication.shared.perform(#selector(NSXPCConnection.suspend))
         }
     }
     
     var isAppInForeground: Bool {
-        if Thread.isMainThread {
-            return UIApplication.shared.applicationState == .active
-        } else {
-            return DispatchQueue.main.sync {
+        get async {
+            await MainActor.run {
                 UIApplication.shared.applicationState == .active
             }
         }
