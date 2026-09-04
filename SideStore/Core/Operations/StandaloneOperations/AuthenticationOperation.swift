@@ -686,13 +686,11 @@ private extension AuthenticationOperation {
         do {
             await CellularRefreshManager.shared.turnOffDataIfNeeded()
             deviceUDID = try await fetchUDID()
-            await CellularRefreshManager.shared.turnOnDataIfNeeded()
+            await CellularRefreshManager.shared.turnOnDataIfNeeded(addOnDelay: 2.0)
         } catch {
-            await CellularRefreshManager.shared.turnOnDataIfNeeded()
+            await CellularRefreshManager.shared.turnOnDataIfNeeded(addOnDelay: 2.0)
             self.debugLog("[Authentication] fetchUDID failed: \(error)")
         }
-
-        try? await Task.sleep(nanoseconds: 2_000_000_000)
         
         if deviceUDID == nil || deviceUDID?.isEmpty == true || deviceUDID == "XXXXX-XXXX-XXXXX-XXXX" {
             deviceUDID = try? await fetchUDID(useStatic: true)

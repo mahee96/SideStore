@@ -109,9 +109,15 @@ public final class CellularRefreshManager: @unchecked Sendable {
         return success
     }
 
+    private func sleep(baseDelay: TimeInterval, addOnDelay: TimeInterval = 0) async {
+        let totalDelay = baseDelay + addOnDelay
+        guard totalDelay > 0 else { return }
+        try? await Task.sleep(nanoseconds: UInt64(totalDelay * 1_000_000_000))
+    }
+
     // public apis
     @discardableResult
-    public func turnOffDataIfNeeded() async -> Bool {
+    public func turnOffDataIfNeeded(addOnDelay: TimeInterval = 0) async -> Bool {
         guard isSupported && isEnabled else { return false }
         guard !didTurnOffData else { return false }
 
@@ -126,14 +132,16 @@ public final class CellularRefreshManager: @unchecked Sendable {
         let success = await turnOffData()
         if success {
             didTurnOffData = true
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            await sleep(baseDelay: 1.0, addOnDelay: addOnDelay)
         }
         return success
     }
 
     @discardableResult
-    public func turnOnDataIfNeeded() async -> Bool {
+    public func turnOnDataIfNeeded(addOnDelay: TimeInterval = 0) async -> Bool {
         guard didTurnOffData else { return false }
+
+        startMonitorIfRequired()
 
         // Check if target state was already achieved externally
         if isCellularActive {
@@ -146,7 +154,7 @@ public final class CellularRefreshManager: @unchecked Sendable {
         if success {
             didTurnOffData = false
         }
-        try? await Task.sleep(nanoseconds: 500_000_000)
+        await sleep(baseDelay: 0.5, addOnDelay: addOnDelay)
         return success
     }
 }
