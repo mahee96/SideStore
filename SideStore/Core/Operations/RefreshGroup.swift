@@ -23,7 +23,7 @@ final class RefreshGroup: NSObject
     
     // Keep strong references to managed object contexts
     // so they don't die out from under us.
-    private(set) var _contexts = Set<NSManagedObjectContext>()
+    private(set) var retainedContexts = Set<NSManagedObjectContext>()
     
     var activeTask: Task<Void, Never>?
     private let lock = NSLock()
@@ -45,7 +45,7 @@ final class RefreshGroup: NSObject
             case .failure: break
             case .success(let installedApp):
                 guard let context = installedApp.managedObjectContext else { break }
-                self._contexts.insert(context)
+                self.retainedContexts.insert(context)
             }
         }
     }

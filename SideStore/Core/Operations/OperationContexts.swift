@@ -246,25 +246,25 @@ class PipelineOperationContext: OperationContext
 final class SharedPipelineContext: @unchecked Sendable
 {
     private let lock = NSLock()
-    private var _appIDs: [ALTAppID]?
-    private var _appGroups: [ALTAppGroup]?
+    private var rawAppIDs: [ALTAppID]?
+    private var rawAppGroups: [ALTAppGroup]?
 
     var appIDs: [ALTAppID]? {
-        get { lock.withLock { _appIDs } }
-        set { lock.withLock { _appIDs = newValue } }
+        get { lock.withLock { rawAppIDs } }
+        set { lock.withLock { rawAppIDs = newValue } }
     }
 
     var appGroups: [ALTAppGroup]? {
-        get { lock.withLock { _appGroups } }
-        set { lock.withLock { _appGroups = newValue } }
+        get { lock.withLock { rawAppGroups } }
+        set { lock.withLock { rawAppGroups = newValue } }
     }
 
     func appendAppID(_ appID: ALTAppID) {
-        lock.withLock { _appIDs = (_appIDs ?? []) + [appID] }
+        lock.withLock { rawAppIDs = (rawAppIDs ?? []) + [appID] }
     }
 
     func appendAppGroup(_ appGroup: ALTAppGroup) {
-        lock.withLock { _appGroups = (_appGroups ?? []) + [appGroup] }
+        lock.withLock { rawAppGroups = (rawAppGroups ?? []) + [appGroup] }
     }
 }
 
@@ -290,8 +290,8 @@ class AppOperationContext: PipelineOperationContext
 
 
     override var error: Error? {
-        get { _error ?? authenticatedContext.error }
-        set { _error = newValue
+        get { localError ?? authenticatedContext.error }
+        set { localError = newValue
             if authenticatedContext.error == nil
             {
                 // Assign newValue to authenticatedContext.error if the latter is nil.
@@ -300,7 +300,7 @@ class AppOperationContext: PipelineOperationContext
             }
         }
     }
-    private var _error: Error?
+    private var localError: Error?
 
     init(
         pipelineSteps: [PipelineExecutionStep],

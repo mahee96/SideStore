@@ -15,16 +15,16 @@ public final class AppBootManager {
     
     private let lock = NSLock()
     
-    private var _needsPairingPrompt = false
+    private var cachedNeedsPairingPrompt = false
     public var needsPairingPrompt: Bool {
-        get { lock.withLock { _needsPairingPrompt } }
-        set { lock.withLock { _needsPairingPrompt = newValue } }
+        get { lock.withLock { cachedNeedsPairingPrompt } }
+        set { lock.withLock { cachedNeedsPairingPrompt = newValue } }
     }
     
-    private var _needsSideJITPrompt = false
+    private var cachedNeedsSideJITPrompt = false
     public var needsSideJITPrompt: Bool {
-        get { lock.withLock { _needsSideJITPrompt } }
-        set { lock.withLock { _needsSideJITPrompt = newValue } }
+        get { lock.withLock { cachedNeedsSideJITPrompt } }
+        set { lock.withLock { cachedNeedsSideJITPrompt = newValue } }
     }
     
     private init() {}
