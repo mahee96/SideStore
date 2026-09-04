@@ -74,7 +74,7 @@ public enum AppConstants {
 
     public enum Shortcuts {
         public static let turnOffDataURL = URL(string: "shortcuts://run-shortcut?name=TurnOffData")!
-        public static let turnOnDataURL  = URL(string: "shortcuts://run-shortcut?name=turnOnData")!
+        public static let turnOnDataURL  = URL(string: "shortcuts://run-shortcut?name=TurnOnData")!
     }
 
     public enum Installation {

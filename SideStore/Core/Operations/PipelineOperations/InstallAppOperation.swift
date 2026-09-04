@@ -64,15 +64,20 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
         self.backgroundContext = backgroundContext
         
         self.setProgress(10)
-        let installedApp = try await installApp(
-            in: backgroundContext,
-            certificate: certificate,
-            resignedAppBundle: resignedAppBundle,
-            provisioningProfiles: provisioningProfiles,
-            storeBuildVersion: storeBuildVersion
-        )
-        
-        return installedApp
+        do {
+            let installedApp = try await installApp(
+                in: backgroundContext,
+                certificate: certificate,
+                resignedAppBundle: resignedAppBundle,
+                provisioningProfiles: provisioningProfiles,
+                storeBuildVersion: storeBuildVersion
+            )
+            await CellularRefreshManager.shared.turnOnDataIfNeeded()
+            return installedApp
+        } catch {
+            await CellularRefreshManager.shared.turnOnDataIfNeeded()
+            throw error
+        }
     }
     
     private func removeRefreshedIPA() {

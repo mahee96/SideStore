@@ -92,7 +92,15 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         var additionalValues: [String: Any] = [Bundle.Info.urlTypes: allURLSchemes]
 
         if targetAppBundle.isAltStoreApp {
-            guard let udid = try await fetchUDID() else { throw OperationError.unknownUDID }
+            let udid: String
+            do {
+                await CellularRefreshManager.shared.turnOffDataIfNeeded()
+                guard let fetchedUdid = try await fetchUDID() else { throw OperationError.unknownUDID }
+                udid = fetchedUdid
+            } catch {
+                await CellularRefreshManager.shared.turnOnDataIfNeeded()
+                throw error
+            }
             guard Bundle.main.object(forInfoDictionaryKey: Bundle.Info.devicePairingString) is String else { throw OperationError.unknownUDID }
             additionalValues[Bundle.Info.devicePairingString] = "<insert pairing file here>"
             additionalValues[Bundle.Info.deviceID] = udid

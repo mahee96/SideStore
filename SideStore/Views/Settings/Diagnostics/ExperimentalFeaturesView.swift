@@ -86,7 +86,7 @@ struct ExperimentalFeaturesView: View {
                             get: { isCellularRefreshEnabled },
                             set: { newValue in
                                 isCellularRefreshEnabled = newValue
-                                UserDefaults.standard.isCellularRefreshEnabled = newValue
+                                CellularRefreshManager.shared.setEnabled(newValue)
                             }
                         ))
                     }

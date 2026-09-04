@@ -265,7 +265,9 @@ final class PipelineRunner: Sendable
                 )
                 try await scheduleNotifOp.execute()
             }
+            await CellularRefreshManager.shared.turnOnDataIfNeeded()
         } catch {
+            await CellularRefreshManager.shared.turnOnDataIfNeeded()
             progress.set(nil, for: operation)
             
             if Task.isCancelled {

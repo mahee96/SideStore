@@ -682,7 +682,16 @@ private extension AuthenticationOperation {
     @discardableResult
     private func registerCurrentDevice(for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTDevice {
         self.debugLog("[Authentication] registerCurrentDevice starting...")
-        var deviceUDID = try? await fetchUDID()
+        var deviceUDID: String?
+        do {
+            await CellularRefreshManager.shared.turnOffDataIfNeeded()
+            deviceUDID = try await fetchUDID()
+            await CellularRefreshManager.shared.turnOnDataIfNeeded()
+        } catch {
+            await CellularRefreshManager.shared.turnOnDataIfNeeded()
+            self.debugLog("[Authentication] fetchUDID failed: \(error)")
+        }
+
         if deviceUDID == nil || deviceUDID?.isEmpty == true || deviceUDID == "XXXXX-XXXX-XXXXX-XXXX" {
             deviceUDID = try? await fetchUDID(useStatic: true)
         }

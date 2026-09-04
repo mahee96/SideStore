@@ -8,16 +8,26 @@
 
 import Foundation
 import UIKit
+import Network
 
 public final class CellularRefreshManager: @unchecked Sendable {
     public static let shared = CellularRefreshManager()
 
     private let lock = NSLock()
-    private var _didTurnOffData = false
+    private var cachedDidTurnOffData = false
     public var didTurnOffData: Bool {
-        get { lock.withLock { _didTurnOffData } }
-        set { lock.withLock { _didTurnOffData = newValue } }
+        get { lock.withLock { cachedDidTurnOffData } }
+        set { lock.withLock { cachedDidTurnOffData = newValue } }
     }
+
+    private var cachedIsCellularActive = false
+    public var isCellularActive: Bool {
+        lock.withLock { cachedIsCellularActive }
+    }
+
+    private var cellularMonitor: NWPathMonitor?
+    private let monitorQueue = DispatchQueue(label: "com.sidestore.cellular.monitor", qos: .utility)
+    private var isMonitoring = false
 
     private init() {}
 
@@ -31,6 +41,48 @@ public final class CellularRefreshManager: @unchecked Sendable {
 
     public var isEnabled: Bool {
         return UserDefaults.standard.isCellularRefreshEnabled
+    }
+
+    public func setEnabled(_ enabled: Bool) {
+        UserDefaults.standard.isCellularRefreshEnabled = enabled
+        startMonitorIfRequired()
+        if enabled {
+            Thread.sleep(forTimeInterval: 0.05)
+        }
+    }
+
+    public func startMonitorIfRequired() {
+        #if !os(tvOS)
+        lock.withLock {
+            guard isEnabled else {
+                if isMonitoring {
+                    cellularMonitor?.cancel()
+                    cellularMonitor = nil
+                    isMonitoring = false
+                    cachedIsCellularActive = false
+                    debugLog("[CellularRefreshManager] Cellular refresh disabled, stopped monitor.")
+                }
+                return
+            }
+
+            guard !isMonitoring else { return }
+
+            let monitor = NWPathMonitor(requiredInterfaceType: .cellular)
+            cachedIsCellularActive = (monitor.currentPath.status == .satisfied)
+            monitor.pathUpdateHandler = { [weak self] path in
+                guard let self else { return }
+                let isSatisfied = (path.status == .satisfied)
+                self.lock.withLock {
+                    self.cachedIsCellularActive = isSatisfied
+                }
+                debugLog("[CellularRefreshManager] Cellular path updated: isSatisfied=\(isSatisfied), didTurnOffData=\(self.didTurnOffData)")
+            }
+            monitor.start(queue: monitorQueue)
+            self.cellularMonitor = monitor
+            self.isMonitoring = true
+            debugLog("[CellularRefreshManager] Started cellular path monitor.")
+        }
+        #endif
     }
 
     @MainActor
@@ -61,10 +113,20 @@ public final class CellularRefreshManager: @unchecked Sendable {
     @discardableResult
     public func turnOffDataIfNeeded() async -> Bool {
         guard isSupported && isEnabled else { return false }
+        guard !didTurnOffData else { return false }
+
+        startMonitorIfRequired()
+
+        // Check nw monitor tracked state: only turn off if cellular is active
+        guard isCellularActive else {
+            debugLog("[CellularRefreshManager] Cellular data is already off or inactive, skipping turnOff.")
+            return false
+        }
+
         let success = await turnOffData()
         if success {
             didTurnOffData = true
-            try? await Task.sleep(nanoseconds: 500_000_000)
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
         }
         return success
     }
@@ -72,6 +134,14 @@ public final class CellularRefreshManager: @unchecked Sendable {
     @discardableResult
     public func turnOnDataIfNeeded() async -> Bool {
         guard didTurnOffData else { return false }
+
+        // Check if target state was already achieved externally
+        if isCellularActive {
+            debugLog("[CellularRefreshManager] Cellular data is already active externally, skipping turnOn.")
+            didTurnOffData = false
+            return true
+        }
+
         try? await Task.sleep(nanoseconds: 500_000_000)
         let success = await turnOnData()
         if success {
