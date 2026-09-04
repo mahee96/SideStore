@@ -207,7 +207,8 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         let scInfoURL = bundle.bundleURL.appendingPathComponent("SC_Info")
         let manifestPlistURL = scInfoURL.appendingPathComponent("Manifest.plist")
         
-        guard let manifestPlist = NSMutableDictionary(contentsOf: manifestPlistURL), let sinfReplicationPaths = manifestPlist["SinfReplicationPaths"] as? [String] else { return }
+        guard let manifestPlist = NSMutableDictionary(contentsOf: manifestPlistURL),
+              let sinfReplicationPaths = manifestPlist["SinfReplicationPaths"] as? [String] else { return }
         
         // Remove references to missing files.
         let filteredReplicationPaths = sinfReplicationPaths.filter { path in

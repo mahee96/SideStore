@@ -38,16 +38,26 @@ final class PairingFileManager: NSObject {
         let fm = FileManager.default
         let documentsPath = fm.documentsDirectory.appendingPathComponent("/\(Self.pairingFileName)")
         if fm.fileExists(atPath: documentsPath.path),
-           let contents = try? String(contentsOf: documentsPath), !contents.isEmpty {
+           let contents = try? String(contentsOf: documentsPath), !contents.isEmpty 
+        {
             return contents
         }
         if let url = Bundle.main.url(forResource: AppConstants.Pairing.bundleResourceName, withExtension: AppConstants.Pairing.fileExtension),
            fm.fileExists(atPath: url.path),
            let data = fm.contents(atPath: url.path),
            let contents = String(data: data, encoding: .utf8),
-           !contents.isEmpty, !UserDefaults.standard.isPairingReset { return contents }
+           !contents.isEmpty, 
+           !UserDefaults.standard.isPairingReset 
+        { 
+            return contents 
+        }
         if let plistString = Bundle.main.object(forInfoDictionaryKey: AppConstants.Pairing.bundleResourceName) as? String,
-           !plistString.isEmpty, !plistString.contains(AppConstants.Pairing.placeholderString), !UserDefaults.standard.isPairingReset { return plistString }
+           !plistString.isEmpty, 
+           !plistString.contains(AppConstants.Pairing.placeholderString), 
+           !UserDefaults.standard.isPairingReset 
+        { 
+            return plistString 
+        }
         return nil
     }
 

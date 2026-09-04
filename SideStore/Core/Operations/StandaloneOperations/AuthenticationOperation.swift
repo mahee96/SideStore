@@ -692,6 +692,8 @@ private extension AuthenticationOperation {
             self.debugLog("[Authentication] fetchUDID failed: \(error)")
         }
 
+        try? await Task.sleep(nanoseconds: 2_000_000_000)
+        
         if deviceUDID == nil || deviceUDID?.isEmpty == true || deviceUDID == "XXXXX-XXXX-XXXXX-XXXX" {
             deviceUDID = try? await fetchUDID(useStatic: true)
         }
