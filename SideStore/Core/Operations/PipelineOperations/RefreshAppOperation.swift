@@ -27,8 +27,16 @@ final class RefreshAppOperation: BasePipelineOperation<InstallAppOperationContex
         
         guard let appBundle = self.context.targetAppBundle else { throw OperationError.appNotFound(name: nil) }
         self.setProgress(10)
-        for p in profiles {
-            try await installProvisioningProfiles(p.value.data)
+        
+        do {
+            await CellularRefreshManager.shared.turnOffDataIfNeeded()
+            for p in profiles {
+                try await installProvisioningProfiles(p.value.data)
+            }
+            await CellularRefreshManager.shared.turnOnDataIfNeeded()
+        } catch {
+            await CellularRefreshManager.shared.turnOnDataIfNeeded()
+            throw error
         }
         
         self.setProgress(80)

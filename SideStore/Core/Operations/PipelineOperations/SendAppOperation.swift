@@ -31,13 +31,14 @@ final class SendAppOperation: BasePipelineOperation<InstallAppOperationContext, 
         let appURL = resignedAppBundle.fileURL
         verboseLog("[SendAppOperation] AFC App Bundle `fileURL`: \(appURL.absoluteString)")
 
-        await CellularRefreshManager.shared.turnOffDataIfNeeded()
-        
-        
         do {
+            await CellularRefreshManager.shared.turnOffDataIfNeeded()
+            
             try await sendAppBundleAfc(bundleIdentifier, at: appURL)
             self.setProgress(100)
         } catch {
+            await CellularRefreshManager.shared.turnOnDataIfNeeded()
+
             debugLog("[SendAppOperation] Failed to send app bundle at \(appURL): \(error)")
             throw OperationError.appNotFound(name: bundleIdentifier)
         }

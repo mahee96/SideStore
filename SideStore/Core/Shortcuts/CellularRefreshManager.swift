@@ -64,6 +64,7 @@ public final class CellularRefreshManager: @unchecked Sendable {
         let success = await turnOffData()
         if success {
             didTurnOffData = true
+            try? await Task.sleep(nanoseconds: 500_000_000)
         }
         return success
     }
@@ -71,6 +72,7 @@ public final class CellularRefreshManager: @unchecked Sendable {
     @discardableResult
     public func turnOnDataIfNeeded() async -> Bool {
         guard didTurnOffData else { return false }
+        try? await Task.sleep(nanoseconds: 500_000_000)
         let success = await turnOnData()
         if success {
             didTurnOffData = false

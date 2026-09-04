@@ -141,7 +141,9 @@ final class PipelineRunner: Sendable
         
         try await Task.detached {
             /* Minimuxer Readiness Check */
-            if case .failure(let error) = await isMinimuxerReady() {
+            if !CellularRefreshManager.shared.isEnabled,
+               case .failure(let error) = await isMinimuxerReady()
+            {
                 let opError = error.asOperationError
                 group.context.error = opError
                 throw opError
