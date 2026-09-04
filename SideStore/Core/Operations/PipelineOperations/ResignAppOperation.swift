@@ -38,28 +38,14 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         self.setProgress(5)
         
         let effectiveBundleId = self.context.targetBundleIdentifier
-        
         let appBundleURL = try await self.prepareAppBundle(for: appBundle, profiles: profiles, appexBundleIds: context.appexBundleIds ?? [:])
         
         self.setProgress(40)
         
-        let resignedURL = try await self.resignAppBundle(at: appBundleURL, team: team, certificate: certificate, profiles: Array(profiles.values))
-        
-        let updatedApp = AnyApp(
-            name: appBundle.name,
-            bundleIdentifier: effectiveBundleId,
-            url: appBundle.fileURL,
-            storeApp: appBundle.storeApp
-        )
-        let destinationURL = InstalledApp.refreshedIPAURL(for: updatedApp)
-        try FileManager.default.copyItem(at: resignedURL, to: destinationURL, shouldReplace: true)
-        self.debugLog("[ResignAppOperation] Successfully resigned app to \(destinationURL.absoluteString)")
-        
-        // Use appBundleURL since we need an app bundle, not .ipa.
-        guard let resignedAppBundle = ALTApplication(fileURL: appBundleURL) else { throw OperationError.invalidApp }
+        let resignedAppURL = try await self.resignAppBundle(at: appBundleURL, team: team, certificate: certificate, profiles: Array(profiles.values))
+        guard let resignedAppBundle = ALTApplication(fileURL: resignedAppURL) else { throw OperationError.invalidApp }
         
         self.debugLog("[ResignAppOperation] Resigned app \(self.context.bundleIdentifier) to \(resignedAppBundle.bundleIdentifier).")
-        
         self.setProgress(100)
         
         return resignedAppBundle
@@ -203,7 +189,7 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
     private func resignAppBundle(at fileURL: URL, team: ALTTeam, certificate: ALTCertificate, profiles: [ALTProvisioningProfile]) async throws -> URL {
         let signer = ALTSigner(team: team, certificate: certificate)
         try await signer.signApp(at: fileURL, provisioningProfiles: profiles, progress: self.progress)
-        return try FileManager.default.zipAppBundle(at: fileURL)
+        return fileURL
     }
     
     private func removeMissingAppExtensionReferences(from bundle: Bundle) throws {

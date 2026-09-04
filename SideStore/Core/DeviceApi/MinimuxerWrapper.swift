@@ -217,14 +217,26 @@ func removeApp(_ bundleId: String) async throws {
     #endif
 }
 
-func yeetAppAFC(_ bundleId: String, _ rawBytes: Data) async throws {
-    defer { debugLog("[SideStore] yeetAppAFC(bundleId, rawBytes) completed") }
+func sendIpaAfc(_ bundleId: String, _ rawBytes: Data) async throws {
+    defer { debugLog("[SideStore] sendIpaAfc(bundleId, rawBytes) completed") }
     #if targetEnvironment(simulator)
-    debugLog("[SideStore] yeetAppAFC(bundleId, rawBytes) is no-op on simulator")
+    debugLog("[SideStore] sendIpaAfc(bundleId, rawBytes) is no-op on simulator")
     #else
-    debugLog("[SideStore] yeetAppAFC(bundleId, rawBytes) invoked")
+    debugLog("[SideStore] sendIpaAfc(bundleId, rawBytes) invoked")
     try await withRemotePairingRetry {
-        try await minimuxer.core.yeetAppAfc(bundleId: bundleId, ipaBytes: rawBytes)
+        try await minimuxer.core.sendIpaAfc(bundleId: bundleId, ipaBytes: rawBytes)
+    }
+    #endif
+}
+
+func sendAppBundleAfc(_ bundleId: String, at appURL: URL) async throws {
+    defer { debugLog("[SideStore] sendAppBundleAfc(bundleId, appURL) completed") }
+    #if targetEnvironment(simulator)
+    debugLog("[SideStore] sendAppBundleAfc(bundleId, appURL) is no-op on simulator")
+    #else
+    debugLog("[SideStore] sendAppBundleAfc(bundleId, appURL) invoked")
+    try await withRemotePairingRetry {
+        try await minimuxer.core.sendAppBundleAfc(bundleId: bundleId, appURL: appURL)
     }
     #endif
 }
@@ -237,6 +249,18 @@ func installIPA(_ bundleId: String) async throws {
     debugLog("[SideStore] installIPA(bundleId) invoked")
     try await withRemotePairingRetry {
         try await minimuxer.core.installIpa(bundleId: bundleId)
+    }
+    #endif
+}
+
+func installAppBundle(_ bundleId: String, appName: String) async throws {
+    defer { debugLog("[SideStore] installAppBundle(bundleId, appName) completed") }
+    #if targetEnvironment(simulator)
+    debugLog("[SideStore] installAppBundle(bundleId, appName) is no-op on simulator")
+    #else
+    debugLog("[SideStore] installAppBundle(bundleId, appName) invoked")
+    try await withRemotePairingRetry {
+        try await minimuxer.core.installAppBundle(bundleId: bundleId, appName: appName)
     }
     #endif
 }
