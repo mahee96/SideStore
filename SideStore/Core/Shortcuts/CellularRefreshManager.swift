@@ -29,7 +29,7 @@ public final class CellularRefreshManager: @unchecked Sendable {
         #endif
     }
 
-    private var isEnabled: Bool {
+    public var isEnabled: Bool {
         return UserDefaults.standard.isCellularRefreshEnabled
     }
 

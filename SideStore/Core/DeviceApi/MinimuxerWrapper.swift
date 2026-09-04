@@ -122,7 +122,8 @@ func getDeviceConnectionMode() async -> DeviceConnectionMode {
 }
 
 public func isMinimuxerReady() async -> Result<Bool, MinimuxerError> {
-    return await minimuxer.core.isReady()
+    let isEnabled = CellularRefreshManager.shared.isEnabled
+    return await minimuxer.core.isReady(withNetworkCheck: !isEnabled)
 }
 
 extension MinimuxerError {
