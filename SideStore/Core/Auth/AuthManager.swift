@@ -60,7 +60,9 @@ public final class AuthManager: @unchecked Sendable {
     public func signOut(keepCertificate: Bool = false, keepAnisetteData: Bool = true) {
         self.session = nil
         self.team = nil
-        CertificateManager.shared.clearActiveCertificate()
+        if !keepCertificate {
+            CertificateManager.shared.clearActiveCertificate()
+        }
         DatabaseManager.shared.deactivateActiveAccountAndTeam()
         Keychain.shared.reset(keepCertificate: keepCertificate, keepAnisetteData: keepAnisetteData)
     }
