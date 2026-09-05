@@ -121,7 +121,7 @@ final class HealthCheckViewModel: ObservableObject {
         
         let ddi = (try? await minimuxer.core.isDDIMounted()) ?? false
         let pairingVerified = (try? await minimuxer.core.fetchUDID() != nil) ?? false
-        let isRpPairing = minimuxer.core.isrppairing
+        let isRpPairing = minimuxer.core.pairingFileType == .rppairing
         let isPairingLoaded = minimuxer.core.isPairingFileLoaded
         let readyResult = await minimuxer.core.isReady(withDDIMountCheck: true)
         let scanned = minimuxer.network.activeInterfaces

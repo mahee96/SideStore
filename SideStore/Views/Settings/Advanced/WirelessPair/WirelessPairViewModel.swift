@@ -506,7 +506,7 @@ final class WirelessPairViewModel: ObservableObject {
                 
                 switch result {
                 case .success(let device):
-                    debugLog("[WirelessPairViewModel] startPairing() SUCCESS with device: name='\(device.name)', model='\(device.model)', udid='\(device.udid)'")
+                    debugLog("[WirelessPairViewModel] startPairing() SUCCESS with device: name='\(device.name)', model='\(device.model)'")
                     self.pairedDevice = device
                     self.statusText = "Success!"
                     self.subStatusText = "Successfully paired with \(device.name) (\(device.model))!\nPairing file saved to documents."
@@ -566,7 +566,7 @@ final class WirelessPairViewModel: ObservableObject {
                 
                 switch result {
                 case .success(let device):
-                    debugLog("[WirelessPairViewModel] triggerPairing() SUCCESS with device: name='\(device.name)', model='\(device.model)', udid='\(device.udid)'")
+                    debugLog("[WirelessPairViewModel] triggerPairing() SUCCESS with device: name='\(device.name)', model='\(device.model)'")
                     self.pairedDevice = device
                     self.statusText = "Success!"
                     self.subStatusText = "Successfully paired with \(device.name) (\(device.model))!\nPairing file saved to documents."

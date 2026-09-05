@@ -77,7 +77,7 @@ private func withRemotePairingRetry<T>(_ operation: () async throws -> T) async 
     do {
         return try await operation()
     } catch {
-        guard minimuxer.gateway.isRPPairing else { throw error }
+        guard minimuxer.gateway.pairingFileType == .rppairing else { throw error }
 
         if let newPort = await resolveDiscoveredRemotePairingPortThrottled(), newPort != remotePairingPortCache {
             debugLog("[SideStore] Operation failed, updating RemotePairing port from \(remotePairingPortCache) -> \(newPort) and retrying...")
@@ -352,13 +352,11 @@ func minimuxerRestart() async throws {
 public struct MinimuxerPairedDevice: Codable, Sendable {
     public let name: String
     public let model: String
-    public let udid: String
     public let pairingFilePath: String
     
-    public init(name: String, model: String, udid: String, pairingFilePath: String) {
+    public init(name: String, model: String, pairingFilePath: String) {
         self.name = name
         self.model = model
-        self.udid = udid
         self.pairingFilePath = pairingFilePath
     }
 }
@@ -426,7 +424,6 @@ public final class WirelessPairWrapper {
                 completion(.success(MinimuxerPairedDevice(
                     name: device.name,
                     model: device.model,
-                    udid: device.udid,
                     pairingFilePath: device.pairingFilePath
                 )))
             case .failure(let error):
@@ -461,7 +458,6 @@ public final class WirelessPairWrapper {
                 completion(.success(MinimuxerPairedDevice(
                     name: device.name,
                     model: device.model,
-                    udid: device.udid,
                     pairingFilePath: device.pairingFilePath
                 )))
             case .failure(let error):
