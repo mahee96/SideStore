@@ -12,6 +12,7 @@ import Combine
 
 public var selectedGatewayBackendCache: GatewayBackend = .idevice
 public var remotePairingPortCache: UInt16 = MinimuxerConstants.remotePairingPort
+public var deviceProbeTimeoutCache: Int = MinimuxerConstants.defaultTCPProbeTimeoutMs
 
 public func syncMinimuxerBackendFromUserDefaults() {
     let raw = UserDefaults.standard.minimuxerGatewayBackend
@@ -23,10 +24,21 @@ public func syncMinimuxerBackendFromUserDefaults() {
     } else {
         remotePairingPortCache = MinimuxerConstants.remotePairingPort
     }
+
+    let overrideTimeout = UserDefaults.standard.deviceProbeTimeoutOverride
+    if overrideTimeout > 0 {
+        deviceProbeTimeoutCache = overrideTimeout
+    } else {
+        deviceProbeTimeoutCache = MinimuxerConstants.defaultTCPProbeTimeoutMs
+    }
 }
 
 var minimuxer: any MinimuxerFacade {
-    Minimuxer.shared(backend: selectedGatewayBackendCache, remotePairingPort: remotePairingPortCache)
+    Minimuxer.shared(
+        backend: selectedGatewayBackendCache,
+        remotePairingPort: remotePairingPortCache,
+        deviceProbeTimeout: deviceProbeTimeoutCache
+    )
 }
 
 private func resolveDiscoveredRemotePairingPort() async -> UInt16? {
@@ -330,6 +342,24 @@ func minimuxerSetLogging(_ enabled: Bool) {
     debugLog("[SideStore] minimuxerSetLogging(enabled) invoked")
     #if !targetEnvironment(simulator)
     minimuxer.core.setLogging(enabled)
+    #endif
+}
+
+public func minimuxerGetDeviceProbeTimeout() -> Int {
+    #if targetEnvironment(simulator)
+    return deviceProbeTimeoutCache
+    #else
+    return minimuxer.core.deviceProbeTimeout
+    #endif
+}
+
+public func minimuxerSetDeviceProbeTimeout(_ timeoutMs: Int) {
+    defer { debugLog("[SideStore] minimuxerSetDeviceProbeTimeout(\(timeoutMs)) completed") }
+    debugLog("[SideStore] minimuxerSetDeviceProbeTimeout(\(timeoutMs)) invoked")
+    deviceProbeTimeoutCache = timeoutMs
+    UserDefaults.standard.deviceProbeTimeoutOverride = (timeoutMs == MinimuxerConstants.defaultTCPProbeTimeoutMs) ? 0 : timeoutMs
+    #if !targetEnvironment(simulator)
+    minimuxer.core.setDeviceProbeTimeout(timeoutMs)
     #endif
 }
 

@@ -15,6 +15,7 @@ import WidgetKit
 import TVServices
 #endif
 import SideSign
+import MinimuxerCommon
 
 private extension Color {
     static let settingsRowBackground = Color.white.opacity(0.15)
@@ -31,6 +32,7 @@ struct DeveloperOptionsView: View {
     @State private var isRotateLogsOnStartupEnabled: Bool = UserDefaults.standard.isRotateLogsOnStartupEnabled
     @State private var recreateDatabaseOnNextStart: Bool = UserDefaults.standard.recreateDatabaseOnNextStart
     @State private var alwaysShowWireGuardConfig: Bool = UserDefaults.standard.alwaysShowWireGuardConfig
+    @State private var tcpProbeTimeoutText: String = ""
     
     @State private var isExportingDB: Bool = false
     @State private var showDeleteConfirmation: Bool = false
@@ -376,6 +378,64 @@ struct DeveloperOptionsView: View {
                     .cornerRadius(14)
                 }
                 
+                // Section: Device (TCP) Probe Timeout
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("DEVICE (TCP) PROBE TIMEOUT")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.6))
+                        .padding(.horizontal, 16)
+                    
+                    VStack(spacing: 0) {
+                        HStack(spacing: 12) {
+                            Text("Timeout (ms)")
+                                .font(.system(size: 17, weight: .bold))
+                                .foregroundColor(.white)
+                            
+                            Spacer()
+                            
+                            TextField("ms", text: $tcpProbeTimeoutText)
+                                .keyboardType(.numberPad)
+                                .multilineTextAlignment(.trailing)
+                                .foregroundColor(.white)
+                                .font(.system(size: 17))
+                                .frame(width: 90)
+                                .onChange(of: tcpProbeTimeoutText) { newValue in
+                                    let filtered = newValue.filter { "0123456789".contains($0) }
+                                    if filtered != newValue {
+                                        tcpProbeTimeoutText = filtered
+                                    }
+                                    if let timeout = Int(filtered), timeout > 0 {
+                                        minimuxerSetDeviceProbeTimeout(timeout)
+                                    }
+                                }
+                        }
+                        .padding(.horizontal, 16)
+                        .frame(height: 50)
+                        
+                        divider
+                        
+                        SwiftUI.Button(action: {
+                            let defaultTimeout = MinimuxerConstants.defaultTCPProbeTimeoutMs
+                            tcpProbeTimeoutText = String(defaultTimeout)
+                            minimuxerSetDeviceProbeTimeout(defaultTimeout)
+                        }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "arrow.counterclockwise")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.white)
+                                Text("Use Default (\(MinimuxerConstants.defaultTCPProbeTimeoutMs) ms)")
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(.white)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .frame(height: 50)
+                        }
+                    }
+                    .background(Color.settingsRowBackground)
+                    .cornerRadius(14)
+                }
+                
                 #if DEBUG
                 // Section 3: Account Management
                 VStack(alignment: .leading, spacing: 8) {
@@ -476,6 +536,9 @@ struct DeveloperOptionsView: View {
             SwiftUI.Button("Cancel", role: .cancel) {}
         } message: {
             Text("Do you want to clear all keychain items related to this SideStore instance?")
+        }
+        .onAppear {
+            tcpProbeTimeoutText = String(minimuxerGetDeviceProbeTimeout())
         }
     }
     

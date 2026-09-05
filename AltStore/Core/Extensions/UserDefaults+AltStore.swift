@@ -80,6 +80,10 @@ public extension UserDefaults
         get { self.integer(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
     }
+    @objc var deviceProbeTimeoutOverride: Int {
+        get { self.integer(forKey: #function) }
+        set { self.set(newValue, forKey: #function) }
+    }
     @objc var skipNonCopyableBackupFiles: Bool {
         get {
             guard self.object(forKey: #function) != nil else { return true }
