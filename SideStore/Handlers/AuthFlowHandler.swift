@@ -194,6 +194,49 @@ class AuthFlowHandler: AnyObject, AuthenticationHandler, AnisetteServerHandler {
     }
 
     @MainActor
+    func accountRepair(url: URL, message: String) async -> AccountRepairDecision {
+        guard self.isPresenterAvailable else {
+            return .cancel
+        }
+
+        return await withCheckedContinuation { continuation in
+            let appleAccountURL = URL(string: "https://account.apple.com")!
+            let baseMessage = message.isEmpty ? Constants.defaultAccountRepairMessage : message
+            let displayMessage = """
+                \(baseMessage)
+
+                \(NSLocalizedString("Warning: Repeatedly skipping this without completing required verification or terms may lead to your account being restricted by Apple over time.", comment: ""))
+                """
+
+            let alert = UIAlertController(
+                title: NSLocalizedString("Account Repair Required", comment: ""),
+                message: displayMessage,
+                preferredStyle: .alert
+            )
+
+            alert.addAction(UIAlertAction(title: NSLocalizedString("Open Developer Account", comment: ""), style: .default) { [weak self] _ in
+                self?.activePresenter?.openWebURL(url)
+                continuation.resume(returning: .cancel)
+            })
+
+            alert.addAction(UIAlertAction(title: NSLocalizedString("Open Apple Account", comment: ""), style: .default) { [weak self] _ in
+                self?.activePresenter?.openWebURL(appleAccountURL)
+                continuation.resume(returning: .cancel)
+            })
+
+            alert.addAction(UIAlertAction(title: NSLocalizedString("Skip & Continue", comment: ""), style: .default) { _ in
+                continuation.resume(returning: .proceed)
+            })
+
+            alert.addAction(UIAlertAction(title: RSTSystemLocalizedString("Cancel"), style: .cancel) { _ in
+                continuation.resume(returning: .cancel)
+            })
+
+            self.present(alert)
+        }
+    }
+
+    @MainActor
     private func promptCodeEntry(title: String,
                                  phoneNumbers: [TrustedPhoneNumber],
                                  activePhoneID: String,

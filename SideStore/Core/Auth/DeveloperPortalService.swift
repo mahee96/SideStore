@@ -108,12 +108,21 @@ class DeveloperPortalAuthService: DeveloperPortalService {
         try await ALTAppleAPI.shared.fetchAccount(session: session)
     }
 
-    func authenticate(appleID: String, password: String, anisetteData: ALTAnisetteData, xcodeVersion: String, verificationHandler: DeveloperPortal.VerificationHandler?) async throws -> (ALTAccount, ALTAppleAPISession) {
+    func authenticate(appleID: String, 
+                      password: String, 
+                      anisetteData: ALTAnisetteData, 
+                      xcodeVersion: String, 
+                      machinePassword: String? = nil,
+                      accountRepairHandler: DeveloperPortal.AccountRepairHandler = DeveloperPortal.defaultAccountRepairHandler,
+                      verificationHandler: DeveloperPortal.VerificationHandler?) async throws -> (ALTAccount, ALTAppleAPISession) 
+    {
         let authSession = try await ALTAppleAPI.shared.authenticate(
             appleID: appleID,
             password: password,
             anisetteData: anisetteData,
             xcodeVersion: xcodeVersion,
+            machinePassword: machinePassword,
+            accountRepairHandler: accountRepairHandler,
             verificationHandler: verificationHandler
         )
         return (authSession.account, authSession.session)

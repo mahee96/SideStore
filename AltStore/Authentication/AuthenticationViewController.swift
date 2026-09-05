@@ -169,39 +169,19 @@ private extension AuthenticationViewController
             switch result
             {
             case .failure(ALTAppleAPIError.requiresTwoFactorAuthentication):
-                // Ignore
+                debugLog("AuthenticationViewController: Two-factor authentication cancelled by user.")
                 DispatchQueue.main.async {
                     self.signInButton.isIndicatingActivity = false
                 }
-                
-            case .failure(let error as DeveloperPortalError):
+
+            case .failure(DeveloperPortalError.accountRepairRequired):
+                debugLog("AuthenticationViewController: Account repair cancelled by user.")
                 DispatchQueue.main.async {
                     self.signInButton.isIndicatingActivity = false
-                    if case .accountRepairRequired(let url, let message) = error {
-                        let repairURL = url ?? Constants.URLs.developerAccount
-                        let displayMessage = message.isEmpty ? Constants.defaultAccountRepairMessage : message
-                        let alert = UIAlertController(
-                            title: NSLocalizedString("Account Repair Required", comment: ""),
-                            message: displayMessage,
-                            preferredStyle: .alert
-                        )
-                        alert.addAction(UIAlertAction(title: NSLocalizedString("Open Developer Portal", comment: ""), style: .default) { [weak self] _ in
-                            self?.openWebURL(repairURL)
-                        })
-                        alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel))
-                        self.present(alert, animated: true)
-                    } else {
-                        let nsError = (error as NSError).withLocalizedTitle(NSLocalizedString("Failed to Sign In", comment: ""))
-                        let toastView = ToastView(error: nsError)
-                        toastView.show(in: self)
-                        toastView.backgroundColor = .white
-                        toastView.textLabel.textColor = .altPrimary
-                        toastView.detailTextLabel.textColor = .altPrimary
-                        self.toastView = toastView
-                    }
                 }
 
             case .failure(let error as NSError):
+                debugLog("AuthenticationViewController: Authentication failed with error: \(error)")
                 DispatchQueue.main.async {
                     let error = error.withLocalizedTitle(NSLocalizedString("Failed to Sign In", comment: ""))
                     let toastView = ToastView(error: error)

@@ -331,18 +331,24 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             appleID: appleID,
             password: password,
             anisetteData: anisetteData,
-            xcodeVersion: xcodeVersion
-        ) { mode, completionHandler in
-
-            Task.detached {
-                do {
-                    let action = try await handler.verificationCode(for: mode)
-                    completionHandler(action)
-                } catch {
-                    completionHandler(.cancel)
+            xcodeVersion: xcodeVersion,
+            accountRepairHandler: { url, message, completionHandler in
+                Task.detached {
+                    let decision = await handler.accountRepair(url: url, message: message)
+                    completionHandler(decision)
+                }
+            },
+            verificationHandler: { mode, completionHandler in
+                Task.detached {
+                    do {
+                        let action = try await handler.verificationCode(for: mode)
+                        completionHandler(action)
+                    } catch {
+                        completionHandler(.cancel)
+                    }
                 }
             }
-        }
+        )
         
         AuthManager.shared.adsid = session.dsid
         AuthManager.shared.xcodeToken = session.authToken
