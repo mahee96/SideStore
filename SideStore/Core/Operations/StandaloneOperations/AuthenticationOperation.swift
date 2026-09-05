@@ -332,21 +332,11 @@ final class AuthenticationOperation: BaseStandaloneOperation<AuthenticatedOperat
             password: password,
             anisetteData: anisetteData,
             xcodeVersion: xcodeVersion,
-            accountRepairHandler: { url, message, completionHandler in
-                Task.detached {
-                    let decision = await handler.accountRepair(url: url, message: message)
-                    completionHandler(decision)
-                }
+            accountRepairHandler: { url, message in
+                await handler.accountRepair(url: url, message: message)
             },
-            verificationHandler: { mode, completionHandler in
-                Task.detached {
-                    do {
-                        let action = try await handler.verificationCode(for: mode)
-                        completionHandler(action)
-                    } catch {
-                        completionHandler(.cancel)
-                    }
-                }
+            verificationHandler: { mode in
+                try await handler.verificationCode(for: mode)
             }
         )
         
