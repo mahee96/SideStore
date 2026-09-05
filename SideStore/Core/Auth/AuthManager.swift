@@ -61,10 +61,20 @@ public final class AuthManager: @unchecked Sendable {
         self.session = nil
         self.team = nil
         if !keepCertificate {
+            debugLog("[AuthManager] Clearing signing certificate in cert manager and keychain.")
             CertificateManager.shared.clearActiveCertificate()
+            debugLog("[AuthManager] Cleared signing certificate in cert manager and keychain.")
+
+        } else {
+            debugLog("[AuthManager] Preserved signing certificate in cert manager and keychain.")
         }
+        debugLog("[AuthManager] Clearing account and team info in database.")
         DatabaseManager.shared.deactivateActiveAccountAndTeam()
-        Keychain.shared.reset(keepCertificate: keepCertificate, keepAnisetteData: keepAnisetteData)
+        debugLog("[AuthManager] Cleared account and team info in database.")
+
+        debugLog("[AuthManager] Clearing sign-in info from keychain.")
+        Keychain.shared.clearSignInInfo(keepAnisetteData: keepAnisetteData)
+        debugLog("[AuthManager] Cleared sign-in info from keychain.")
     }
     
     @discardableResult

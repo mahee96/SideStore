@@ -104,8 +104,7 @@ public final class CertificateManager: @unchecked Sendable {
             }
         } else {
             self.activeCertificate = nil
-            Keychain.shared.signingCertificate = nil
-            Keychain.shared.signingCertificatePassword = nil
+            Keychain.shared.clearCertificates()
             debugLog("[CertificateManager] setActiveCertificate: Cleared active certificate in Keychain.")
         }
     }
@@ -114,8 +113,7 @@ public final class CertificateManager: @unchecked Sendable {
     public func clearActiveCertificate() {
         debugLog("[CertificateManager] clearActiveCertificate: Clearing active certificate.")
         self.activeCertificate = nil
-        Keychain.shared.signingCertificate = nil
-        Keychain.shared.signingCertificatePassword = nil
+        Keychain.shared.clearCertificates()
     }
     
     // MARK: - Certificate Encoding Helpers
