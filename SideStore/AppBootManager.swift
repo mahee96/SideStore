@@ -95,7 +95,6 @@ public final class AppBootManager {
         defer {
             debugLog("[AppBootManager] performBootSequence() exited")
         }
-        CellularRefreshManager.shared.startMonitorIfRequired()
         
         // 1. Structured concurrent child task A
         async let jitCheck: Void = {
