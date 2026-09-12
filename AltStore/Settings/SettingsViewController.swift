@@ -575,27 +575,21 @@ private extension SettingsViewController
     func signIn()
     {
         debugLog("[SettingsVC] signIn() invoked by user action")
-        AppManager.shared.signIn(presentingViewController: self) { [weak self] (result) in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                switch result
-                {
-                case .failure(let error) where error is CancellationError:
-                    debugLog("[SettingsVC] signIn() authentication cancelled by user")
-                    break
-                    
-                case .failure(let error):
-                    debugLog("[SettingsVC] signIn() authentication failed with error: \(error)")
-                    let toastView = ToastView(error: error)
-                    toastView.show(in: self.view)
-                    
-                case .success(let (team, _, _)):
-                    debugLog("[SettingsVC] signIn() authentication succeeded for team: \(team.name) (\(team.identifier))")
-                }
-                
-                debugLog("[SettingsVC] signIn() calling update()...")
-                self.update()
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            do {
+                let result = try await AuthManager.shared.signIn(presentingViewController: self)
+                debugLog("[SettingsVC] signIn() authentication succeeded for team: \(result.team.name) (\(result.team.identifier))")
+            } catch is CancellationError {
+                debugLog("[SettingsVC] signIn() authentication cancelled by user")
+            } catch {
+                debugLog("[SettingsVC] signIn() authentication failed with error: \(error)")
+                let toastView = ToastView(error: error)
+                toastView.show(in: self.view)
             }
+            
+            debugLog("[SettingsVC] signIn() calling update()...")
+            self.update()
         }
     }
     

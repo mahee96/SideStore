@@ -157,25 +157,6 @@ final class AppManager: ObservableObject, @unchecked Sendable
     
 
 
-    func signIn(presentingViewController: UIViewController?,
-                skipDeviceRegistration: Bool = false,
-                skipCertificateProvisioning: Bool = false,
-                completionHandler: @escaping (Result<(ALTTeam, ALTCertificate?, ALTAppleAPISession), Error>) -> Void)
-    {
-        Task.detached {
-            do {
-                let result = try await AuthManager.shared.signIn(
-                    presentingViewController: presentingViewController,
-                    skipDeviceRegistration: skipDeviceRegistration,
-                    skipCertificateProvisioning: skipCertificateProvisioning
-                )
-                completionHandler(.success((result.team, result.certificate, result.session)))
-            } catch {
-                completionHandler(.failure(error))
-            }
-        }
-    }
-    
     func deactivateApps(for appBundle: ALTApplication, presentingViewController: UIViewController?, completion: @escaping (Result<Void, Error>) -> Void)
     {
         guard !UserDefaults.standard.isAppLimitDisabled, let activeAppsLimit = UserDefaults.standard.activeAppsLimit else { return completion(.success(())) }
