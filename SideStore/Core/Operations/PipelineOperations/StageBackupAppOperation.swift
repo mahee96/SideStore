@@ -98,7 +98,7 @@ final class StageBackupAppOperation: BasePipelineOperation<InstallAppOperationCo
                 }
             }
 
-            try (infoDictionary as NSDictionary).write(to: unzippedAppBundle.infoPlistURL)
+            try InfoPlistParser(dictionary: infoDictionary).write(to: unzippedAppBundle.infoPlistURL)
             debugLog("[StageBackupAppOperation] Updated Info.plist written to \(unzippedAppBundle.infoPlistURL.path)")
         }
 

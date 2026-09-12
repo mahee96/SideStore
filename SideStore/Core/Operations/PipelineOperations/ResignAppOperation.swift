@@ -194,7 +194,7 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         exportedUTIs.append(installedAppUTI)
         infoDictionary[Bundle.Info.exportedUTIs] = exportedUTIs
         
-        try (infoDictionary as NSDictionary).write(to: bundle.infoPlistURL)
+        try InfoPlistParser(dictionary: infoDictionary).write(to: bundle.infoPlistURL)
         
         // Remove _CodeSignature folder (if it exists) because it will be added when resigning and it may have files that aren't overwritten when resigning
         // These files might be the cause of some ApplicationVerificationFailed errors

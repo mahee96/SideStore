@@ -136,11 +136,11 @@ final class DownloadAppOperation: BasePipelineOperation<InstallAppOperationConte
         let appBundle = try await downloadIPA(from: sourceURL)
         
         if self.context.bundleIdentifier == StoreApp.dolphinAppID, self.context.bundleIdentifier != appBundle.bundleIdentifier {
-            if var infoPlist = NSDictionary(contentsOf: appBundle.bundle.infoPlistURL) as? [String: Any] {
+            if var parser = try? InfoPlistParser(plistURL: appBundle.bundle.infoPlistURL) {
                 // Manually update the app's bundle identifier to match the one specified in the source.
                 // This allows people who previously installed the app to still update and refresh normally.
-                infoPlist[kCFBundleIdentifierKey as String] = StoreApp.dolphinAppID
-                (infoPlist as NSDictionary).write(to: appBundle.bundle.infoPlistURL, atomically: true)
+                parser.set(value: StoreApp.dolphinAppID, for: kCFBundleIdentifierKey as String)
+                try? parser.write(to: appBundle.bundle.infoPlistURL)
             }
         }
         
