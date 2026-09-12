@@ -234,10 +234,7 @@ public struct InfoPlistCustomizationView: View {
                     .padding(.vertical, 2)
                 } else {
                     HStack(spacing: 6) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.blue)
-                        Text("New app / clone — will install as separate app")
+                        Text("NOTE: If the bundleid is not present in the database it will install as separate app")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.blue)
                         Spacer()
