@@ -297,7 +297,10 @@ final class PipelineRunner: Sendable
         )
         
         if case .install(_, let customID) = operation { context.customBundleIdentifier  = customID }
-        if case .update(_,  let customID) = operation { context.customBundleIdentifier  = customID }
+        if case .update(_,  let customID) = operation {
+            context.customBundleIdentifier  = customID
+            context.isStoreUpdate = true
+        }
         if case .resign(_,  let mode)     = operation { context.alternateIconMode       = mode }
         
         if let app = operation.app as? InstalledApp {

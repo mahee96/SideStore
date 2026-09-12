@@ -277,6 +277,18 @@ final class PipelineExecutor: @unchecked Sendable {
                 let step = try CacheSigningCertOperation(context: context)
                 result = try await step.execute(parentProgress: progress)
                 return nil
+
+            case .cacheInfoPlist:
+                loggerType = CacheInfoPlistOperation.self
+                let step = try CacheInfoPlistOperation(context: context)
+                result = try await step.execute(parentProgress: progress)
+                return nil
+
+            case .patchInfoPlist:
+                loggerType = PatchInfoPlistOperation.self
+                let step = try PatchInfoPlistOperation(context: context)
+                result = try await step.execute(parentProgress: progress)
+                return nil
             }
         } catch {
             result = error

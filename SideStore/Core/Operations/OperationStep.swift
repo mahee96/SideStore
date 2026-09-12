@@ -39,12 +39,16 @@ enum PipelineStep: OperationStep {
     case updateAppCertificate
     case embedSigningCert
     case cacheSigningCert
+    case cacheInfoPlist
+    case patchInfoPlist
     case createIPA
 
     fileprivate static let stepMap: [ObjectIdentifier: PipelineStep] = [
         ObjectIdentifier(PerformBackupRestoreOperation.self):             .backupAppData,
         ObjectIdentifier(CacheAppOperation.self):                         .cacheApp,
         ObjectIdentifier(CacheSigningCertOperation.self):                 .cacheSigningCert,
+        ObjectIdentifier(CacheInfoPlistOperation.self):                   .cacheInfoPlist,
+        ObjectIdentifier(PatchInfoPlistOperation.self):                   .patchInfoPlist,
         ObjectIdentifier(CleanStagedAppOperation.self):                   .cleanStagedApp,
         ObjectIdentifier(DeactivateAppOperation.self):                    .deactivateApp,
         ObjectIdentifier(DownloadAppOperation.self):                      .downloadApp,

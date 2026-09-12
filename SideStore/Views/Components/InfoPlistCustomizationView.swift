@@ -12,6 +12,8 @@ import UIKit
 public struct InfoPlistCustomizationView: View {
     public let initialPlist: [String: Any]
     public let initialBundleID: String
+    public let installedAppIdentities: [String: String]
+    public let teamID: String
     public let onProceed: ([String: Any], Bool) -> Void
     public let onCancel: () -> Void
 
@@ -51,11 +53,15 @@ public struct InfoPlistCustomizationView: View {
         initialPlist: [String: Any],
         initialBundleID: String,
         appendTeamID: Bool = true,
+        installedAppIdentities: [String: String] = [:],
+        teamID: String = "",
         onProceed: @escaping ([String: Any], Bool) -> Void,
         onCancel: @escaping () -> Void
     ) {
         self.initialPlist = initialPlist
         self.initialBundleID = initialBundleID
+        self.installedAppIdentities = installedAppIdentities
+        self.teamID = teamID
         self.onProceed = onProceed
         self.onCancel = onCancel
 
@@ -173,6 +179,19 @@ public struct InfoPlistCustomizationView: View {
         .background(Color(UIColor.tertiarySystemGroupedBackground).opacity(0.6))
     }
 
+    private var resolvedEffectiveBundleID: String {
+        let trimmed = bundleID.trimmingCharacters(in: .whitespacesAndNewlines)
+        if appendTeamID && !teamID.isEmpty {
+            return "\(trimmed).\(teamID)"
+        }
+        return trimmed
+    }
+
+    private var matchingExistingAppName: String? {
+        let target = resolvedEffectiveBundleID
+        return installedAppIdentities[target]
+    }
+
     private var identitySection: some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionHeader(title: "APP IDENTITY", icon: "app.badge.checkmark")
@@ -200,6 +219,32 @@ public struct InfoPlistCustomizationView: View {
                     Spacer()
                 }
                 .padding(.horizontal, 4)
+
+                if let existingName = matchingExistingAppName {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.orange)
+                        Text("Matches installed app \"\(existingName)\" — will update existing app")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.orange)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 2)
+                } else {
+                    HStack(spacing: 6) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.blue)
+                        Text("New app / clone — will install as separate app")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.blue)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 2)
+                }
 
                 customInputField(
                     label: "Display Name",
@@ -580,7 +625,9 @@ extension InfoPlistCustomizationView {
         from presenter: UIViewController,
         initialPlist: [String: Any],
         initialBundleID: String,
-        appendTeamID: Bool = true
+        appendTeamID: Bool = true,
+        installedAppIdentities: [String: String] = [:],
+        teamID: String = ""
     ) async -> (modifiedPlist: [String: Any], appendTeamID: Bool)? {
         await withCheckedContinuation { continuation in
             var hostingController: UIHostingController<AnyView>?
@@ -589,6 +636,8 @@ extension InfoPlistCustomizationView {
                 initialPlist: initialPlist,
                 initialBundleID: initialBundleID,
                 appendTeamID: appendTeamID,
+                installedAppIdentities: installedAppIdentities,
+                teamID: teamID,
                 onProceed: { modifiedPlist, shouldAppend in
                     hostingController?.dismiss(animated: true) {
                         continuation.resume(returning: (modifiedPlist, shouldAppend))

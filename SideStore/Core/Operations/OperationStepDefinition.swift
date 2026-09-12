@@ -55,11 +55,13 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.sendApp,                          18),
         PipelineExecutionStep(.installApp,                       15),
         PipelineExecutionStep(.cacheSigningCert,                  1),
+        PipelineExecutionStep(.cacheInfoPlist,                    1),
         PipelineExecutionStep(.cleanStagedApp,                    1)
     ]
 
     static let resign: [PipelineExecutionStep] = [
         PipelineExecutionStep(.stageApp,                          2),
+        PipelineExecutionStep(.patchInfoPlist,                    1),
         PipelineExecutionStep(.updateAppCertificate,              5),
         PipelineExecutionStep(.verifyCertificate,                 5),
         PipelineExecutionStep(.changeAppIcon,                     2),

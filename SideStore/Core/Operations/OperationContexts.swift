@@ -244,6 +244,7 @@ class InstallAppOperationContext: PipelineOperationContext
     let bundleIdentifier: String
     var customBundleIdentifier: String?
     var customInfoPlist: [String: Any]?
+    var isStoreUpdate: Bool = false
     var targetAppBundle: ALTApplication?
 
     var provisioningProfiles: [String: ALTProvisioningProfile]?

@@ -225,7 +225,9 @@ final class PipelineHandler: PipelineExecutionHandler,
     func resolveInfoPlistCustomization(
         initialPlist: [String: Any],
         initialBundleID: String,
-        appendTeamID: Bool
+        appendTeamID: Bool,
+        installedAppIdentities: [String: String],
+        teamID: String
     ) async throws -> (modifiedPlist: [String: Any], appendTeamID: Bool)? {
         guard let presenter = self.activePresenter else {
             return (initialPlist, appendTeamID)
@@ -235,7 +237,9 @@ final class PipelineHandler: PipelineExecutionHandler,
             from: presenter,
             initialPlist: initialPlist,
             initialBundleID: initialBundleID,
-            appendTeamID: appendTeamID
+            appendTeamID: appendTeamID,
+            installedAppIdentities: installedAppIdentities,
+            teamID: teamID
         )
     }
 

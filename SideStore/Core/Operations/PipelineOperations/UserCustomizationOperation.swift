@@ -8,6 +8,8 @@
 
 
 import Foundation
+import CoreData
+
 final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperationContext, String?>, @unchecked Sendable {
 
     override func execute(parentProgress: Progress?) async throws -> String? {
@@ -20,24 +22,57 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
 
+        if context.isStoreUpdate {
+            debugLog("[UserCustomizationOperation] Store app update button clicked; skipping customization modal.")
+            self.setProgress(100)
+            return nil
+        }
+
         let handler = context.handler.userCustomizationHandler
 
         if UserDefaults.standard.customizeInfoPlist {
+            let authoritativeBundleID = context.installedApp?.bundleIdentifier ?? context.targetBundleIdentifier
+            let appDirectory = InstalledApp.appsDirectoryURL.appendingPathComponent(authoritativeBundleID)
+            let cachedPlistURL = appDirectory.appendingPathComponent("custom_info.plist")
+            
+            var cachedPlist: [String: Any]? = nil
+            if FileManager.default.fileExists(atPath: cachedPlistURL.path),
+               let parser = try? InfoPlistParser(plistURL: cachedPlistURL) {
+                cachedPlist = parser.rawDictionary
+                debugLog("[UserCustomizationOperation] Primed custom Info.plist from \(cachedPlistURL.path)")
+            }
+
             let initialPlist: [String: Any] = {
+                if let cached = cachedPlist {
+                    return cached
+                }
                 if let targetAppBundle = context.targetAppBundle,
-                   let dict = targetAppBundle.bundle.completeInfoDictionary ?? (NSDictionary(contentsOf: targetAppBundle.bundle.infoPlistURL) as? [String: Any]) {
+                   let dict = targetAppBundle.bundle.completeInfoDictionary ?? (try? InfoPlistParser(plistURL: targetAppBundle.bundle.infoPlistURL).rawDictionary) {
                     return dict
                 }
                 return ["CFBundleIdentifier": context.targetBundleIdentifier]
             }()
 
-            let initialBundleID = context.targetBundleIdentifier
+            let initialBundleID = (cachedPlist?["CFBundleIdentifier"] as? String) ?? context.targetBundleIdentifier
+            let teamID = context.installedApp?.team?.identifier ?? AuthManager.shared.team?.identifier ?? ""
+
+            // Fetch installed apps to detect existing installations by authoritative bundle ID
+            let installedApps: [InstalledApp] = context.dbBackgroundContext.performAndWait {
+                let request = InstalledApp.fetchRequest()
+                return (try? context.dbBackgroundContext.fetch(request)) ?? []
+            }
+            let installedAppIdentities = Dictionary(uniqueKeysWithValues: installedApps.compactMap { app -> (String, String)? in
+                (app.bundleIdentifier, app.name)
+            })
+
             self.setProgress(40)
 
             guard let result = try await handler.resolveInfoPlistCustomization(
                 initialPlist: initialPlist,
                 initialBundleID: initialBundleID,
-                appendTeamID: context.appendTeamID
+                appendTeamID: context.appendTeamID,
+                installedAppIdentities: installedAppIdentities,
+                teamID: teamID
             ) else {
                 throw OperationError.cancelled
             }
@@ -45,21 +80,28 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
             context.customInfoPlist = result.modifiedPlist
             context.appendTeamID = result.appendTeamID
 
-            if let customID = result.modifiedPlist["CFBundleIdentifier"] as? String,
-               !customID.isEmpty,
-               customID != context.bundleIdentifier {
+            let customID = (result.modifiedPlist["CFBundleIdentifier"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let customID = customID, !customID.isEmpty, customID != context.bundleIdentifier {
                 context.customBundleIdentifier = customID
             } else {
                 context.customBundleIdentifier = nil
             }
 
+            // Dynamically link existing installed app if bundle ID matches
+            let effectiveCustomID = customID ?? initialBundleID
+            let resolvedID = result.appendTeamID && !teamID.isEmpty ? "\(effectiveCustomID).\(teamID)" : effectiveCustomID
+            if let matchingApp = installedApps.first(where: { $0.bundleIdentifier == resolvedID }) {
+                debugLog("[UserCustomizationOperation] Matched existing installed app: \(matchingApp.name) (\(resolvedID))")
+                context.installedApp = matchingApp
+            } else {
+                debugLog("[UserCustomizationOperation] No matching installed app for \(resolvedID); treating as new install/clone.")
+                context.installedApp = nil
+            }
+
             if let targetAppBundle = context.targetAppBundle {
-                if var currentDict = (NSDictionary(contentsOf: targetAppBundle.bundle.infoPlistURL) as? [String: Any]) {
-                    for (k, v) in result.modifiedPlist {
-                        currentDict[k] = v
-                    }
-                    (currentDict as NSDictionary).write(to: targetAppBundle.bundle.infoPlistURL, atomically: true)
-                }
+                var targetParser = (try? InfoPlistParser(plistURL: targetAppBundle.bundle.infoPlistURL)) ?? InfoPlistParser(dictionary: [:])
+                targetParser.merge(result.modifiedPlist)
+                try? targetParser.write(to: targetAppBundle.bundle.infoPlistURL)
             }
 
             self.setProgress(100)
