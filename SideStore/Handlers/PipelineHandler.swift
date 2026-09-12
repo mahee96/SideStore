@@ -229,11 +229,13 @@ final class PipelineHandler: PipelineExecutionHandler,
         installedAppIdentities: [String: String],
         teamID: String
     ) async throws -> (modifiedPlist: [String: Any], appendTeamID: Bool)? {
+        debugLog("[PipelineHandler] resolveInfoPlistCustomization: initialBundleID='\(initialBundleID)', teamID='\(teamID)', appendTeamID=\(appendTeamID)")
         guard let presenter = self.activePresenter else {
+            debugLog("[PipelineHandler] resolveInfoPlistCustomization: activePresenter is nil!")
             return (initialPlist, appendTeamID)
         }
         
-        return await InfoPlistCustomizationView.present(
+        let result = await InfoPlistCustomizationView.present(
             from: presenter,
             initialPlist: initialPlist,
             initialBundleID: initialBundleID,
@@ -241,6 +243,8 @@ final class PipelineHandler: PipelineExecutionHandler,
             installedAppIdentities: installedAppIdentities,
             teamID: teamID
         )
+        debugLog("[PipelineHandler] resolveInfoPlistCustomization result: modifiedPlist CFBundleIdentifier='\(result?.modifiedPlist["CFBundleIdentifier"] ?? "nil")', appendTeamID=\(result?.appendTeamID ?? false)")
+        return result
         /*
         return await InfoPlistCustomizationSheetView.present(
             from: presenter,
@@ -268,20 +272,32 @@ final class PipelineHandler: PipelineExecutionHandler,
             preferredStyle: .alert
         )
         
-        let teamID = AuthManager.shared.team?.identifier ?? ""
+        let team = AuthManager.shared.team
+        debugLog("[PipelineHandler] resolveBundleIDOverride: initialBundleID='\(initialBundleID)', teamID='\(team?.identifier ?? "nil")', isAuthenticated=\(AuthManager.shared.isAuthenticated)")
+        guard let teamID = team?.identifier, !teamID.isEmpty else {
+            debugLog("[PipelineHandler] resolveBundleIDOverride FAILED: team is \(team == nil ? "nil" : "empty")")
+            throw OperationError.invalidParameters("Active developer team identifier is missing from AuthManager.")
+        }
         let cleanInitialID: String = {
             let trimmed = initialBundleID.trimmingCharacters(in: .whitespacesAndNewlines)
+            let base: String
             if !teamID.isEmpty && trimmed.hasSuffix(".\(teamID)") {
-                return String(trimmed.dropLast((".\(teamID)").count))
+                base = String(trimmed.dropLast((".\(teamID)").count))
+            } else {
+                base = trimmed
             }
-            return trimmed
+            let sanitized = InfoPlistParser.sanitizeBundleID(base)
+            verboseLog("[PipelineHandler] cleanInitialID: trimmed='\(trimmed)', base='\(base)', sanitized='\(sanitized)'")
+            return sanitized
         }()
 
         let checkboxView = AppendTeamIDCheckboxView(isChecked: true, teamID: teamID)
         checkboxView.translatesAutoresizingMaskIntoConstraints = false
 
         alert.addTextField { textField in
-            textField.text = !teamID.isEmpty ? "\(cleanInitialID).\(teamID)" : cleanInitialID
+            let initialText = !teamID.isEmpty ? "\(cleanInitialID).\(teamID)" : cleanInitialID
+            verboseLog("[PipelineHandler] resolveBundleIDOverride: setting textField.text='\(initialText)'")
+            textField.text = initialText
             textField.autocapitalizationType = .none
             textField.autocorrectionType = .no
             textField.clearButtonMode = .whileEditing
@@ -336,8 +352,9 @@ final class PipelineHandler: PipelineExecutionHandler,
         return await withCheckedContinuation { continuation in
             let okAction = UIAlertAction(title: NSLocalizedString("Confirm", comment: ""), style: .default) { _ in
                 let baseID = checkboxView.cleanBaseID()
-                let customID = !baseID.isEmpty ? baseID : cleanInitialID
+                let customID = InfoPlistParser.sanitizeBundleID(!baseID.isEmpty ? baseID : cleanInitialID)
                 let appendTeamID = checkboxView.isChecked
+                debugLog("[PipelineHandler] resolveBundleIDOverride confirmed: baseID='\(baseID)', customID='\(customID)', appendTeamID=\(appendTeamID)")
                 continuation.resume(returning: (customID, appendTeamID))
             }
             

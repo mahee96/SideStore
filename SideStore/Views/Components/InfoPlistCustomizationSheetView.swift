@@ -77,14 +77,17 @@ public struct InfoPlistCustomizationSheetView: View {
 
         let startingBundleID: String = {
             let trimmed = initialBundleID.trimmingCharacters(in: .whitespacesAndNewlines)
-            if appendTeamID && !teamID.isEmpty {
-                if trimmed.hasSuffix(".\(teamID)") {
-                    return trimmed
-                } else {
-                    return "\(trimmed).\(teamID)"
-                }
+            let base: String
+            if !teamID.isEmpty && trimmed.hasSuffix(".\(teamID)") {
+                base = String(trimmed.dropLast((".\(teamID)").count))
+            } else {
+                base = trimmed
             }
-            return trimmed
+            let sanitizedBase = InfoPlistParser.sanitizeBundleID(base)
+            if appendTeamID && !teamID.isEmpty {
+                return "\(sanitizedBase).\(teamID)"
+            }
+            return sanitizedBase
         }()
 
         _bundleID = State(initialValue: startingBundleID)
@@ -121,18 +124,24 @@ public struct InfoPlistCustomizationSheetView: View {
         entries.sort { $0.key.localizedCaseInsensitiveCompare($1.key) == .orderedAscending }
         _rawEntries = State(initialValue: entries)
     }
-
     public var body: some View {
         NavigationView {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 18) {
                     identitySection
                     versionSection
                     capabilitiesSection
                     advancedKeysSection
                 }
-                .padding(18)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
             }
+            .background(Color(UIColor.systemGroupedBackground))
+            .simultaneousGesture(
+                DragGesture().onChanged { _ in
+                    hideKeyboard()
+                }
+            )
             .navigationTitle("Customize Info.plist")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(
@@ -144,8 +153,19 @@ public struct InfoPlistCustomizationSheetView: View {
                 }
                 .font(.system(size: 16, weight: .bold))
             )
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    SwiftUI.Button("Done") {
+                        hideKeyboard()
+                    }
+                }
+            }
         }
         .navigationViewStyle(StackNavigationViewStyle())
+        .sheet(isPresented: $isShowingAddKeySheet) {
+            addKeySheet
+        }
     }
 
     private var resolvedEffectiveBundleID: String {
@@ -166,169 +186,199 @@ public struct InfoPlistCustomizationSheetView: View {
     }
 
     private var identitySection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 6) {
             sectionHeader(title: "APP IDENTITY", icon: "app.badge.checkmark")
 
-            VStack(spacing: 10) {
-                customInputField(
-                    label: "Bundle Identifier",
-                    placeholder: "com.example.app",
-                    text: $bundleID,
-                    autocapitalization: .none
-                )
-                .onChange(of: bundleID) { newValue in
-                    guard appendTeamID && !teamID.isEmpty else {
-                        previousValidBundleID = newValue
-                        return
-                    }
-                    let suffix = ".\(teamID)"
-                    if !newValue.hasSuffix(suffix) {
-                        DispatchQueue.main.async {
-                            bundleID = previousValidBundleID
-                        }
-                    } else {
-                        previousValidBundleID = newValue
-                    }
+            VStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Bundle Identifier")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    SuffixEnforcedTextField(
+                        text: $bundleID,
+                        placeholder: "com.example.app",
+                        suffix: !teamID.isEmpty ? ".\(teamID)" : "",
+                        isSuffixEnforced: appendTeamID,
+                        autocapitalization: .none,
+                        onCommit: { hideKeyboard() }
+                    )
+                    .frame(height: 22)
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
 
-                HStack {
-                    SwiftUI.Button(action: {
-                        appendTeamID.toggle()
-                        guard !teamID.isEmpty else { return }
-                        let suffix = ".\(teamID)"
-                        if appendTeamID {
-                            if !bundleID.hasSuffix(suffix) {
-                                bundleID = "\(bundleID)\(suffix)"
-                            }
-                        } else {
-                            if bundleID.hasSuffix(suffix) {
-                                bundleID = String(bundleID.dropLast(suffix.count))
-                            }
-                        }
-                        previousValidBundleID = bundleID
-                    }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: appendTeamID ? "checkmark.circle.fill" : "circle")
-                                .font(.system(size: 18))
-                                .foregroundColor(appendTeamID ? .blue : .secondary)
-                            Text("Append Team ID to Bundle Identifier")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.primary)
+                Divider().padding(.leading, 16)
+
+                SwiftUI.Button(action: {
+                    appendTeamID.toggle()
+                    guard !teamID.isEmpty else { return }
+                    let suffix = ".\(teamID)"
+                    if appendTeamID {
+                        let clean = InfoPlistParser.sanitizeBundleID(bundleID)
+                        bundleID = clean.hasSuffix(suffix) ? clean : "\(clean)\(suffix)"
+                    } else {
+                        if bundleID.hasSuffix(suffix) {
+                            bundleID = String(bundleID.dropLast(suffix.count))
                         }
                     }
-                    .buttonStyle(.plain)
-                    Spacer()
+                    previousValidBundleID = bundleID
+                }) {
+                    HStack {
+                        Text("Append Team ID to Bundle Identifier")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Image(systemName: appendTeamID ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 20))
+                            .foregroundColor(appendTeamID ? .blue : .secondary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+
+                Divider().padding(.leading, 16)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Display Name")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    TextField("My App", text: $displayName)
+                        .font(.system(size: 15))
+                        .autocapitalization(.words)
+                        .disableAutocorrection(true)
+                        .submitLabel(.done)
+                        .onSubmit { hideKeyboard() }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+            }
+            .background(Color(UIColor.secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            if let existingName = matchingExistingAppName {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.orange)
+                    Text("Matches installed app \"\(existingName)\" — will update existing app")
+                        .font(.footnote)
+                        .foregroundColor(.orange)
                 }
                 .padding(.horizontal, 4)
-
-                if let existingName = matchingExistingAppName {
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.orange)
-                        Text("Matches installed app \"\(existingName)\" — will update existing app")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.orange)
-                        Spacer()
-                    }
+                .padding(.top, 2)
+            } else {
+                Text("If the bundle ID is not present in the database, it will install as a separate app.")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
                     .padding(.horizontal, 4)
-                    .padding(.vertical, 2)
-                } else {
-                    HStack(spacing: 6) {
-                        Text("NOTE: If the bundleid is not present in the database it will install as separate app")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.blue)
-                        Spacer()
-                    }
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 2)
-                }
-
-                customInputField(
-                    label: "Display Name",
-                    placeholder: "My App",
-                    text: $displayName,
-                    autocapitalization: .words
-                )
+                    .padding(.top, 2)
             }
-            .padding(12)
-            .background(Color(UIColor.tertiarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
     }
 
     private var versionSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 6) {
             sectionHeader(title: "VERSIONING", icon: "number")
 
-            VStack(spacing: 10) {
-                HStack(spacing: 10) {
-                    customInputField(
-                        label: "Version",
-                        placeholder: "1.0.0",
-                        text: $versionString,
-                        autocapitalization: .none
-                    )
-                    customInputField(
-                        label: "Build",
-                        placeholder: "1",
-                        text: $buildNumber,
-                        autocapitalization: .none
-                    )
+            VStack(spacing: 0) {
+                HStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Version")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        TextField("1.0.0", text: $versionString)
+                            .font(.system(size: 15))
+                            .autocapitalization(.none)
+                            .disableAutocorrection(true)
+                            .submitLabel(.done)
+                            .onSubmit { hideKeyboard() }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+
+                    Divider().frame(height: 38)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Build")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        TextField("1", text: $buildNumber)
+                            .font(.system(size: 15))
+                            .autocapitalization(.none)
+                            .disableAutocorrection(true)
+                            .submitLabel(.done)
+                            .onSubmit { hideKeyboard() }
+                    }
+                    .frame(width: 90)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
                 }
 
-                customInputField(
-                    label: "Minimum iOS Version",
-                    placeholder: "15.0",
-                    text: $minimumOSVersion,
-                    autocapitalization: .none
-                )
+                Divider().padding(.leading, 16)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Minimum iOS Version")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    TextField("15.0", text: $minimumOSVersion)
+                        .font(.system(size: 15))
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                        .submitLabel(.done)
+                        .onSubmit { hideKeyboard() }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
             }
-            .padding(12)
-            .background(Color(UIColor.tertiarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(Color(UIColor.secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
     }
 
     private var capabilitiesSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 6) {
             sectionHeader(title: "CAPABILITIES & SHARING", icon: "folder.badge.gearshape")
 
-            VStack(spacing: 12) {
+            VStack(spacing: 0) {
                 Toggle(isOn: $fileSharingEnabled) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Enable iTunes File Sharing")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: 15))
                             .foregroundColor(.primary)
                         Text("Exposes Documents directory via Finder/iTunes")
-                            .font(.system(size: 11))
+                            .font(.footnote)
                             .foregroundColor(.secondary)
                     }
                 }
                 .toggleStyle(SwitchToggleStyle(tint: .blue))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 11)
 
-                Divider()
+                Divider().padding(.leading, 16)
 
                 Toggle(isOn: $openingDocumentsInPlace) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Open Documents In Place")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: 15))
                             .foregroundColor(.primary)
                         Text("Allows Files app to edit documents directly")
-                            .font(.system(size: 11))
+                            .font(.footnote)
                             .foregroundColor(.secondary)
                     }
                 }
                 .toggleStyle(SwitchToggleStyle(tint: .blue))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 11)
             }
-            .padding(12)
-            .background(Color(UIColor.tertiarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(Color(UIColor.secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
     }
 
     private var advancedKeysSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack {
                 sectionHeader(title: "ALL RAW KEYS", icon: "ellipsis.curlybraces")
                 Spacer()
@@ -339,83 +389,90 @@ public struct InfoPlistCustomizationSheetView: View {
                 }) {
                     HStack(spacing: 4) {
                         Text(isShowingRawKeys ? "Collapse" : "Expand (\(rawEntries.count))")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.system(size: 13, weight: .medium))
                         Image(systemName: isShowingRawKeys ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.system(size: 11, weight: .semibold))
                     }
                     .foregroundColor(.blue)
+                    .padding(.trailing, 16)
                 }
             }
 
             if isShowingRawKeys {
-                VStack(spacing: 10) {
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 13))
-                            .foregroundColor(.secondary)
-                        TextField("Filter keys...", text: $rawSearchQuery)
-                            .font(.system(size: 13))
-                        if !rawSearchQuery.isEmpty {
-                            SwiftUI.Button(action: { rawSearchQuery = "" }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(.secondary)
+                VStack(spacing: 0) {
+                    HStack(spacing: 8) {
+                        HStack {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 14))
+                                .foregroundColor(.secondary)
+                            TextField("Filter keys...", text: $rawSearchQuery)
+                                .font(.system(size: 14))
+                                .submitLabel(.done)
+                                .onSubmit { hideKeyboard() }
+                            if !rawSearchQuery.isEmpty {
+                                SwiftUI.Button(action: { rawSearchQuery = "" }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(.secondary)
+                                }
                             }
                         }
-                        Spacer()
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color(UIColor.tertiarySystemGroupedBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
                         SwiftUI.Button(action: { isShowingAddKeySheet = true }) {
                             HStack(spacing: 4) {
                                 Image(systemName: "plus")
                                 Text("Add")
                             }
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(.blue)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
                         }
                     }
-                    .padding(8)
-                    .background(Color(UIColor.systemBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .padding(12)
 
                     let filtered = rawEntries.filter {
                         rawSearchQuery.isEmpty || $0.key.localizedCaseInsensitiveContains(rawSearchQuery)
                     }
 
                     if filtered.isEmpty {
+                        Divider().padding(.leading, 16)
                         Text("No matching keys found")
-                            .font(.system(size: 12))
+                            .font(.footnote)
                             .foregroundColor(.secondary)
                             .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.vertical, 8)
+                            .padding(.vertical, 16)
                     } else {
                         ForEach(filtered.indices, id: \.self) { index in
+                            Divider().padding(.leading, 16)
                             let item = filtered[index]
                             rawKeyRow(for: item)
                         }
                     }
                 }
-                .padding(12)
-                .background(Color(UIColor.tertiarySystemGroupedBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .background(Color(UIColor.secondarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
-        }
-        .sheet(isPresented: $isShowingAddKeySheet) {
-            addKeySheet
         }
     }
 
     private func rawKeyRow(for item: RawPlistEntry) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text(item.key)
-                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .font(.system(size: 13, weight: .medium, design: .monospaced))
                     .foregroundColor(.primary)
                     .lineLimit(1)
                 Spacer()
                 Text(item.type.rawValue)
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.system(size: 10, weight: .semibold))
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(Color.blue.opacity(0.15))
+                    .background(Color.blue.opacity(0.12))
                     .foregroundColor(.blue)
                     .clipShape(Capsule())
 
@@ -423,7 +480,7 @@ public struct InfoPlistCustomizationSheetView: View {
                     rawEntries.removeAll { $0.key == item.key }
                 }) {
                     Image(systemName: "trash")
-                        .font(.system(size: 11))
+                        .font(.system(size: 12))
                         .foregroundColor(.red.opacity(0.8))
                 }
                 .buttonStyle(.plain)
@@ -441,16 +498,18 @@ public struct InfoPlistCustomizationSheetView: View {
                     .pickerStyle(.segmented)
                 } else {
                     TextField("Value", text: $rawEntries[targetIdx].value)
-                        .font(.system(size: 12, design: .monospaced))
-                        .padding(6)
-                        .background(Color(UIColor.systemBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        .font(.system(size: 13, design: .monospaced))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color(UIColor.tertiarySystemGroupedBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .submitLabel(.done)
+                        .onSubmit { hideKeyboard() }
                 }
             }
         }
-        .padding(8)
-        .background(Color(UIColor.systemBackground).opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
     }
 
     private var addKeySheet: some View {
@@ -506,34 +565,19 @@ public struct InfoPlistCustomizationSheetView: View {
     }
 
     private func sectionHeader(title: String, icon: String) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 5) {
             Image(systemName: icon)
-                .font(.system(size: 11, weight: .bold))
-                .foregroundColor(.blue)
+                .font(.system(size: 11, weight: .semibold))
             Text(title)
-                .font(.system(size: 11, weight: .bold))
-                .foregroundColor(.secondary)
+                .font(.caption)
+                .fontWeight(.semibold)
         }
+        .foregroundColor(.secondary)
+        .padding(.leading, 4)
     }
 
-    private func customInputField(
-        label: String,
-        placeholder: String,
-        text: Binding<String>,
-        autocapitalization: UITextAutocapitalizationType
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(.secondary)
-            TextField(placeholder, text: text)
-                .font(.system(size: 13, weight: .regular))
-                .autocapitalization(autocapitalization)
-                .disableAutocorrection(true)
-                .padding(8)
-                .background(Color(UIColor.systemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        }
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 
     private func handleProceed() {
@@ -542,10 +586,13 @@ public struct InfoPlistCustomizationSheetView: View {
         let trimmed = bundleID.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanBaseID: String = {
             let suffix = ".\(teamID)"
+            let base: String
             if appendTeamID && !teamID.isEmpty && trimmed.hasSuffix(suffix) {
-                return String(trimmed.dropLast(suffix.count))
+                base = String(trimmed.dropLast(suffix.count))
+            } else {
+                base = trimmed
             }
-            return trimmed
+            return InfoPlistParser.sanitizeBundleID(base)
         }()
         if !cleanBaseID.isEmpty {
             updated["CFBundleIdentifier"] = cleanBaseID

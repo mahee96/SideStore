@@ -54,7 +54,14 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
             }()
 
             let initialBundleID = (cachedPlist?["CFBundleIdentifier"] as? String) ?? context.targetBundleIdentifier
-            let teamID = context.installedApp?.team?.identifier ?? AuthManager.shared.team?.identifier ?? ""
+            let installedAppTeamID = context.installedApp?.team?.identifier
+            let authTeam = AuthManager.shared.team
+            debugLog("[UserCustomizationOperation] initialBundleID='\(initialBundleID)', installedAppTeamID='\(installedAppTeamID ?? "nil")', authTeamID='\(authTeam?.identifier ?? "nil")', appendTeamID=\(context.appendTeamID)")
+            guard let teamID = installedAppTeamID ?? authTeam?.identifier, !teamID.isEmpty else {
+                debugLog("[UserCustomizationOperation] FAILED: installedAppTeamID='\(installedAppTeamID ?? "nil")', authTeamID='\(authTeam?.identifier ?? "nil")'")
+                throw OperationError.invalidParameters("Active developer team identifier is missing.")
+            }
+            debugLog("[UserCustomizationOperation] resolved teamID='\(teamID)'")
 
             // Fetch installed apps to detect existing installations by authoritative bundle ID
             let installedApps: [InstalledApp] = context.dbBackgroundContext.performAndWait {
