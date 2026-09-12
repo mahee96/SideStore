@@ -240,11 +240,11 @@ private extension AppIDsViewController
                 self.activeTeam = team
                 if let team = self.activeTeam
                 {
-                    self.dataSource.fetchRequest.predicate = NSPredicate(format: "%K == %@", #keyPath(AppID.team.identifier), team.identifier)
+                    self.dataSource.fetchedResultsController.fetchRequest.predicate = NSPredicate(format: "%K == %@", #keyPath(AppID.team.identifier), team.identifier)
                 }
                 else
                 {
-                    self.dataSource.fetchRequest.predicate = NSPredicate(value: false)
+                    self.dataSource.fetchedResultsController.fetchRequest.predicate = NSPredicate(value: false)
                 }
                 try? self.dataSource.fetchedResultsController.performFetch()
                 self.collectionView.reloadData()

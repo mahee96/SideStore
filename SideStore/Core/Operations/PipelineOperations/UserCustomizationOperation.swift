@@ -57,7 +57,7 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
             let installedAppTeamID = context.installedApp?.team?.identifier
             let authTeam = try await AuthManager.shared.getAuthenticatedTeam()
             debugLog("[UserCustomizationOperation] initialBundleID='\(initialBundleID)', installedAppTeamID='\(installedAppTeamID ?? "nil")', authTeamID='\(authTeam.identifier)', appendTeamID=\(context.appendTeamID)")
-            guard let teamID = installedAppTeamID ?? authTeam.identifier, !teamID.isEmpty else {
+            guard let teamID = installedAppTeamID, !teamID.isEmpty else {
                 debugLog("[UserCustomizationOperation] FAILED: installedAppTeamID='\(installedAppTeamID ?? "nil")', authTeamID='\(authTeam.identifier)'")
                 throw OperationError.invalidParameters("Active developer team identifier is missing.")
             }

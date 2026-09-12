@@ -63,25 +63,8 @@ final class SignInOperation: BaseStandaloneOperation<StandaloneOperationContext,
         try await super.executePreconditionCheck(parentProgress: parentProgress)
 
         do {
-            let authResult: SignInResult
-
-            if var session = AuthManager.shared.session,
-               let team = try? await AuthManager.shared.getAuthenticatedTeam(),
-               (self.skipCertificateProvisioning || CertificateManager.shared.activeCertificate != nil)
-            {
-                session.anisetteData = try await self.getAnisetteData()
-                let certToUse = CertificateManager.shared.activeCertificate?.certificate
-                
-                self.debugLog("[SignInOperation] Using cached session, team, certificate")
-                authResult = SignInResult(
-                    team: team, 
-                    certificate: certToUse, 
-                    session: session
-                )
-            } else {
-                authResult = try await self.startAuthentication { [weak self] progress in
-                    self?.setProgress(progress)
-                }
+            let authResult = try await self.startAuthentication { [weak self] progress in
+                self?.setProgress(progress)
             }
             
             try await self.finalizeAuthentication(result: .success(authResult))
@@ -105,7 +88,6 @@ final class SignInOperation: BaseStandaloneOperation<StandaloneOperationContext,
         } else {
             try await self.authenticationLoop()
         }
-        AuthManager.shared.session = session
 
         let authResult = try await self.provisioningLoop(
             account: account,

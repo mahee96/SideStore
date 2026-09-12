@@ -45,9 +45,6 @@ class DeveloperServicesViewModel: ObservableObject {
         defer { self.isLoading = false }
 
         do {
-            if isPullToRefresh {
-                AuthManager.shared.session = nil
-            }
             self.team = try await AuthManager.shared.getAuthenticatedTeam()
             async let fetchedAppIDs = DeveloperPortalProxy.shared.fetchAppIDs()
             async let fetchedProfiles = DeveloperPortalProxy.shared.listProvisioningProfiles()
@@ -73,9 +70,6 @@ class DeveloperServicesViewModel: ObservableObject {
         self.isLoading = true
         defer { self.isLoading = false }
         do {
-            if isPullToRefresh {
-                AuthManager.shared.session = nil
-            }
             let certs = try await DeveloperPortalProxy.shared.fetchCertificates()
             self.certificates = certs.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         } catch {
@@ -105,9 +99,6 @@ class DeveloperServicesViewModel: ObservableObject {
         self.isLoading = true
         defer { self.isLoading = false }
         do {
-            if isPullToRefresh {
-                AuthManager.shared.session = nil
-            }
             let ids = try await DeveloperPortalProxy.shared.fetchAppIDs()
             self.appIDs = ids.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         } catch {
@@ -166,9 +157,6 @@ class DeveloperServicesViewModel: ObservableObject {
         self.isLoading = true
         defer { self.isLoading = false }
         do {
-            if isPullToRefresh {
-                AuthManager.shared.session = nil
-            }
             let profs = try await DeveloperPortalProxy.shared.listProvisioningProfiles()
             self.profiles = profs.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         } catch {
@@ -318,9 +306,6 @@ class DeveloperServicesViewModel: ObservableObject {
         self.isLoading = true
         defer { self.isLoading = false }
         do {
-            if isPullToRefresh {
-                AuthManager.shared.session = nil
-            }
             let groups = try await DeveloperPortalProxy.shared.fetchAppGroups()
             self.appGroups = groups.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         } catch {
@@ -382,9 +367,6 @@ class DeveloperServicesViewModel: ObservableObject {
         self.isLoading = true
         defer { self.isLoading = false }
         do {
-            if isPullToRefresh {
-                AuthManager.shared.session = nil
-            }
             let devs = try await DeveloperPortalProxy.shared.fetchDevices(types: .all)
             self.devices = devs.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         } catch {

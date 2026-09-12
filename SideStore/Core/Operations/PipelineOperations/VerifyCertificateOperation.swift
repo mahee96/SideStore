@@ -182,7 +182,6 @@ final class VerifyCertificateOperation: BasePipelineOperation<InstallAppOperatio
                     }
                 }
             }
-        }
         
         switch result {
         case .valid(let isCrossSigned):
