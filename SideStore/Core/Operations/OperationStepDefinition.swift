@@ -38,10 +38,10 @@ struct StandaloneExecutionStep: Hashable {
 struct PipelineStepDefinition {
     static let install: [PipelineExecutionStep] = [
         PipelineExecutionStep(.downloadApp,                      20),
-        PipelineExecutionStep(.userCustomization,                 2),
         PipelineExecutionStep(.verifyApp,                         1),
         PipelineExecutionStep(.cacheApp,                          1),
         PipelineExecutionStep(.stageApp,                          1),
+        PipelineExecutionStep(.userCustomization,                 2),
         PipelineExecutionStep(.updateAppCertificate,              5),
         PipelineExecutionStep(.verifyCertificate,                 5),
         PipelineExecutionStep(.changeAppIcon,                     1),

@@ -20,29 +20,70 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         self.setProgress(10)
 
-        guard UserDefaults.standard.customizeAppId else {
+        let handler = context.handler.userCustomizationHandler
+
+        if UserDefaults.standard.customizeInfoPlist {
+            let initialPlist: [String: Any] = {
+                if let targetAppBundle = context.targetAppBundle,
+                   let dict = targetAppBundle.bundle.completeInfoDictionary ?? (NSDictionary(contentsOf: targetAppBundle.bundle.infoPlistURL) as? [String: Any]) {
+                    return dict
+                }
+                return ["CFBundleIdentifier": context.targetBundleIdentifier]
+            }()
+
+            let initialBundleID = context.targetBundleIdentifier
+            self.setProgress(40)
+
+            guard let result = try await handler.resolveInfoPlistCustomization(
+                initialPlist: initialPlist,
+                initialBundleID: initialBundleID,
+                appendTeamID: context.appendTeamID
+            ) else {
+                throw OperationError.cancelled
+            }
+
+            context.customInfoPlist = result.modifiedPlist
+            context.appendTeamID = result.appendTeamID
+
+            if let customID = result.modifiedPlist["CFBundleIdentifier"] as? String,
+               !customID.isEmpty,
+               customID != context.bundleIdentifier {
+                context.customBundleIdentifier = customID
+            } else {
+                context.customBundleIdentifier = nil
+            }
+
+            if let targetAppBundle = context.targetAppBundle {
+                if var currentDict = (NSDictionary(contentsOf: targetAppBundle.bundle.infoPlistURL) as? [String: Any]) {
+                    for (k, v) in result.modifiedPlist {
+                        currentDict[k] = v
+                    }
+                    (currentDict as NSDictionary).write(to: targetAppBundle.bundle.infoPlistURL, atomically: true)
+                }
+            }
+
+            self.setProgress(100)
+            return context.targetBundleIdentifier
+        } else if UserDefaults.standard.customizeAppId {
+            let initialBundleID = context.targetBundleIdentifier
+            self.setProgress(40)
+            
+            guard let result = try await handler.resolveBundleIDOverride(initialBundleID: initialBundleID) else {
+                throw OperationError.cancelled
+            }
+            
+            context.appendTeamID = result.appendTeamID
+            if result.customID != context.bundleIdentifier {
+                context.customBundleIdentifier = result.customID
+            } else {
+                context.customBundleIdentifier = nil
+            }
+
+            self.setProgress(100)
+            return context.targetBundleIdentifier
+        } else {
             self.setProgress(100)
             return nil
         }
-
-        let handler = context.handler.userCustomizationHandler
-
-        let initialBundleID = context.targetBundleIdentifier
-        self.setProgress(40)
-        
-        guard let result = try await handler.resolveBundleIDOverride(initialBundleID: initialBundleID) else {
-            throw OperationError.cancelled
-        }
-        
-        context.appendTeamID = result.appendTeamID
-        if result.customID != context.bundleIdentifier {
-            context.customBundleIdentifier = result.customID
-        } else {
-            context.customBundleIdentifier = nil
-        }
-
-        
-        self.setProgress(100)
-        return context.targetBundleIdentifier
     }
 }

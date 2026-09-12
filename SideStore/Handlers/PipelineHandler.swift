@@ -222,6 +222,24 @@ final class PipelineHandler: PipelineExecutionHandler,
     }
     
     @MainActor
+    func resolveInfoPlistCustomization(
+        initialPlist: [String: Any],
+        initialBundleID: String,
+        appendTeamID: Bool
+    ) async throws -> (modifiedPlist: [String: Any], appendTeamID: Bool)? {
+        guard let presenter = self.activePresenter else {
+            return (initialPlist, appendTeamID)
+        }
+        
+        return await InfoPlistCustomizationView.present(
+            from: presenter,
+            initialPlist: initialPlist,
+            initialBundleID: initialBundleID,
+            appendTeamID: appendTeamID
+        )
+    }
+
+    @MainActor
     func resolveBundleIDOverride(initialBundleID: String) async throws -> (customID: String, appendTeamID: Bool)? {
         guard let presenter = self.activePresenter else {
             return (initialBundleID, true)

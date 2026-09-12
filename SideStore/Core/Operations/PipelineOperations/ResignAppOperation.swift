@@ -165,6 +165,12 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
             infoDictionary[key] = value
         }
 
+        if let customPlist = context.customInfoPlist {
+            for (key, value) in customPlist {
+                infoDictionary[key] = value
+            }
+        }
+
         if let appGroups = profile.entitlements[.appGroups] as? [String] {
             infoDictionary[Bundle.Info.appGroups] = appGroups
 

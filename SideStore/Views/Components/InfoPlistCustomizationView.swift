@@ -1,0 +1,613 @@
+//
+//  InfoPlistCustomizationView.swift
+//  SideStore
+//
+//  Created by Magesh K on 13/9/26.
+//  Copyright © 2026 SideStore. All rights reserved.
+//
+
+import SwiftUI
+import UIKit
+
+public struct InfoPlistCustomizationView: View {
+    public let initialPlist: [String: Any]
+    public let initialBundleID: String
+    public let onProceed: ([String: Any], Bool) -> Void
+    public let onCancel: () -> Void
+
+    @State private var bundleID: String
+    @State private var appendTeamID: Bool
+    @State private var displayName: String
+    @State private var versionString: String
+    @State private var buildNumber: String
+    @State private var minimumOSVersion: String
+    @State private var fileSharingEnabled: Bool
+    @State private var openingDocumentsInPlace: Bool
+
+    @State private var rawEntries: [RawPlistEntry] = []
+    @State private var rawSearchQuery: String = ""
+    @State private var isShowingRawKeys: Bool = false
+    @State private var isShowingAddKeySheet: Bool = false
+    @State private var newKeyName: String = ""
+    @State private var newKeyValue: String = ""
+    @State private var newKeyType: RawPlistType = .string
+
+    public enum RawPlistType: String, CaseIterable, Identifiable {
+        case string = "String"
+        case boolean = "Boolean"
+        case number = "Number"
+
+        public var id: String { rawValue }
+    }
+
+    public struct RawPlistEntry: Identifiable {
+        public let id = UUID()
+        public var key: String
+        public var value: String
+        public var type: RawPlistType
+    }
+
+    public init(
+        initialPlist: [String: Any],
+        initialBundleID: String,
+        appendTeamID: Bool = true,
+        onProceed: @escaping ([String: Any], Bool) -> Void,
+        onCancel: @escaping () -> Void
+    ) {
+        self.initialPlist = initialPlist
+        self.initialBundleID = initialBundleID
+        self.onProceed = onProceed
+        self.onCancel = onCancel
+
+        let initialName = (initialPlist["CFBundleDisplayName"] as? String)
+            ?? (initialPlist["CFBundleName"] as? String)
+            ?? ""
+        let initialVersion = (initialPlist["CFBundleShortVersionString"] as? String) ?? ""
+        let initialBuild = (initialPlist["CFBundleVersion"] as? String) ?? ""
+        let initialMinOS = (initialPlist["MinimumOSVersion"] as? String) ?? ""
+        let initialFileSharing = (initialPlist["UIFileSharingEnabled"] as? Bool) ?? false
+        let initialDocInPlace = (initialPlist["LSSupportsOpeningDocumentsInPlace"] as? Bool) ?? false
+
+        _bundleID = State(initialValue: initialBundleID)
+        _appendTeamID = State(initialValue: appendTeamID)
+        _displayName = State(initialValue: initialName)
+        _versionString = State(initialValue: initialVersion)
+        _buildNumber = State(initialValue: initialBuild)
+        _minimumOSVersion = State(initialValue: initialMinOS)
+        _fileSharingEnabled = State(initialValue: initialFileSharing)
+        _openingDocumentsInPlace = State(initialValue: initialDocInPlace)
+
+        let standardKeys: Set<String> = [
+            "CFBundleIdentifier",
+            "CFBundleDisplayName",
+            "CFBundleName",
+            "CFBundleShortVersionString",
+            "CFBundleVersion",
+            "MinimumOSVersion",
+            "UIFileSharingEnabled",
+            "LSSupportsOpeningDocumentsInPlace"
+        ]
+
+        var entries: [RawPlistEntry] = []
+        for (key, val) in initialPlist where !standardKeys.contains(key) {
+            if let boolVal = val as? Bool {
+                entries.append(RawPlistEntry(key: key, value: boolVal ? "YES" : "NO", type: .boolean))
+            } else if let numVal = val as? NSNumber {
+                entries.append(RawPlistEntry(key: key, value: numVal.stringValue, type: .number))
+            } else if let strVal = val as? String {
+                entries.append(RawPlistEntry(key: key, value: strVal, type: .string))
+            }
+        }
+        entries.sort { $0.key.localizedCaseInsensitiveCompare($1.key) == .orderedAscending }
+        _rawEntries = State(initialValue: entries)
+    }
+
+    public var body: some View {
+        ZStack {
+            Color.black.opacity(0.55)
+                .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                headerView
+
+                Divider()
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        identitySection
+                        versionSection
+                        capabilitiesSection
+                        advancedKeysSection
+                    }
+                    .padding(18)
+                }
+
+                Divider()
+
+                actionBar
+            }
+            .frame(maxWidth: 480, maxHeight: 640)
+            .background(Color(UIColor.secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.4), radius: 24, x: 0, y: 12)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 32)
+        }
+        .sheet(isPresented: $isShowingAddKeySheet) {
+            addKeySheet
+        }
+    }
+
+    private var headerView: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(LinearGradient(
+                        colors: [Color.blue.opacity(0.85), Color.purple.opacity(0.85)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                    .frame(width: 38, height: 38)
+                Image(systemName: "slider.horizontal.3")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Customize Info.plist")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.primary)
+                Text("Review and adjust app metadata before installing")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .background(Color(UIColor.tertiarySystemGroupedBackground).opacity(0.6))
+    }
+
+    private var identitySection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionHeader(title: "APP IDENTITY", icon: "app.badge.checkmark")
+
+            VStack(spacing: 10) {
+                customInputField(
+                    label: "Bundle Identifier",
+                    placeholder: "com.example.app",
+                    text: $bundleID,
+                    autocapitalization: .none
+                )
+
+                HStack {
+                    SwiftUI.Button(action: { appendTeamID.toggle() }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: appendTeamID ? "checkmark.circle.fill" : "circle")
+                                .font(.system(size: 18))
+                                .foregroundColor(appendTeamID ? .blue : .secondary)
+                            Text("Append Team ID to Bundle Identifier")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    Spacer()
+                }
+                .padding(.horizontal, 4)
+
+                customInputField(
+                    label: "Display Name",
+                    placeholder: "My App",
+                    text: $displayName,
+                    autocapitalization: .words
+                )
+            }
+            .padding(12)
+            .background(Color(UIColor.tertiarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+    }
+
+    private var versionSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionHeader(title: "VERSIONING", icon: "number")
+
+            VStack(spacing: 10) {
+                HStack(spacing: 10) {
+                    customInputField(
+                        label: "Version",
+                        placeholder: "1.0.0",
+                        text: $versionString,
+                        autocapitalization: .none
+                    )
+                    customInputField(
+                        label: "Build",
+                        placeholder: "1",
+                        text: $buildNumber,
+                        autocapitalization: .none
+                    )
+                }
+
+                customInputField(
+                    label: "Minimum iOS Version",
+                    placeholder: "15.0",
+                    text: $minimumOSVersion,
+                    autocapitalization: .none
+                )
+            }
+            .padding(12)
+            .background(Color(UIColor.tertiarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+    }
+
+    private var capabilitiesSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionHeader(title: "CAPABILITIES & SHARING", icon: "folder.badge.gearshape")
+
+            VStack(spacing: 12) {
+                Toggle(isOn: $fileSharingEnabled) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Enable iTunes File Sharing")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.primary)
+                        Text("Exposes Documents directory via Finder/iTunes")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .toggleStyle(SwitchToggleStyle(tint: .blue))
+
+                Divider()
+
+                Toggle(isOn: $openingDocumentsInPlace) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Open Documents In Place")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.primary)
+                        Text("Allows Files app to edit documents directly")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .toggleStyle(SwitchToggleStyle(tint: .blue))
+            }
+            .padding(12)
+            .background(Color(UIColor.tertiarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+    }
+
+    private var advancedKeysSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                sectionHeader(title: "ALL RAW KEYS", icon: "ellipsis.curlybraces")
+                Spacer()
+                SwiftUI.Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isShowingRawKeys.toggle()
+                    }
+                }) {
+                    HStack(spacing: 4) {
+                        Text(isShowingRawKeys ? "Collapse" : "Expand (\(rawEntries.count))")
+                            .font(.system(size: 12, weight: .semibold))
+                        Image(systemName: isShowingRawKeys ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 10, weight: .semibold))
+                    }
+                    .foregroundColor(.blue)
+                }
+            }
+
+            if isShowingRawKeys {
+                VStack(spacing: 10) {
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 13))
+                            .foregroundColor(.secondary)
+                        TextField("Filter keys...", text: $rawSearchQuery)
+                            .font(.system(size: 13))
+                        if !rawSearchQuery.isEmpty {
+                            SwiftUI.Button(action: { rawSearchQuery = "" }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        Spacer()
+                        SwiftUI.Button(action: { isShowingAddKeySheet = true }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "plus")
+                                Text("Add")
+                            }
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.blue)
+                        }
+                    }
+                    .padding(8)
+                    .background(Color(UIColor.systemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                    let filtered = rawEntries.filter {
+                        rawSearchQuery.isEmpty || $0.key.localizedCaseInsensitiveContains(rawSearchQuery)
+                    }
+
+                    if filtered.isEmpty {
+                        Text("No matching keys found")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.vertical, 8)
+                    } else {
+                        ForEach(filtered.indices, id: \.self) { index in
+                            let item = filtered[index]
+                            rawKeyRow(for: item)
+                        }
+                    }
+                }
+                .padding(12)
+                .background(Color(UIColor.tertiarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+        }
+    }
+
+    private func rawKeyRow(for item: RawPlistEntry) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(item.key)
+                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                Spacer()
+                Text(item.type.rawValue)
+                    .font(.system(size: 9, weight: .bold))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.blue.opacity(0.15))
+                    .foregroundColor(.blue)
+                    .clipShape(Capsule())
+
+                SwiftUI.Button(action: {
+                    rawEntries.removeAll { $0.key == item.key }
+                }) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 11))
+                        .foregroundColor(.red.opacity(0.8))
+                }
+                .buttonStyle(.plain)
+            }
+
+            if let targetIdx = rawEntries.firstIndex(where: { $0.key == item.key }) {
+                if item.type == .boolean {
+                    Picker("", selection: Binding(
+                        get: { rawEntries[targetIdx].value == "YES" },
+                        set: { rawEntries[targetIdx].value = $0 ? "YES" : "NO" }
+                    )) {
+                        Text("YES").tag(true)
+                        Text("NO").tag(false)
+                    }
+                    .pickerStyle(.segmented)
+                } else {
+                    TextField("Value", text: $rawEntries[targetIdx].value)
+                        .font(.system(size: 12, design: .monospaced))
+                        .padding(6)
+                        .background(Color(UIColor.systemBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                }
+            }
+        }
+        .padding(8)
+        .background(Color(UIColor.systemBackground).opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    private var actionBar: some View {
+        HStack(spacing: 12) {
+            SwiftUI.Button(action: onCancel) {
+                Text("Cancel")
+                    .font(.system(size: 15, weight: .medium))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color(UIColor.tertiarySystemGroupedBackground))
+                    .foregroundColor(.secondary)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .buttonStyle(.plain)
+
+            SwiftUI.Button(action: handleProceed) {
+                Text("Proceed")
+                    .font(.system(size: 15, weight: .bold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+        .background(Color(UIColor.tertiarySystemGroupedBackground).opacity(0.4))
+    }
+
+    private var addKeySheet: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("Key Name")) {
+                    TextField("e.g. CFBundleURLTypes", text: $newKeyName)
+                        .autocapitalization(.none)
+                }
+
+                Section(header: Text("Value Type")) {
+                    Picker("Type", selection: $newKeyType) {
+                        ForEach(RawPlistType.allCases) { type in
+                            Text(type.rawValue).tag(type)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                Section(header: Text("Value")) {
+                    if newKeyType == .boolean {
+                        Picker("Boolean Value", selection: $newKeyValue) {
+                            Text("YES").tag("YES")
+                            Text("NO").tag("NO")
+                        }
+                        .pickerStyle(.segmented)
+                    } else {
+                        TextField("Value", text: $newKeyValue)
+                            .autocapitalization(.none)
+                    }
+                }
+            }
+            .navigationTitle("Add Plist Key")
+            .navigationBarItems(
+                leading: SwiftUI.Button("Cancel") {
+                    newKeyName = ""
+                    newKeyValue = ""
+                    isShowingAddKeySheet = false
+                },
+                trailing: SwiftUI.Button("Add") {
+                    let trimmed = newKeyName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmed.isEmpty else { return }
+                    rawEntries.removeAll { $0.key == trimmed }
+                    let finalVal = newKeyType == .boolean && newKeyValue.isEmpty ? "YES" : newKeyValue
+                    rawEntries.append(RawPlistEntry(key: trimmed, value: finalVal, type: newKeyType))
+                    newKeyName = ""
+                    newKeyValue = ""
+                    isShowingAddKeySheet = false
+                }
+                .disabled(newKeyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            )
+        }
+    }
+
+    private func sectionHeader(title: String, icon: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(.blue)
+            Text(title)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private func customInputField(
+        label: String,
+        placeholder: String,
+        text: Binding<String>,
+        autocapitalization: UITextAutocapitalizationType
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.secondary)
+            TextField(placeholder, text: text)
+                .font(.system(size: 13, weight: .regular))
+                .autocapitalization(autocapitalization)
+                .disableAutocorrection(true)
+                .padding(8)
+                .background(Color(UIColor.systemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+    }
+
+    private func handleProceed() {
+        var updated = initialPlist
+
+        let cleanBundleID = bundleID.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !cleanBundleID.isEmpty {
+            updated["CFBundleIdentifier"] = cleanBundleID
+        }
+
+        let cleanDisplayName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !cleanDisplayName.isEmpty {
+            updated["CFBundleDisplayName"] = cleanDisplayName
+            updated["CFBundleName"] = cleanDisplayName
+        }
+
+        let cleanVersion = versionString.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !cleanVersion.isEmpty {
+            updated["CFBundleShortVersionString"] = cleanVersion
+        }
+
+        let cleanBuild = buildNumber.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !cleanBuild.isEmpty {
+            updated["CFBundleVersion"] = cleanBuild
+        }
+
+        let cleanMinOS = minimumOSVersion.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !cleanMinOS.isEmpty {
+            updated["MinimumOSVersion"] = cleanMinOS
+        }
+
+        updated["UIFileSharingEnabled"] = fileSharingEnabled
+        updated["LSSupportsOpeningDocumentsInPlace"] = openingDocumentsInPlace
+
+        for entry in rawEntries {
+            let key = entry.key.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !key.isEmpty else { continue }
+            switch entry.type {
+            case .boolean:
+                updated[key] = (entry.value.uppercased() == "YES" || entry.value == "1" || entry.value.lowercased() == "true")
+            case .number:
+                if let intVal = Int(entry.value) {
+                    updated[key] = intVal
+                } else if let doubleVal = Double(entry.value) {
+                    updated[key] = doubleVal
+                } else {
+                    updated[key] = entry.value
+                }
+            case .string:
+                updated[key] = entry.value
+            }
+        }
+
+        onProceed(updated, appendTeamID)
+    }
+}
+
+extension InfoPlistCustomizationView {
+    @MainActor
+    public static func present(
+        from presenter: UIViewController,
+        initialPlist: [String: Any],
+        initialBundleID: String,
+        appendTeamID: Bool = true
+    ) async -> (modifiedPlist: [String: Any], appendTeamID: Bool)? {
+        await withCheckedContinuation { continuation in
+            var hostingController: UIHostingController<AnyView>?
+
+            let view = InfoPlistCustomizationView(
+                initialPlist: initialPlist,
+                initialBundleID: initialBundleID,
+                appendTeamID: appendTeamID,
+                onProceed: { modifiedPlist, shouldAppend in
+                    hostingController?.dismiss(animated: true) {
+                        continuation.resume(returning: (modifiedPlist, shouldAppend))
+                    }
+                },
+                onCancel: {
+                    hostingController?.dismiss(animated: true) {
+                        continuation.resume(returning: nil)
+                    }
+                }
+            )
+
+            let controller = UIHostingController(rootView: AnyView(view))
+            controller.modalPresentationStyle = .overFullScreen
+            controller.modalTransitionStyle = .crossDissolve
+            controller.view.backgroundColor = .clear
+            hostingController = controller
+
+            presenter.present(controller, animated: true)
+        }
+    }
+}

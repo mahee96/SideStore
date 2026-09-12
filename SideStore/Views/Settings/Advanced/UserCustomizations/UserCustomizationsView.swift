@@ -18,6 +18,7 @@ struct UserCustomizationsView: View {
     @State private var selectedBackend: GatewayBackend = selectedGatewayBackendCache
     @State private var useOnDeviceAnisette: Bool = UserDefaults.standard.useOnDeviceAnisette
     @State private var showAnisetteRestartConfirmation: Bool = false
+    @State private var customizeInfoPlist: Bool = UserDefaults.standard.customizeInfoPlist
     @State private var customizeAppId: Bool = UserDefaults.standard.customizeAppId
     @State private var customizeAppExtensions: AppExtensionCustomization = UserDefaults.standard.customizeAppExtensions
     @State private var autoFixAppGroupIDs: Bool = UserDefaults.standard.autoFixAppGroupIDs
@@ -174,13 +175,25 @@ struct UserCustomizationsView: View {
                         .padding(.horizontal, 16)
                     
                     VStack(spacing: 0) {
+                        toggleRow(title: "Customize Info.plist", isOn: Binding(
+                            get: { customizeInfoPlist },
+                            set: { newValue in
+                                customizeInfoPlist = newValue
+                                UserDefaults.standard.customizeInfoPlist = newValue
+                            }
+                        ))
+                        
+                        divider
+                        
                         toggleRow(title: "Customize AppID", isOn: Binding(
-                            get: { customizeAppId },
+                            get: { customizeInfoPlist ? true : customizeAppId },
                             set: { newValue in
                                 customizeAppId = newValue
                                 UserDefaults.standard.customizeAppId = newValue
                             }
                         ))
+                        .disabled(customizeInfoPlist)
+                        .opacity(customizeInfoPlist ? 0.4 : 1.0)
                         
                         divider
                         
