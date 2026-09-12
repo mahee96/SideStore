@@ -233,7 +233,17 @@ final class PipelineHandler: PipelineExecutionHandler,
             return (initialPlist, appendTeamID)
         }
         
+        /*
         return await InfoPlistCustomizationView.present(
+            from: presenter,
+            initialPlist: initialPlist,
+            initialBundleID: initialBundleID,
+            appendTeamID: appendTeamID,
+            installedAppIdentities: installedAppIdentities,
+            teamID: teamID
+        )
+        */
+        return await InfoPlistCustomizationSheetView.present(
             from: presenter,
             initialPlist: initialPlist,
             initialBundleID: initialBundleID,
