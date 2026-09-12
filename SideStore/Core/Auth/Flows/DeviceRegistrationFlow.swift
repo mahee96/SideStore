@@ -11,7 +11,7 @@ import Foundation
 import SideSign
 import Minimuxer
 
-public protocol DeviceProvisioningHandler: AnyObject, Sendable {
+protocol DeviceProvisioningHandler: AnyObject, Sendable {
     func resolveDeviceRegistrationErrors(_ error: Error) async -> ProvisioningErrorDecision
 }
 
@@ -62,7 +62,7 @@ final class DeviceRegistrationFlow: @unchecked Sendable {
             
             guard let udid = deviceUDID, !udid.isEmpty, udid != "XXXXX-XXXX-XXXXX-XXXX" else {
                 debugLog("[DeviceRegistrationFlow] Failed to fetch device UDID.")
-                throw OperationError.unknownUDID
+                throw OperationError.unknownUDID(reason: "No valid UDID found in minimuxer response or static pairing file.")
             }
             
             if isCellularEnabled {

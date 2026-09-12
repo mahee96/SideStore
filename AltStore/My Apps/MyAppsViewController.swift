@@ -1217,7 +1217,9 @@ private extension MyAppsViewController
                     
             if !UserDefaults.standard.isAppLimitDisabled && UserDefaults.standard.activeAppsLimit != nil
             {
-                guard let appBundle = ALTApplication(fileURL: installedApp.fileURL) else { return finish(.failure(OperationError.invalidApp)) }
+                guard let appBundle = ALTApplication(fileURL: installedApp.fileURL) else {
+                    return finish(.failure(OperationError.invalidApp(reason: "Could not load app bundle at '\(installedApp.fileURL.lastPathComponent)'")))
+                }
                 
                 AppManager.shared.deactivateApps(for: appBundle, presentingViewController: self) { result in
                     installedApp.managedObjectContext?.perform {

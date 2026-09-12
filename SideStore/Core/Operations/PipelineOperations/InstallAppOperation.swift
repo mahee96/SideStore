@@ -50,7 +50,7 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
 
         #if !targetEnvironment(simulator)
         guard resignedAppBundle.provisioningProfile != nil else {
-            throw OperationError.invalidApp
+            throw OperationError.missingProvisioningProfile(reason: "Resigned app bundle '\(resignedAppBundle.bundleIdentifier)' is missing its embedded provisioning profile.")
         }
         #endif
 

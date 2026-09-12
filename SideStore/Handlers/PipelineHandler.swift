@@ -70,7 +70,7 @@ final class PipelineHandler: PipelineExecutionHandler,
     @MainActor
     func reviewPermissions(_ permissions: [ALTEntitlement], for app: AppProtocol, mode: PermissionReviewMode) async throws {
         guard let presenter = self.activePresenter else {
-            throw OperationError.invalidOperationContext("PipelineHandler: Cannot review permissions because presenting view controller is unavailable")
+            throw OperationError.invalidParameters("PipelineHandler: Cannot review permissions because presenting view controller is unavailable")
         }
         let reviewPermissionsViewController = ReviewPermissionsViewController(app: app, permissions: permissions, mode: mode)
         let navigationController = UINavigationController(rootViewController: reviewPermissionsViewController)
@@ -150,7 +150,7 @@ final class PipelineHandler: PipelineExecutionHandler,
                 if presenter.presentedViewController == nil && !alertController.isViewLoaded {
                     let errMsg = "RemoveAppExtensionsOperation: unable to present dialog, view context not available." +
                                  "\nDid you move to different screen or background after starting the operation?"
-                    continuation.resume(throwing: OperationError.invalidOperationContext(errMsg))
+                    continuation.resume(throwing: OperationError.invalidParameters(errMsg))
                 }
             }
         }

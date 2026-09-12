@@ -10,7 +10,7 @@
 import Foundation
 import SideSign
 
-public protocol CertificateProvisioningHandler: AnyObject, Sendable {
+protocol CertificateProvisioningHandler: AnyObject, Sendable {
     func resolveRevocation(certificates: [ALTX509Certificate], teamType: ALTTeamType) async throws -> RevokeDecision
 }
 

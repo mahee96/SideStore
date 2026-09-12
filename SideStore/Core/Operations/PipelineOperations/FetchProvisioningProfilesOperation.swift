@@ -28,8 +28,8 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
         let team = try await AuthManager.shared.getAuthenticatedTeam()
         
         guard let targetAppBundle = self.context.targetAppBundle else {
-            self.debugLog("[FetchProvisioningProfiles] App not found in context.")
-            throw OperationError.appNotFound(name: nil)
+            self.debugLog("[FetchProvisioningProfiles] Target app bundle missing in context.")
+            throw OperationError.invalidParameters("FetchProvisioningProfilesOperation: context.targetAppBundle is nil")
         }
         
         let effectiveBundleId = self.context.targetBundleIdentifier

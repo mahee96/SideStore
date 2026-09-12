@@ -592,7 +592,7 @@ final class AppManager: ObservableObject, @unchecked Sendable
     {
         debugLog("[AppManager] update() called for app: \(installedApp.bundleIdentifier)")
         guard let appVersion = version ?? installedApp.storeApp?.latestSupportedVersion else {
-            completionHandler(.failure(OperationError.appNotFound(name: installedApp.name)))
+            completionHandler(.failure(OperationError.missingUpdate(appName: installedApp.name)))
             return Progress.discreteProgress(totalUnitCount: 1)
         }
         guard appVersion as AnyObject !== installedApp else {

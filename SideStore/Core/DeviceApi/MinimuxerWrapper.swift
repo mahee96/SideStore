@@ -148,8 +148,9 @@ extension MinimuxerError {
         case .invalidVPN(let reason):           return .invalidVPN(reason: reason)
         case .invalidPairing(_, let reason):    return .invalidPairingFile(reason: reason)
         case .notStarted(let reason):           return .minimuxerNotStarted(reason: reason)
-        case .pairingNotLoaded(let reason):     return .pairingNotComplete(reason: reason)
-        default:                                return .unknown(failureReason: self.localizedDescription)
+        case .pairingNotLoaded(let reason):            return .pairingNotComplete(reason: reason)
+        case .connectionModeNotConfigured(let reason): return .invalidParameters(reason)
+        default:                                       return .invalidParameters(self.description)
         }
     }
 }
@@ -461,7 +462,7 @@ public final class WirelessPairWrapper {
             }
         }
         #else
-        completion(.failure(OperationError.invalidPairingFile()))
+        completion(.failure(OperationError.invalidPairingFile(reason: "Wireless pairing is not supported on simulator.")))
         #endif
     }
 
@@ -495,7 +496,7 @@ public final class WirelessPairWrapper {
             }
         }
         #else
-        completion(.failure(OperationError.invalidPairingFile()))
+        completion(.failure(OperationError.invalidPairingFile(reason: "Wireless pairing is not supported on simulator.")))
         #endif
     }
     

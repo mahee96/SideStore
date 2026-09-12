@@ -52,7 +52,9 @@ final class PipelineRunner: Sendable
         group.completionHandler = { (results) in
             do
             {
-                guard let result = results.values.first else { throw group.context.error ?? OperationError.unknown() }
+                guard let result = results.values.first else {
+                    throw group.context.error ?? OperationError.unknownResult
+                }
                 let installedApp = try result.get()
                 completionHandler(.success(installedApp))
             }

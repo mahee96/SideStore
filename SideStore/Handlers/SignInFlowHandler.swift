@@ -42,7 +42,7 @@ class SignInFlowHandler: AnyObject, SignInHandler, AnisetteServerHandler {
     @MainActor
     func credentials() async throws -> (String, String) {
         guard let presentingViewController = self.presentingViewController else {
-            throw OperationError.invalidOperationContext("SignInFlowHandler: Cannot prompt for credentials because presentingViewController is nil")
+            throw OperationError.invalidParameters("SignInFlowHandler: Cannot prompt for credentials because presentingViewController is nil")
         }
         
         if let _ = self.presentedAuthVC {
@@ -108,7 +108,7 @@ class SignInFlowHandler: AnyObject, SignInHandler, AnisetteServerHandler {
     @MainActor
     func verificationCode(for request: TwoFactorRequest) async throws -> TwoFactorResponse {
         guard self.isPresenterAvailable else {
-            throw OperationError.invalidOperationContext("SignInFlowHandler: Cannot prompt for 2FA verification code because presenting view controller is unavailable")
+            throw OperationError.invalidParameters("SignInFlowHandler: Cannot prompt for 2FA verification code because presenting view controller is unavailable")
         }
 
         let errorMessage: String? = request.error
@@ -446,7 +446,7 @@ class SignInFlowHandler: AnyObject, SignInHandler, AnisetteServerHandler {
     @MainActor
     func resolveRevocation(certificates: [ALTX509Certificate], teamType: ALTTeamType) async throws -> RevokeDecision {
         guard self.isPresenterAvailable else {
-            throw OperationError.invalidOperationContext("SignInFlowHandler: Cannot resolve certificate revocation because presenting view controller is unavailable")
+            throw OperationError.invalidParameters("SignInFlowHandler: Cannot resolve certificate revocation because presenting view controller is unavailable")
         }
 
         return try await withCheckedThrowingContinuation { continuation in
@@ -516,7 +516,7 @@ class SignInFlowHandler: AnyObject, SignInHandler, AnisetteServerHandler {
     @MainActor
     func resolveTeam(_ teams: [ALTTeam]) async throws -> ALTTeam {
         guard self.isPresenterAvailable else {
-            throw OperationError.invalidOperationContext("SignInFlowHandler: Cannot resolve team selection because presenting view controller is unavailable")
+            throw OperationError.invalidParameters("SignInFlowHandler: Cannot resolve team selection because presenting view controller is unavailable")
         }
 
         return try await withCheckedThrowingContinuation { continuation in
@@ -615,7 +615,7 @@ class SignInFlowHandler: AnyObject, SignInHandler, AnisetteServerHandler {
     @MainActor
     func resolveResign(mismatchReason: CodeSignValidationReason, context: StandaloneOperationContext) async throws -> Bool {
         guard self.isPresenterAvailable else {
-            throw OperationError.invalidOperationContext("SignInFlowHandler: Cannot resolve resign prompt because presenting view controller is unavailable")
+            throw OperationError.invalidParameters("SignInFlowHandler: Cannot resolve resign prompt because presenting view controller is unavailable")
         }
 
         let isFreeTeam = try await AuthManager.shared.getAuthenticatedTeam().type == .free
@@ -675,7 +675,7 @@ class SignInFlowHandler: AnyObject, SignInHandler, AnisetteServerHandler {
     @MainActor
     func warnOutdatedAnisetteServer() async throws -> Bool {
         guard let presenter = self.activePresenter else {
-            throw OperationError.invalidOperationContext("SignInFlowHandler: Cannot show outdated anisette warning because presenting view controller is unavailable")
+            throw OperationError.invalidParameters("SignInFlowHandler: Cannot show outdated anisette warning because presenting view controller is unavailable")
         }
         
         return await withCheckedContinuation { continuation in

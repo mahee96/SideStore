@@ -45,7 +45,7 @@ final class PipelineExecutor: @unchecked Sendable {
         }
         
         guard let resultApp = finalApp ?? context.installedApp ?? (operation.app as? InstalledApp) else {
-            throw OperationError.appNotFound(name: operation.app.name)
+            throw OperationError.invalidParameters("Could not resolve installed app for '\(operation.app.name)'")
         }
         return resultApp
     }
