@@ -25,10 +25,7 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
             throw error
         }
         
-        guard let team = AuthManager.shared.team else {
-            self.debugLog("[FetchProvisioningProfiles] Team not found in AuthManager.")
-            throw OperationError.notAuthenticated
-        }
+        let team = try await AuthManager.shared.getAuthenticatedTeam()
         
         guard let targetAppBundle = self.context.targetAppBundle else {
             self.debugLog("[FetchProvisioningProfiles] App not found in context.")

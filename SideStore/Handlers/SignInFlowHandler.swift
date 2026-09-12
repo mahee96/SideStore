@@ -583,12 +583,15 @@ class SignInFlowHandler: AnyObject, SignInHandler, AnisetteServerHandler {
             throw OperationError.invalidOperationContext("SignInFlowHandler: Cannot resolve resign prompt because presenting view controller is unavailable")
         }
 
+        let isFreeTeam = try await AuthManager.shared.getAuthenticatedTeam().type == .free
+
         return try await withCheckedThrowingContinuation { continuation in
             var hasResumed = false
             let storyboard = UIStoryboard(name: "Authentication", bundle: nil)
             let resignViewController = storyboard.instantiateViewController(withIdentifier: "resignAltStoreViewController") as! ResignAltStoreViewController
             resignViewController.context = context
             resignViewController.mismatchReason = mismatchReason
+            resignViewController.isFreeTeam = isFreeTeam ?? false
             resignViewController.completionHandler = { result in
                 guard !hasResumed else {
                     debugLog("[SignInFlowHandler] resolveResign completionHandler invoked more than once. Ignoring.")

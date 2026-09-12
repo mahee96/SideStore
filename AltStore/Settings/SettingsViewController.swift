@@ -115,7 +115,7 @@ extension SettingsViewController
 
 final class SettingsViewController: UITableViewController
 {
-    private var activeTeam: Team?
+    private var activeTeam: ALTTeam?
     
     private var prototypeHeaderFooterView: SettingsHeaderFooterView!
     
@@ -389,20 +389,25 @@ private extension SettingsViewController
     
     func update()
     {
-        let currentActiveTeam = DatabaseManager.shared.activeTeam()
-        verboseLog("[SettingsVC] update() called. activeTeam: \(currentActiveTeam?.identifier ?? "nil"), account: \(currentActiveTeam?.account.appleID ?? "nil")")
-        
-        if let team = currentActiveTeam, AuthManager.shared.isAuthenticated
-        {
-            self.accountNameLabel.text = team.name
-            self.accountEmailLabel.text = team.account.appleID
-            self.accountTypeLabel.text = team.type.localizedDescription
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            let currentActiveTeam = try? await AuthManager.shared.getAuthenticatedTeam()
+            let appleID = AuthManager.shared.currentAppleID
+            verboseLog("[SettingsVC] update() called. activeTeam: \(currentActiveTeam?.identifier ?? "nil"), account: \(appleID ?? "nil")")
             
-            self.activeTeam = team
-        }
-        else
-        {
-            self.activeTeam = nil
+            if let team = currentActiveTeam, AuthManager.shared.isAuthenticated
+            {
+                self.accountNameLabel.text = team.name
+                self.accountEmailLabel.text = appleID
+                self.accountTypeLabel.text = team.type.localizedDescription
+                
+                self.activeTeam = team
+            }
+            else
+            {
+                self.activeTeam = nil
+            }
+            self.tableView.reloadData()
         }
         
         // AppRefreshRow
@@ -609,18 +614,22 @@ private extension SettingsViewController
         
         let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel, handler: nil)
         
-        let signOutAction = UIAlertAction(title: NSLocalizedString("Sign Out", comment: ""), style: .destructive) { _ in
+        let signOutAction = UIAlertAction(title: NSLocalizedString("Sign Out", comment: ""), style: .destructive) { [weak self] _ in
             let keepCert = contentVC.isChecked
             let keepAnisette = contentVC.isKeepAnisetteChecked
             let keepAnisetteHeaders = contentVC.isKeepAnisetteHeadersChecked
             let keepSideSignHeaders = contentVC.isKeepSideSignHeadersChecked
-            AuthManager.shared.signOut(
-                keepCertificate: keepCert,
-                keepAnisetteData: keepAnisette,
-                keepAnisetteHeaders: keepAnisetteHeaders,
-                keepSideSignHeaders: keepSideSignHeaders
-            )
-            self.update()
+            Task.detached { [weak self] in
+                await AuthManager.shared.signOut(
+                    keepCertificate: keepCert,
+                    keepAnisetteData: keepAnisette,
+                    keepAnisetteHeaders: keepAnisetteHeaders,
+                    keepSideSignHeaders: keepSideSignHeaders
+                )
+                await MainActor.run {
+                    self?.update()
+                }
+            }
         }
         
         alertController.addAction(cancelAction)

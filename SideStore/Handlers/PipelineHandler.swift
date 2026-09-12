@@ -235,7 +235,17 @@ final class PipelineHandler: PipelineExecutionHandler,
             return (initialPlist, appendTeamID)
         }
         
+        /*
         let result = await InfoPlistCustomizationView.present(
+            from: presenter,
+            initialPlist: initialPlist,
+            initialBundleID: initialBundleID,
+            appendTeamID: appendTeamID,
+            installedAppIdentities: installedAppIdentities,
+            teamID: teamID
+        )
+        */
+        let result = await InfoPlistCustomizationSheetView.present(
             from: presenter,
             initialPlist: initialPlist,
             initialBundleID: initialBundleID,
@@ -245,16 +255,6 @@ final class PipelineHandler: PipelineExecutionHandler,
         )
         debugLog("[PipelineHandler] resolveInfoPlistCustomization result: modifiedPlist CFBundleIdentifier='\(result?.modifiedPlist["CFBundleIdentifier"] ?? "nil")', appendTeamID=\(result?.appendTeamID ?? false)")
         return result
-        /*
-        return await InfoPlistCustomizationSheetView.present(
-            from: presenter,
-            initialPlist: initialPlist,
-            initialBundleID: initialBundleID,
-            appendTeamID: appendTeamID,
-            installedAppIdentities: installedAppIdentities,
-            teamID: teamID
-        )
-        */
     }
 
     @MainActor
@@ -272,11 +272,12 @@ final class PipelineHandler: PipelineExecutionHandler,
             preferredStyle: .alert
         )
         
-        let team = AuthManager.shared.team
-        debugLog("[PipelineHandler] resolveBundleIDOverride: initialBundleID='\(initialBundleID)', teamID='\(team?.identifier ?? "nil")', isAuthenticated=\(AuthManager.shared.isAuthenticated)")
-        guard let teamID = team?.identifier, !teamID.isEmpty else {
-            debugLog("[PipelineHandler] resolveBundleIDOverride FAILED: team is \(team == nil ? "nil" : "empty")")
-            throw OperationError.invalidParameters("Active developer team identifier is missing from AuthManager.")
+        let team = try await AuthManager.shared.getAuthenticatedTeam()
+        debugLog("[PipelineHandler] resolveBundleIDOverride: initialBundleID='\(initialBundleID)', teamID='\(team.identifier)', isAuthenticated=\(AuthManager.shared.isAuthenticated)")
+        let teamID = team.identifier
+        guard !teamID.isEmpty else {
+            debugLog("[PipelineHandler] resolveBundleIDOverride FAILED: teamID is empty")
+            throw OperationError.invalidParameters("Active developer team identifier is empty.")
         }
         let cleanInitialID: String = {
             let trimmed = initialBundleID.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -233,18 +233,20 @@ struct BackupAndRestoreView: View {
     
     private func performImportDecrypt() {
         guard let data = importedData, !importFilePassword.isEmpty else { return }
-        do {
-            let account = try ImportExport.importAccount(data, filePassword: importFilePassword)
-            self.importedAccount = account
-            
-            if let pass = account.password, !pass.isEmpty {
-                showAlert(title: "Account Imported", message: "Account \(account.email) imported successfully!")
-            } else {
-                self.applePasswordInput = ""
-                self.showingApplePasswordAlert = true
+        Task { @MainActor in
+            do {
+                let account = try await ImportExport.importAccount(data, filePassword: importFilePassword)
+                self.importedAccount = account
+                
+                if let pass = account.password, !pass.isEmpty {
+                    showAlert(title: "Account Imported", message: "Account \(account.email) imported successfully!")
+                } else {
+                    self.applePasswordInput = ""
+                    self.showingApplePasswordAlert = true
+                }
+            } catch {
+                showAlert(title: "Import Error", message: error.localizedDescription)
             }
-        } catch {
-            showAlert(title: "Import Error", message: error.localizedDescription)
         }
     }
     

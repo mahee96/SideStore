@@ -21,14 +21,14 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         }
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         
+        let team = try await AuthManager.shared.getAuthenticatedTeam()
         guard
             let appBundle = self.context.targetAppBundle,
             let profiles = self.context.provisioningProfiles,
-            let team = AuthManager.shared.team,
             let certificate = self.context.targetSigningCertificate
         else {
             throw OperationError.invalidParameters("ResignAppOperation.main: " +
-                                                   "AuthManager.shared.team or " +
+                                                   "self.context.targetAppBundle or " +
                                                    "self.context.provisioningProfiles or " +
                                                    "self.context.targetSigningCertificate is nil")
         }

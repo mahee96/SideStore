@@ -41,9 +41,7 @@ struct UserCustomizationsView: View {
     @State private var permissionCheckingDisabled: Bool = UserDefaults.standard.permissionCheckingDisabled
     @State private var wireGuardExportURL: URL? = nil
 
-    private var isFreeAccount: Bool {
-        DatabaseManager.shared.activeTeam()?.type == .free
-    }
+    @State private var isFreeAccount: Bool = false
 
     var body: some View {
         ScrollView {
@@ -458,9 +456,11 @@ struct UserCustomizationsView: View {
         #endif
         .alert("Restart Required", isPresented: $showAnisetteRestartConfirmation) {
             SwiftUI.Button("Restart Now", role: .destructive) {
-                AuthManager.shared.signOut(keepCertificate: true, keepAnisetteData: false)
-                UserDefaults.standard.useOnDeviceAnisette = useOnDeviceAnisette
-                exit(0)
+                Task {
+                    await AuthManager.shared.signOut(keepCertificate: true, keepAnisetteData: false)
+                    UserDefaults.standard.useOnDeviceAnisette = useOnDeviceAnisette
+                    exit(0)
+                }
             }
             SwiftUI.Button("Cancel", role: .cancel) {
                 useOnDeviceAnisette = UserDefaults.standard.useOnDeviceAnisette
@@ -516,6 +516,9 @@ struct UserCustomizationsView: View {
             if let url = wireGuardExportURL {
                 ActivityViewController(activityItems: [url])
             }
+        }
+        .task {
+            isFreeAccount = (try? await AuthManager.shared.getAuthenticatedTeam())?.type == .free
         }
     }
 
@@ -574,16 +577,18 @@ struct UserCustomizationsView: View {
         let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel, handler: nil)
         let resetAction = UIAlertAction(title: NSLocalizedString("Reset & Sign Out", comment: ""), style: .destructive) { _ in
             let keepHeaders = contentVC.isKeepHeadersChecked
-            AuthManager.shared.signOut(keepCertificate: true, keepAnisetteData: false, keepAnisetteHeaders: keepHeaders)
-            debugLog("Reset adi.pb (keepAnisetteHeaders: \(keepHeaders)) and signed out")
-            if let topVC = UIApplication.shared.topViewController() {
-                let detail = keepHeaders
-                    ? NSLocalizedString("Signed out of Apple ID. You can now sign back in with fresh provisioning.", comment: "")
-                    : NSLocalizedString("Signed out of Apple ID. Reset adi.pb and header configs to defaults.", comment: "")
-                ToastView(
-                    text: NSLocalizedString("Cleared adi.pb!", comment: ""),
-                    detailText: detail
-                ).show(in: topVC)
+            Task {
+                await AuthManager.shared.signOut(keepCertificate: true, keepAnisetteData: false, keepAnisetteHeaders: keepHeaders)
+                debugLog("Reset adi.pb (keepAnisetteHeaders: \(keepHeaders)) and signed out")
+                if let topVC = UIApplication.shared.topViewController() {
+                    let detail = keepHeaders
+                        ? NSLocalizedString("Signed out of Apple ID. You can now sign back in with fresh provisioning.", comment: "")
+                        : NSLocalizedString("Signed out of Apple ID. Reset adi.pb and header configs to defaults.", comment: "")
+                    ToastView(
+                        text: NSLocalizedString("Cleared adi.pb!", comment: ""),
+                        detailText: detail
+                    ).show(in: topVC)
+                }
             }
         }
         

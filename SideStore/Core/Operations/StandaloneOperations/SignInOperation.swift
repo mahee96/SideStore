@@ -66,7 +66,7 @@ final class SignInOperation: BaseStandaloneOperation<StandaloneOperationContext,
             let authResult: SignInResult
 
             if var session = AuthManager.shared.session,
-               let team = AuthManager.shared.team,
+               let team = try? await AuthManager.shared.getAuthenticatedTeam(),
                (self.skipCertificateProvisioning || CertificateManager.shared.activeCertificate != nil)
             {
                 session.anisetteData = try await self.getAnisetteData()
@@ -92,7 +92,7 @@ final class SignInOperation: BaseStandaloneOperation<StandaloneOperationContext,
             if !AuthManager.shared.hasStoredPassword &&
                !AuthManager.shared.hasStoredXcodeToken
             {
-                AuthManager.shared.signOut()
+                await AuthManager.shared.signOut()
             }
             try? await self.finalizeAuthentication(result: .failure(error))
             throw error
@@ -136,7 +136,6 @@ final class SignInOperation: BaseStandaloneOperation<StandaloneOperationContext,
                 // 1. Resolve Team & Save State
                 if resolvedTeam == nil {
                     let team = try await self.fetchTeam(for: account, session: session)
-                    AuthManager.shared.team = team
 
                     try await self.saveTeamAndAccount(team)
                     reportProgress(stepWeight * 2)

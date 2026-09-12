@@ -69,6 +69,8 @@ class MyAppsViewController: UICollectionViewController
     // Cache
     private var cachedUpdateSizes = [String: CGSize]()
     
+    private var activeTeam: ALTTeam?
+    
     required init?(coder aDecoder: NSCoder)
     {
         super.init(coder: aDecoder)
@@ -150,11 +152,25 @@ class MyAppsViewController: UICollectionViewController
                 }
             }
         }
+        
+        Task { @MainActor [weak self] in
+            self?.activeTeam = try? await AuthManager.shared.getAuthenticatedTeam()
+        }
     }
     
     override func viewIsAppearing(_ animated: Bool)
     {
         super.viewIsAppearing(animated)
+        
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            let team = try? await AuthManager.shared.getAuthenticatedTeam()
+            if self.activeTeam != team
+            {
+                self.activeTeam = team
+                self.collectionView.reloadData()
+            }
+        }
         
         self.collectionView.reloadData()
         
@@ -281,6 +297,11 @@ class MyAppsViewController: UICollectionViewController
             
             let appViewController = segue.destination as! AppViewController
             appViewController.app = installedApp.storeApp
+            
+        case "showAppIDs":
+            let navigationController = segue.destination as? UINavigationController
+            let appIDsViewController = navigationController?.viewControllers.first as? AppIDsViewController
+            appIDsViewController?.activeTeam = self.activeTeam
             
         default: break
         }
@@ -1864,11 +1885,12 @@ extension MyAppsViewController
         case .activeApps, .inactiveApps:
             let footerView = collectionView.dequeueReusableSupplementaryView(ofKind: UICollectionView.elementKindSectionFooter, withReuseIdentifier: "InstalledAppsFooter", for: indexPath) as! InstalledAppsCollectionFooterView
             
-            guard let team = DatabaseManager.shared.activeTeam() else { return footerView }
+            guard let team = self.activeTeam else { return footerView }
             switch team.type
             {
             case .free:
-                let registeredAppIDs = team.appIDs.count
+                guard let managedTeam = Team.first(satisfying: NSPredicate(format: "%K == %@", #keyPath(Team.identifier), team.identifier), in: DatabaseManager.shared.viewContext) else { return footerView }
+                let registeredAppIDs = managedTeam.appIDs.count
                 
                 let maximumAppIDCount = 10
                 let remainingAppIDs = maximumAppIDCount - registeredAppIDs
@@ -2281,7 +2303,7 @@ extension MyAppsViewController: UICollectionViewDelegateFlowLayout
         
         func appIDsFooterSize() -> CGSize
         {
-            guard let _ = DatabaseManager.shared.activeTeam() else { return .zero }
+            guard let _ = self.activeTeam else { return .zero }
             
             // let indexPath = IndexPath(row: 0, section: section.rawValue)
             // let footerView = self.collectionView(collectionView, viewForSupplementaryElementOfKind: UICollectionView.elementKindSectionFooter, at: indexPath) as! InstalledAppsCollectionFooterView

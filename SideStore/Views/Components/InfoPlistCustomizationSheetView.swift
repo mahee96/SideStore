@@ -84,10 +84,14 @@ public struct InfoPlistCustomizationSheetView: View {
                 base = trimmed
             }
             let sanitizedBase = InfoPlistParser.sanitizeBundleID(base)
+            let finalID: String
             if appendTeamID && !teamID.isEmpty {
-                return "\(sanitizedBase).\(teamID)"
+                finalID = "\(sanitizedBase).\(teamID)"
+            } else {
+                finalID = sanitizedBase
             }
-            return sanitizedBase
+            debugLog("[InfoPlistCustomizationSheetView] init: initialBundleID='\(initialBundleID)', base='\(base)', sanitizedBase='\(sanitizedBase)', finalID='\(finalID)', teamID='\(teamID)', appendTeamID=\(appendTeamID)")
+            return finalID
         }()
 
         _bundleID = State(initialValue: startingBundleID)
@@ -222,6 +226,7 @@ public struct InfoPlistCustomizationSheetView: View {
                         }
                     }
                     previousValidBundleID = bundleID
+                    debugLog("[InfoPlistCustomizationSheetView] appendTeamID toggled to \(appendTeamID) -> bundleID='\(bundleID)'")
                 }) {
                     HStack {
                         Text("Append Team ID to Bundle Identifier")

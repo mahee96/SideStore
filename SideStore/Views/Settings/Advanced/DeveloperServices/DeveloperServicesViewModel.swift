@@ -27,12 +27,10 @@ class DeveloperServicesViewModel: ObservableObject {
     @Published var toastMessage: String = ""
     @Published var showToast = false
 
-    var team: ALTTeam? {
-        AuthManager.shared.team
-    }
+    @Published var team: ALTTeam?
 
     var isPaidAccount: Bool {
-        guard let team = AuthManager.shared.team else { return false }
+        guard let team = self.team else { return false }
         return team.isPaid
     }
 
@@ -50,6 +48,7 @@ class DeveloperServicesViewModel: ObservableObject {
             if isPullToRefresh {
                 AuthManager.shared.session = nil
             }
+            self.team = try await AuthManager.shared.getAuthenticatedTeam()
             async let fetchedAppIDs = DeveloperPortalProxy.shared.fetchAppIDs()
             async let fetchedProfiles = DeveloperPortalProxy.shared.listProvisioningProfiles()
             async let fetchedGroups = DeveloperPortalProxy.shared.fetchAppGroups()
