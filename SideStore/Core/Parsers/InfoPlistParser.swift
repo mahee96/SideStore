@@ -8,8 +8,12 @@
 
 import Foundation
 
-public struct InfoPlistParser: Sendable {
+public struct InfoPlistParser: @unchecked Sendable {
     public private(set) var rawDictionary: [String: Any]
+
+    public var dictionary: [String: Any] {
+        rawDictionary
+    }
 
     public init(dictionary: [String: Any]) {
         self.rawDictionary = dictionary
