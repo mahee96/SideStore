@@ -23,7 +23,7 @@ enum RevokeDecision {
     case revokeSelected([ALTX509Certificate])
 }
 
-protocol SignInHandler: AnyObject {
+protocol SignInHandler: AnyObject, CertificateProvisioningHandler, DeviceProvisioningHandler {
     func credentials() async throws -> (String, String)
     func verificationCode(for request: TwoFactorRequest) async throws -> TwoFactorResponse
     func accountRepair(url: URL, message: String) async -> AccountRepairDecision

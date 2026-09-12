@@ -21,12 +21,13 @@ final class SignInOperation: BaseStandaloneOperation<StandaloneOperationContext,
     
     private var appleIDEmailAddress: String?
     private var requiresPostAuthFlow = false
-    private var portalCertificates: [ALTX509Certificate]?
     
     let signInHandler: SignInHandler
     let anisetteServerHandler: AnisetteServerHandler
     let skipDeviceRegistration: Bool
     let skipCertificateProvisioning: Bool
+    let certificateFlow: CertificateProvisioningFlow
+    let deviceRegistrationFlow: DeviceRegistrationFlow
 
     init(
         context: StandaloneOperationContext,
@@ -39,6 +40,11 @@ final class SignInOperation: BaseStandaloneOperation<StandaloneOperationContext,
         self.anisetteServerHandler = anisetteServerHandler
         self.skipDeviceRegistration = skipDeviceRegistration
         self.skipCertificateProvisioning = skipCertificateProvisioning
+        self.certificateFlow = CertificateProvisioningFlow(
+            handler: signInHandler,
+            skipCertificateProvisioning: skipCertificateProvisioning
+        )
+        self.deviceRegistrationFlow = DeviceRegistrationFlow(handler: signInHandler)
 
         try super.init(context: context)
         self.debugLog("""
@@ -128,21 +134,7 @@ final class SignInOperation: BaseStandaloneOperation<StandaloneOperationContext,
 
                 // 2. Resolve Certificate (Custom vs Developer Portal)
                 if !isCertificateResolved {
-                    let activeCert = CertificateManager.shared.activeCertificate?.certificate
-                    let isCustomCert = activeCert?.data.map { data in
-                        let details = parseCertificate(derData: data)
-                        return !details.subject.contains(team.identifier) && !details.issuer.contains(team.identifier)
-                    } ?? false
-                    if isCustomCert {
-                        self.debugLog("[SignInOperation] Custom active certificate detected (Subject OU mismatch with Team ID '\(team.identifier)'). Bypassing portal fetch.")
-                        resolvedCertificate = activeCert
-                    } else if self.skipCertificateProvisioning {
-                        resolvedCertificate = activeCert
-                    } else {
-                        let certificate = try await self.fetchCertificate(for: team, session: session)
-                        try CertificateManager.shared.setActiveCertificate(certificate)
-                        resolvedCertificate = certificate
-                    }
+                    resolvedCertificate = try await self.certificateFlow.resolveCertificate(for: team)
                     isCertificateResolved = true
                 }
 
@@ -152,7 +144,7 @@ final class SignInOperation: BaseStandaloneOperation<StandaloneOperationContext,
                 if !isDeviceRegistered {
                     if !self.skipDeviceRegistration {
                         self.verboseLog("[SignInOperation] Registering current device...")
-                        let device = try await self.registerCurrentDevice(for: team, session: session)
+                        let device = try await self.deviceRegistrationFlow.registerCurrentDevice(for: team)
                         self.debugLog("[SignInOperation] Registered current device UDID: \(device.identifier).")
                         reportProgress(stepWeight * 3)
                     }
@@ -391,14 +383,7 @@ private extension SignInOperation {
             return false
         }
         
-        let portalCertificates: [ALTX509Certificate]
-        if let cached = self.portalCertificates {
-            portalCertificates = cached
-        } else {
-            let fetched = try await DeveloperPortalProxy.shared.fetchCertificates(team: signer.team)
-            self.portalCertificates = fetched
-            portalCertificates = fetched
-        }
+        let portalCertificates = try await self.certificateFlow.fetchPortalCertificates(for: signer.team)
         
         let result = CodeSignValidator.validate(
             runningProfile: provisioningProfile,
@@ -431,7 +416,7 @@ private extension SignInOperation {
     }
 }
 
-// Team, Certificate Resolution & Device Registration Helpers
+// Team Resolution Helpers
 private extension SignInOperation {
 
     private func fetchTeam(for account: ALTAccount, session: ALTAppleAPISession) async throws -> ALTTeam {
@@ -452,152 +437,5 @@ private extension SignInOperation {
         
         self.debugLog("[SignInOperation] fetchTeam completed successfully ('\(selectedTeam.name)').")
         return selectedTeam
-    }
-
-    private func fetchCertificate(for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTCertificate {
-        let portalCertificates = try await DeveloperPortalProxy.shared.fetchCertificates(team: team)
-        self.portalCertificates = portalCertificates
-        
-        let mainBundleCertSerial = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String
-        
-        if let activeCert = CertificateManager.shared.activeCertificate,
-           let certificate = portalCertificates.first(where: { $0.serialNumber == activeCert.serialNumber }) 
-        {
-            var keyStoreCert = activeCert.certificate
-            keyStoreCert.machineIdentifier = certificate.machineIdentifier
-
-            if let mainBundleCertSerial = mainBundleCertSerial, 
-                mainBundleCertSerial.lowercased() != activeCert.serialNumber.lowercased() 
-            {
-                self.debugLog("[SignInOperation] Active certificate (\(activeCert.serialNumber)) and running bundle certificate (\(mainBundleCertSerial)) mismatch detected. Running Bundle Certificate is still active on the Paid account portal. Using active Keychain certificate.")
-            }
-            return keyStoreCert
-        }
-        
-        if let mainBundleCertSerial = mainBundleCertSerial,
-           let certificate = portalCertificates.first(where: { $0.serialNumber.lowercased() == mainBundleCertSerial.lowercased() }),
-           var cert = CertificateManager.shared.getSignableCertificate(for: mainBundleCertSerial, fallbackPassword: certificate.machineIdentifier) 
-        {
-            cert.machineIdentifier = certificate.machineIdentifier
-            self.debugLog("[SignInOperation] Using running bundle certificate (\(cert.serialNumber)) with valid private key from signable cache.")
-            return cert
-        }
-        
-        if portalCertificates.isEmpty {
-            return try await self.requestCertificate(for: team, session: session)
-        } else {
-            return try await self.replaceCertificate(portalCertificates: portalCertificates, for: team, session: session)
-        }
-    }
-
-    private func requestCertificate(for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTCertificate {
-        let deviceName = await UIDevice.current.name
-        let accountName = team.account?.firstName ?? team.name
-        let machineName: String = "SideStore - \(accountName)'s \(deviceName)"
-        self.verboseLog("[SignInOperation] Requesting certificate for machineName '\(machineName)'...")
-
-        do {
-            let newPortalCertificate = try await DeveloperPortalProxy.shared.createCertificate(machineName: machineName, team: team)
-            self.debugLog("[SignInOperation] Successfully requested new portal certificate (Serial: \(newPortalCertificate.serialNumber)).")
-            
-            let portalCertificates = try await DeveloperPortalProxy.shared.fetchCertificates(team: team)
-            self.portalCertificates = portalCertificates
-
-            let finalCert: ALTCertificate
-            if let fullX509 = portalCertificates.first(where: { $0.serialNumber.lowercased() == newPortalCertificate.serialNumber.lowercased() }) {
-                finalCert = ALTCertificate(x509: fullX509, privateKey: newPortalCertificate.privateKey)
-            } else {
-                finalCert = newPortalCertificate
-            }
-
-            return finalCert
-        } catch {
-            self.debugLog("[SignInOperation] requestCertificate: Failed with error: \(error)")
-            throw error
-        }
-    }
-
-    private func replaceCertificate(portalCertificates: [ALTX509Certificate], for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTCertificate {
-        let iosCertificates = portalCertificates.filter { cert in
-            let nameLower = cert.name.lowercased()
-            return nameLower.contains("ios development") || nameLower.contains("iphone developer")
-        }
-
-        self.debugLog("[SignInOperation] replaceCertificate: Starting. Total certs on portal: \(portalCertificates.count), iOS Development certs: \(iosCertificates.count)")
-        
-        if iosCertificates.isEmpty {
-            self.verboseLog("[SignInOperation] replaceCertificate: No iOS Development certificates found on portal. Requesting new...")
-            return try await self.requestCertificate(for: team, session: session)
-        }
-        
-        self.debugLog("[SignInOperation] replaceCertificate: Presenting revoke alert for \(iosCertificates.count) iOS Development cert(s)...")
-        let action = try await self.signInHandler.resolveRevocation(certificates: iosCertificates, teamType: team.type)
-        self.debugLog("[SignInOperation] replaceCertificate: User action was \(action)")
-        switch action {
-            case .keepExisting:
-                self.verboseLog("[SignInOperation] replaceCertificate: Keeping existing, calling requestCertificate...")
-                return try await self.requestCertificate(for: team, session: session)
-                
-            case .revokeSelected(let certsToRevoke):
-                self.debugLog("[SignInOperation] replaceCertificate: Revoking \(certsToRevoke.count) selected certificate(s)...")
-                var firstError: Error? = nil
-
-                for certificate in certsToRevoke {
-                    do {
-                        self.verboseLog("[SignInOperation] replaceCertificate: Revoking certificate '\(certificate.machineName ?? certificate.name)' (Serial: \(certificate.serialNumber))...")
-                        _ = try await DeveloperPortalProxy.shared.revokeCertificate(certificate, team: team)
-                        self.verboseLog("[SignInOperation] replaceCertificate: Revoke succeeded.")
-                    } catch {
-                        self.debugLog("[SignInOperation] replaceCertificate: Revoke failed with error: \(error)")
-                        if firstError == nil {
-                            firstError = error
-                        }
-                    }
-                }
-
-                if let error = firstError {
-                    self.debugLog("[SignInOperation] replaceCertificate: Error occurred during revocation, throwing...")
-                    throw error
-                } else {
-                    self.debugLog("[SignInOperation] replaceCertificate: Selected certificates successfully revoked. Requesting new certificate...")
-                    return try await self.requestCertificate(for: team, session: session)
-                }
-        }
-    }
-    
-    @discardableResult
-    private func registerCurrentDevice(for team: ALTTeam, session: ALTAppleAPISession) async throws -> ALTDevice {
-        self.debugLog("[SignInOperation] registerCurrentDevice starting...")
-        var deviceUDID: String?
-        do {
-            await CellularRefreshManager.shared.turnOffDataIfNeeded()
-            deviceUDID = try await fetchUDID()
-            await CellularRefreshManager.shared.turnOnDataIfNeeded(addOnDelay: 2.0)
-        } catch {
-            await CellularRefreshManager.shared.turnOnDataIfNeeded(addOnDelay: 2.0)
-            self.debugLog("[SignInOperation] fetchUDID failed: \(error)")
-        }
-        
-        if deviceUDID == nil || deviceUDID?.isEmpty == true || deviceUDID == "XXXXX-XXXX-XXXXX-XXXX" {
-            deviceUDID = try? await fetchUDID(useStatic: true)
-        }
-        
-        guard let udid = deviceUDID, !udid.isEmpty, udid != "XXXXX-XXXX-XXXXX-XXXX" else {
-            self.debugLog("[SignInOperation] Failed to fetch device UDID.")
-            throw OperationError.unknownUDID
-        }
-        self.debugLog("[SignInOperation] Fetched device UDID: \(udid). Fetching team devices...")
-        
-        let devices = try await DeveloperPortalProxy.shared.fetchDevices(for: team, types: .all)
-        if let device = devices.first(where: { $0.identifier == udid }) {
-            self.debugLog("[SignInOperation] Device '\(device.name)' (UDID: \(udid)) is registered on team.")
-            return device
-        } else {
-            let deviceName = await MainActor.run { UIDevice.current.name }
-            self.debugLog("[SignInOperation] Registering new device '\(deviceName)' (UDID: \(udid))...")
-            let device = try await DeveloperPortalProxy.shared.registerDevice(name: deviceName, identifier: udid, type: DeveloperPortalProxy.currentDeviceType, team: team)
-            self.debugLog("[SignInOperation] Device '\(device.name)' (UDID: \(udid)) successfully registered.")
-            return device
-        }
     }
 }
