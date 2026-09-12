@@ -258,19 +258,29 @@ final class PipelineHandler: PipelineExecutionHandler,
             preferredStyle: .alert
         )
         
+        let teamID = AuthManager.shared.team?.identifier ?? ""
+        let cleanInitialID: String = {
+            let trimmed = initialBundleID.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !teamID.isEmpty && trimmed.hasSuffix(".\(teamID)") {
+                return String(trimmed.dropLast((".\(teamID)").count))
+            }
+            return trimmed
+        }()
+
+        let checkboxView = AppendTeamIDCheckboxView(isChecked: true, teamID: teamID)
+        checkboxView.translatesAutoresizingMaskIntoConstraints = false
+
         alert.addTextField { textField in
-            textField.text = initialBundleID
+            textField.text = !teamID.isEmpty ? "\(cleanInitialID).\(teamID)" : cleanInitialID
             textField.autocapitalizationType = .none
             textField.autocorrectionType = .no
             textField.clearButtonMode = .whileEditing
+            checkboxView.attach(to: textField, teamID: teamID)
         }
         
         alert.addTextField { textField in
             textField.isUserInteractionEnabled = false
         }
-        
-        let checkboxView = AppendTeamIDCheckboxView(isChecked: true)
-        checkboxView.translatesAutoresizingMaskIntoConstraints = false
         
         _ = alert.view
         if let tf1 = alert.textFields?.first, let tf1View = tf1.superview {
@@ -315,8 +325,8 @@ final class PipelineHandler: PipelineExecutionHandler,
         
         return await withCheckedContinuation { continuation in
             let okAction = UIAlertAction(title: NSLocalizedString("Confirm", comment: ""), style: .default) { _ in
-                let text = alert.textFields?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines)
-                let customID = (text?.isEmpty == false) ? text! : initialBundleID
+                let baseID = checkboxView.cleanBaseID()
+                let customID = !baseID.isEmpty ? baseID : cleanInitialID
                 let appendTeamID = checkboxView.isChecked
                 continuation.resume(returning: (customID, appendTeamID))
             }
