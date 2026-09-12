@@ -18,6 +18,7 @@ public struct InfoPlistCustomizationView: View {
     public let onCancel: () -> Void
 
     @State private var bundleID: String
+    @State private var previousValidBundleID: String
     @State private var appendTeamID: Bool
     @State private var displayName: String
     @State private var versionString: String
@@ -74,7 +75,20 @@ public struct InfoPlistCustomizationView: View {
         let initialFileSharing = (initialPlist["UIFileSharingEnabled"] as? Bool) ?? false
         let initialDocInPlace = (initialPlist["LSSupportsOpeningDocumentsInPlace"] as? Bool) ?? false
 
-        _bundleID = State(initialValue: initialBundleID)
+        let startingBundleID: String = {
+            let trimmed = initialBundleID.trimmingCharacters(in: .whitespacesAndNewlines)
+            if appendTeamID && !teamID.isEmpty {
+                if trimmed.hasSuffix(".\(teamID)") {
+                    return trimmed
+                } else {
+                    return "\(trimmed).\(teamID)"
+                }
+            }
+            return trimmed
+        }()
+
+        _bundleID = State(initialValue: startingBundleID)
+        _previousValidBundleID = State(initialValue: startingBundleID)
         _appendTeamID = State(initialValue: appendTeamID)
         _displayName = State(initialValue: initialName)
         _versionString = State(initialValue: initialVersion)
@@ -182,7 +196,11 @@ public struct InfoPlistCustomizationView: View {
     private var resolvedEffectiveBundleID: String {
         let trimmed = bundleID.trimmingCharacters(in: .whitespacesAndNewlines)
         if appendTeamID && !teamID.isEmpty {
-            return "\(trimmed).\(teamID)"
+            if trimmed.hasSuffix(".\(teamID)") {
+                return trimmed
+            } else {
+                return "\(trimmed).\(teamID)"
+            }
         }
         return trimmed
     }
@@ -203,9 +221,37 @@ public struct InfoPlistCustomizationView: View {
                     text: $bundleID,
                     autocapitalization: .none
                 )
+                .onChange(of: bundleID) { newValue in
+                    guard appendTeamID && !teamID.isEmpty else {
+                        previousValidBundleID = newValue
+                        return
+                    }
+                    let suffix = ".\(teamID)"
+                    if !newValue.hasSuffix(suffix) {
+                        DispatchQueue.main.async {
+                            bundleID = previousValidBundleID
+                        }
+                    } else {
+                        previousValidBundleID = newValue
+                    }
+                }
 
                 HStack {
-                    SwiftUI.Button(action: { appendTeamID.toggle() }) {
+                    SwiftUI.Button(action: {
+                        appendTeamID.toggle()
+                        guard !teamID.isEmpty else { return }
+                        let suffix = ".\(teamID)"
+                        if appendTeamID {
+                            if !bundleID.hasSuffix(suffix) {
+                                bundleID = "\(bundleID)\(suffix)"
+                            }
+                        } else {
+                            if bundleID.hasSuffix(suffix) {
+                                bundleID = String(bundleID.dropLast(suffix.count))
+                            }
+                        }
+                        previousValidBundleID = bundleID
+                    }) {
                         HStack(spacing: 8) {
                             Image(systemName: appendTeamID ? "checkmark.circle.fill" : "circle")
                                 .font(.system(size: 18))
@@ -564,9 +610,16 @@ public struct InfoPlistCustomizationView: View {
     private func handleProceed() {
         var updated = initialPlist
 
-        let cleanBundleID = bundleID.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !cleanBundleID.isEmpty {
-            updated["CFBundleIdentifier"] = cleanBundleID
+        let trimmed = bundleID.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanBaseID: String = {
+            let suffix = ".\(teamID)"
+            if appendTeamID && !teamID.isEmpty && trimmed.hasSuffix(suffix) {
+                return String(trimmed.dropLast(suffix.count))
+            }
+            return trimmed
+        }()
+        if !cleanBaseID.isEmpty {
+            updated["CFBundleIdentifier"] = cleanBaseID
         }
 
         let cleanDisplayName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
