@@ -37,8 +37,8 @@ struct StandaloneExecutionStep: Hashable {
 //        Nesting or executing pipeline steps recursively inside a step is strictly disallowed by design to keep pipeline explicit
 struct PipelineStepDefinition {
     static let install: [PipelineExecutionStep] = [
-        PipelineExecutionStep(.userCustomization,                 2),
         PipelineExecutionStep(.downloadApp,                      20),
+        PipelineExecutionStep(.userCustomization,                 2),
         PipelineExecutionStep(.verifyApp,                         1),
         PipelineExecutionStep(.cacheApp,                          1),
         PipelineExecutionStep(.stageApp,                          1),
@@ -53,8 +53,8 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.createIPA,                         2),
         PipelineExecutionStep(.exportResignedIPA,                 1),
         PipelineExecutionStep(.sendApp,                          18),
-        PipelineExecutionStep(.cacheSigningCert,                  1),
         PipelineExecutionStep(.installApp,                       15),
+        PipelineExecutionStep(.cacheSigningCert,                  1),
         PipelineExecutionStep(.cleanStagedApp,                    1)
     ]
 
@@ -71,8 +71,8 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.createIPA,                         2),
         PipelineExecutionStep(.exportResignedIPA,                 2),
         PipelineExecutionStep(.sendApp,                          18),
-        PipelineExecutionStep(.cacheSigningCert,                  1),
         PipelineExecutionStep(.installApp,                       21),
+        PipelineExecutionStep(.cacheSigningCert,                  1),
         PipelineExecutionStep(.cleanStagedApp,                    2)
     ]
 
@@ -102,8 +102,8 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.createIPA,                         1),
         PipelineExecutionStep(.exportResignedIPA,                 1),
         PipelineExecutionStep(.sendApp,                           4),
-        PipelineExecutionStep(.cacheSigningCert,                  1),
         PipelineExecutionStep(.installApp,                        5),
+        PipelineExecutionStep(.cacheSigningCert,                  1),
         // restore data
         PipelineExecutionStep(.restoreAppData,                   10),
         // install original app
@@ -119,8 +119,8 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.createIPA,                         2),
         PipelineExecutionStep(.exportResignedIPA,                 1),
         PipelineExecutionStep(.sendApp,                          10),
-        PipelineExecutionStep(.cacheSigningCert,                  1),
         PipelineExecutionStep(.installApp,                       15),
+        PipelineExecutionStep(.cacheSigningCert,                  1),
         // cleanup old backup
         PipelineExecutionStep(.removeBackupData,                  2),
         // cleanup staged app
@@ -143,8 +143,8 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.createIPA,                         2),
         PipelineExecutionStep(.exportResignedIPA,                 2),
         PipelineExecutionStep(.sendApp,                           8),
-        PipelineExecutionStep(.cacheSigningCert,                  1),
         PipelineExecutionStep(.installApp,                       10),
+        PipelineExecutionStep(.cacheSigningCert,                  1),
         // backup data
         PipelineExecutionStep(.backupAppData,                    25),
         // uninstall app from device & mark inactive
@@ -164,8 +164,8 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.createIPA,                         2),
         PipelineExecutionStep(.exportResignedIPA,                 2),
         PipelineExecutionStep(.sendApp,                           8),
-        PipelineExecutionStep(.cacheSigningCert,                  1),
         PipelineExecutionStep(.installApp,                       10),
+        PipelineExecutionStep(.cacheSigningCert,                  1),
         // backup data
         PipelineExecutionStep(.backupAppData,                    25),
         // install original app
@@ -181,8 +181,8 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.createIPA,                         1),
         PipelineExecutionStep(.exportResignedIPA,                 1),
         PipelineExecutionStep(.sendApp,                           1),
-        PipelineExecutionStep(.cacheSigningCert,                  1),
         PipelineExecutionStep(.installApp,                        2),
+        PipelineExecutionStep(.cacheSigningCert,                  1),
         // cleanup staged app
         PipelineExecutionStep(.cleanStagedApp,                    2)
     ]
@@ -206,8 +206,8 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.createIPA,                         1),
         PipelineExecutionStep(.exportResignedIPA,                 1),
         PipelineExecutionStep(.sendApp,                           4),
-        PipelineExecutionStep(.cacheSigningCert,                  1),
         PipelineExecutionStep(.installApp,                        5),
+        PipelineExecutionStep(.cacheSigningCert,                  1),
         // restore data
         PipelineExecutionStep(.restoreAppData,                   10),
         // install original app
@@ -223,8 +223,8 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.createIPA,                         2),
         PipelineExecutionStep(.exportResignedIPA,                 1),
         PipelineExecutionStep(.sendApp,                          10),
-        PipelineExecutionStep(.cacheSigningCert,                  1),
         PipelineExecutionStep(.installApp,                       15),
+        PipelineExecutionStep(.cacheSigningCert,                  1),
         // cleanup old backup
         PipelineExecutionStep(.removeBackupData,                  2),
         // cleanup staged app
