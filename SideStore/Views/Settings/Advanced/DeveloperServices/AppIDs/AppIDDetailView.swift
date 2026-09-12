@@ -30,18 +30,18 @@ struct AppIDDetailView: View {
 
     var body: some View {
         List {
-            Section(header: Text("App ID Metadata")) {
-                InfoRow(label: "Name", value: currentAppID.name)
-                InfoRow(label: "Bundle Identifier", value: currentAppID.bundleIdentifier)
-                InfoRow(label: "App ID (Identifier)", value: currentAppID.identifier)
+            Section(header: Text(localized("App ID Metadata"))) {
+                InfoRow(label: localized("Name"), value: currentAppID.name)
+                InfoRow(label: localized("Bundle Identifier"), value: currentAppID.bundleIdentifier)
+                InfoRow(label: localized("App ID (Identifier)"), value: currentAppID.identifier)
                 if let expiration = currentAppID.expirationDate {
-                    InfoRow(label: "Expiration Date", value: formatDate(expiration), valueColor: expiration < Date() ? .red : .primary)
+                    InfoRow(label: localized("Expiration Date"), value: formatDate(expiration), valueColor: expiration < Date() ? .red : .primary)
                 }
             }
 
-            Section(header: Text("Capabilities & Features (\(currentAppID.features.count))")) {
+            Section(header: Text(localized("Capabilities & Features (\(currentAppID.features.count))"))) {
                 if currentAppID.features.isEmpty {
-                    Text("No special features enabled for this App ID.")
+                    Text(localized("No special features enabled for this App ID."))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 } else {
@@ -64,9 +64,9 @@ struct AppIDDetailView: View {
                 }
             }
 
-            Section(header: Text("Associated App Groups"), footer: Text("Select the App Groups to associate with this App ID, then tap Save.")) {
+            Section(header: Text(localized("Associated App Groups")), footer: Text(localized("Select the App Groups to associate with this App ID, then tap Save."))) {
                 if viewModel.appGroups.isEmpty {
-                    Text("No App Groups available on this team. Create an App Group first.")
+                    Text(localized("No App Groups available on this team. Create an App Group first."))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 } else {
@@ -120,7 +120,7 @@ struct AppIDDetailView: View {
                                     ProgressView()
                                         .padding(.trailing, 8)
                                 }
-                                Text("Save Group Associations")
+                                Text(localized("Save Group Associations"))
                                     .fontWeight(.semibold)
                                 Spacer()
                             }
@@ -130,7 +130,7 @@ struct AppIDDetailView: View {
                 }
             }
 
-            Section(header: Text("Actions")) {
+            Section(header: Text(localized("Actions"))) {
                 SwiftUI.Button {
                     Task {
                         _ = await viewModel.downloadProfile(for: currentAppID, presentingViewController: presentingViewController)
@@ -138,7 +138,7 @@ struct AppIDDetailView: View {
                 } label: {
                     HStack {
                         Image(systemName: "arrow.down.doc")
-                        Text("Download Provisioning Profile")
+                        Text(localized("Download Provisioning Profile"))
                     }
                 }
             }
@@ -148,7 +148,7 @@ struct AppIDDetailView: View {
         #else
         .listStyle(GroupedListStyle())
         #endif
-        .navigationTitle(currentAppID.name.isEmpty ? "App ID Details" : currentAppID.name)
+        .navigationTitle(currentAppID.name.isEmpty ? localized("App ID Details") : currentAppID.name)
         .onAppear {
             initializeSelectedGroups()
         }
@@ -180,27 +180,27 @@ struct AppIDDetailView: View {
 
     private func displayName(for feature: Feature) -> String {
         switch feature {
-        case .appGroups: return "App Groups"
-        case .gameCenter: return "Game Center"
-        case .inAppPurchase: return "In-App Purchase"
-        case .pushNotifications: return "Push Notifications"
-        case .interAppAudio: return "Inter-App Audio"
-        case .associatedDomains: return "Associated Domains"
-        case .dataProtection: return "Data Protection"
-        case .siri: return "Siri"
-        case .applePay: return "Apple Pay"
-        case .vpn: return "Personal VPN"
-        case .networkExtensions: return "Network Extensions"
-        case .multipath: return "Multipath"
-        case .hotspot: return "Hotspot"
-        case .nfc: return "NFC Tag Reading"
-        case .classKit: return "ClassKit"
-        case .autoFillCredentialProvider: return "AutoFill Credential Provider"
-        case .accessWiFiInformation: return "Access WiFi Information"
-        case .wirelessAccessoryConfiguration: return "Wireless Accessory Config"
-        case .increasedMemoryLimit: return "Increased Memory Limit"
-        case .extendedVirtualAddressing: return "Extended Virtual Addressing"
-        case .increasedDebuggingMemoryLimit: return "Increased Debugging Memory Limit"
+        case .appGroups: return localized("App Groups")
+        case .gameCenter: return localized("Game Center")
+        case .inAppPurchase: return localized("In-App Purchase")
+        case .pushNotifications: return localized("Push Notifications")
+        case .interAppAudio: return localized("Inter-App Audio")
+        case .associatedDomains: return localized("Associated Domains")
+        case .dataProtection: return localized("Data Protection")
+        case .siri: return localized("Siri")
+        case .applePay: return localized("Apple Pay")
+        case .vpn: return localized("Personal VPN")
+        case .networkExtensions: return localized("Network Extensions")
+        case .multipath: return localized("Multipath")
+        case .hotspot: return localized("Hotspot")
+        case .nfc: return localized("NFC Tag Reading")
+        case .classKit: return localized("ClassKit")
+        case .autoFillCredentialProvider: return localized("AutoFill Credential Provider")
+        case .accessWiFiInformation: return localized("Access WiFi Information")
+        case .wirelessAccessoryConfiguration: return localized("Wireless Accessory Config")
+        case .increasedMemoryLimit: return localized("Increased Memory Limit")
+        case .extendedVirtualAddressing: return localized("Extended Virtual Addressing")
+        case .increasedDebuggingMemoryLimit: return localized("Increased Debugging Memory Limit")
         default: return feature.rawValue
         }
     }

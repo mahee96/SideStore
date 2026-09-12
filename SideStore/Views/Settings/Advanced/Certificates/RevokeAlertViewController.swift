@@ -41,7 +41,7 @@ class RevokeAlertViewController: UIViewController {
         keepLocalCheckboxButton.addTarget(self, action: #selector(toggleKeepLocalCheckbox), for: .touchUpInside)
         
         let label = UILabel()
-        label.text = NSLocalizedString("Keep Local Certificate", comment: "")
+        label.text = localized("Keep Local Certificate")
         label.font = .systemFont(ofSize: 14)
         label.isUserInteractionEnabled = true
         let tap = UITapGestureRecognizer(target: self, action: #selector(toggleKeepLocalCheckbox))

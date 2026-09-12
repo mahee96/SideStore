@@ -15,6 +15,14 @@ enum ServiceTypeSortOption: String, CaseIterable {
     case nameAscending = "Name (A to Z)"
     case nameDescending = "Name (Z to A)"
     case rawType = "Raw Type Identifier"
+
+    var localizedName: String {
+        switch self {
+        case .nameAscending: return localized("Name (A to Z)")
+        case .nameDescending: return localized("Name (Z to A)")
+        case .rawType: return localized("Raw Type Identifier")
+        }
+    }
 }
 
 enum ServiceTypeGroupOption: String, CaseIterable {
@@ -22,17 +30,41 @@ enum ServiceTypeGroupOption: String, CaseIterable {
     case protocolType = "Protocol (TCP / UDP)"
     case category = "Category (Recognized / Other)"
     case firstLetter = "First Letter"
+
+    var localizedName: String {
+        switch self {
+        case .none: return localized("None")
+        case .protocolType: return localized("Protocol (TCP / UDP)")
+        case .category: return localized("Category (Recognized / Other)")
+        case .firstLetter: return localized("First Letter")
+        }
+    }
 }
 
 enum ServiceInstanceSortOption: String, CaseIterable {
     case nameAscending = "Name (A to Z)"
     case nameDescending = "Name (Z to A)"
+
+    var localizedName: String {
+        switch self {
+        case .nameAscending: return localized("Name (A to Z)")
+        case .nameDescending: return localized("Name (Z to A)")
+        }
+    }
 }
 
 enum ServiceInstanceGroupOption: String, CaseIterable {
     case ipVersion = "IP Version (v4/v6)"
     case none = "None"
     case firstLetter = "First Letter"
+
+    var localizedName: String {
+        switch self {
+        case .ipVersion: return localized("IP Version (v4/v6)")
+        case .none: return localized("None")
+        case .firstLetter: return localized("First Letter")
+        }
+    }
 }
 
 struct DomainSection: Identifiable {
@@ -148,7 +180,7 @@ final class BonjourDiscoveryViewModel: ObservableObject {
             }
             return keys.map { DomainSection(id: "group_\($0)", title: "\($0) (\(grouped[$0]?.count ?? 0))", items: grouped[$0] ?? []) }
         } else {
-            return [DomainSection(id: "all_domains", title: "Browsable Domains", items: sorted)]
+            return [DomainSection(id: "all_domains", title: localized("Browsable Domains"), items: sorted)]
         }
     }
     
@@ -167,7 +199,7 @@ final class BonjourDiscoveryViewModel: ObservableObject {
         
         switch serviceTypeGroupOption {
         case .none:
-            let title = "\(serviceTypes.count) Service\(serviceTypes.count == 1 ? "" : "s") Found"
+            let title = serviceTypes.count == 1 ? localized("1 Service Found") : localized("\(serviceTypes.count) Services Found")
             return [ServiceTypeSection(id: "all_types", title: title, items: sorted)]
             
         case .protocolType:
@@ -177,13 +209,13 @@ final class BonjourDiscoveryViewModel: ObservableObject {
             
             var sections: [ServiceTypeSection] = []
             if !tcpItems.isEmpty {
-                sections.append(ServiceTypeSection(id: "tcp_types", title: "TCP Services (\(tcpItems.count))", items: tcpItems))
+                sections.append(ServiceTypeSection(id: "tcp_types", title: localized("TCP Services (\(tcpItems.count))"), items: tcpItems))
             }
             if !udpItems.isEmpty {
-                sections.append(ServiceTypeSection(id: "udp_types", title: "UDP Services (\(udpItems.count))", items: udpItems))
+                sections.append(ServiceTypeSection(id: "udp_types", title: localized("UDP Services (\(udpItems.count))"), items: udpItems))
             }
             if !otherItems.isEmpty {
-                sections.append(ServiceTypeSection(id: "other_types", title: "Other Services (\(otherItems.count))", items: otherItems))
+                sections.append(ServiceTypeSection(id: "other_types", title: localized("Other Services (\(otherItems.count))"), items: otherItems))
             }
             return sections
             
@@ -193,10 +225,10 @@ final class BonjourDiscoveryViewModel: ObservableObject {
             
             var sections: [ServiceTypeSection] = []
             if !recognized.isEmpty {
-                sections.append(ServiceTypeSection(id: "recognized_types", title: "Recognized Services (\(recognized.count))", items: recognized))
+                sections.append(ServiceTypeSection(id: "recognized_types", title: localized("Recognized Services (\(recognized.count))"), items: recognized))
             }
             if !unknown.isEmpty {
-                sections.append(ServiceTypeSection(id: "unknown_types", title: "Other / Raw Services (\(unknown.count))", items: unknown))
+                sections.append(ServiceTypeSection(id: "unknown_types", title: localized("Other / Raw Services (\(unknown.count))"), items: unknown))
             }
             return sections
             
@@ -224,7 +256,7 @@ final class BonjourDiscoveryViewModel: ObservableObject {
         
         switch instanceGroupOption {
         case .none:
-            let title = "\(instances.count) Instance\(instances.count == 1 ? "" : "s")"
+            let title = instances.count == 1 ? localized("1 Instance") : localized("\(instances.count) Instances")
             return [ServiceInstanceSection(id: "all_instances", title: title, items: sorted)]
             
         case .ipVersion:
@@ -305,13 +337,13 @@ final class BonjourDiscoveryViewModel: ObservableObject {
             let clean = raw.strippingInterfaceScope
             let label: String = {
                 if !clean.contains(":") {
-                    return "IPv4 Address"
+                    return localized("IPv4 Address")
                 } else if raw.lowercased().hasPrefix("fe80:") || raw.contains("%") {
-                    return "IPv6 Address (Link-Local)"
+                    return localized("IPv6 Address (Link-Local)")
                 } else if clean.lowercased().hasPrefix("fd") || clean.lowercased().hasPrefix("fc") {
-                    return "IPv6 Address (Unique-Local)"
+                    return localized("IPv6 Address (Unique-Local)")
                 } else {
-                    return "IPv6 Address"
+                    return localized("IPv6 Address")
                 }
             }()
             return DiscoveredAddressItem(
@@ -523,11 +555,11 @@ final class BonjourDiscoveryViewModel: ObservableObject {
     static func portCategory(for port: UInt16) -> String {
         switch port {
         case 0...1023:
-            return "Well-Known Port"
+            return localized("Well-Known Port")
         case 1024...49151:
-            return "Registered Port"
+            return localized("Registered Port")
         default:
-            return "Dynamic / Ephemeral Port"
+            return localized("Dynamic / Ephemeral Port")
         }
     }
     

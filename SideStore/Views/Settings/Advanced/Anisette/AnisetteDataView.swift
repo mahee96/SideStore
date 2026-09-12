@@ -94,12 +94,12 @@ class AnisetteDataViewModel: ObservableObject {
         )
         await AnisetteConfigManager.shared.saveConfig(config)
         updateRawEditableJSON()
-        showToast(text: "Saved configuration successfully.")
+        showToast(text: localized("Saved configuration successfully."))
     }
     
     func saveRawJSON() async {
         guard let data = rawEditableJSON.data(using: .utf8) else {
-            showToast(text: "Encoding Failed", detailText: "Unable to encode JSON as UTF-8.")
+            showToast(text: localized("Encoding Failed"), detailText: localized("Unable to encode JSON as UTF-8."))
             return
         }
         
@@ -117,9 +117,9 @@ class AnisetteDataViewModel: ObservableObject {
             customXcodeVersion = config.customXcodeVersion ?? ""
             
             await AnisetteConfigManager.shared.saveConfig(config)
-            showToast(text: "JSON configuration saved successfully!")
+            showToast(text: localized("JSON configuration saved successfully!"))
         } catch {
-            showToast(text: "Invalid JSON Structure", error: error)
+            showToast(text: localized("Invalid JSON Structure"), error: error)
         }
     }
     
@@ -136,7 +136,7 @@ class AnisetteDataViewModel: ObservableObject {
         customXcodeVersion = ""
         updateRawEditableJSON()
         await save()
-        showToast(text: "Reset to default configuration.")
+        showToast(text: localized("Reset to default configuration."))
     }
     
     func importJSON(url: URL) async {
@@ -162,9 +162,9 @@ class AnisetteDataViewModel: ObservableObject {
             customRoutingInfo = config.customRoutingInfo ?? ""
             customXcodeVersion = config.customXcodeVersion ?? ""
             updateRawEditableJSON()
-            showToast(text: "Imported successfully", detailText: url.lastPathComponent)
+            showToast(text: localized("Imported successfully"), detailText: url.lastPathComponent)
         } catch {
-            showToast(text: "Import Failed", error: error)
+            showToast(text: localized("Import Failed"), error: error)
         }
     }
     
@@ -175,7 +175,7 @@ class AnisetteDataViewModel: ObservableObject {
             try data.write(to: tempURL, options: .atomic)
             return tempURL
         } catch {
-            showToast(text: "Export Failed", error: error)
+            showToast(text: localized("Export Failed"), error: error)
             return nil
         }
     }
@@ -187,7 +187,7 @@ class AnisetteDataViewModel: ObservableObject {
         do {
             let activeServer = UserDefaults.standard.menuAnisetteURL
             guard !activeServer.isEmpty, let url = URL(string: activeServer) else {
-                throw NSError(domain: "AnisetteDataViewModel", code: -1, userInfo: [NSLocalizedDescriptionKey: "No active anisette server URL configured."])
+                throw NSError(domain: "AnisetteDataViewModel", code: -1, userInfo: [NSLocalizedDescriptionKey: localized("No active anisette server URL configured.")])
             }
             
             let clientInfoURL = url.appendingPathComponent("v3").appendingPathComponent("client_info")
@@ -196,7 +196,7 @@ class AnisetteDataViewModel: ObservableObject {
             
             let (data, _) = try await URLSession.shared.data(for: request)
             guard let json = try JSONSerialization.jsonObject(with: data) as? [String: String] else {
-                throw NSError(domain: "AnisetteDataViewModel", code: -2, userInfo: [NSLocalizedDescriptionKey: "Server response is not a valid JSON."])
+                throw NSError(domain: "AnisetteDataViewModel", code: -2, userInfo: [NSLocalizedDescriptionKey: localized("Server response is not a valid JSON.")])
             }
             
             await AnisetteConfigManager.shared.saveServerHeaders(json)
@@ -207,16 +207,16 @@ class AnisetteDataViewModel: ObservableObject {
                 serverReturnedHeadersJSON = str
             }
             
-            showToast(text: "Fetched server config!", detailText: url.host)
+            showToast(text: localized("Fetched server config!"), detailText: url.host)
         } catch {
-            showToast(text: "Fetch Failed", error: error)
+            showToast(text: localized("Fetch Failed"), error: error)
         }
     }
     
     func loadServerHeadersIntoOverrides() async {
         let serverHeaders = await AnisetteConfigManager.shared.loadServerHeaders()
         guard !serverHeaders.isEmpty else {
-            showToast(text: "No fetched headers found", detailText: "Fetch from server first.")
+            showToast(text: localized("No fetched headers found"), detailText: localized("Fetch from server first."))
             return
         }
         
@@ -258,7 +258,7 @@ class AnisetteDataViewModel: ObservableObject {
         }
         
         await save()
-        showToast(text: "Loaded fetched data into overrides!")
+        showToast(text: localized("Loaded fetched data into overrides!"))
     }
     
     func showToast(text: String, detailText: String? = nil, error: Error? = nil) {
@@ -288,9 +288,9 @@ struct AnisetteDataView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                Picker("View Mode", selection: $viewModel.viewMode) {
-                    Text("Interactive").tag(0)
-                    Text("Raw JSON").tag(1)
+                Picker(localized("View Mode"), selection: $viewModel.viewMode) {
+                    Text(localized("Interactive")).tag(0)
+                    Text(localized("Raw JSON")).tag(1)
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal, 16)
@@ -299,11 +299,11 @@ struct AnisetteDataView: View {
                 if viewModel.viewMode == 0 {
                     // SECTION 1: PRIMARY CLIENT HEADERS
                     VStack(alignment: .leading, spacing: 8) {
-                        sectionHeader("PRIMARY CLIENT HEADERS")
+                        sectionHeader(localized("PRIMARY CLIENT HEADERS"))
                         
                         VStack(spacing: 0) {
                             headerFieldRow(
-                                title: "Client Info",
+                                title: localized("Client Info"),
                                 headerKey: "X-Mme-Client-Info",
                                 text: $viewModel.clientInfo,
                                 placeholder: AppConstants.Anisette.defaultClientInfo,
@@ -313,7 +313,7 @@ struct AnisetteDataView: View {
                             divider
                             
                             headerFieldRow(
-                                title: "User Agent",
+                                title: localized("User Agent"),
                                 headerKey: "User-Agent",
                                 text: $viewModel.userAgent,
                                 placeholder: AppConstants.Anisette.defaultUserAgent,
@@ -326,20 +326,20 @@ struct AnisetteDataView: View {
                     
                     // SECTION 2: DEVICE & IDENTITY
                     VStack(alignment: .leading, spacing: 8) {
-                        sectionHeader("DEVICE & IDENTITY")
+                        sectionHeader(localized("DEVICE & IDENTITY"))
                         
                         VStack(spacing: 0) {
                             headerFieldRow(
-                                title: "Device Identifier",
+                                title: localized("Device Identifier"),
                                 headerKey: "X-Mme-Device-Id",
                                 text: $viewModel.customDeviceID,
-                                placeholder: "System Generated Device UUID"
+                                placeholder: localized("System Generated Device UUID")
                             )
                             
                             divider
                             
                             headerFieldRow(
-                                title: "Local User ID",
+                                title: localized("Local User ID"),
                                 headerKey: "X-Apple-I-MD-LU",
                                 text: $viewModel.customLocalUserID,
                                 placeholder: "0"
@@ -348,7 +348,7 @@ struct AnisetteDataView: View {
                             divider
                             
                             headerFieldRow(
-                                title: "Serial Number",
+                                title: localized("Serial Number"),
                                 headerKey: "X-Apple-I-SRL-NO",
                                 text: $viewModel.customSerialNumber,
                                 placeholder: AppConstants.Anisette.defaultDeviceSerialNumber
@@ -357,7 +357,7 @@ struct AnisetteDataView: View {
                             divider
                             
                             headerFieldRow(
-                                title: "Routing Info",
+                                title: localized("Routing Info"),
                                 headerKey: "X-Apple-I-MD-RINFO",
                                 text: $viewModel.customRoutingInfo,
                                 placeholder: "17106176"
@@ -369,11 +369,11 @@ struct AnisetteDataView: View {
                     
                     // SECTION 3: ENVIRONMENT & LOCALIZATION
                     VStack(alignment: .leading, spacing: 8) {
-                        sectionHeader("ENVIRONMENT & LOCALIZATION")
+                        sectionHeader(localized("ENVIRONMENT & LOCALIZATION"))
                         
                         VStack(spacing: 0) {
                             headerFieldRow(
-                                title: "Locale",
+                                title: localized("Locale"),
                                 headerKey: "X-Apple-Locale",
                                 text: $viewModel.customLocale,
                                 placeholder: "en_US"
@@ -382,7 +382,7 @@ struct AnisetteDataView: View {
                             divider
                             
                             headerFieldRow(
-                                title: "Time Zone",
+                                title: localized("Time Zone"),
                                 headerKey: "X-Apple-I-TimeZone",
                                 text: $viewModel.customTimeZone,
                                 placeholder: "e.g. UTC, EDT",
@@ -392,7 +392,7 @@ struct AnisetteDataView: View {
                             divider
                             
                             headerFieldRow(
-                                title: "Xcode Version",
+                                title: localized("Xcode Version"),
                                 headerKey: "X-Xcode-Version",
                                 text: $viewModel.customXcodeVersion,
                                 placeholder: "26.0 (26A242)"
@@ -404,29 +404,29 @@ struct AnisetteDataView: View {
                     
                     // SECTION 4: DYNAMIC TOKENS (INFORMATIONAL)
                     VStack(alignment: .leading, spacing: 8) {
-                        sectionHeader("DYNAMIC CRYPTOGRAPHIC TOKENS")
+                        sectionHeader(localized("DYNAMIC CRYPTOGRAPHIC TOKENS"))
                         
                         VStack(spacing: 0) {
                             infoTokenRow(
-                                title: "One-Time Password (OTP)",
+                                title: localized("One-Time Password (OTP)"),
                                 headerKey: "X-Apple-I-MD",
-                                subtitle: "Signed HMAC token dynamically calculated by ADI engine per request"
+                                subtitle: localized("Signed HMAC token dynamically calculated by ADI engine per request")
                             )
                             
                             divider
                             
                             infoTokenRow(
-                                title: "Machine ID",
+                                title: localized("Machine ID"),
                                 headerKey: "X-Apple-I-MD-M",
-                                subtitle: "Hardware identifier computed from adi.pb and device identity"
+                                subtitle: localized("Hardware identifier computed from adi.pb and device identity")
                             )
                             
                             divider
                             
                             infoTokenRow(
-                                title: "Client Time",
+                                title: localized("Client Time"),
                                 headerKey: "X-Apple-I-Client-Time",
-                                subtitle: "ISO8601 UTC timestamp locked to OTP generation time"
+                                subtitle: localized("ISO8601 UTC timestamp locked to OTP generation time")
                             )
                         }
                         .background(Color.settingsRowBackground)
@@ -441,7 +441,7 @@ struct AnisetteDataView: View {
                     } label: {
                         HStack {
                             Spacer()
-                            Label("Save Overrides", systemImage: "checkmark.circle.fill")
+                            Label(localized("Save Overrides"), systemImage: "checkmark.circle.fill")
                                 .font(.system(size: 17, weight: .bold))
                                 .foregroundColor(.white)
                             Spacer()
@@ -454,7 +454,7 @@ struct AnisetteDataView: View {
                 } else {
                     // RAW JSON VIEW
                     VStack(alignment: .leading, spacing: 8) {
-                        sectionHeader("RAW CONFIGURATION JSON")
+                        sectionHeader(localized("RAW CONFIGURATION JSON"))
                         
                         VStack(spacing: 12) {
                             TextEditor(text: $viewModel.rawEditableJSON)
@@ -472,7 +472,7 @@ struct AnisetteDataView: View {
                             } label: {
                                 HStack {
                                     Spacer()
-                                    Label("Save Raw JSON", systemImage: "square.and.arrow.down.fill")
+                                    Label(localized("Save Raw JSON"), systemImage: "square.and.arrow.down.fill")
                                         .font(.system(size: 16, weight: .bold))
                                         .foregroundColor(.white)
                                     Spacer()
@@ -492,13 +492,13 @@ struct AnisetteDataView: View {
                 // SECTION: REMOTE SERVER SYNC (ONLY IN REMOTE MODE)
                 if !UserDefaults.standard.useOnDeviceAnisette {
                     VStack(alignment: .leading, spacing: 8) {
-                        sectionHeader("REMOTE SERVER SYNC")
+                        sectionHeader(localized("REMOTE SERVER SYNC"))
                         
                         VStack(spacing: 0) {
                             DisclosureGroup(isExpanded: $showingServerHeaders) {
                                 VStack(alignment: .leading, spacing: 10) {
                                     HStack {
-                                        Text("Server: \(URL(string: UserDefaults.standard.menuAnisetteURL)?.host ?? "Active Server")")
+                                        Text(localized("Server: \(URL(string: UserDefaults.standard.menuAnisetteURL)?.host ?? "Active Server")"))
                                             .font(.caption)
                                             .foregroundColor(Color.white.opacity(0.6))
                                         Spacer()
@@ -513,7 +513,7 @@ struct AnisetteDataView: View {
                                         } label: {
                                             HStack(spacing: 4) {
                                                 Image(systemName: isCopiedServer ? "checkmark" : "doc.on.doc")
-                                                Text(isCopiedServer ? "Copied" : "Copy")
+                                                Text(isCopiedServer ? localized("Copied") : localized("Copy"))
                                             }
                                             .font(.footnote.weight(.semibold))
                                             .foregroundColor(isCopiedServer ? .green : .accentColor)
@@ -536,7 +536,7 @@ struct AnisetteDataView: View {
                                     } label: {
                                         HStack {
                                             Spacer()
-                                            Label("Save as Overrides", systemImage: "square.and.arrow.down.on.square")
+                                            Label(localized("Save as Overrides"), systemImage: "square.and.arrow.down.on.square")
                                                 .font(.system(size: 15, weight: .bold))
                                                 .foregroundColor(.white)
                                             Spacer()
@@ -550,7 +550,7 @@ struct AnisetteDataView: View {
                                 .padding(.top, 8)
                             } label: {
                                 HStack {
-                                    Label("Remote Server Sync", systemImage: "network")
+                                    Label(localized("Remote Server Sync"), systemImage: "network")
                                         .font(.system(size: 16, weight: .bold))
                                         .foregroundColor(.white)
                                     Spacer()
@@ -562,7 +562,7 @@ struct AnisetteDataView: View {
                                     } label: {
                                         HStack(spacing: 4) {
                                             Image(systemName: "arrow.clockwise")
-                                            Text("Fetch")
+                                            Text(localized("Fetch"))
                                         }
                                         .font(.footnote.weight(.semibold))
                                         .foregroundColor(.accentColor)
@@ -584,7 +584,7 @@ struct AnisetteDataView: View {
                 
                 // SECTION: ACTIONS
                 VStack(alignment: .leading, spacing: 8) {
-                    sectionHeader("ACTIONS")
+                    sectionHeader(localized("ACTIONS"))
                     
                     VStack(spacing: 0) {
                         SwiftUI.Button {
@@ -594,7 +594,7 @@ struct AnisetteDataView: View {
                             if let topVC = UIApplication.shared.topViewController() {
                                 TVWebFileTransferManager.shared.startImport(
                                     acceptedExtensions: ["json"],
-                                    title: "Import Anisette Client Config JSON",
+                                    title: localized("Import Anisette Client Config JSON"),
                                     presentingVC: topVC
                                 ) { fileURL in
                                     guard let fileURL = fileURL else { return }
@@ -606,7 +606,7 @@ struct AnisetteDataView: View {
                             #endif
                         } label: {
                             HStack {
-                                Label("Import Config JSON", systemImage: "square.and.arrow.down")
+                                Label(localized("Import Config JSON"), systemImage: "square.and.arrow.down")
                                     .font(.system(size: 16, weight: .bold))
                                     .foregroundColor(.white)
                                 Spacer()
@@ -628,7 +628,7 @@ struct AnisetteDataView: View {
                             }
                         } label: {
                             HStack {
-                                Label("Export Config JSON", systemImage: "square.and.arrow.up")
+                                Label(localized("Export Config JSON"), systemImage: "square.and.arrow.up")
                                     .font(.system(size: 16, weight: .bold))
                                     .foregroundColor(.white)
                                 Spacer()
@@ -646,7 +646,7 @@ struct AnisetteDataView: View {
                             showingResetAlert = true
                         } label: {
                             HStack {
-                                Label("Reset to Defaults", systemImage: "arrow.circlepath")
+                                Label(localized("Reset to Defaults"), systemImage: "arrow.circlepath")
                                     .font(.system(size: 16, weight: .bold))
                                     .foregroundColor(.red)
                                 Spacer()
@@ -654,15 +654,15 @@ struct AnisetteDataView: View {
                             .padding(.horizontal, 16)
                             .frame(height: 50)
                         }
-                        .alert("Reset to Defaults?", isPresented: $showingResetAlert) {
-                            SwiftUI.Button("Reset", role: .destructive) {
+                        .alert(localized("Reset to Defaults?"), isPresented: $showingResetAlert) {
+                            SwiftUI.Button(localized("Reset"), role: .destructive) {
                                 Task {
                                     await viewModel.reset()
                                 }
                             }
-                            SwiftUI.Button("Cancel", role: .cancel) {}
+                            SwiftUI.Button(localized("Cancel"), role: .cancel) {}
                         } message: {
-                            Text("This will restore the client headers to the default recommended values.")
+                            Text(localized("This will restore the client headers to the default recommended values."))
                         }
                     }
                     .background(Color.settingsRowBackground)
@@ -674,7 +674,7 @@ struct AnisetteDataView: View {
             .padding(.bottom, 32)
         }
         .background(Color(uiColor: .settingsBackground).ignoresSafeArea())
-        .navigationTitle("Client Config")
+        .navigationTitle(localized("Client Config"))
         #if !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -702,7 +702,7 @@ struct AnisetteDataView: View {
                     }
                 }
             case .failure(let error):
-                viewModel.showToast(text: "File Selection Failed", error: error)
+                viewModel.showToast(text: localized("File Selection Failed"), error: error)
             }
         }
         #endif

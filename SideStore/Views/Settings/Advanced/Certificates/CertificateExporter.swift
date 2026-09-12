@@ -12,18 +12,18 @@ import SideSign
 enum CertificateExporter {
     
     static func sharePublicCertAsDER(_ cert: ALTX509Certificate, onShare: ((URL) -> Void)? = nil, onError: @escaping (String) -> Void) {
-        guard let data = cert.data else { onError("Public certificate data is missing."); return }
+        guard let data = cert.data else { onError(localized("Public certificate data is missing.")); return }
         share(data: getDERData(from: data) ?? data, filename: (cert.machineName ?? cert.name) + ".der", onShare: onShare, onError: onError)
     }
     
     static func sharePublicCertAsPEM(_ cert: ALTX509Certificate, onShare: ((URL) -> Void)? = nil, onError: @escaping (String) -> Void) {
-        guard let data = cert.data else { onError("Public certificate data is missing."); return }
+        guard let data = cert.data else { onError(localized("Public certificate data is missing.")); return }
         share(data: data, filename: (cert.machineName ?? cert.name) + ".pem", onShare: onShare, onError: onError)
     }
     
     static func copyPublicCertAsPEM(_ cert: ALTX509Certificate, onError: @escaping (String) -> Void) {
         #if !os(tvOS)
-        guard let data = cert.data else { onError("Public certificate data is missing."); return }
+        guard let data = cert.data else { onError(localized("Public certificate data is missing.")); return }
         UIPasteboard.general.string = String(data: data, encoding: .utf8) ?? data.base64EncodedString()
         #endif
     }
@@ -34,7 +34,7 @@ enum CertificateExporter {
             share(data: p12Data, filename: (cert.machineName ?? cert.name) + ".p12", onShare: onShare, onError: onError)
         } catch {
             debugLog("[CertificateExporter] Failed to build encrypted p12 data: \(error)")
-            onError("Failed to build encrypted p12 data: \(error.localizedDescription)")
+            onError(localized("Failed to build encrypted p12 data: \(error.localizedDescription)"))
         }
     }
     
@@ -61,7 +61,7 @@ enum CertificateExporter {
         do {
             try data.write(to: tempURL)
         } catch {
-            onError("Failed to write temp export file: " + error.localizedDescription)
+            onError(localized("Failed to write temp export file: \(error.localizedDescription)"))
             return
         }
         if let onShare = onShare {
@@ -79,7 +79,7 @@ enum CertificateExporter {
         }
         rootVC.present(activityVC, animated: true)
         #else
-        TVWebFileTransferManager.shared.startExport(fileURL: tempURL, title: "Export Certificate / Key", presentingVC: rootVC)
+        TVWebFileTransferManager.shared.startExport(fileURL: tempURL, title: localized("Export Certificate / Key"), presentingVC: rootVC)
         #endif
     }
 }

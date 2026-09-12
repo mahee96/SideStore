@@ -93,11 +93,11 @@ final class PerformBackupRestoreOperation: BasePipelineOperation<InstallAppOpera
             return error
             
         case (let error as NSError, .backup):
-            let localizedFailure = String(format: NSLocalizedString("Could not back up “%@”.", comment: ""), appName)
+            let localizedFailure = localized("Could not back up “\(appName)”.")
             return error.withLocalizedFailure(localizedFailure)
             
         case (let error as NSError, .restore):
-            let localizedFailure = String(format: NSLocalizedString("Could not restore “%@”.", comment: ""), appName)
+            let localizedFailure = localized("Could not restore “\(appName)”.")
             return error.withLocalizedFailure(localizedFailure)
         }
     }

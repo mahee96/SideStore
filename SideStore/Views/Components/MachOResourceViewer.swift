@@ -21,59 +21,59 @@ struct MachOResourceViewer: View {
     var body: some View {
         List {
             if let parser = parser {
-                Section(header: Text("Binary Summary")) {
-                    InfoRow(label: "Name", value: url.lastPathComponent)
-                    InfoRow(label: "Path", value: url.path)
-                    InfoRow(label: "Size", value: formatSize(url))
+                Section(header: Text(localized("Binary Summary"))) {
+                    InfoRow(label: localized("Name"), value: url.lastPathComponent)
+                    InfoRow(label: localized("Path"), value: url.path)
+                    InfoRow(label: localized("Size"), value: formatSize(url))
 
                     let archs = parser.architectures()
-                    InfoRow(label: "Architectures", value: archs.isEmpty ? "Unknown" : archs.joined(separator: ", "))
+                    InfoRow(label: localized("Architectures"), value: archs.isEmpty ? localized("Unknown") : archs.joined(separator: ", "))
 
                     if let platform = parser.platformType() {
-                        InfoRow(label: "Platform", value: platform)
+                        InfoRow(label: localized("Platform"), value: platform)
                     }
 
                     if let minOS = parser.minimumOSVersion() {
-                        InfoRow(label: "Min OS Version", value: minOS)
+                        InfoRow(label: localized("Min OS Version"), value: minOS)
                     }
 
                     InfoRow(
-                        label: "Encrypted (DRM)",
-                        value: parser.isEncrypted() ? "Yes" : "No",
+                        label: localized("Encrypted (DRM)"),
+                        value: parser.isEncrypted() ? localized("Yes") : localized("No"),
                         valueColor: parser.isEncrypted() ? .orange : .green
                     )
 
                     if let bundleID = parser.bundleIdentifier() {
-                        InfoRow(label: "Bundle ID", value: bundleID)
+                        InfoRow(label: localized("Bundle ID"), value: bundleID)
                     }
 
                     if let teamID = parser.teamID() {
-                        InfoRow(label: "Team ID", value: teamID)
+                        InfoRow(label: localized("Team ID"), value: teamID)
                     }
 
                     if let entryOff = parser.entryPoint() {
-                        InfoRow(label: "Entry Point", value: String(format: "0x%llX", entryOff))
+                        InfoRow(label: localized("Entry Point"), value: String(format: "0x%llX", entryOff))
                     }
 
                     let cdHashes = parser.getCDHashes()
                     if !cdHashes.isEmpty {
-                        InfoRow(label: "CDHash", value: cdHashes.joined(separator: "\n"))
+                        InfoRow(label: localized("CDHash"), value: cdHashes.joined(separator: "\n"))
                     }
                 }
 
                 let x509Certs = parser.x509Certificates()
                 if !x509Certs.isEmpty {
-                    Section(header: Text("Signatures & Certificates (\(x509Certs.count))")) {
+                    Section(header: Text(localized("Signatures & Certificates (\(x509Certs.count))"))) {
                         ForEach(Array(x509Certs.enumerated()), id: \.offset) { index, cert in
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(cert.name)
                                     .font(.subheadline)
                                     .foregroundColor(.primary)
-                                Text("Serial: \(cert.serialNumber)")
+                                Text(localized("Serial: \(cert.serialNumber)"))
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                 if cert.expiryDate != Date.distantPast {
-                                    Text("Expires: \(formatDate(cert.expiryDate))")
+                                    Text(localized("Expires: \(formatDate(cert.expiryDate))"))
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
@@ -84,15 +84,15 @@ struct MachOResourceViewer: View {
                 }
 
                 if let ent = try? parser.entitlements(), !ent.isEmpty {
-                    Section(header: Text("Entitlements")) {
-                        NavigationLink(destination: ResourceTextViewer(title: "Entitlements", explicitContent: ent)) {
+                    Section(header: Text(localized("Entitlements"))) {
+                        NavigationLink(destination: ResourceTextViewer(title: localized("Entitlements"), explicitContent: ent)) {
                             HStack {
                                 Image(systemName: "lock.doc.fill")
                                     .foregroundColor(.green)
-                                Text("Embedded Entitlements")
+                                Text(localized("Embedded Entitlements"))
                                     .font(.subheadline)
                                 Spacer()
-                                Text("XML")
+                                Text(localized("XML"))
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
@@ -102,7 +102,7 @@ struct MachOResourceViewer: View {
 
                 let libs = parser.linkedLibraries()
                 if !libs.isEmpty {
-                    Section(header: Text("Linked Libraries (\(libs.count))")) {
+                    Section(header: Text(localized("Linked Libraries (\(libs.count))"))) {
                         ForEach(libs, id: \.self) { lib in
                             HStack(alignment: .top, spacing: 8) {
                                 Image(systemName: "cpu")
@@ -120,14 +120,14 @@ struct MachOResourceViewer: View {
 
                 let segs = parser.segments()
                 if !segs.isEmpty {
-                    Section(header: Text("Segments (\(segs.count))")) {
+                    Section(header: Text(localized("Segments (\(segs.count))"))) {
                         ForEach(segs, id: \.name) { seg in
                             HStack {
                                 Text(seg.name)
                                     .font(.system(size: 13, design: .monospaced))
                                     .fontWeight(.medium)
                                 Spacer()
-                                Text("offset: \(String(format: "0x%llX", seg.offset))  size: \(ByteCountFormatter.string(fromByteCount: Int64(seg.size), countStyle: .file))")
+                                Text(localized("offset: \(String(format: "0x%llX", seg.offset))  size: \(ByteCountFormatter.string(fromByteCount: Int64(seg.size), countStyle: .file))"))
                                     .font(.system(size: 11, design: .monospaced))
                                     .foregroundColor(.secondary)
                             }
@@ -135,12 +135,12 @@ struct MachOResourceViewer: View {
                     }
                 }
 
-                Section(header: Text("Raw Dump")) {
-                    NavigationLink(destination: ResourceTextViewer(title: "Mach-O Dump", explicitContent: dumpText)) {
+                Section(header: Text(localized("Raw Dump"))) {
+                    NavigationLink(destination: ResourceTextViewer(title: localized("Mach-O Dump"), explicitContent: dumpText)) {
                         HStack {
                             Image(systemName: "doc.plaintext.fill")
                                 .foregroundColor(.blue)
-                            Text("View Full Mach-O Dump")
+                            Text(localized("View Full Mach-O Dump"))
                                 .font(.subheadline)
                         }
                     }
@@ -150,9 +150,9 @@ struct MachOResourceViewer: View {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 44))
                         .foregroundColor(.orange)
-                    Text("Invalid Mach-O Binary")
+                    Text(localized("Invalid Mach-O Binary"))
                         .font(.headline)
-                    Text("Could not parse \(url.lastPathComponent) as a valid Mach-O binary.")
+                    Text(localized("Could not parse \(url.lastPathComponent) as a valid Mach-O binary."))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -160,7 +160,7 @@ struct MachOResourceViewer: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ProgressView("Parsing Mach-O\u{2026}")
+                ProgressView(localized("Parsing Mach-O…"))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }

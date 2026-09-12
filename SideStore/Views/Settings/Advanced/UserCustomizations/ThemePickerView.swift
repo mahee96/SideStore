@@ -42,7 +42,7 @@ struct ThemePickerView: View {
             .padding(.bottom, 32)
         }
         .background(Color(uiColor: .settingsBackground).ignoresSafeArea())
-        .navigationTitle("Theme Manager")
+        .navigationTitle(localized("Theme Manager"))
         #if !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -53,7 +53,7 @@ struct ThemePickerView: View {
 
     private var previewSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("LIVE INTERFACE PREVIEW")
+            Text(localized("LIVE INTERFACE PREVIEW"))
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(Color.white.opacity(0.6))
                 .padding(.horizontal, 16)
@@ -111,7 +111,7 @@ struct ThemePickerView: View {
     #if !os(tvOS)
     private var colorWheelSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("COLOR SELECTION & WHEEL")
+            Text(localized("COLOR SELECTION & WHEEL"))
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(Color.white.opacity(0.6))
                 .padding(.horizontal, 16)
@@ -140,7 +140,7 @@ struct ThemePickerView: View {
 
     private var presetsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("PRESET THEMES")
+            Text(localized("PRESET THEMES"))
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(Color.white.opacity(0.6))
                 .padding(.horizontal, 16)
@@ -210,7 +210,7 @@ struct ThemePickerView: View {
         let hsl = uiColor.hslComponents
 
         return VStack(alignment: .leading, spacing: 8) {
-            Text("PRECISE COLOR METRICS")
+            Text(localized("PRECISE COLOR METRICS"))
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(Color.white.opacity(0.6))
                 .padding(.horizontal, 16)

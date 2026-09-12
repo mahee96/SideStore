@@ -29,11 +29,11 @@ struct SignableCertificateRowView: View {
     
     private var statusText: String? {
         if isAppCert && isActiveGlobal {
-            return "Current App & Active Global"
+            return localized("Current App & Active Global")
         } else if isAppCert {
-            return "Current App"
+            return localized("Current App")
         } else if isActiveGlobal {
-            return "Active Global"
+            return localized("Active Global")
         }
         return nil
     }
@@ -48,21 +48,21 @@ struct SignableCertificateRowView: View {
                 let certName = cert.name
                 if cert.machineName != nil {
                     (
-                        Text("Name: ").font(.system(size: 10))
+                        Text(localized("Name: ")).font(.system(size: 10))
                         + Text(certName).font(.system(size: 10))
                     )
                     .foregroundColor(Color(uiColor: .lightGray))
                 }
                 
                 (
-                    Text("Serial: ").font(.system(size: 11))
+                    Text(localized("Serial: ")).font(.system(size: 11))
                     + Text(cert.serialNumber).font(.system(size: 11, design: .monospaced))
                 )
                 .foregroundColor(Color(uiColor: .lightGray))
                 
                 if let ident = cert.identifier, !ident.isEmpty {
                     (
-                        Text("ID: ").font(.system(size: 10))
+                        Text(localized("ID: ")).font(.system(size: 10))
                         + Text(ident).font(.system(size: 10, design: .monospaced))
                     )
                     .foregroundColor(Color(uiColor: .lightGray))
@@ -70,13 +70,13 @@ struct SignableCertificateRowView: View {
                 
                 if let brief = briefInfo {
                     (
-                        Text("Type: ").font(.system(size: 10))
+                        Text(localized("Type: ")).font(.system(size: 10))
                         + Text(brief.type).font(.system(size: 10))
                     )
                     .foregroundColor(Color(uiColor: .lightGray))
                     
                     (
-                        Text("Validity: ").font(.system(size: 10))
+                        Text(localized("Validity: ")).font(.system(size: 10))
                         + Text("\(brief.validFrom) - \(brief.validUntil)").font(.system(size: 10))
                     )
                     .foregroundColor(Color(uiColor: .lightGray))
@@ -84,21 +84,21 @@ struct SignableCertificateRowView: View {
                 
                 if let req = cert.requesterEmail, !req.isEmpty {
                     (
-                        Text("Requester: ").font(.system(size: 10))
+                        Text(localized("Requester: ")).font(.system(size: 10))
                         + Text(req).font(.system(size: 10))
                     )
                     .foregroundColor(Color(uiColor: .lightGray))
                 }
                 
                 (
-                    Text("Keys: ").font(.system(size: 10))
-                    + Text("public + private").font(.system(size: 10))
+                    Text(localized("Keys: ")).font(.system(size: 10))
+                    + Text(localized("public + private")).font(.system(size: 10))
                 )
                 .foregroundColor(Color(uiColor: .lightGray))
                 
                 if let status = statusText {
                     (
-                        Text("Status: ").font(.system(size: 10))
+                        Text(localized("Status: ")).font(.system(size: 10))
                         + Text(status).font(.system(size: 10, weight: .bold))
                     )
                     .foregroundColor(isAppCert ? .green : .cyan)
@@ -141,7 +141,7 @@ final class SignableCertificatesListViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.title = NSLocalizedString("Set Certificate", comment: "")
+        self.title = localized("Set Certificate")
         self.certificates = viewModel.loadAllSignableLocalCertificates()
         
         self.view.backgroundColor = .settingsBackground
@@ -171,11 +171,11 @@ final class SignableCertificatesListViewController: UITableViewController {
         
         guard !signableCerts.isEmpty else {
             let alert = UIAlertController(
-                title: NSLocalizedString("No Signing Certificates", comment: ""),
-                message: NSLocalizedString("No valid signing certificates with private keys were found locally. Please import or create a certificate in Settings -> Certificates first.", comment: ""),
+                title: localized("No Signing Certificates"),
+                message: localized("No valid signing certificates with private keys were found locally. Please import or create a certificate in Settings -> Certificates first."),
                 preferredStyle: .alert
             )
-            alert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .default))
+            alert.addAction(UIAlertAction(title: localized("OK"), style: .default))
             presentingViewController.present(alert, animated: true)
             return
         }
@@ -212,21 +212,24 @@ final class SignableCertificatesListViewController: UITableViewController {
             .background(Color.white.opacity(0.15))
         } else {
             let certName = cert.name
-            let machineName = cert.machineName ?? "N/A"
+            let machineName = cert.machineName ?? localized("N/A")
             let brief = getBriefInfo(for: cert.data)
-            let typeStr = brief?.type ?? "N/A"
-            let validityStr = brief != nil ? "\(brief!.validFrom) - \(brief!.validUntil)" : "N/A"
+            let typeStr = brief?.type ?? localized("N/A")
+            let validityStr = brief != nil ? "\(brief!.validFrom) - \(brief!.validUntil)" : localized("N/A")
+            let machineInfo = localized("Machine: \(machineName)")
+            let currentSuffix = isCurrent ? localized(" (Current)") : ""
             
             cell.textLabel?.numberOfLines = 0
-            cell.textLabel?.text = """
-            \(certName) [Machine: \(machineName)]\(isCurrent ? " (Current)" : "")
-            Serial: \(cert.serialNumber)
-            ID: \(cert.identifier ?? "N/A")
-            Type: \(typeStr)
-            Validity: \(validityStr)
-            Requester: \(cert.requesterEmail ?? "N/A")
-            Keys: public + private
-            """
+            let lines = [
+                "\(certName) [\(machineInfo)]\(currentSuffix)",
+                localized("Serial: \(cert.serialNumber)"),
+                localized("ID: \(cert.identifier ?? localized("N/A"))"),
+                localized("Type: \(typeStr)"),
+                localized("Validity: \(validityStr)"),
+                localized("Requester: \(cert.requesterEmail ?? localized("N/A"))"),
+                localized("Keys: public + private")
+            ]
+            cell.textLabel?.text = lines.joined(separator: "\n")
             cell.textLabel?.textColor = .white
             cell.textLabel?.font = .systemFont(ofSize: 12, weight: .regular)
             cell.backgroundColor = UIColor.white.withAlphaComponent(0.15)
@@ -243,18 +246,18 @@ final class SignableCertificatesListViewController: UITableViewController {
         
         let contentVC = SetCertificateAlertViewController(installedApp: self.installedApp, certificate: cert.x509)
         let confirmAlert = UIAlertController(
-            title: NSLocalizedString("Set Certificate Confirmation", comment: ""),
-            message: NSLocalizedString("Confirm applying this certificate:", comment: ""),
+            title: localized("Set Certificate Confirmation"),
+            message: localized("Confirm applying this certificate:"),
             preferredStyle: .alert
         )
         confirmAlert.setValue(contentVC, forKey: "contentViewController")
         
-        let setAction = UIAlertAction(title: NSLocalizedString("Set & Resign", comment: ""), style: .default) { [weak self] _ in
+        let setAction = UIAlertAction(title: localized("Set & Resign"), style: .default) { [weak self] _ in
             self?.dismiss(animated: true) {
                 self?.onSelectCertificate?(cert)
             }
         }
-        let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel)
+        let cancelAction = UIAlertAction(title: localized("Cancel"), style: .cancel)
         
         confirmAlert.addAction(cancelAction)
         confirmAlert.addAction(setAction)

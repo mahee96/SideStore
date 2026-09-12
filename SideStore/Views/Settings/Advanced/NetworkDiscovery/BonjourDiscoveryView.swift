@@ -33,14 +33,14 @@ struct BonjourDiscoveryView: View {
             #endif
             
             if viewModel.isSearching && viewModel.domains.isEmpty {
-                ProgressView("Searching for domains…")
+                ProgressView(localized("Searching for domains…"))
             } else if !viewModel.isSearching && viewModel.domains.isEmpty {
                 emptyState
             } else {
                 domainsList
             }
         }
-        .navigationTitle("Discovery")
+        .navigationTitle(localized("Discovery"))
         #if !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -65,30 +65,30 @@ struct BonjourDiscoveryView: View {
                         SwiftUI.Button {
                             viewModel.domainGroupByFirstLetter = false
                         } label: {
-                            Label("None", systemImage: !viewModel.domainGroupByFirstLetter ? "checkmark" : "")
+                            Label(localized("None"), systemImage: !viewModel.domainGroupByFirstLetter ? "checkmark" : "")
                         }
                         SwiftUI.Button {
                             viewModel.domainGroupByFirstLetter = true
                         } label: {
-                            Label("First Letter", systemImage: viewModel.domainGroupByFirstLetter ? "checkmark" : "")
+                            Label(localized("First Letter"), systemImage: viewModel.domainGroupByFirstLetter ? "checkmark" : "")
                         }
                     } label: {
-                        Label("Group By", systemImage: "rectangle.3.group")
+                        Label(localized("Group By"), systemImage: "rectangle.3.group")
                     }
                     
                     Menu {
                         SwiftUI.Button {
                             viewModel.domainSortAscending = true
                         } label: {
-                            Label("Name (A to Z)", systemImage: viewModel.domainSortAscending ? "checkmark" : "")
+                            Label(localized("Name (A to Z)"), systemImage: viewModel.domainSortAscending ? "checkmark" : "")
                         }
                         SwiftUI.Button {
                             viewModel.domainSortAscending = false
                         } label: {
-                            Label("Name (Z to A)", systemImage: !viewModel.domainSortAscending ? "checkmark" : "")
+                            Label(localized("Name (Z to A)"), systemImage: !viewModel.domainSortAscending ? "checkmark" : "")
                         }
                     } label: {
-                        Label("Sort By", systemImage: "arrow.up.arrow.down")
+                        Label(localized("Sort By"), systemImage: "arrow.up.arrow.down")
                     }
                 } label: {
                     Image(systemName: "line.3.horizontal.decrease.circle")
@@ -99,11 +99,11 @@ struct BonjourDiscoveryView: View {
                 } label: {
                     Image(systemName: "line.3.horizontal.decrease.circle")
                 }
-                .confirmationDialog("Filter & Sort", isPresented: $showFilterDialog) {
-                    SwiftUI.Button(viewModel.domainGroupByFirstLetter ? "Group: None" : "Group: First Letter") {
+                .confirmationDialog(localized("Filter & Sort"), isPresented: $showFilterDialog) {
+                    SwiftUI.Button(viewModel.domainGroupByFirstLetter ? localized("Group: None") : localized("Group: First Letter")) {
                         viewModel.domainGroupByFirstLetter.toggle()
                     }
-                    SwiftUI.Button(viewModel.domainSortAscending ? "Sort: Name (Z to A)" : "Sort: Name (A to Z)") {
+                    SwiftUI.Button(viewModel.domainSortAscending ? localized("Sort: Name (Z to A)") : localized("Sort: Name (A to Z)")) {
                         viewModel.domainSortAscending.toggle()
                     }
                 }
@@ -143,10 +143,10 @@ struct BonjourDiscoveryView: View {
             Image(systemName: "network")
                 .font(.system(size: 48))
                 .foregroundColor(.secondary)
-            Text("No Domains Found")
+            Text(localized("No Domains Found"))
                 .font(.headline)
                 .foregroundColor(.secondary)
-            Text("Make sure you're connected to a local network.")
+            Text(localized("Make sure you're connected to a local network."))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -155,18 +155,18 @@ struct BonjourDiscoveryView: View {
             SwiftUI.Button {
                 startAutoRefresh()
             } label: {
-                Label("Retry", systemImage: "arrow.clockwise")
+                Label(localized("Retry"), systemImage: "arrow.clockwise")
                     .font(.subheadline.weight(.medium))
             }
             .padding(.top, 4)
             
             VStack(spacing: 8) {
-                Text("Ensure **Local Network Access** is provided otherwise this function may not work as intended since it is based on L N A...")
+                Text(localized("Ensure **Local Network Access** is provided otherwise this function may not work as intended since it is based on L N A..."))
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                 
-                Text("**Settings -> apps -> SideStore -> LocalNetworkAccess = toggle on**")
+                Text(localized("**Settings -> apps -> SideStore -> LocalNetworkAccess = toggle on**"))
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -235,7 +235,7 @@ struct ServiceTypesView: View {
             #endif
             
             if viewModel.isSearching && viewModel.serviceTypes.isEmpty {
-                ProgressView("Searching for service types…")
+                ProgressView(localized("Searching for service types…"))
             } else if !viewModel.isSearching && viewModel.serviceTypes.isEmpty {
                 emptyState
             } else {
@@ -268,11 +268,11 @@ struct ServiceTypesView: View {
                             SwiftUI.Button {
                                 viewModel.serviceTypeGroupOption = opt
                             } label: {
-                                Label(opt.rawValue, systemImage: viewModel.serviceTypeGroupOption == opt ? "checkmark" : "")
+                                Label(opt.localizedName, systemImage: viewModel.serviceTypeGroupOption == opt ? "checkmark" : "")
                             }
                         }
                     } label: {
-                        Label("Group By", systemImage: "rectangle.3.group")
+                        Label(localized("Group By"), systemImage: "rectangle.3.group")
                     }
                     
                     Menu {
@@ -280,11 +280,11 @@ struct ServiceTypesView: View {
                             SwiftUI.Button {
                                 viewModel.serviceTypeSortOption = opt
                             } label: {
-                                Label(opt.rawValue, systemImage: viewModel.serviceTypeSortOption == opt ? "checkmark" : "")
+                                Label(opt.localizedName, systemImage: viewModel.serviceTypeSortOption == opt ? "checkmark" : "")
                             }
                         }
                     } label: {
-                        Label("Sort By", systemImage: "arrow.up.arrow.down")
+                        Label(localized("Sort By"), systemImage: "arrow.up.arrow.down")
                     }
                 } label: {
                     Image(systemName: "line.3.horizontal.decrease.circle")
@@ -295,9 +295,9 @@ struct ServiceTypesView: View {
                 } label: {
                     Image(systemName: "rectangle.3.group")
                 }
-                .confirmationDialog("Group By", isPresented: $showGroupDialog) {
+                .confirmationDialog(localized("Group By"), isPresented: $showGroupDialog) {
                     ForEach(ServiceTypeGroupOption.allCases, id: \.self) { opt in
-                        SwiftUI.Button(opt.rawValue) {
+                        SwiftUI.Button(opt.localizedName) {
                             viewModel.serviceTypeGroupOption = opt
                         }
                     }
@@ -308,9 +308,9 @@ struct ServiceTypesView: View {
                 } label: {
                     Image(systemName: "arrow.up.arrow.down")
                 }
-                .confirmationDialog("Sort By", isPresented: $showSortDialog) {
+                .confirmationDialog(localized("Sort By"), isPresented: $showSortDialog) {
                     ForEach(ServiceTypeSortOption.allCases, id: \.self) { opt in
-                        SwiftUI.Button(opt.rawValue) {
+                        SwiftUI.Button(opt.localizedName) {
                             viewModel.serviceTypeSortOption = opt
                         }
                     }
@@ -351,10 +351,10 @@ struct ServiceTypesView: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 48))
                 .foregroundColor(.secondary)
-            Text("No Services Found")
+            Text(localized("No Services Found"))
                 .font(.headline)
                 .foregroundColor(.secondary)
-            Text("No Bonjour services are currently advertised in this domain.")
+            Text(localized("No Bonjour services are currently advertised in this domain."))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -363,18 +363,18 @@ struct ServiceTypesView: View {
             SwiftUI.Button {
                 startAutoRefresh()
             } label: {
-                Label("Retry", systemImage: "arrow.clockwise")
+                Label(localized("Retry"), systemImage: "arrow.clockwise")
                     .font(.subheadline.weight(.medium))
             }
             .padding(.top, 4)
             
             VStack(spacing: 8) {
-                Text("Ensure **Local Network Access** is provided otherwise this function may not work as intended since it is based on L N A...")
+                Text(localized("Ensure **Local Network Access** is provided otherwise this function may not work as intended since it is based on L N A..."))
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                 
-                Text("**Settings -> apps -> SideStore -> LocalNetworkAccess = toggle on**")
+                Text(localized("**Settings -> apps -> SideStore -> LocalNetworkAccess = toggle on**"))
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -444,7 +444,7 @@ struct ServiceTypesView: View {
             HStack(spacing: 8) {
                 ProgressView()
                     .scaleEffect(0.8)
-                Text("Searching…")
+                Text(localized("Searching…"))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -481,7 +481,7 @@ struct ServiceInstancesView: View {
             #endif
             
             if viewModel.isSearching && viewModel.instances.isEmpty {
-                ProgressView("Searching for instances…")
+                ProgressView(localized("Searching for instances…"))
             } else if !viewModel.isSearching && viewModel.instances.isEmpty {
                 emptyState
             } else {
@@ -514,11 +514,11 @@ struct ServiceInstancesView: View {
                             SwiftUI.Button {
                                 viewModel.instanceGroupOption = opt
                             } label: {
-                                Label(opt.rawValue, systemImage: viewModel.instanceGroupOption == opt ? "checkmark" : "")
+                                Label(opt.localizedName, systemImage: viewModel.instanceGroupOption == opt ? "checkmark" : "")
                             }
                         }
                     } label: {
-                        Label("Group By", systemImage: "rectangle.3.group")
+                        Label(localized("Group By"), systemImage: "rectangle.3.group")
                     }
                     
                     Menu {
@@ -526,11 +526,11 @@ struct ServiceInstancesView: View {
                             SwiftUI.Button {
                                 viewModel.instanceSortOption = opt
                             } label: {
-                                Label(opt.rawValue, systemImage: viewModel.instanceSortOption == opt ? "checkmark" : "")
+                                Label(opt.localizedName, systemImage: viewModel.instanceSortOption == opt ? "checkmark" : "")
                             }
                         }
                     } label: {
-                        Label("Sort By", systemImage: "arrow.up.arrow.down")
+                        Label(localized("Sort By"), systemImage: "arrow.up.arrow.down")
                     }
                 } label: {
                     Image(systemName: "line.3.horizontal.decrease.circle")
@@ -541,9 +541,9 @@ struct ServiceInstancesView: View {
                 } label: {
                     Image(systemName: "rectangle.3.group")
                 }
-                .confirmationDialog("Group By", isPresented: $showGroupDialog) {
+                .confirmationDialog(localized("Group By"), isPresented: $showGroupDialog) {
                     ForEach(ServiceInstanceGroupOption.allCases, id: \.self) { opt in
-                        SwiftUI.Button(opt.rawValue) {
+                        SwiftUI.Button(opt.localizedName) {
                             viewModel.instanceGroupOption = opt
                         }
                     }
@@ -554,9 +554,9 @@ struct ServiceInstancesView: View {
                 } label: {
                     Image(systemName: "arrow.up.arrow.down")
                 }
-                .confirmationDialog("Sort By", isPresented: $showSortDialog) {
+                .confirmationDialog(localized("Sort By"), isPresented: $showSortDialog) {
                     ForEach(ServiceInstanceSortOption.allCases, id: \.self) { opt in
-                        SwiftUI.Button(opt.rawValue) {
+                        SwiftUI.Button(opt.localizedName) {
                             viewModel.instanceSortOption = opt
                         }
                     }
@@ -597,10 +597,10 @@ struct ServiceInstancesView: View {
             Image(systemName: "antenna.radiowaves.left.and.right.slash")
                 .font(.system(size: 48))
                 .foregroundColor(.secondary)
-            Text("No Instances Found")
+            Text(localized("No Instances Found"))
                 .font(.headline)
                 .foregroundColor(.secondary)
-            Text("No devices are currently advertising this service.")
+            Text(localized("No devices are currently advertising this service."))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -609,18 +609,18 @@ struct ServiceInstancesView: View {
             SwiftUI.Button {
                 startAutoRefresh()
             } label: {
-                Label("Retry", systemImage: "arrow.clockwise")
+                Label(localized("Retry"), systemImage: "arrow.clockwise")
                     .font(.subheadline.weight(.medium))
             }
             .padding(.top, 4)
             
             VStack(spacing: 8) {
-                Text("Ensure **Local Network Access** is provided otherwise this function may not work as intended since it is based on L N A...")
+                Text(localized("Ensure **Local Network Access** is provided otherwise this function may not work as intended since it is based on L N A..."))
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                 
-                Text("**Settings -> apps -> SideStore -> LocalNetworkAccess = toggle on**")
+                Text(localized("**Settings -> apps -> SideStore -> LocalNetworkAccess = toggle on**"))
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -673,7 +673,7 @@ struct ServiceInstancesView: View {
             HStack(spacing: 8) {
                 ProgressView()
                     .scaleEffect(0.8)
-                Text("Searching…")
+                Text(localized("Searching…"))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -719,7 +719,7 @@ struct ServiceDetailView: View {
                 loadingState
             }
         }
-        .navigationTitle("Service Details")
+        .navigationTitle(localized("Service Details"))
         #if !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -743,12 +743,12 @@ struct ServiceDetailView: View {
                     SwiftUI.Button {
                         viewModel.sortAddressesV4First = true
                     } label: {
-                        Label("IPv4 First", systemImage: viewModel.sortAddressesV4First ? "checkmark" : "")
+                        Label(localized("IPv4 First"), systemImage: viewModel.sortAddressesV4First ? "checkmark" : "")
                     }
                     SwiftUI.Button {
                         viewModel.sortAddressesV4First = false
                     } label: {
-                        Label("IPv6 First", systemImage: !viewModel.sortAddressesV4First ? "checkmark" : "")
+                        Label(localized("IPv6 First"), systemImage: !viewModel.sortAddressesV4First ? "checkmark" : "")
                     }
                 } label: {
                     Image(systemName: "arrow.up.arrow.down")
@@ -809,7 +809,7 @@ struct ServiceDetailView: View {
         VStack(spacing: 16) {
             ProgressView()
                 .scaleEffect(1.2)
-            Text("Resolving service…")
+            Text(localized("Resolving service…"))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
         }
@@ -820,7 +820,7 @@ struct ServiceDetailView: View {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 48))
                 .foregroundColor(.orange)
-            Text("Resolution Failed")
+            Text(localized("Resolution Failed"))
                 .font(.headline)
                 .foregroundColor(.secondary)
             Text(message)
@@ -832,7 +832,7 @@ struct ServiceDetailView: View {
             SwiftUI.Button {
                 viewModel.resolveService(service)
             } label: {
-                Label("Retry", systemImage: "arrow.clockwise")
+                Label(localized("Retry"), systemImage: "arrow.clockwise")
                     .font(.subheadline.weight(.medium))
             }
             .padding(.top, 4)
@@ -900,8 +900,8 @@ struct ServiceDetailView: View {
             }
             
             // Connection Info (Hostname, Addresses, Port, Type, Domain)
-            Section(header: Text("Connection")) {
-                DetailRow(label: "Hostname", value: resolved.hostname, onCopy: copyWithFeedback)
+            Section(header: Text(localized("Connection"))) {
+                DetailRow(label: localized("Hostname"), value: resolved.hostname, onCopy: copyWithFeedback)
                 
                 if !viewModel.resolvedAddressItems.isEmpty {
                     ForEach(viewModel.resolvedAddressItems) { item in
@@ -909,14 +909,14 @@ struct ServiceDetailView: View {
                     }
                 }
                 
-                DetailRow(label: "Port", value: "\(resolved.port)", onCopy: copyWithFeedback)
-                DetailRow(label: "Type", value: resolved.type, onCopy: copyWithFeedback)
-                DetailRow(label: "Domain", value: resolved.domain, onCopy: copyWithFeedback)
+                DetailRow(label: localized("Port"), value: "\(resolved.port)", onCopy: copyWithFeedback)
+                DetailRow(label: localized("Type"), value: resolved.type, onCopy: copyWithFeedback)
+                DetailRow(label: localized("Domain"), value: resolved.domain, onCopy: copyWithFeedback)
             }
             
             // Interfaces
             if !service.interfaces.isEmpty {
-                Section(header: Text("Discovered Interfaces (\(service.interfaces.count))")) {
+                Section(header: Text(localized("Discovered Interfaces (\(service.interfaces.count))"))) {
                     ForEach(service.interfaces, id: \.index) { iface in
                         HStack {
                             Image(systemName: iconForInterfaceType(iface.type))
@@ -939,7 +939,7 @@ struct ServiceDetailView: View {
                             SwiftUI.Button {
                                 copyWithFeedback("\(iface.name) (\(nameForInterfaceType(iface.type)))")
                             } label: {
-                                Label("Copy Interface", systemImage: "doc.on.doc")
+                                Label(localized("Copy Interface"), systemImage: "doc.on.doc")
                             }
                         }
                     }
@@ -952,19 +952,19 @@ struct ServiceDetailView: View {
             let osRecord = resolved.txtRecords.first(where: { $0.key.lowercased() == "osvers" || $0.key.lowercased() == "os" })?.value
             
             if decodedModel != nil || osRecord != nil {
-                Section(header: Text("Device Info")) {
+                Section(header: Text(localized("Device Info"))) {
                     if let model = decodedModel {
-                        DetailRow(label: "Model", value: "\(model) (\(modelRecord ?? ""))", onCopy: copyWithFeedback)
+                        DetailRow(label: localized("Model"), value: "\(model) (\(modelRecord ?? ""))", onCopy: copyWithFeedback)
                     }
                     if let os = osRecord {
-                        DetailRow(label: "OS Version", value: os, onCopy: copyWithFeedback)
+                        DetailRow(label: localized("OS Version"), value: os, onCopy: copyWithFeedback)
                     }
                 }
             }
             
             // TXT Records
             if !resolved.txtRecords.isEmpty {
-                Section(header: Text("TXT Record (\(resolved.txtRecords.count))")) {
+                Section(header: Text(localized("TXT Record (\(resolved.txtRecords.count))"))) {
                     ForEach(resolved.txtRecords, id: \.key) { record in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(record.key)
@@ -987,7 +987,7 @@ struct ServiceDetailView: View {
                             SwiftUI.Button {
                                 copyWithFeedback("\(record.key) = \(record.value)")
                             } label: {
-                                Label("Copy", systemImage: "doc.on.doc")
+                                Label(localized("Copy"), systemImage: "doc.on.doc")
                             }
                         }
                     }
@@ -996,7 +996,7 @@ struct ServiceDetailView: View {
             
             // DNS-SD Raw Records
             let dnsRecords = viewModel.dnsSDRawRecords(resolved: resolved)
-            Section(header: Text("DNS-SD Records")) {
+            Section(header: Text(localized("DNS-SD Records"))) {
                 ForEach(dnsRecords, id: \.content) { rec in
                     VStack(alignment: .leading, spacing: 4) {
                         Text(rec.recordType)
@@ -1019,14 +1019,14 @@ struct ServiceDetailView: View {
                         SwiftUI.Button {
                             copyWithFeedback(rec.content)
                         } label: {
-                            Label("Copy \(rec.recordType) Record", systemImage: "doc.on.doc")
+                            Label(localized("Copy \(rec.recordType) Record"), systemImage: "doc.on.doc")
                         }
                     }
                 }
             }
             
             // Quick Actions (Moved to Bottom)
-            Section(header: Text("Quick Actions")) {
+            Section(header: Text(localized("Quick Actions"))) {
                 let isWeb = resolved.type.contains("_http") || resolved.type.contains("_https") || resolved.port == 80 || resolved.port == 443 || resolved.port == 8080
                 let isSSH = resolved.type.contains("_ssh") || resolved.port == 22
                 let endpointStr = "\(resolved.hostname):\(resolved.port)"
@@ -1035,7 +1035,7 @@ struct ServiceDetailView: View {
                     let scheme = resolved.type.contains("_https") || resolved.port == 443 ? "https" : "http"
                     if let url = URL(string: "\(scheme)://\(resolved.hostname):\(resolved.port)") {
                         Link(destination: url) {
-                            Label("Open in Safari (\(scheme)://)", systemImage: "safari")
+                            Label(localized("Open in Safari (\(scheme)://)"), systemImage: "safari")
                         }
                     }
                 }
@@ -1044,14 +1044,14 @@ struct ServiceDetailView: View {
                     SwiftUI.Button {
                         copyWithFeedback("ssh \(resolved.hostname) -p \(resolved.port)")
                     } label: {
-                        Label("Copy SSH Command", systemImage: "terminal")
+                        Label(localized("Copy SSH Command"), systemImage: "terminal")
                     }
                 }
                 
                 SwiftUI.Button {
                     copyWithFeedback(endpointStr)
                 } label: {
-                    Label("Copy Host:Port Endpoint", systemImage: "link")
+                    Label(localized("Copy Host:Port Endpoint"), systemImage: "link")
                 }
                 
                 SwiftUI.Button {
@@ -1059,7 +1059,7 @@ struct ServiceDetailView: View {
                         copyWithFeedback(jsonStr)
                     }
                 } label: {
-                    Label("Copy Details as JSON", systemImage: "curlybraces")
+                    Label(localized("Copy Details as JSON"), systemImage: "curlybraces")
                 }
             }
         }
@@ -1094,7 +1094,7 @@ struct ServiceDetailView: View {
     }
     
     private var copiedBanner: some View {
-        Text("Copied to Clipboard")
+        Text(localized("Copied to Clipboard"))
             .font(.subheadline.weight(.medium))
             .foregroundColor(.white)
             .padding(.horizontal, 20)
@@ -1152,7 +1152,7 @@ private struct DetailRow: View {
             SwiftUI.Button {
                 onCopy?(value)
             } label: {
-                Label("Copy \(label)", systemImage: "doc.on.doc")
+                Label(localized("Copy \(label)"), systemImage: "doc.on.doc")
             }
         }
     }

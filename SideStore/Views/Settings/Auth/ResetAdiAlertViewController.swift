@@ -41,7 +41,7 @@ class ResetAdiAlertViewController: UIViewController {
         headersCheckboxButton.addTarget(self, action: #selector(toggleHeadersCheckbox), for: .touchUpInside)
         
         let headersLabel = UILabel()
-        headersLabel.text = NSLocalizedString("Keep header customizations", comment: "")
+        headersLabel.text = localized("Keep header customizations")
         headersLabel.font = .systemFont(ofSize: 14)
         headersLabel.isUserInteractionEnabled = true
         let headersTap = UITapGestureRecognizer(target: self, action: #selector(toggleHeadersCheckbox))

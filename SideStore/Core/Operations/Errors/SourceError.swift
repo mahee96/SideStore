@@ -79,14 +79,14 @@ struct SourceError: ALTLocalizedError
     var errorFailureReason: String {
         switch self.code
         {
-        case .unsupported: return String(format: NSLocalizedString("The source “%@” is not supported by this version of SideStore.", comment: ""), self.$source.name)
+        case .unsupported: return localized("The source “\(self.$source.name)” is not supported by this version of SideStore.")
         case .duplicateBundleID:
-            let bundleIDFragment = self.bundleID.map { String(format: NSLocalizedString("the bundle identifier %@", comment: ""), $0) } ?? NSLocalizedString("the same bundle identifier", comment: "")
-            let failureReason = String(format: NSLocalizedString("The source “%@” contains multiple apps with %@.", comment: ""), self.$source.name, bundleIDFragment)
+            let bundleIDFragment = self.bundleID.map { localized("the bundle identifier \($0)") } ?? localized("the same bundle identifier")
+            let failureReason = localized("The source “\(self.$source.name)” contains multiple apps with \(bundleIDFragment).")
             return failureReason
             
         case .duplicateVersion:
-            var versionFragment = NSLocalizedString("duplicate versions", comment: "")
+            var versionFragment = localized("duplicate versions")
             if let version
             {
                 versionFragment += " (\(version))"
@@ -99,51 +99,51 @@ struct SourceError: ALTLocalizedError
             }
             else
             {
-                appFragment = NSLocalizedString("one or more apps", comment: "")
+                appFragment = localized("one or more apps")
             }
             
-            let failureReason = String(format: NSLocalizedString("The source “%@” contains %@ for %@.", comment: ""), self.$source.name, versionFragment, appFragment)
+            let failureReason = localized("The source “\(self.$source.name)” contains \(versionFragment) for \(appFragment).")
             return failureReason
             
         case .blocked:
-            let failureReason = String(format: NSLocalizedString("The source “%@” has been blocked by SideStore for security reasons.", comment: ""), self.$source.name)
+            let failureReason = localized("The source “\(self.$source.name)” has been blocked by SideStore for security reasons.")
             return failureReason
             
         case .changedID:
-            let failureReason = String(format: NSLocalizedString("The identifier of the source “%@” has changed.", comment: ""), self.$source.name)
+            let failureReason = localized("The identifier of the source “\(self.$source.name)” has changed.")
             return failureReason
             
         case .duplicate:
-            let baseMessage = String(format: NSLocalizedString("A source with the identifier '%@' already exists", comment: ""), self.$source.identifier)
+            let baseMessage = localized("A source with the identifier '\(self.$source.identifier)' already exists")
             guard let existingSourceName = self.$existingSource.name else { return baseMessage + "." }
             
             let failureReason = baseMessage + " (“\(existingSourceName)”)."
             return failureReason
             
         case .missingPermissionUsageDescription:
-            let appName = self.$app.name ?? String(format: NSLocalizedString("an app in source “%@”", comment: ""), self.$source.name)
+            let appName = self.$app.name ?? localized("an app in source “\(self.$source.name)”")
             guard let permission else {
-                return String(format: NSLocalizedString("A permission for %@ is missing a usage description.", comment: ""), appName)
+                return localized("A permission for \(appName) is missing a usage description.")
             }
             
-            let permissionType = permission.type.localizedName ?? NSLocalizedString("Permission", comment: "")
-            let failureReason = String(format: NSLocalizedString("The %@ '%@' for %@ is missing a usage description.", comment: ""), permissionType.lowercased(), permission.rawValue, appName)
+            let permissionType = permission.type.localizedName ?? localized("Permission")
+            let failureReason = localized("The \(permissionType) '\(permission.rawValue)' for \(appName) is missing a usage description.")
             return failureReason
             
         case .missingScreenshotSize:
-            let appName = self.$app.name ?? String(format: NSLocalizedString("an app in source “%@”", comment: ""), self.$source.name)
-            let baseMessage = String(format: NSLocalizedString("An iPad screenshot for %@ does not specify its size", comment: ""), appName)
+            let appName = self.$app.name ?? localized("an app in source “\(self.$source.name)”")
+            let baseMessage = localized("An iPad screenshot for \(appName) does not specify its size")
             guard let screenshotURL else { return baseMessage + "." }
             
             let failureReason = baseMessage + ": \(screenshotURL.absoluteString)"
             return failureReason
             
         case .marketplaceNotSupported:
-            let failureReason = String(format: NSLocalizedString("The source “%@” contains notarized apps, which are not supported by this version of SideStore.", comment: ""), self.$source.name)
+            let failureReason = localized("The source “\(self.$source.name)” contains notarized apps, which are not supported by this version of SideStore.")
             return failureReason
             
         case .marketplaceRequired:
-            let failureReason = String(format: NSLocalizedString("One or more apps in source “%@” are missing a marketplaceID. This most likely means they are not notarized, which is not supported by this version of SideStore.", comment: ""), self.$source.name)
+            let failureReason = localized("One or more apps in source “\(self.$source.name)” are missing a marketplaceID. This most likely means they are not notarized, which is not supported by this version of SideStore.")
             return failureReason
         }
     }
@@ -155,16 +155,14 @@ struct SourceError: ALTLocalizedError
             if self.existingSource != nil
             {
                 // Source already added, so tell them to remove it + any installed apps.
-                let baseMessage = NSLocalizedString("For your protection, please remove the source and uninstall", comment: "")
-                
                 if let blockedAppNames = self.blockedAppNames
                 {
-                    let recoverySuggestion = baseMessage + " " + NSLocalizedString("the following apps:", comment: "") + "\n\n" + blockedAppNames.joined(separator: "\n")
+                    let recoverySuggestion = localized("For your protection, please remove the source and uninstall the following apps:") + "\n\n" + blockedAppNames.joined(separator: "\n")
                     return recoverySuggestion
                 }
                 else
                 {
-                    let recoverySuggestion = baseMessage + " " + NSLocalizedString("all apps downloaded from it.", comment: "")
+                    let recoverySuggestion = localized("For your protection, please remove the source and uninstall all apps downloaded from it.")
                     return recoverySuggestion
                 }
             }
@@ -174,17 +172,17 @@ struct SourceError: ALTLocalizedError
                 // Instead, we just list all affected apps (if provided).
                 guard let blockedAppNames else { return nil }
                 
-                let recoverySuggestion = NSLocalizedString("The following apps have been flagged:", comment: "") + "\n\n" + blockedAppNames.joined(separator: "\n")
+                let recoverySuggestion = localized("The following apps have been flagged:") + "\n\n" + blockedAppNames.joined(separator: "\n")
                 return recoverySuggestion
             }
             
-        case .changedID: return NSLocalizedString("A source cannot change its identifier once added. This source can no longer be updated.", comment: "")
+        case .changedID: return localized("A source cannot change its identifier once added. This source can no longer be updated.")
         case .duplicate:
-            let recoverySuggestion = NSLocalizedString("Please remove the existing source in order to add this one.", comment: "")
+            let recoverySuggestion = localized("Please remove the existing source in order to add this one.")
             return recoverySuggestion
             
         case .marketplaceRequired:
-            let failureReason = String(format: NSLocalizedString("SideStore can only install marketplace apps that have been notarized by Apple.", comment: ""), self.$source.name)
+            let failureReason = localized("SideStore can only install marketplace apps that have been notarized by Apple.")
             return failureReason
             
         default: return nil

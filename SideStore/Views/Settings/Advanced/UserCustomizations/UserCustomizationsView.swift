@@ -15,6 +15,7 @@ private extension Color {
 }
 
 struct UserCustomizationsView: View {
+    @ObservedObject private var languageManager = LanguageManager.shared
     @State private var selectedBackend: GatewayBackend = selectedGatewayBackendCache
     @State private var useOnDeviceAnisette: Bool = UserDefaults.standard.useOnDeviceAnisette
     @State private var showAnisetteRestartConfirmation: Bool = false
@@ -49,14 +50,14 @@ struct UserCustomizationsView: View {
             VStack(alignment: .leading, spacing: 24) {
                 // Section 0: APPEARANCE & THEMES
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("APPEARANCE & THEMES")
+                    Text(localized("APPEARANCE & THEMES"))
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.6))
                         .padding(.horizontal, 16)
                     
                     NavigationLink(destination: ThemePickerView()) {
                         HStack {
-                            Text("Theme Manager")
+                            Text(localized("Theme Manager"))
                                 .font(.system(size: 17, weight: .bold))
                                 .foregroundColor(.white)
                             Spacer()
@@ -72,6 +73,33 @@ struct UserCustomizationsView: View {
                         .padding(.horizontal, 16)
                         .padding(.vertical, 14)
                     }
+                    .background(Color.settingsRowBackground)
+                    .cornerRadius(14)
+                }
+
+                // Section: LANGUAGE
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(localized("LANGUAGE"))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.6))
+                        .padding(.horizontal, 16)
+                    
+                    HStack {
+                        Text(localized("Language"))
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(.white)
+                        Spacer()
+                        Picker("", selection: $languageManager.selectedLanguage) {
+                            ForEach(AppLanguage.allCases) { lang in
+                                Text(lang.displayName).tag(lang)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .tint(Color.white.opacity(0.7))
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .frame(minHeight: 50)
                     .background(Color.settingsRowBackground)
                     .cornerRadius(14)
                 }
@@ -168,7 +196,7 @@ struct UserCustomizationsView: View {
 
                 // Section 2: GENERAL
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("GENERAL")
+                    Text(localized("GENERAL"))
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.6))
                         .padding(.horizontal, 16)
@@ -248,7 +276,7 @@ struct UserCustomizationsView: View {
 
                 // Section 2: APP VERIFICATION
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("APP VERIFICATION")
+                    Text(localized("APP VERIFICATION"))
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.6))
                         .padding(.horizontal, 16)
@@ -424,7 +452,7 @@ struct UserCustomizationsView: View {
             .padding(.bottom, 32)
         }
         .background(Color(uiColor: .settingsBackground).ignoresSafeArea())
-        .navigationTitle("User Customizations")
+        .navigationTitle(localized("User Customizations"))
         #if !os(tvOS)
         .navigationBarTitleDisplayMode(.large)
         #endif
@@ -525,7 +553,7 @@ struct UserCustomizationsView: View {
     private func exportWireGuardConfig() {
         guard let url = Bundle.main.url(forResource: "SideStore", withExtension: "conf") else {
             if let top = UIApplication.shared.topViewController() {
-                let toastView = ToastView(text: NSLocalizedString("SideStore.conf missing!", comment: ""), detailText: "Unable to locate SideStore.conf in bundle resources.")
+                let toastView = ToastView(text: localized("SideStore.conf missing!"), detailText: "Unable to locate SideStore.conf in bundle resources.")
                 toastView.show(in: top)
             }
             return
@@ -536,24 +564,24 @@ struct UserCustomizationsView: View {
     private func presentResetAdiDialog() {
         guard let top = UIApplication.shared.topViewController() else { return }
         let alertController = UIAlertController(
-            title: NSLocalizedString("Reset adi.pb", comment: ""),
-            message: NSLocalizedString("This will sign you out of Apple ID in SideStore and clear the provisioned adi.pb data from your Keychain. Your active signing certificate will be preserved.", comment: ""),
+            title: localized("Reset adi.pb"),
+            message: localized("This will sign you out of Apple ID in SideStore and clear the provisioned adi.pb data from your Keychain. Your active signing certificate will be preserved."),
             preferredStyle: .alert
         )
         let contentVC = ResetAdiAlertViewController()
         alertController.setValue(contentVC, forKey: "contentViewController")
         
-        let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel, handler: nil)
-        let resetAction = UIAlertAction(title: NSLocalizedString("Reset & Sign Out", comment: ""), style: .destructive) { _ in
+        let cancelAction = UIAlertAction(title: localized("Cancel"), style: .cancel, handler: nil)
+        let resetAction = UIAlertAction(title: localized("Reset & Sign Out"), style: .destructive) { _ in
             let keepHeaders = contentVC.isKeepHeadersChecked
             AuthManager.shared.signOut(keepCertificate: true, keepAnisetteData: false, keepAnisetteHeaders: keepHeaders)
             debugLog("Reset adi.pb (keepAnisetteHeaders: \(keepHeaders)) and signed out")
             if let topVC = UIApplication.shared.topViewController() {
                 let detail = keepHeaders
-                    ? NSLocalizedString("Signed out of Apple ID. You can now sign back in with fresh provisioning.", comment: "")
-                    : NSLocalizedString("Signed out of Apple ID. Reset adi.pb and header configs to defaults.", comment: "")
+                    ? localized("Signed out of Apple ID. You can now sign back in with fresh provisioning.")
+                    : localized("Signed out of Apple ID. Reset adi.pb and header configs to defaults.")
                 ToastView(
-                    text: NSLocalizedString("Cleared adi.pb!", comment: ""),
+                    text: localized("Cleared adi.pb!"),
                     detailText: detail
                 ).show(in: topVC)
             }

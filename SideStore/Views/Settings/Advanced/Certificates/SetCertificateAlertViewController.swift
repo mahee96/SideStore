@@ -36,46 +36,47 @@ final class SetCertificateAlertViewController: UIViewController {
             currentCertObj = viewModel.getLocalX509Certificate(serialNumber: serial)
         }
         
-        let currentName = currentCertObj?.name ?? "N/A"
-        let currentMachine = currentCertObj?.machineName ?? "N/A"
-        let currentSerial = currentCertObj?.serialNumber ?? appCertSerial ?? "None"
-        let currentEmail = currentCertObj?.requesterEmail ?? "N/A"
+        let currentName = currentCertObj?.name ?? localized("N/A")
+        let currentMachine = currentCertObj?.machineName ?? localized("N/A")
+        let currentSerial = currentCertObj?.serialNumber ?? appCertSerial ?? localized("None")
+        let currentEmail = currentCertObj?.requesterEmail ?? localized("N/A")
         let currentBrief = getBriefInfo(for: currentCertObj?.data)
-        let currentType = currentBrief?.type ?? "N/A"
-        let currentValidity = currentBrief != nil ? "\(currentBrief!.validFrom) - \(currentBrief!.validUntil)" : "N/A"
+        let currentType = currentBrief?.type ?? localized("N/A")
+        let currentValidity = currentBrief != nil ? "\(currentBrief!.validFrom) - \(currentBrief!.validUntil)" : localized("N/A")
         
         let targetName = targetCertificate.name
-        let targetMachine = targetCertificate.machineName ?? "N/A"
+        let targetMachine = targetCertificate.machineName ?? localized("N/A")
         let targetSerial = targetCertificate.serialNumber
-        let targetEmail = targetCertificate.requesterEmail ?? "N/A"
+        let targetEmail = targetCertificate.requesterEmail ?? localized("N/A")
         let targetBrief = getBriefInfo(for: targetCertificate.data)
-        let targetType = targetBrief?.type ?? "N/A"
-        let targetValidity = targetBrief != nil ? "\(targetBrief!.validFrom) - \(targetBrief!.validUntil)" : "N/A"
+        let targetType = targetBrief?.type ?? localized("N/A")
+        let targetValidity = targetBrief != nil ? "\(targetBrief!.validFrom) - \(targetBrief!.validUntil)" : localized("N/A")
         
         debugLog("[SetCertAlert] appName: '\(installedApp.name)', appCertSerial: '\(appCertSerial ?? "nil")'")
         debugLog("[SetCertAlert] currentCertObj found: \(currentCertObj != nil), serial: '\(currentSerial)', name: '\(currentName)', machine: '\(currentMachine)', email: '\(currentEmail)'")
         debugLog("[SetCertAlert] targetCert serial: '\(targetSerial)', name: '\(targetName)', machine: '\(targetMachine)', email: '\(targetEmail)'")
         
-        let details = """
-          • App: \(installedApp.name)
-          • Bundle ID: \(installedApp.resignedBundleIdentifier)
-
-        [CURRENT APP CERTIFICATE]
-          • Name: \(currentName)
-          • Machine: \(currentMachine)
-          • Serial: \(currentSerial)
-          • Type: \(currentType)
-          • Validity: \(currentValidity)
-          • Email: \(currentEmail)
-
-        [TARGET CERTIFICATE]
-          • Name: \(targetName)
-          • Machine: \(targetMachine)
-          • Serial: \(targetSerial)
-          • Type: \(targetType)
-          • Validity: \(targetValidity)
-          • Email: \(targetEmail)
-        """
+        let detailsLines = [
+            "  • " + localized("App: \(installedApp.name)"),
+            "  • " + localized("Bundle ID: \(installedApp.resignedBundleIdentifier)"),
+            "",
+            "[" + localized("CURRENT APP CERTIFICATE") + "]",
+            "  • " + localized("Name: \(currentName)"),
+            "  • " + localized("Machine: \(currentMachine)"),
+            "  • " + localized("Serial: \(currentSerial)"),
+            "  • " + localized("Type: \(currentType)"),
+            "  • " + localized("Validity: \(currentValidity)"),
+            "  • " + localized("Email: \(currentEmail)"),
+            "",
+            "[" + localized("TARGET CERTIFICATE") + "]",
+            "  • " + localized("Name: \(targetName)"),
+            "  • " + localized("Machine: \(targetMachine)"),
+            "  • " + localized("Serial: \(targetSerial)"),
+            "  • " + localized("Type: \(targetType)"),
+            "  • " + localized("Validity: \(targetValidity)"),
+            "  • " + localized("Email: \(targetEmail)")
+        ]
+        let details = detailsLines.joined(separator: "\n")
         
         let detailsLabel = UILabel()
         detailsLabel.text = details

@@ -175,8 +175,8 @@ final class BackgroundRefreshAppsOperation: BaseStandaloneOperation<OperationCon
                     throw error
                 }
                 
-                content.title = NSLocalizedString("Refreshed Apps", comment: "")
-                content.body = NSLocalizedString("All apps have been refreshed.", comment: "")
+                content.title = localized("Refreshed Apps")
+                content.body = localized("All apps have been refreshed.")
             } catch OperationError.noConnection, OperationError.noVPN, OperationError.noInstalledApps {
                 shouldPresentAlert = false
             } catch OperationError.serverNotFound where self.ignoresServerNotFoundError {
@@ -186,7 +186,7 @@ final class BackgroundRefreshAppsOperation: BaseStandaloneOperation<OperationCon
 
                 self.debugLog("Failed to refresh apps in background. \(error.localizedDescription)")
                 
-                content.title = NSLocalizedString("Failed to Refresh Apps", comment: "")
+                content.title = localized("Failed to Refresh Apps")
                 content.body = error.localizedDescription
  
                 shouldPresentAlert = true

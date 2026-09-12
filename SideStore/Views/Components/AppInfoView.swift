@@ -52,7 +52,7 @@ struct AppInfoView: View {
                                 .foregroundColor(.secondary)
                             
                             if installedApp.resignedBundleIdentifier != installedApp.bundleIdentifier {
-                                Text("Resigned: \(installedApp.resignedBundleIdentifier)")
+                                Text(localized("Resigned: \(installedApp.resignedBundleIdentifier)"))
                                     .font(.caption)
                                     .foregroundColor(.orange)
                             }
@@ -62,25 +62,25 @@ struct AppInfoView: View {
                 }
                 
                 // Metadata Section
-                Section(header: Text("General Metadata")) {
-                    InfoRow(label: "Status", value: installedApp.isActive ? "Active" : "Inactive", valueColor: installedApp.isActive ? .green : .red)
-                    InfoRow(label: "Version", value: installedApp.localizedVersion)
+                Section(header: Text(localized("General Metadata"))) {
+                    InfoRow(label: localized("Status"), value: installedApp.isActive ? localized("Active") : localized("Inactive"), valueColor: installedApp.isActive ? .green : .red)
+                    InfoRow(label: localized("Version"), value: installedApp.localizedVersion)
                     if let team = installedApp.team {
-                        InfoRow(label: "Team Name", value: team.name)
-                        InfoRow(label: "Team ID", value: team.identifier)
+                        InfoRow(label: localized("Team Name"), value: team.name)
+                        InfoRow(label: localized("Team ID"), value: team.identifier)
                     }
-                    InfoRow(label: "Expiration Date", value: formatDate(provisioningProfile?.expirationDate ?? installedApp.expirationDate))
-                    InfoRow(label: "Refreshed Date", value: formatDate(provisioningProfile?.creationDate ?? installedApp.refreshedDate))
-                    InfoRow(label: "Installed Date", value: formatDate(installedApp.installedDate))
+                    InfoRow(label: localized("Expiration Date"), value: formatDate(provisioningProfile?.expirationDate ?? installedApp.expirationDate))
+                    InfoRow(label: localized("Refreshed Date"), value: formatDate(provisioningProfile?.creationDate ?? installedApp.refreshedDate))
+                    InfoRow(label: localized("Installed Date"), value: formatDate(installedApp.installedDate))
                     if let serialNumber = installedApp.certificateSerialNumber {
-                        InfoRow(label: "Certificate Serial", value: serialNumber)
+                        InfoRow(label: localized("Certificate Serial"), value: serialNumber)
                     }
                     if let execName = infoPlist?["CFBundleExecutable"] as? String {
                         let execURL = appBundleURL.appendingPathComponent(execName)
                         if FileManager.default.fileExists(atPath: execURL.path) && MachOParser.isMachOBinary(at: execURL) {
                             NavigationLink(destination: MachOResourceViewer(url: execURL)) {
                                 HStack {
-                                    Text("Executable")
+                                    Text(localized("Executable"))
                                         .font(.subheadline)
                                         .foregroundColor(.primary)
                                     Spacer()
@@ -90,20 +90,20 @@ struct AppInfoView: View {
                                 }
                             }
                         } else {
-                            InfoRow(label: "Executable", value: execName)
+                            InfoRow(label: localized("Executable"), value: execName)
                         }
                     }
-                    InfoRow(label: "Uses Main Profile", value: installedApp.useMainProfile ? "Yes" : "No")
+                    InfoRow(label: localized("Uses Main Profile"), value: installedApp.useMainProfile ? localized("Yes") : localized("No"))
                 }
                 
                 // Provisioning Profile Section
                 if let profile = provisioningProfile {
-                    Section(header: Text("Provisioning Profile")) {
+                    Section(header: Text(localized("Provisioning Profile"))) {
                         NavigationLink(destination: ProvisioningProfileDetailView(profile: profile, certificatesViewModel: certificatesViewModel)) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(profile.name)
                                     .font(.subheadline)
-                                Text("UUID: \(profile.uuid.uuidString)")
+                                Text(localized("UUID: \(profile.uuid.uuidString)"))
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
@@ -113,16 +113,16 @@ struct AppInfoView: View {
                 
                 // Info.plist Section
                 if let plist = infoPlist {
-                    Section(header: Text("Info.plist")) {
+                    Section(header: Text(localized("Info.plist"))) {
                         NavigationLink(destination: InfoPlistContainerView(plist: plist)) {
-                            Text("View Info.plist (\(plist.count) keys)")
+                            Text(localized("View Info.plist (\(plist.count) keys)"))
                         }
                     }
                 }
                 
                 // App Extensions Section
                 if !installedApp.appExtensions.isEmpty {
-                    Section(header: Text("App Extensions")) {
+                    Section(header: Text(localized("App Extensions"))) {
                         ForEach(Array(installedApp.appExtensions), id: \.bundleIdentifier) { ext in
                             NavigationLink(destination: ExtensionInfoView(appExtension: ext, parentAppURL: appBundleURL, certificatesViewModel: certificatesViewModel)) {
                                 VStack(alignment: .leading, spacing: 4) {
@@ -138,9 +138,9 @@ struct AppInfoView: View {
                 }
 
                 // Resources Section
-                Section(header: Text("Resources")) {
-                    NavigationLink(destination: BundleResourceBrowserView(rootURL: appBundleURL, title: "Bundle Contents")) {
-                        Text("Browse Bundle Contents")
+                Section(header: Text(localized("Resources"))) {
+                    NavigationLink(destination: BundleResourceBrowserView(rootURL: appBundleURL, title: localized("Bundle Contents"))) {
+                        Text(localized("Browse Bundle Contents"))
                             .font(.subheadline)
                     }
                 }
@@ -150,8 +150,8 @@ struct AppInfoView: View {
             #else
             .listStyle(GroupedListStyle())
             #endif
-            .navigationTitle("App Details")
-            .navigationBarItems(trailing: SwiftUI.Button("Close") {
+            .navigationTitle(localized("App Details"))
+            .navigationBarItems(trailing: SwiftUI.Button(localized("Close")) {
                 presentationMode.wrappedValue.dismiss()
             })
             .overlay(
@@ -178,28 +178,28 @@ struct ProvisioningProfileDetailView: View {
     
     var body: some View {
         List {
-            Section(header: Text("Profile Metadata")) {
-                ProfileInfoRow(label: "Name", value: profile.name)
-                ProfileInfoRow(label: "UUID", value: profile.uuid.uuidString)
+            Section(header: Text(localized("Profile Metadata"))) {
+                ProfileInfoRow(label: localized("Name"), value: profile.name)
+                ProfileInfoRow(label: localized("UUID"), value: profile.uuid.uuidString)
                 if let identifier = profile.identifier {
-                    ProfileInfoRow(label: "Identifier", value: identifier)
+                    ProfileInfoRow(label: localized("Identifier"), value: identifier)
                 }
-                ProfileInfoRow(label: "Team Name", value: profile.teamName)
-                ProfileInfoRow(label: "Team Identifier", value: profile.teamIdentifier)
-                ProfileInfoRow(label: "App Bundle ID", value: profile.bundleIdentifier)
-                ProfileInfoRow(label: "Created", value: formatDate(profile.creationDate))
-                ProfileInfoRow(label: "Expires", value: formatDate(profile.expirationDate))
-                ProfileInfoRow(label: "Free Developer Profile", value: profile.isFreeProvisioningProfile ? "Yes" : "No")
+                ProfileInfoRow(label: localized("Team Name"), value: profile.teamName)
+                ProfileInfoRow(label: localized("Team Identifier"), value: profile.teamIdentifier)
+                ProfileInfoRow(label: localized("App Bundle ID"), value: profile.bundleIdentifier)
+                ProfileInfoRow(label: localized("Created"), value: formatDate(profile.creationDate))
+                ProfileInfoRow(label: localized("Expires"), value: formatDate(profile.expirationDate))
+                ProfileInfoRow(label: localized("Free Developer Profile"), value: profile.isFreeProvisioningProfile ? localized("Yes") : localized("No"))
             }
             
             if !profile.certificates.isEmpty {
-                Section(header: Text("Developer Certificates (\(profile.certificates.count))")) {
+                Section(header: Text(localized("Developer Certificates (\(profile.certificates.count))"))) {
                     ForEach(profile.certificates, id: \.serialNumber) { cert in
                         NavigationLink(destination: CertificateDetailView(certificate: cert, viewModel: certificatesViewModel)) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(cert.name)
                                     .font(.subheadline)
-                                Text("Serial: \(cert.serialNumber)")
+                                Text(localized("Serial: \(cert.serialNumber)"))
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
@@ -209,14 +209,14 @@ struct ProvisioningProfileDetailView: View {
             }
             
             if !profile.deviceIDs.isEmpty {
-                Section(header: Text("Provisioned Devices (\(profile.deviceIDs.count))")) {
+                Section(header: Text(localized("Provisioned Devices (\(profile.deviceIDs.count))"))) {
                     NavigationLink(destination: DeviceIDsView(devices: profile.deviceIDs)) {
-                        Text("View Provisioned Devices")
+                        Text(localized("View Provisioned Devices"))
                     }
                 }
             }
             
-            Section(header: Text("Entitlements (\(profile.entitlements.count))")) {
+            Section(header: Text(localized("Entitlements (\(profile.entitlements.count))"))) {
                 let sortedEntitlements = profile.entitlements.sorted { $0.key < $1.key }
                 ForEach(sortedEntitlements, id: \.key) { entitlement, value in
                     EntitlementRow(key: entitlement, value: value)
@@ -228,7 +228,7 @@ struct ProvisioningProfileDetailView: View {
         #else
         .listStyle(GroupedListStyle())
         #endif
-        .navigationTitle("Profile Details")
+        .navigationTitle(localized("Profile Details"))
         .interactiveDismissDisabled(true)
     }
     
@@ -317,7 +317,7 @@ struct ProfileInfoRow: View {
             SwiftUI.Button {
                 UIPasteboard.general.string = value
             } label: {
-                Label("Copy", systemImage: "doc.on.doc")
+                Label(localized("Copy"), systemImage: "doc.on.doc")
             }
         }
         #endif
@@ -344,12 +344,12 @@ struct EntitlementRow: View {
             SwiftUI.Button {
                 UIPasteboard.general.string = formatValue(value)
             } label: {
-                Label("Copy Value", systemImage: "doc.on.doc")
+                Label(localized("Copy Value"), systemImage: "doc.on.doc")
             }
             SwiftUI.Button {
                 UIPasteboard.general.string = key
             } label: {
-                Label("Copy Key", systemImage: "doc.on.doc")
+                Label(localized("Copy Key"), systemImage: "doc.on.doc")
             }
         }
         #endif
@@ -388,7 +388,7 @@ struct DeviceIDsView: View {
                 #endif
             }
         }
-        .navigationTitle("Device IDs")
+        .navigationTitle(localized("Device IDs"))
         .interactiveDismissDisabled(true)
     }
 }
@@ -446,7 +446,7 @@ struct ExtensionInfoView: View {
     var body: some View {
         List {
             // General Metadata — sourced from the actual bundle, not CoreData
-            Section(header: Text("Extension Metadata")) {
+            Section(header: Text(localized("Extension Metadata"))) {
                 let plist = infoPlist
                 let profile = provisioningProfile
 
@@ -458,22 +458,22 @@ struct ExtensionInfoView: View {
                 let buildVer = plist?["CFBundleVersion"] as? String
                 let versionStr: String = {
                     if let s = shortVer, let b = buildVer { return "\(s) (\(b))" }
-                    return shortVer ?? buildVer ?? "N/A"
+                    return shortVer ?? buildVer ?? localized("N/A")
                 }()
 
-                InfoRow(label: "Name", value: bundleName)
-                InfoRow(label: "Bundle Identifier", value: bundleID)
-                InfoRow(label: "Version", value: versionStr)
+                InfoRow(label: localized("Name"), value: bundleName)
+                InfoRow(label: localized("Bundle Identifier"), value: bundleID)
+                InfoRow(label: localized("Version"), value: versionStr)
 
                 if let minOS = plist?["MinimumOSVersion"] as? String {
-                    InfoRow(label: "Min iOS", value: minOS)
+                    InfoRow(label: localized("Min iOS"), value: minOS)
                 }
                 if let exec = plist?["CFBundleExecutable"] as? String, let extURL = extensionURL {
                     let execURL = extURL.appendingPathComponent(exec)
                     if FileManager.default.fileExists(atPath: execURL.path) && MachOParser.isMachOBinary(at: execURL) {
                         NavigationLink(destination: MachOResourceViewer(url: execURL)) {
                             HStack {
-                                Text("Executable")
+                                Text(localized("Executable"))
                                     .font(.subheadline)
                                     .foregroundColor(.primary)
                                 Spacer()
@@ -483,28 +483,28 @@ struct ExtensionInfoView: View {
                             }
                         }
                     } else {
-                        InfoRow(label: "Executable", value: exec)
+                        InfoRow(label: localized("Executable"), value: exec)
                     }
                 }
 
                 // Dates from provisioning profile (ground truth)
                 if let profile = profile {
-                    InfoRow(label: "Profile Created", value: formatDate(profile.creationDate))
-                    InfoRow(label: "Profile Expires", value: formatDate(profile.expirationDate))
+                    InfoRow(label: localized("Profile Created"), value: formatDate(profile.creationDate))
+                    InfoRow(label: localized("Profile Expires"), value: formatDate(profile.expirationDate))
                 }
             }
 
             // Provisioning Profile
             if let profile = provisioningProfile {
-                Section(header: Text("Provisioning Profile")) {
+                Section(header: Text(localized("Provisioning Profile"))) {
                     NavigationLink(destination: ProvisioningProfileDetailView(profile: profile, certificatesViewModel: certificatesViewModel)) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(profile.name)
                                 .font(.subheadline)
-                            Text("UUID: \(profile.uuid.uuidString)")
+                            Text(localized("UUID: \(profile.uuid.uuidString)"))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                            Text("Expires: \(formatDate(profile.expirationDate))")
+                            Text(localized("Expires: \(formatDate(profile.expirationDate))"))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -514,9 +514,9 @@ struct ExtensionInfoView: View {
 
             // Info.plist
             if let plist = infoPlist {
-                Section(header: Text("Info.plist")) {
+                Section(header: Text(localized("Info.plist"))) {
                     NavigationLink(destination: InfoPlistContainerView(plist: plist)) {
-                        Text("View Info.plist (\(plist.count) keys)")
+                        Text(localized("View Info.plist (\(plist.count) keys)"))
                             .font(.subheadline)
                     }
                 }
@@ -524,13 +524,13 @@ struct ExtensionInfoView: View {
 
             // Nested Sub-Extensions (recursive)
             if !subExtensions.isEmpty {
-                Section(header: Text("Nested Extensions (\(subExtensions.count))")) {
+                Section(header: Text(localized("Nested Extensions (\(subExtensions.count))"))) {
                     ForEach(subExtensions, id: \.path) { subURL in
                         let subPlist = NSDictionary(contentsOf: subURL.appendingPathComponent("Info.plist")) as? [String: Any]
                         let subName = subPlist?["CFBundleDisplayName"] as? String
                             ?? subPlist?["CFBundleName"] as? String
                             ?? subURL.deletingPathExtension().lastPathComponent
-                        let subBundleID = subPlist?["CFBundleIdentifier"] as? String ?? "Unknown"
+                        let subBundleID = subPlist?["CFBundleIdentifier"] as? String ?? localized("Unknown")
                         NavigationLink(destination: BundleInspectorView(bundleURL: subURL, certificatesViewModel: certificatesViewModel)) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(subName)
@@ -591,28 +591,28 @@ struct BundleInspectorView: View {
     }
 
     private var bundleID: String {
-        infoPlist?["CFBundleIdentifier"] as? String ?? "Unknown"
+        infoPlist?["CFBundleIdentifier"] as? String ?? localized("Unknown")
     }
 
     private var version: String {
         let short = infoPlist?["CFBundleShortVersionString"] as? String
         let build = infoPlist?["CFBundleVersion"] as? String
         if let s = short, let b = build { return "\(s) (\(b))" }
-        return short ?? build ?? "N/A"
+        return short ?? build ?? localized("N/A")
     }
 
     var body: some View {
         List {
-            Section(header: Text("Bundle Metadata")) {
-                InfoRow(label: "Name", value: displayName)
-                InfoRow(label: "Bundle ID", value: bundleID)
-                InfoRow(label: "Version", value: version)
+            Section(header: Text(localized("Bundle Metadata"))) {
+                InfoRow(label: localized("Name"), value: displayName)
+                InfoRow(label: localized("Bundle ID"), value: bundleID)
+                InfoRow(label: localized("Version"), value: version)
                 if let execName = infoPlist?["CFBundleExecutable"] as? String {
                     let execURL = bundleURL.appendingPathComponent(execName)
                     if FileManager.default.fileExists(atPath: execURL.path) && MachOParser.isMachOBinary(at: execURL) {
                         NavigationLink(destination: MachOResourceViewer(url: execURL)) {
                             HStack {
-                                Text("Executable")
+                                Text(localized("Executable"))
                                     .font(.subheadline)
                                     .foregroundColor(.primary)
                                 Spacer()
@@ -622,24 +622,24 @@ struct BundleInspectorView: View {
                             }
                         }
                     } else {
-                        InfoRow(label: "Executable", value: execName)
+                        InfoRow(label: localized("Executable"), value: execName)
                     }
                 }
                 if let minOS = infoPlist?["MinimumOSVersion"] as? String {
-                    InfoRow(label: "Min iOS", value: minOS)
+                    InfoRow(label: localized("Min iOS"), value: minOS)
                 }
             }
 
             if let profile = provisioningProfile {
-                Section(header: Text("Provisioning Profile")) {
+                Section(header: Text(localized("Provisioning Profile"))) {
                     NavigationLink(destination: ProvisioningProfileDetailView(profile: profile, certificatesViewModel: certificatesViewModel)) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(profile.name)
                                 .font(.subheadline)
-                            Text("UUID: \(profile.uuid.uuidString)")
+                            Text(localized("UUID: \(profile.uuid.uuidString)"))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                            Text("Expires: \(formatDate(profile.expirationDate))")
+                            Text(localized("Expires: \(formatDate(profile.expirationDate))"))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -648,22 +648,22 @@ struct BundleInspectorView: View {
             }
 
             if let plist = infoPlist {
-                Section(header: Text("Info.plist")) {
+                Section(header: Text(localized("Info.plist"))) {
                     NavigationLink(destination: InfoPlistContainerView(plist: plist)) {
-                        Text("View Info.plist (\(plist.count) keys)")
+                        Text(localized("View Info.plist (\(plist.count) keys)"))
                             .font(.subheadline)
                     }
                 }
             }
 
             if !subExtensions.isEmpty {
-                Section(header: Text("Nested Extensions (\(subExtensions.count))")) {
+                Section(header: Text(localized("Nested Extensions (\(subExtensions.count))"))) {
                     ForEach(subExtensions, id: \.path) { subURL in
                         let subPlist = NSDictionary(contentsOf: subURL.appendingPathComponent("Info.plist")) as? [String: Any]
                         let subName = subPlist?["CFBundleDisplayName"] as? String
                             ?? subPlist?["CFBundleName"] as? String
                             ?? subURL.deletingPathExtension().lastPathComponent
-                        let subBundleID = subPlist?["CFBundleIdentifier"] as? String ?? "Unknown"
+                        let subBundleID = subPlist?["CFBundleIdentifier"] as? String ?? localized("Unknown")
                         NavigationLink(destination: BundleInspectorView(bundleURL: subURL, certificatesViewModel: certificatesViewModel)) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(subName)
@@ -678,9 +678,9 @@ struct BundleInspectorView: View {
             }
 
             // Resources
-            Section(header: Text("Resources")) {
-                NavigationLink(destination: BundleResourceBrowserView(rootURL: bundleURL, title: "Bundle Contents")) {
-                    Text("Browse Bundle Contents")
+            Section(header: Text(localized("Resources"))) {
+                NavigationLink(destination: BundleResourceBrowserView(rootURL: bundleURL, title: localized("Bundle Contents"))) {
+                    Text(localized("Browse Bundle Contents"))
                         .font(.subheadline)
                 }
             }

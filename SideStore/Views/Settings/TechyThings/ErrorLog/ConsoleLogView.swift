@@ -46,9 +46,9 @@ class ConsoleLogViewModel: ObservableObject {
     var activeHeaderTitle: String {
         switch activeSource {
         case .console:
-            return "Console Log"
+            return localized("Console Log")
         case .widget:
-            return "Widget Log"
+            return localized("Widget Log")
         case .imported(let url):
             return url.lastPathComponent
         }
@@ -303,7 +303,7 @@ public struct ConsoleLogView: View {
                         viewModel.setSource(.console)
                     }) {
                         HStack {
-                            Text("Console Log")
+                            Text(localized("Console Log"))
                             if viewModel.activeSource == .console {
                                 Image(systemName: "checkmark")
                             }
@@ -314,7 +314,7 @@ public struct ConsoleLogView: View {
                         viewModel.setSource(.widget)
                     }) {
                         HStack {
-                            Text("Widget Log")
+                            Text(localized("Widget Log"))
                             if viewModel.activeSource == .widget {
                                 Image(systemName: "checkmark")
                             }
@@ -326,7 +326,7 @@ public struct ConsoleLogView: View {
                             viewModel.setSource(.imported(url: importedURL))
                         }) {
                             HStack {
-                                Text("Imported Log\n(\(importedURL.lastPathComponent))")
+                                Text(localized("Imported Log\n(\(importedURL.lastPathComponent))"))
                                 if case .imported = viewModel.activeSource {
                                     Image(systemName: "checkmark")
                                 }
@@ -340,13 +340,13 @@ public struct ConsoleLogView: View {
                         SwiftUI.Button(action: {
                             showFileImporter = true
                         }) {
-                            Label("Import Log...", systemImage: "square.and.arrow.down")
+                            Label(localized("Import Log..."), systemImage: "square.and.arrow.down")
                         }
                     } else {
                         SwiftUI.Button(role: .destructive, action: {
                             viewModel.clearImportedLog()
                         }) {
-                            Label("Remove Imported", systemImage: "xmark.circle")
+                            Label(localized("Remove Imported"), systemImage: "xmark.circle")
                         }
                     }
                 } label: {
@@ -383,7 +383,7 @@ public struct ConsoleLogView: View {
                       .foregroundColor(.gray)
                       .padding(.trailing, 4)
 
-                   TextField("Search", text: $searchText)
+                   TextField(localized("Search"), text: $searchText)
                        #if !os(tvOS)
                        .textFieldStyle(RoundedBorderTextFieldStyle())
                        #endif
@@ -500,31 +500,31 @@ public struct ConsoleLogView: View {
             }
         }
         #else
-        .confirmationDialog("Logs Menu", isPresented: $showTvMenu) {
-            SwiftUI.Button("Console Log") { viewModel.setSource(.console) }
-            SwiftUI.Button("Widget Log") { viewModel.setSource(.widget) }
+        .confirmationDialog(localized("Logs Menu"), isPresented: $showTvMenu) {
+            SwiftUI.Button(localized("Console Log")) { viewModel.setSource(.console) }
+            SwiftUI.Button(localized("Widget Log")) { viewModel.setSource(.widget) }
             if let importedURL = viewModel.importedURL {
-                SwiftUI.Button("Imported Log (\(importedURL.lastPathComponent))") { viewModel.setSource(.imported(url: importedURL)) }
+                SwiftUI.Button(localized("Imported Log (\(importedURL.lastPathComponent))")) { viewModel.setSource(.imported(url: importedURL)) }
             }
             if viewModel.importedURL == nil {
-                SwiftUI.Button("Import Log...") {
+                SwiftUI.Button(localized("Import Log...")) {
                     if let topVC = UIApplication.shared.topViewController() {
-                        TVWebFileTransferManager.shared.startImport(acceptedExtensions: ["log", "txt"], title: "Import Log File", presentingVC: topVC) { fileURL in
+                        TVWebFileTransferManager.shared.startImport(acceptedExtensions: ["log", "txt"], title: localized("Import Log File"), presentingVC: topVC) { fileURL in
                             guard let fileURL = fileURL else { return }
                             viewModel.importLog(from: fileURL)
                         }
                     }
                 }
             } else {
-                SwiftUI.Button("Remove Imported", role: .destructive) { viewModel.clearImportedLog() }
+                SwiftUI.Button(localized("Remove Imported"), role: .destructive) { viewModel.clearImportedLog() }
             }
-            SwiftUI.Button("Scroll to Bottom") { scrollToBottom.toggle() }
+            SwiftUI.Button(localized("Scroll to Bottom")) { scrollToBottom.toggle() }
         }
         #endif
         .overlay(
             Group {
                 if showCopiedBanner {
-                    Text("Copied Visible Logs to Clipboard")
+                    Text(localized("Copied Visible Logs to Clipboard"))
                         .font(.caption)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)

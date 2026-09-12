@@ -47,13 +47,13 @@ struct DeveloperOptionsView: View {
             VStack(alignment: .leading, spacing: 24) {
                 // Section 1: Logging & Diagnostics
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("LOGGING & DIAGNOSTICS")
+                    Text(localized("LOGGING & DIAGNOSTICS"))
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.6))
                         .padding(.horizontal, 16)
                     
                     VStack(spacing: 0) {
-                        toggleRow(title: "Disable URL Response Caching", isOn: Binding(
+                        toggleRow(title: localized("Disable URL Response Caching"), isOn: Binding(
                             get: { responseCachingDisabled },
                             set: { newValue in
                                 responseCachingDisabled = newValue
@@ -63,7 +63,7 @@ struct DeveloperOptionsView: View {
                         
                         divider
                         
-                        toggleRow(title: "Rotate Logs on Startup", isOn: Binding(
+                        toggleRow(title: localized("Rotate Logs on Startup"), isOn: Binding(
                             get: { isRotateLogsOnStartupEnabled },
                             set: { newValue in
                                 isRotateLogsOnStartupEnabled = newValue
@@ -77,7 +77,7 @@ struct DeveloperOptionsView: View {
                         
                         divider
                         
-                        toggleRow(title: "SideStore Verbose Logging", isOn: Binding(
+                        toggleRow(title: localized("SideStore Verbose Logging"), isOn: Binding(
                             get: { isSideStoreVerboseLoggingEnabled },
                             set: { newValue in
                                 isSideStoreVerboseLoggingEnabled = newValue
@@ -89,9 +89,9 @@ struct DeveloperOptionsView: View {
                         divider
                         
                         #if !os(tvOS)
-                        let title = "Widget Verbose Logging"
+                        let title = localized("Widget Verbose Logging")
                         #else
-                        let title = "Top Shelf Verbose Logging"
+                        let title = localized("Top Shelf Verbose Logging")
                         #endif
                         toggleRow(title: title, isOn: Binding(
                             get: { isAltWidgetVerboseLoggingEnabled },
@@ -103,7 +103,7 @@ struct DeveloperOptionsView: View {
                         
                         divider
                         
-                        toggleRow(title: "SideSign Verbose Logging", isOn: Binding(
+                        toggleRow(title: localized("SideSign Verbose Logging"), isOn: Binding(
                             get: { isSideSignVerboseLoggingEnabled },
                             set: { newValue in
                                 isSideSignVerboseLoggingEnabled = newValue
@@ -114,7 +114,7 @@ struct DeveloperOptionsView: View {
                         
                         divider
                         
-                        toggleRow(title: "Minimuxer Verbose Logging", isOn: Binding(
+                        toggleRow(title: localized("Minimuxer Verbose Logging"), isOn: Binding(
                             get: { isMinimuxerVerboseLoggingEnabled },
                             set: { newValue in
                                 isMinimuxerVerboseLoggingEnabled = newValue
@@ -125,7 +125,7 @@ struct DeveloperOptionsView: View {
                         
                         divider
                         
-                        toggleRow(title: "Operations Verbose Logging", isOn: Binding(
+                        toggleRow(title: localized("Operations Verbose Logging"), isOn: Binding(
                             get: { isVerboseOperationsLoggingEnabled },
                             set: { newValue in
                                 isVerboseOperationsLoggingEnabled = newValue
@@ -137,7 +137,7 @@ struct DeveloperOptionsView: View {
                         
                         NavigationLink(destination: OperationsLoggingControlView()) {
                             HStack {
-                                Text("Operations Logging Control")
+                                Text(localized("Operations Logging Control"))
                                     .font(.system(size: 17, weight: .bold))
                                     .foregroundColor(.white)
                                 Spacer()
@@ -156,9 +156,9 @@ struct DeveloperOptionsView: View {
                 // Section: Widget Options
                 VStack(alignment: .leading, spacing: 8) {
                     #if !os(tvOS)
-                    let title = "WIDGET OPTIONS"
+                    let title = localized("WIDGET OPTIONS")
                     #else
-                    let title = "TOP SHELF OPTIONS"
+                    let title = localized("TOP SHELF OPTIONS")
                     #endif
                     Text(title)
                         .font(.system(size: 13, weight: .semibold))
@@ -173,9 +173,9 @@ struct DeveloperOptionsView: View {
                                     .foregroundColor(.white)
 
                                 #if !os(tvOS)
-                                let title = "Reload All Widgets"
+                                let title = localized("Reload All Widgets")
                                 #else
-                                let title = "Reload Top Shelf"
+                                let title = localized("Reload Top Shelf")
                                 #endif
                                 Text(title)
                                     .font(.system(size: 17, weight: .bold))
@@ -195,9 +195,9 @@ struct DeveloperOptionsView: View {
                                     .foregroundColor(.white)
                                 
                                 #if !os(tvOS)
-                                let title = "Rotate Widget Log"
+                                let title = localized("Rotate Widget Log")
                                 #else
-                                let title = "Rotate Top Shelf Log"
+                                let title = localized("Rotate Top Shelf Log")
                                 #endif
                                 Text(title)
                                     .font(.system(size: 17, weight: .bold))
@@ -214,7 +214,7 @@ struct DeveloperOptionsView: View {
                 
                 // Section 2: Database Options
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("DATABASE OPTIONS")
+                    Text(localized("DATABASE OPTIONS"))
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.6))
                         .padding(.horizontal, 16)
@@ -225,7 +225,7 @@ struct DeveloperOptionsView: View {
                                 Image(systemName: "square.and.arrow.up")
                                     .font(.system(size: 18, weight: .semibold))
                                     .foregroundColor(.white)
-                                Text("Export Database")
+                                Text(localized("Export Database"))
                                     .font(.system(size: 17, weight: .bold))
                                     .foregroundColor(.white)
                                 Spacer()
@@ -246,7 +246,7 @@ struct DeveloperOptionsView: View {
                                 Image(systemName: "clock.arrow.circlepath")
                                     .font(.system(size: 18, weight: .semibold))
                                     .foregroundColor(Color(red: 1.0, green: 0.27, blue: 0.27))
-                                Text("Clear Refresh Attempts")
+                                Text(localized("Clear Refresh Attempts"))
                                     .font(.system(size: 17, weight: .bold))
                                     .foregroundColor(Color(red: 1.0, green: 0.27, blue: 0.27))
                                 Spacer()
@@ -262,7 +262,7 @@ struct DeveloperOptionsView: View {
                                 Image(systemName: "trash")
                                     .font(.system(size: 18, weight: .semibold))
                                     .foregroundColor(Color(red: 1.0, green: 0.27, blue: 0.27))
-                                Text("Delete Database")
+                                Text(localized("Delete Database"))
                                     .font(.system(size: 17, weight: .bold))
                                     .foregroundColor(Color(red: 1.0, green: 0.27, blue: 0.27))
                                 Spacer()
@@ -278,7 +278,7 @@ struct DeveloperOptionsView: View {
                                 Image(systemName: "key")
                                     .font(.system(size: 18, weight: .semibold))
                                     .foregroundColor(Color(red: 1.0, green: 0.27, blue: 0.27))
-                                Text("Clear Keychain Items")
+                                Text(localized("Clear Keychain Items"))
                                     .font(.system(size: 17, weight: .bold))
                                     .foregroundColor(Color(red: 1.0, green: 0.27, blue: 0.27))
                                 Spacer()
@@ -289,7 +289,7 @@ struct DeveloperOptionsView: View {
                         
                         divider
                         
-                        toggleRow(title: "Wipe Database on Next Start", isOn: Binding(
+                        toggleRow(title: localized("Wipe Database on Next Start"), isOn: Binding(
                             get: { recreateDatabaseOnNextStart },
                             set: { newValue in
                                 recreateDatabaseOnNextStart = newValue
@@ -303,7 +303,7 @@ struct DeveloperOptionsView: View {
                 
                 // Section 3: WireGuard Configuration
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("WIREGUARD CONFIGURATION")
+                    Text(localized("WIREGUARD CONFIGURATION"))
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.6))
                         .padding(.horizontal, 16)
@@ -314,7 +314,7 @@ struct DeveloperOptionsView: View {
                                 Image(systemName: "play.circle")
                                     .font(.system(size: 18, weight: .semibold))
                                     .foregroundColor(.white)
-                                Text("Start EMProxy")
+                                Text(localized("Start EMProxy"))
                                     .font(.system(size: 17, weight: .bold))
                                     .foregroundColor(.white)
                                 Spacer()
@@ -330,7 +330,7 @@ struct DeveloperOptionsView: View {
                                 Image(systemName: "stop.circle")
                                     .font(.system(size: 18, weight: .semibold))
                                     .foregroundColor(.white)
-                                Text("Stop EMProxy")
+                                Text(localized("Stop EMProxy"))
                                     .font(.system(size: 17, weight: .bold))
                                     .foregroundColor(.white)
                                 Spacer()
@@ -341,7 +341,7 @@ struct DeveloperOptionsView: View {
                         
                         divider
                         
-                        toggleRow(title: "Show WireGuard Settings", isOn: Binding(
+                        toggleRow(title: localized("Show WireGuard Settings"), isOn: Binding(
                             get: { alwaysShowWireGuardConfig },
                             set: { newValue in
                                 alwaysShowWireGuardConfig = newValue
@@ -355,14 +355,14 @@ struct DeveloperOptionsView: View {
                 
                 // Section: Device (TCP) Probe Timeout
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("DEVICE (TCP) PROBE TIMEOUT")
+                    Text(localized("DEVICE (TCP) PROBE TIMEOUT"))
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.6))
                         .padding(.horizontal, 16)
                     
                     VStack(spacing: 0) {
                         HStack(spacing: 12) {
-                            Text("Timeout (ms)")
+                            Text(localized("Timeout (ms)"))
                                 .font(.system(size: 17, weight: .bold))
                                 .foregroundColor(.white)
                             
@@ -398,7 +398,7 @@ struct DeveloperOptionsView: View {
                                 Image(systemName: "arrow.counterclockwise")
                                     .font(.system(size: 18, weight: .semibold))
                                     .foregroundColor(.white)
-                                Text("Use Default (\(AppConstants.Minimuxer.defaultTCPProbeTimeoutMs) ms)")
+                                Text(localized("Use Default (\(AppConstants.Minimuxer.defaultTCPProbeTimeoutMs) ms)"))
                                     .font(.system(size: 17, weight: .bold))
                                     .foregroundColor(.white)
                                 Spacer()
@@ -413,13 +413,13 @@ struct DeveloperOptionsView: View {
                 
                 // Section: Connection Config
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("CONNECTION CONFIG")
+                    Text(localized("CONNECTION CONFIG"))
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.6))
                         .padding(.horizontal, 16)
                     
                     VStack(spacing: 0) {
-                        toggleRow(title: "Accept IPv6 Config", isOn: Binding(
+                        toggleRow(title: localized("Accept IPv6 Config"), isOn: Binding(
                             get: { acceptIPv6ConnectionConfig },
                             set: { newValue in
                                 acceptIPv6ConnectionConfig = newValue
@@ -434,7 +434,7 @@ struct DeveloperOptionsView: View {
                 #if DEBUG
                 // Section 3: Account Management
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("ACCOUNT MANAGEMENT")
+                    Text(localized("ACCOUNT MANAGEMENT"))
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.6))
                         .padding(.horizontal, 16)
@@ -445,7 +445,7 @@ struct DeveloperOptionsView: View {
                                 Image(systemName: "square.and.arrow.down")
                                     .font(.system(size: 18, weight: .semibold))
                                     .foregroundColor(.white)
-                                Text("Import Account JSON")
+                                Text(localized("Import Account JSON"))
                                     .font(.system(size: 17, weight: .bold))
                                     .foregroundColor(.white)
                                 Spacer()
@@ -461,7 +461,7 @@ struct DeveloperOptionsView: View {
                                AuthManager.shared.password == nil ||
                                CertificateManager.shared.activeCertificate == nil {
                                 if let top = UIApplication.shared.topViewController() {
-                                    let toastView = ToastView(text: NSLocalizedString("Failed to export account!", comment: ""), detailText: "Account not found or missing credentials.")
+                                    let toastView = ToastView(text: localized("Failed to export account!"), detailText: localized("Account not found or missing credentials."))
                                     toastView.show(in: top)
                                 }
                             } else {
@@ -473,7 +473,7 @@ struct DeveloperOptionsView: View {
                                 Image(systemName: "square.and.arrow.up")
                                     .font(.system(size: 18, weight: .semibold))
                                     .foregroundColor(.white)
-                                Text("Export Account JSON")
+                                Text(localized("Export Account JSON"))
                                     .font(.system(size: 17, weight: .bold))
                                     .foregroundColor(.white)
                                 Spacer()
@@ -492,45 +492,45 @@ struct DeveloperOptionsView: View {
             .padding(.bottom, 32)
         }
         .background(Color(uiColor: .settingsBackground).ignoresSafeArea())
-        .navigationTitle("Developer Options")
+        .navigationTitle(localized("Developer Options"))
         #if !os(tvOS)
         .navigationBarTitleDisplayMode(.large)
         #endif
-        .alert("Delete Database", isPresented: $showDeleteConfirmation) {
-            SwiftUI.Button("Delete & Exit", role: .destructive) {
+        .alert(localized("Delete Database"), isPresented: $showDeleteConfirmation) {
+            SwiftUI.Button(localized("Delete & Exit"), role: .destructive) {
                 _ = DatabaseManager.deleteDatabase()
                 exit(0)
             }
-            SwiftUI.Button("Cancel", role: .cancel) {}
+            SwiftUI.Button(localized("Cancel"), role: .cancel) {}
         } message: {
-            Text("Deleting the database will remove all app entries and sources from SideStore.")
+            Text(localized("Deleting the database will remove all app entries and sources from SideStore."))
         }
-        .alert("Clear Refresh Attempts", isPresented: $showClearRefreshAttemptsConfirmation) {
-            SwiftUI.Button("Clear", role: .destructive) {
+        .alert(localized("Clear Refresh Attempts"), isPresented: $showClearRefreshAttemptsConfirmation) {
+            SwiftUI.Button(localized("Clear"), role: .destructive) {
                 clearRefreshAttempts()
             }
-            SwiftUI.Button("Cancel", role: .cancel) {}
+            SwiftUI.Button(localized("Cancel"), role: .cancel) {}
         } message: {
-            Text("Are you sure you want to clear all existing refresh attempt entries?")
+            Text(localized("Are you sure you want to clear all existing refresh attempt entries?"))
         }
         #if DEBUG
-        .alert("Export Account", isPresented: $showExportPasswordPrompt) {
-            SecureField("Certificate Password", text: $exportCertPassword)
-            SwiftUI.Button("Export") {
+        .alert(localized("Export Account"), isPresented: $showExportPasswordPrompt) {
+            SecureField(localized("Certificate Password"), text: $exportCertPassword)
+            SwiftUI.Button(localized("Export")) {
                 exportAccountJSON(password: exportCertPassword)
             }
-            SwiftUI.Button("Cancel", role: .cancel) {}
+            SwiftUI.Button(localized("Cancel"), role: .cancel) {}
         } message: {
-            Text("Please enter a password for the certificate.")
+            Text(localized("Please enter a password for the certificate."))
         }
         #endif
-        .alert("Clear Keychain Items", isPresented: $showClearKeychainConfirmation) {
-            SwiftUI.Button("Clear All", role: .destructive) {
+        .alert(localized("Clear Keychain Items"), isPresented: $showClearKeychainConfirmation) {
+            SwiftUI.Button(localized("Clear All"), role: .destructive) {
                 Keychain.shared.clearAll()
             }
-            SwiftUI.Button("Cancel", role: .cancel) {}
+            SwiftUI.Button(localized("Cancel"), role: .cancel) {}
         } message: {
-            Text("Do you want to clear all keychain items related to this SideStore instance?")
+            Text(localized("Do you want to clear all keychain items related to this SideStore instance?"))
         }
         .onAppear {
             tcpProbeTimeoutText = String(minimuxerGetDeviceProbeTimeout())
@@ -547,10 +547,10 @@ struct DeveloperOptionsView: View {
             do {
                 try ImportExport.importAccountJSON(from: url)
                 let email = AuthManager.shared.currentAppleID ?? ""
-                let toastView = ToastView(text: NSLocalizedString("Successfully imported '\(email)'!", comment: ""), detailText: "SideStore should be fully operational!")
+                let toastView = ToastView(text: localized("Successfully imported '\(email)'!"), detailText: localized("SideStore should be fully operational!"))
                 toastView.show(in: top)
             } catch {
-                let toastView = ToastView(text: NSLocalizedString("Failed to import account JSON!", comment: ""), detailText: error.localizedDescription)
+                let toastView = ToastView(text: localized("Failed to import account JSON!"), detailText: error.localizedDescription)
                 toastView.show(in: top)
             }
         }
@@ -559,17 +559,17 @@ struct DeveloperOptionsView: View {
         #else
         TVWebFileTransferManager.shared.startImport(
             acceptedExtensions: ["sideconf", "json"],
-            title: "Import Account",
+            title: localized("Import Account"),
             presentingVC: top
         ) { selectedURL in
             guard let url = selectedURL else { return }
             do {
                 try ImportExport.importAccountJSON(from: url)
                 let email = AuthManager.shared.currentAppleID ?? ""
-                let toastView = ToastView(text: NSLocalizedString("Successfully imported '\(email)'!", comment: ""), detailText: "SideStore should be fully operational!")
+                let toastView = ToastView(text: localized("Successfully imported '\(email)'!"), detailText: localized("SideStore should be fully operational!"))
                 toastView.show(in: top)
             } catch {
-                let toastView = ToastView(text: NSLocalizedString("Failed to import account JSON!", comment: ""), detailText: error.localizedDescription)
+                let toastView = ToastView(text: localized("Failed to import account JSON!"), detailText: error.localizedDescription)
                 toastView.show(in: top)
             }
         }
@@ -579,13 +579,13 @@ struct DeveloperOptionsView: View {
     private func exportAccountJSON(password: String) {
         guard let top = UIApplication.shared.topViewController() else { return }
         guard let account = ImportExport.exportAccountJSON(password: password) else {
-            let toastView = ToastView(text: NSLocalizedString("Failed to export account!", comment: ""), detailText: "Account not found or missing credentials.")
+            let toastView = ToastView(text: localized("Failed to export account!"), detailText: localized("Account not found or missing credentials."))
             toastView.show(in: top)
             return
         }
         
         guard let accountData = try? Foundation.JSONEncoder().encode(account) else {
-            let toastView = ToastView(text: NSLocalizedString("Failed to export account data!", comment: ""), detailText: "Account malformed.")
+            let toastView = ToastView(text: localized("Failed to export account data!"), detailText: localized("Account malformed."))
             toastView.show(in: top)
             return
         }
@@ -597,10 +597,10 @@ struct DeveloperOptionsView: View {
             let exportVC = UIDocumentPickerViewController(forExporting: [tmpPath], asCopy: false)
             top.present(exportVC, animated: true)
             #else
-            TVWebFileTransferManager.shared.startExport(fileURL: tmpPath, title: "Export Account", presentingVC: top)
+            TVWebFileTransferManager.shared.startExport(fileURL: tmpPath, title: localized("Export Account"), presentingVC: top)
             #endif
         } catch {
-            let toastView = ToastView(text: NSLocalizedString("Failed to export account!", comment: ""), detailText: error.localizedDescription)
+            let toastView = ToastView(text: localized("Failed to export account!"), detailText: error.localizedDescription)
             toastView.show(in: top)
         }
     }
@@ -666,12 +666,12 @@ struct DeveloperOptionsView: View {
             do {
                 try await startEMProxy()
                 await MainActor.run {
-                    let toastView = ToastView(text: NSLocalizedString("Started EMProxy", comment: ""), detailText: "EMProxy loopback server is running.")
+                    let toastView = ToastView(text: localized("Started EMProxy"), detailText: localized("EMProxy loopback server is running."))
                     toastView.show(in: top)
                 }
             } catch {
                 await MainActor.run {
-                    let toastView = ToastView(text: NSLocalizedString("Failed to start EMProxy!", comment: ""), detailText: error.localizedDescription)
+                    let toastView = ToastView(text: localized("Failed to start EMProxy!"), detailText: error.localizedDescription)
                     toastView.show(in: top)
                 }
             }
@@ -684,12 +684,12 @@ struct DeveloperOptionsView: View {
             do {
                 try await stopEMProxy()
                 await MainActor.run {
-                    let toastView = ToastView(text: NSLocalizedString("Stopped EMProxy", comment: ""), detailText: "EMProxy loopback server stopped.")
+                    let toastView = ToastView(text: localized("Stopped EMProxy"), detailText: localized("EMProxy loopback server stopped."))
                     toastView.show(in: top)
                 }
             } catch {
                 await MainActor.run {
-                    let toastView = ToastView(text: NSLocalizedString("Failed to stop EMProxy!", comment: ""), detailText: error.localizedDescription)
+                    let toastView = ToastView(text: localized("Failed to stop EMProxy!"), detailText: error.localizedDescription)
                     toastView.show(in: top)
                 }
             }
@@ -699,12 +699,12 @@ struct DeveloperOptionsView: View {
     private func triggerReloadAllWidgets() {
         #if !os(tvOS)
         WidgetCenter.shared.reloadAllTimelines()
-        let title = NSLocalizedString("Reloaded All Widgets", comment: "")
-        let detail = "Triggered timeline refresh for all widgets."
+        let title = localized("Reloaded All Widgets")
+        let detail = localized("Triggered timeline refresh for all widgets.")
         #else
         NotificationCenter.default.post(name: .TVTopShelfItemsDidChange, object: nil)
-        let title = NSLocalizedString("Reloaded Top Shelf", comment: "")
-        let detail = "Triggered Top Shelf refresh."
+        let title = localized("Reloaded Top Shelf")
+        let detail = localized("Triggered Top Shelf refresh.")
         #endif
         if let top = UIApplication.shared.topViewController() {
             let toastView = ToastView(text: title, detailText: detail)
@@ -721,14 +721,14 @@ struct DeveloperOptionsView: View {
         #endif
         do {
             if let rotatedURL = try WidgetLogManager.rotateLog() {
-                let toastView = ToastView(text: NSLocalizedString("Rotated \(logName) Log", comment: ""), detailText: "Saved to WidgetLogs/\(rotatedURL.lastPathComponent)")
+                let toastView = ToastView(text: localized("Rotated \(logName) Log"), detailText: localized("Saved to WidgetLogs/\(rotatedURL.lastPathComponent)"))
                 toastView.show(in: top)
             } else {
-                let toastView = ToastView(text: NSLocalizedString("\(logName) Log Empty", comment: ""), detailText: "Nothing to rotate.")
+                let toastView = ToastView(text: localized("\(logName) Log Empty"), detailText: localized("Nothing to rotate."))
                 toastView.show(in: top)
             }
         } catch {
-            let toastView = ToastView(text: NSLocalizedString("Failed to Rotate Log", comment: ""), detailText: error.localizedDescription)
+            let toastView = ToastView(text: localized("Failed to Rotate Log"), detailText: error.localizedDescription)
             toastView.show(in: top)
         }
     }

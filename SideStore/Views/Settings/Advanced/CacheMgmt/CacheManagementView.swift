@@ -19,7 +19,7 @@ struct CacheManagementView: View {
                     .scaleEffect(1.1)
             } else {
                 List {
-                    Section(header: Text("Internal App Cache"), footer: Text("Cached unzipped app bundles stored in SideStore's private container. These are used during automatic background refreshes and resigns.")) {
+                    Section(header: Text(localized("Internal App Cache")), footer: Text("Cached unzipped app bundles stored in SideStore's private container. These are used during automatic background refreshes and resigns.")) {
                         if viewModel.internalApps.isEmpty {
                             Text("No cached internal apps.")
                                 .foregroundColor(.secondary)
@@ -41,7 +41,7 @@ struct CacheManagementView: View {
                         }
                     }
                     
-                    Section(header: Text("Exported Resigned Apps"), footer: Text("Copies of signed app bundles exported to your Documents folder. These can be shared or retrieved via the Files app.")) {
+                    Section(header: Text(localized("Exported Resigned Apps")), footer: Text("Copies of signed app bundles exported to your Documents folder. These can be shared or retrieved via the Files app.")) {
                         if viewModel.resignedApps.isEmpty {
                             Text("No exported resigned apps.")
                                 .foregroundColor(.secondary)
@@ -84,7 +84,7 @@ struct CacheManagementView: View {
                     .shadow(radius: 10)
             }
         }
-        .navigationTitle("Cache Management")
+        .navigationTitle(localized("Cache Management"))
         .onAppear {
             viewModel.loadCacheItems()
         }

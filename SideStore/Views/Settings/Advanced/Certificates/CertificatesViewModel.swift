@@ -21,9 +21,9 @@ enum PrivateKeyImportError: LocalizedError {
     
     var errorDescription: String? {
         switch self {
-        case .isCertificate:    return "The selected file is a certificate, not a private key."
-        case .invalidKey:       return "The input does not contain a valid private key."
-        case .conversionFailed: return "Failed to convert binary private key to PEM format."
+        case .isCertificate:    return localized("The selected file is a certificate, not a private key.")
+        case .invalidKey:       return localized("The input does not contain a valid private key.")
+        case .conversionFailed: return localized("Failed to convert binary private key to PEM format.")
         }
     }
 }
@@ -68,7 +68,7 @@ class CertificatesViewModel: ObservableObject {
     @Published var showFailuresAlert: Bool = false
     
     var importSummaryMessage: String {
-        "Certificate import completed.\nSuccess: \(importSuccessCount)\nFailed: \(importFailedCount)"
+        localized("Certificate import completed.\nSuccess: \(importSuccessCount)\nFailed: \(importFailedCount)")
     }
     
     var failuresAlertMessage: String {
@@ -227,7 +227,7 @@ class CertificatesViewModel: ObservableObject {
         defer { pending.url.stopAccessingSecurityScopedResource() }
         
         guard let certData = try? Data(contentsOf: pending.url) else {
-            failedImportsList.append("\(pending.filename): Read error.")
+            failedImportsList.append(localized("\(pending.filename): Read error."))
             importFailedCount += 1
             currentImportIndex += 1
             processNextImport()
@@ -236,7 +236,7 @@ class CertificatesViewModel: ObservableObject {
         
         if let rawCert = ALTX509Certificate(data: certData) {
             if isDuplicate(cert: rawCert, importedSerials: importedSerialsThisBatch) {
-                failedImportsList.append("\(pending.filename): Duplicate certificate (already imported).")
+                failedImportsList.append(localized("\(pending.filename): Duplicate certificate (already imported)."))
                 importFailedCount += 1
             } else {
                 CertificateManager.shared.saveX509Certificate(rawCert)
@@ -252,7 +252,7 @@ class CertificatesViewModel: ObservableObject {
                 do {
                     let altCert = try ALTCertificate(p12Data: certData, password: lastUsedPassword)
                     if isDuplicate(cert: altCert, importedSerials: importedSerialsThisBatch) {
-                        failedImportsList.append("\(pending.filename): Duplicate certificate (already imported).")
+                        failedImportsList.append(localized("\(pending.filename): Duplicate certificate (already imported)."))
                         importFailedCount += 1
                     } else {
                         saveLocalCertificate(altCert)
@@ -274,7 +274,7 @@ class CertificatesViewModel: ObservableObject {
             do {
                 let altCert = try ALTCertificate(p12Data: certData)
                 if isDuplicate(cert: altCert, importedSerials: importedSerialsThisBatch) {
-                    failedImportsList.append("\(pending.filename): Duplicate certificate (already imported).")
+                    failedImportsList.append(localized("\(pending.filename): Duplicate certificate (already imported)."))
                     importFailedCount += 1
                 } else {
                     saveLocalCertificate(altCert)
@@ -298,7 +298,7 @@ class CertificatesViewModel: ObservableObject {
             }
         }
         
-        failedImportsList.append("\(pending.filename): Unsupported certificate or key format.")
+        failedImportsList.append(localized("\(pending.filename): Unsupported certificate or key format."))
         importFailedCount += 1
         currentImportIndex += 1
         processNextImport()
@@ -312,7 +312,7 @@ class CertificatesViewModel: ObservableObject {
         defer { pending.url.stopAccessingSecurityScopedResource() }
 
         guard let certData = try? Data(contentsOf: pending.url) else {
-            failedImportsList.append("\(pending.filename): Failed to read file data.")
+            failedImportsList.append(localized("\(pending.filename): Failed to read file data."))
             importFailedCount += 1
             showPasswordPromptForImport = false
             currentImportIndex += 1
@@ -323,7 +323,7 @@ class CertificatesViewModel: ObservableObject {
         do {
             let altCert = try ALTCertificate(p12Data: certData, password: importPasswordInput)
             if isDuplicate(cert: altCert, importedSerials: importedSerialsThisBatch) {
-                failedImportsList.append("\(pending.filename): Duplicate certificate (already imported).")
+                failedImportsList.append(localized("\(pending.filename): Duplicate certificate (already imported)."))
                 importFailedCount += 1
             } else {
                 saveLocalCertificate(altCert)
@@ -334,7 +334,7 @@ class CertificatesViewModel: ObservableObject {
             currentImportIndex += 1
             processNextImport()
         } catch ALTCertificateError.decryptionFailed {
-            self.errorMessage = "Incorrect password for " + pending.filename
+            self.errorMessage = localized("Incorrect password for \(pending.filename)")
         } catch {
             self.showPasswordPromptForImport = false
             failedImportsList.append("\(pending.filename): \(error.localizedDescription)")
@@ -347,7 +347,7 @@ class CertificatesViewModel: ObservableObject {
     func cancelImport() {
         self.showPasswordPromptForImport = false
         let pending = pendingImports[currentImportIndex]
-        failedImportsList.append("\(pending.filename): Password required but skipped.")
+        failedImportsList.append(localized("\(pending.filename): Password required but skipped."))
         importFailedCount += 1
         currentImportIndex += 1
         processNextImport()
@@ -367,7 +367,7 @@ class CertificatesViewModel: ObservableObject {
                 
                 let newCert = try await DeveloperPortalProxy.shared.createCertificate(machineName: machineName, type: type)
                 self.saveLocalCertificate(newCert)
-                self.alertMessage = "\(type.displayName) created successfully."
+                self.alertMessage = localized("\(type.displayName) created successfully.")
                 self.showAlert    = true
                 self.loadCertificates(presentingViewController: presentingViewController)
             } catch {
@@ -378,7 +378,7 @@ class CertificatesViewModel: ObservableObject {
     
     func revokeCertificate(_ certificate: ALTX509Certificate, keepLocal: Bool = false, presentingViewController: UIViewController? = nil) {
         guard self.remoteSerials.contains(certificate.serialNumber) else {
-            self.errorMessage = "This certificate is already revoked on Apple's servers."
+            self.errorMessage = localized("This certificate is already revoked on Apple's servers.")
             return
         }
         
@@ -399,14 +399,14 @@ class CertificatesViewModel: ObservableObject {
                             CertificateManager.shared.clearActiveCertificate()
                             self.activeSerialNumber = nil
                         }
-                        self.alertMessage = "Certificate revoked successfully."
+                        self.alertMessage = localized("Certificate revoked successfully.")
                     } else {
-                        self.alertMessage = "Certificate revoked on Apple's servers. Local copy preserved."
+                        self.alertMessage = localized("Certificate revoked on Apple's servers. Local copy preserved.")
                     }
                     self.showAlert    = true
                     self.loadCertificates(presentingViewController: presentingViewController)
                 } else {
-                    self.errorMessage = "Failed to revoke certificate."
+                    self.errorMessage = localized("Failed to revoke certificate.")
                 }
             } catch {
                 if !(error is CancellationError) { self.errorMessage = error.localizedDescription }
@@ -421,29 +421,29 @@ class CertificatesViewModel: ObservableObject {
             CertificateManager.shared.clearActiveCertificate()
             self.activeSerialNumber = nil
         }
-        self.alertMessage = "Certificate deleted locally."
+        self.alertMessage = localized("Certificate deleted locally.")
         self.showAlert    = true
     }
     
     func makeCertificateActive(_ certificate: ALTX509Certificate) {
         guard let signable = self.getSignableCertificate(for: certificate.serialNumber) else {
-            self.errorMessage = "Cannot activate certificate: private key missing."
+            self.errorMessage = localized("Cannot activate certificate: private key missing.")
             return
         }
         do {
             try CertificateManager.shared.setActiveCertificate(signable)
             self.fetchActiveSerialNumber()
-            self.alertMessage = "Active signing certificate replaced successfully."
+            self.alertMessage = localized("Active signing certificate replaced successfully.")
             self.showAlert    = true
         } catch {
-            self.errorMessage = "Failed to activate certificate: \(error.localizedDescription)"
+            self.errorMessage = localized("Failed to activate certificate: \(error.localizedDescription)")
         }
     }
 
     func deactivateActiveCertificate() {
         CertificateManager.shared.clearActiveCertificate()
         self.activeSerialNumber = nil
-        self.alertMessage = "Local certificate deactivated."
+        self.alertMessage = localized("Local certificate deactivated.")
         self.showAlert    = true
     }
     
@@ -500,13 +500,13 @@ class CertificatesViewModel: ObservableObject {
         let sorted = sortCertificates(certificates)
         switch currentGroup {
         case .none:
-            return [GroupedCertificates(name: "Certificates", certificates: sorted)]
+            return [GroupedCertificates(name: localized("Certificates"), certificates: sorted)]
         case .keys:
             let withKeys    = sorted.filter { self.hasPrivateKey(for: $0) }
             let withoutKeys = sorted.filter { !self.hasPrivateKey(for: $0) }
             var groups = [GroupedCertificates]()
-            if !withKeys.isEmpty    { groups.append(GroupedCertificates(name: "Public + Private Keys", certificates: withKeys)) }
-            if !withoutKeys.isEmpty { groups.append(GroupedCertificates(name: "Public Keys Only",      certificates: withoutKeys)) }
+            if !withKeys.isEmpty    { groups.append(GroupedCertificates(name: localized("Public + Private Keys"), certificates: withKeys)) }
+            if !withoutKeys.isEmpty { groups.append(GroupedCertificates(name: localized("Public Keys Only"),      certificates: withoutKeys)) }
             return groups
         case .name:
             let grouped = Dictionary(grouping: sorted) { cert -> String in
@@ -517,19 +517,19 @@ class CertificatesViewModel: ObservableObject {
             return grouped.keys.sorted().map { GroupedCertificates(name: $0, certificates: grouped[$0] ?? []) }
         case .type:
             let grouped = Dictionary(grouping: sorted) { cert -> String in
-                cert.certificateType ?? getBriefInfo(for: cert.data)?.type ?? "Other"
+                cert.certificateType ?? getBriefInfo(for: cert.data)?.type ?? localized("Other")
             }
             return grouped.keys.sorted().map { GroupedCertificates(name: $0, certificates: grouped[$0] ?? []) }
         case .creationDate:
             let grouped = Dictionary(grouping: sorted) { cert -> String in
                 let year = Calendar.current.component(.year, from: cert.creationDate)
-                return year > 1970 ? "Created in \(year)" : "Created (Unknown Date)"
+                return year > 1970 ? localized("Created in \(year)") : localized("Created (Unknown Date)")
             }
             return grouped.keys.sorted(by: >).map { GroupedCertificates(name: $0, certificates: grouped[$0] ?? []) }
         case .expiryDate:
             let grouped = Dictionary(grouping: sorted) { cert -> String in
                 let year = Calendar.current.component(.year, from: cert.expiryDate)
-                return year > 1970 ? "Expires in \(year)" : "Expires (Unknown Date)"
+                return year > 1970 ? localized("Expires in \(year)") : localized("Expires (Unknown Date)")
             }
             return grouped.keys.sorted(by: <).map { GroupedCertificates(name: $0, certificates: grouped[$0] ?? []) }
         }
@@ -646,7 +646,7 @@ class CertificatesViewModel: ObservableObject {
             let signable = ALTCertificate(x509: cert, privateKey: key)
             saveLocalCertificate(signable)
             self.loadCertificates(presentingViewController: nil)
-            self.alertMessage = "Successfully added private key to certificate \(cert.name)."
+            self.alertMessage = localized("Successfully added private key to certificate \(cert.name).")
             self.showAlert    = true
         } catch {
             self.errorMessage = error.localizedDescription
@@ -656,7 +656,7 @@ class CertificatesViewModel: ObservableObject {
     func clearPrivateKey(for cert: ALTX509Certificate) {
         CertificateManager.shared.saveX509Certificate(cert)
         self.loadCertificates(presentingViewController: nil)
-        self.alertMessage = "Successfully removed private key from certificate \(cert.name)."
+        self.alertMessage = localized("Successfully removed private key from certificate \(cert.name).")
         self.showAlert    = true
     }
     
@@ -664,7 +664,7 @@ class CertificatesViewModel: ObservableObject {
         if let previous = importedSerialsThisBatch[serial] {
             importSuccessCount -= 1
             importFailedCount += 1
-            failedImportsList.append("\(previous.filename): Duplicate certificate (already imported).")
+            failedImportsList.append(localized("\(previous.filename): Duplicate certificate (already imported)."))
         }
         importedSerialsThisBatch[serial] = (hasPrivateKey, filename)
         importSuccessCount += 1

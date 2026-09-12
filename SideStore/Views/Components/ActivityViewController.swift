@@ -55,7 +55,7 @@ struct ActivityViewController: UIViewControllerRepresentable {
         let vc = UIViewController()
         if let fileURL = activityItems.first(where: { $0 is URL }) as? URL {
             DispatchQueue.main.async {
-                TVWebFileTransferManager.shared.startExport(fileURL: fileURL, title: "Export File", presentingVC: vc)
+                TVWebFileTransferManager.shared.startExport(fileURL: fileURL, title: localized("Export File"), presentingVC: vc)
             }
         }
         return vc

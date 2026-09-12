@@ -23,55 +23,55 @@ struct CertificatePortalDetailView: View {
 
     var body: some View {
         List {
-            Section(header: Text("Certificate Details")) {
-                InfoRow(label: "Name", value: certificate.name)
-                InfoRow(label: "Serial Number", value: certificate.serialNumber)
+            Section(header: Text(localized("Certificate Details"))) {
+                InfoRow(label: localized("Name"), value: certificate.name)
+                InfoRow(label: localized("Serial Number"), value: certificate.serialNumber)
                 if let identifier = certificate.identifier {
-                    InfoRow(label: "Certificate ID", value: identifier)
+                    InfoRow(label: localized("Certificate ID"), value: identifier)
                 }
                 if let certType = certificate.certificateType {
-                    InfoRow(label: "Certificate Type", value: certType)
+                    InfoRow(label: localized("Certificate Type"), value: certType)
                 }
                 if let typeName = certificate.certificateTypeName {
-                    InfoRow(label: "Type Name", value: typeName)
+                    InfoRow(label: localized("Type Name"), value: typeName)
                 }
                 if let managed = certificate.isManaged {
-                    InfoRow(label: "Managed", value: managed ? "Yes (Xcode Cloud)" : "No")
+                    InfoRow(label: localized("Managed"), value: managed ? localized("Yes (Xcode Cloud)") : localized("No"))
                 }
                 if let platform = certificate.platform {
-                    InfoRow(label: "Platform", value: platform)
+                    InfoRow(label: localized("Platform"), value: platform)
                 }
                 if let machineName = certificate.machineName {
-                    InfoRow(label: "Machine Name", value: machineName)
+                    InfoRow(label: localized("Machine Name"), value: machineName)
                 }
                 if let machineIdentifier = certificate.machineIdentifier {
-                    InfoRow(label: "Machine Identifier", value: machineIdentifier)
+                    InfoRow(label: localized("Machine Identifier"), value: machineIdentifier)
                 }
                 if let createdBy = certificate.requesterFirstName {
-                    InfoRow(label: "Created By", value: createdBy)
+                    InfoRow(label: localized("Created By"), value: createdBy)
                 }
                 if let email = certificate.requesterEmail {
-                    InfoRow(label: "Requester Email", value: email)
+                    InfoRow(label: localized("Requester Email"), value: email)
                 }
                 if let teamName = viewModel.team?.name {
-                    InfoRow(label: "Team Name", value: teamName)
+                    InfoRow(label: localized("Team Name"), value: teamName)
                 }
                 if let teamID = viewModel.team?.identifier {
-                    InfoRow(label: "Team Identifier", value: teamID)
+                    InfoRow(label: localized("Team Identifier"), value: teamID)
                 }
-                InfoRow(label: "Created Date", value: formatDate(certificate.creationDate))
-                InfoRow(label: "Expiration Date", value: formatDate(certificate.expiryDate), valueColor: isExpired ? .red : .primary)
-                InfoRow(label: "Status", value: isExpired ? "Expired" : "Active", valueColor: isExpired ? .red : .green)
+                InfoRow(label: localized("Created Date"), value: formatDate(certificate.creationDate))
+                InfoRow(label: localized("Expiration Date"), value: formatDate(certificate.expiryDate), valueColor: isExpired ? .red : .primary)
+                InfoRow(label: localized("Status"), value: isExpired ? localized("Expired") : localized("Active"), valueColor: isExpired ? .red : .green)
             }
 
-            Section(footer: Text("Revoking a certificate permanently invalidates it on Apple's servers. Any provisioning profiles tied exclusively to this certificate may need to be re-generated.")) {
+            Section(footer: Text(localized("Revoking a certificate permanently invalidates it on Apple's servers. Any provisioning profiles tied exclusively to this certificate may need to be re-generated."))) {
                 SwiftUI.Button(role: .destructive) {
                     showRevokeAlert = true
                 } label: {
                     HStack {
                         Spacer()
                         Image(systemName: "trash")
-                        Text("Revoke Certificate on Portal")
+                        Text(localized("Revoke Certificate on Portal"))
                             .fontWeight(.semibold)
                         Spacer()
                     }
@@ -89,9 +89,9 @@ struct CertificatePortalDetailView: View {
         }
         .alert(isPresented: $showRevokeAlert) {
             Alert(
-                title: Text("Revoke Certificate?"),
-                message: Text("Are you sure you want to revoke '\(certificate.name)' on the Apple Developer Portal? This action cannot be undone."),
-                primaryButton: .destructive(Text("Revoke")) {
+                title: Text(localized("Revoke Certificate?")),
+                message: Text(localized("Are you sure you want to revoke '\(certificate.name)' on the Apple Developer Portal? This action cannot be undone.")),
+                primaryButton: .destructive(Text(localized("Revoke"))) {
                     Task {
                         let success = await viewModel.revokeCertificate(certificate, presentingViewController: presentingViewController)
                         if success {

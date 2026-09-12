@@ -49,34 +49,34 @@ struct ProfilePortalDetailView: View {
 
     var body: some View {
         List {
-            Section(header: Text("Profile Information"), footer: Text("You can edit the profile name and regenerate the profile with updated certificate or device associations.")) {
+            Section(header: Text(localized("Profile Information")), footer: Text(localized("You can edit the profile name and regenerate the profile with updated certificate or device associations."))) {
                 HStack {
-                    Text("Name")
+                    Text(localized("Name"))
                         .foregroundColor(.secondary)
                         .frame(width: 100, alignment: .leading)
-                    TextField("Profile Name", text: $editedName)
+                    TextField(localized("Profile Name"), text: $editedName)
                 }
 
-                InfoRow(label: "UUID", value: profile.uuid.uuidString)
+                InfoRow(label: localized("UUID"), value: profile.uuid.uuidString)
                 if let identifier = profile.identifier {
-                    InfoRow(label: "Identifier", value: identifier)
+                    InfoRow(label: localized("Identifier"), value: identifier)
                 }
                 if let profType = profile.profileType {
-                    InfoRow(label: "Type", value: profType.displayName)
+                    InfoRow(label: localized("Type"), value: profType.displayName)
                 } else if let rawType = profile.type {
-                    InfoRow(label: "Type", value: rawType)
+                    InfoRow(label: localized("Type"), value: rawType)
                 }
                 if let isTeam = profile.isTeamProfile {
-                    InfoRow(label: "Managed By", value: isTeam ? "Xcode (Team Profile)" : "Manual (Portal)")
+                    InfoRow(label: localized("Managed By"), value: isTeam ? localized("Xcode (Team Profile)") : localized("Manual (Portal)"))
                 }
-                InfoRow(label: "Status", value: isExpired ? "Expired" : (profile.status ?? "Active"), valueColor: isExpired ? .red : .primary)
-                InfoRow(label: "Expiration Date", value: formatDate(profile.dateExpire), valueColor: isExpired ? .red : .primary)
+                InfoRow(label: localized("Status"), value: isExpired ? localized("Expired") : (profile.status ?? localized("Active")), valueColor: isExpired ? .red : .primary)
+                InfoRow(label: localized("Expiration Date"), value: formatDate(profile.dateExpire), valueColor: isExpired ? .red : .primary)
             }
 
-            Section(header: Text("App ID Association"), footer: Text("Choose from registered team App IDs or specify a custom App ID / identifier.")) {
+            Section(header: Text(localized("App ID Association")), footer: Text(localized("Choose from registered team App IDs or specify a custom App ID / identifier."))) {
                 if !viewModel.appIDs.isEmpty {
-                    Picker("Team App ID", selection: $selectedAppIDId) {
-                        Text("Choose App ID").tag("")
+                    Picker(localized("Team App ID"), selection: $selectedAppIDId) {
+                        Text(localized("Choose App ID")).tag("")
                         ForEach(viewModel.appIDs, id: \.identifier) { appID in
                             Text("\(appID.name) (\(appID.bundleIdentifier))").tag(appID.identifier)
                         }
@@ -84,17 +84,17 @@ struct ProfilePortalDetailView: View {
                 }
 
                 HStack {
-                    Text("App ID ID")
+                    Text(localized("App ID ID"))
                         .foregroundColor(.secondary)
                         .frame(width: 100, alignment: .leading)
-                    TextField("App ID Identifier (e.g. R7V954WR9W)", text: $selectedAppIDId)
+                    TextField(localized("App ID Identifier (e.g. R7V954WR9W)"), text: $selectedAppIDId)
                         .font(.system(.subheadline, design: .monospaced))
                 }
             }
 
-            Section(header: Text("Associated Certificates (\(selectedCertificateIDs.count))"), footer: Text("Select which certificates are authorized to sign with this profile, or add custom certificate IDs.")) {
+            Section(header: Text(localized("Associated Certificates (\(selectedCertificateIDs.count))")), footer: Text(localized("Select which certificates are authorized to sign with this profile, or add custom certificate IDs."))) {
                 if viewModel.certificates.isEmpty {
-                    Text("No certificates found on this team.")
+                    Text(localized("No certificates found on this team."))
                         .foregroundColor(.secondary)
                         .font(.subheadline)
                 } else {
@@ -112,7 +112,7 @@ struct ProfilePortalDetailView: View {
                                     Text(cert.commonName ?? cert.name)
                                         .font(.subheadline)
                                         .foregroundColor(.primary)
-                                    Text("Serial: \(cert.serialNumber)")
+                                    Text(localized("Serial: \(cert.serialNumber)"))
                                         .font(.caption2)
                                         .foregroundColor(.secondary)
                                 }
@@ -128,9 +128,9 @@ struct ProfilePortalDetailView: View {
                 }
 
                 HStack {
-                    TextField("Add Custom Certificate ID", text: $customCertInput)
+                    TextField(localized("Add Custom Certificate ID"), text: $customCertInput)
                         .font(.system(.subheadline, design: .monospaced))
-                    SwiftUI.Button("Add") {
+                    SwiftUI.Button(localized("Add")) {
                         let trimmed = customCertInput.trimmingCharacters(in: .whitespacesAndNewlines)
                         if !trimmed.isEmpty {
                             selectedCertificateIDs.insert(trimmed)
@@ -142,10 +142,10 @@ struct ProfilePortalDetailView: View {
             }
 
             Section(header: HStack {
-                Text("Associated Devices (\(selectedDeviceIDs.count))")
+                Text(localized("Associated Devices (\(selectedDeviceIDs.count))"))
                 Spacer()
                 if !viewModel.devices.isEmpty {
-                    SwiftUI.Button(selectedDeviceIDs.count >= viewModel.devices.count ? "Deselect All" : "Select All") {
+                    SwiftUI.Button(selectedDeviceIDs.count >= viewModel.devices.count ? localized("Deselect All") : localized("Select All")) {
                         if selectedDeviceIDs.count >= viewModel.devices.count {
                             selectedDeviceIDs.removeAll()
                         } else {
@@ -154,9 +154,9 @@ struct ProfilePortalDetailView: View {
                     }
                     .font(.caption)
                 }
-            }, footer: Text("Select devices allowed to run apps with this profile, or enter a custom Device ID / UDID.")) {
+            }, footer: Text(localized("Select devices allowed to run apps with this profile, or enter a custom Device ID / UDID."))) {
                 if viewModel.devices.isEmpty {
-                    Text("No registered devices found on this team.")
+                    Text(localized("No registered devices found on this team."))
                         .foregroundColor(.secondary)
                         .font(.subheadline)
                 } else {
@@ -192,9 +192,9 @@ struct ProfilePortalDetailView: View {
                 }
 
                 HStack {
-                    TextField("Add Custom Device ID / UDID", text: $customDeviceInput)
+                    TextField(localized("Add Custom Device ID / UDID"), text: $customDeviceInput)
                         .font(.system(.subheadline, design: .monospaced))
-                    SwiftUI.Button("Add") {
+                    SwiftUI.Button(localized("Add")) {
                         let trimmed = customDeviceInput.trimmingCharacters(in: .whitespacesAndNewlines)
                         if !trimmed.isEmpty {
                             selectedDeviceIDs.insert(trimmed)
@@ -229,7 +229,7 @@ struct ProfilePortalDetailView: View {
                                 ProgressView()
                             } else {
                                 Image(systemName: "arrow.triangle.2.circlepath")
-                                Text("Save Changes (Regenerate Profile)")
+                                Text(localized("Save Changes (Regenerate Profile)"))
                                     .fontWeight(.bold)
                             }
                             Spacer()
@@ -259,7 +259,7 @@ struct ProfilePortalDetailView: View {
                             ProgressView()
                         } else {
                             Image(systemName: "arrow.down.doc")
-                            Text("Download Profile (.mobileprovision)")
+                            Text(localized("Download Profile (.mobileprovision)"))
                                 .fontWeight(.semibold)
                         }
                         Spacer()
@@ -275,7 +275,7 @@ struct ProfilePortalDetailView: View {
                     HStack {
                         Spacer()
                         Image(systemName: "trash")
-                        Text("Delete Profile from Portal")
+                        Text(localized("Delete Profile from Portal"))
                             .fontWeight(.semibold)
                         Spacer()
                     }
@@ -307,9 +307,9 @@ struct ProfilePortalDetailView: View {
         }
         .alert(isPresented: $showDeleteAlert) {
             Alert(
-                title: Text("Delete Provisioning Profile?"),
-                message: Text("Are you sure you want to delete '\(profile.name)' from the Apple Developer Portal?"),
-                primaryButton: .destructive(Text("Delete")) {
+                title: Text(localized("Delete Provisioning Profile?")),
+                message: Text(localized("Are you sure you want to delete '\(profile.name)' from the Apple Developer Portal?")),
+                primaryButton: .destructive(Text(localized("Delete"))) {
                     Task {
                         let success = await viewModel.deleteProfile(profile, presentingViewController: presentingViewController)
                         if success {

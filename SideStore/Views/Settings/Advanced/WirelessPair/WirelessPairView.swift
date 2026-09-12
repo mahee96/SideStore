@@ -106,7 +106,7 @@ struct WirelessPairView: View {
                 // PIN Display
                 if let pin = viewModel.pinCode {
                     VStack(spacing: 12) {
-                        Text("PAIRING CODE")
+                        Text(localized("PAIRING CODE"))
                             .font(.caption2)
                             .fontWeight(.bold)
                             .foregroundColor(.secondary)
@@ -166,7 +166,7 @@ struct WirelessPairView: View {
                 .padding(.horizontal, 32)
                 .padding(.bottom, 32)
         }
-        .navigationTitle("Wireless Pairing")
+        .navigationTitle(localized("Wireless Pairing"))
         #if !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif

@@ -16,21 +16,21 @@ public enum ExportCertificateDialog {
         guard let presentingVC = rootVC else { return }
         
         let alert = UIAlertController(
-            title: NSLocalizedString("Export Certificate", comment: ""),
-            message: NSLocalizedString("Do you want to export your certificate to an external app? That app will be able to sign apps using your certificate.", comment: ""),
+            title: localized("Export Certificate"),
+            message: localized("Do you want to export your certificate to an external app? That app will be able to sign apps using your certificate."),
             preferredStyle: .alert
         )
         
-        let exportAction = UIAlertAction(title: NSLocalizedString("Export", comment: ""), style: .default) { _ in
+        let exportAction = UIAlertAction(title: localized("Export"), style: .default) { _ in
             guard callbackTemplate.contains("$(BASE64_CERT)") else {
-                let toast = ToastView(text: NSLocalizedString("No $(BASE64_CERT) placeholder found", comment: ""), detailText: nil)
+                let toast = ToastView(text: localized("No $(BASE64_CERT) placeholder found"), detailText: nil)
                 toast.show(in: presentingVC)
                 return
             }
             
             guard let encodedCert = CertificateManager.shared.activeSigningCertificateBase64Encoded,
                   let password = CertificateManager.shared.activeCertificate?.password else {
-                let toast = ToastView(text: NSLocalizedString("Failed to find certificate or password", comment: ""), detailText: nil)
+                let toast = ToastView(text: localized("Failed to find certificate or password"), detailText: nil)
                 toast.show(in: presentingVC)
                 return
             }
@@ -39,7 +39,7 @@ public enum ExportCertificateDialog {
             urlStr = urlStr.replacingOccurrences(of: "$(PASSWORD)", with: password, options: .literal, range: nil)
             
             guard let callbackURL = URL(string: urlStr) else {
-                let toast = ToastView(text: NSLocalizedString("Failed to initialize callback URL!", comment: ""), detailText: nil)
+                let toast = ToastView(text: localized("Failed to initialize callback URL!"), detailText: nil)
                 toast.show(in: presentingVC)
                 return
             }
@@ -49,7 +49,7 @@ public enum ExportCertificateDialog {
         }
         
         alert.addAction(exportAction)
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel))
+        alert.addAction(UIAlertAction(title: localized("Cancel"), style: .cancel))
         
         presentingVC.present(alert, animated: true)
     }

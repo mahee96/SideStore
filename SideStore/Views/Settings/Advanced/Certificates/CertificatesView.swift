@@ -82,7 +82,7 @@ struct CertificatesView: View {
                     }
                 }
             }
-            .navigationTitle("Certificates")
+            .navigationTitle(localized("Certificates"))
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
                     SwiftUI.Button {
@@ -300,15 +300,15 @@ struct CertificatesView: View {
         let contentVC = RevokeAlertViewController()
         
         let alertController = UIAlertController(
-            title: NSLocalizedString("Revoke Certificate", comment: ""),
-            message: NSLocalizedString("Are you sure you want to revoke this certificate? This will permanently delete the certificate on Apple's servers.", comment: ""),
+            title: localized("Revoke Certificate"),
+            message: localized("Are you sure you want to revoke this certificate? This will permanently delete the certificate on Apple's servers."),
             preferredStyle: .alert
         )
         
         alertController.setValue(contentVC, forKey: "contentViewController")
         
-        let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel, handler: nil)
-        let revokeAction = UIAlertAction(title: NSLocalizedString("Revoke", comment: ""), style: .destructive) { _ in
+        let cancelAction = UIAlertAction(title: localized("Cancel"), style: .cancel, handler: nil)
+        let revokeAction = UIAlertAction(title: localized("Revoke"), style: .destructive) { _ in
             let keepLocal = contentVC.isKeepLocalChecked
             viewModel.revokeCertificate(cert, keepLocal: keepLocal, presentingViewController: presentingViewController)
         }
@@ -397,7 +397,7 @@ private struct CreateCertificateSheetView: View {
         NavigationView {
             Form {
                 Section(
-                    header: Text("Certificate Information"),
+                    header: Text(localized("Certificate Information")),
                     footer: Text(isPaidWarningVisible
                         ? "This certificate type requires a paid Apple Developer account."
                         : "Select the certificate type and machine name. This registers the certificate on Apple's servers and saves the private key locally.")
@@ -411,7 +411,7 @@ private struct CreateCertificateSheetView: View {
                     TextField("Machine Name", text: $machineName)
                 }
             }
-            .navigationTitle("New Certificate")
+            .navigationTitle(localized("New Certificate"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     SwiftUI.Button("Cancel") {

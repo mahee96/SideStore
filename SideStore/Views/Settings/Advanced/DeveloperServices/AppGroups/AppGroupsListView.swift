@@ -38,7 +38,7 @@ struct AppGroupsListView: View {
 
     var body: some View {
         List {
-            Section(header: Text("App Groups (\(viewModel.appGroups.count))"), footer: Text("App Groups enable data sharing across multiple apps and extensions within the same developer team. Tap a group to edit its name or delete it.")) {
+            Section(header: Text(localized("App Groups (\(viewModel.appGroups.count))")), footer: Text(localized("App Groups enable data sharing across multiple apps and extensions within the same developer team. Tap a group to edit its name or delete it."))) {
                 if filteredGroups.isEmpty {
                     if viewModel.isLoading {
                         HStack {
@@ -48,7 +48,7 @@ struct AppGroupsListView: View {
                         }
                         .padding(.vertical, 8)
                     } else {
-                        Text(searchText.isEmpty ? "No App Groups found on Developer Portal." : "No matching App Groups found.")
+                        Text(searchText.isEmpty ? localized("No App Groups found on Developer Portal.") : localized("No matching App Groups found."))
                             .foregroundColor(.secondary)
                             .font(.subheadline)
                     }
@@ -60,7 +60,7 @@ struct AppGroupsListView: View {
                         } label: {
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
-                                    Text(group.name.isEmpty ? "App Group" : group.name)
+                                    Text(group.name.isEmpty ? localized("App Group") : group.name)
                                         .font(.headline)
                                         .foregroundColor(.primary)
                                     Spacer()
@@ -72,7 +72,7 @@ struct AppGroupsListView: View {
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                                 HStack {
-                                    Text("Group ID: \(group.identifier)")
+                                    Text(localized("Group ID: \(group.identifier)"))
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                     Spacer()
@@ -86,14 +86,14 @@ struct AppGroupsListView: View {
                                 groupToDelete = group
                                 showDeleteConfirmation = true
                             } label: {
-                                Label("Delete", systemImage: "trash")
+                                Label(localized("Delete"), systemImage: "trash")
                             }
 
                             SwiftUI.Button {
                                 editGroupName = group.name
                                 groupToEdit = group
                             } label: {
-                                Label("Edit", systemImage: "pencil")
+                                Label(localized("Edit"), systemImage: "pencil")
                             }
                             .tint(.blue)
                         }
@@ -103,20 +103,20 @@ struct AppGroupsListView: View {
                                 editGroupName = group.name
                                 groupToEdit = group
                             } label: {
-                                Label("Edit Name", systemImage: "pencil")
+                                Label(localized("Edit Name"), systemImage: "pencil")
                             }
                             #if !os(tvOS)
                             SwiftUI.Button {
                                 UIPasteboard.general.string = group.groupIdentifier
                             } label: {
-                                Label("Copy Identifier", systemImage: "doc.on.doc")
+                                Label(localized("Copy Identifier"), systemImage: "doc.on.doc")
                             }
                             #endif
                             SwiftUI.Button(role: .destructive) {
                                 groupToDelete = group
                                 showDeleteConfirmation = true
                             } label: {
-                                Label("Delete", systemImage: "trash")
+                                Label(localized("Delete"), systemImage: "trash")
                             }
                         }
                     }
@@ -125,11 +125,11 @@ struct AppGroupsListView: View {
         }
         #if !os(tvOS)
         .listStyle(InsetGroupedListStyle())
-        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Search App Groups")
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic), prompt: Text(localized("Search App Groups")))
         #else
         .listStyle(GroupedListStyle())
         #endif
-        .navigationTitle("App Groups")
+        .navigationTitle(localized("App Groups"))
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 SwiftUI.Button {
@@ -147,19 +147,19 @@ struct AppGroupsListView: View {
         .sheet(isPresented: $showCreateSheet) {
             NavigationView {
                 Form {
-                    Section(header: Text("App Group Details"), footer: Text("Group identifier must start with 'group.' prefix (e.g. group.com.example.shared).")) {
-                        TextField("Name (e.g. Shared Storage)", text: $newGroupName)
-                        TextField("Group Identifier", text: $newGroupIdentifier)
+                    Section(header: Text(localized("App Group Details")), footer: Text(localized("Group identifier must start with 'group.' prefix (e.g. group.com.example.shared)."))) {
+                        TextField(localized("Name (e.g. Shared Storage)"), text: $newGroupName)
+                        TextField(localized("Group Identifier"), text: $newGroupIdentifier)
                             .autocapitalization(.none)
                             .disableAutocorrection(true)
                     }
                 }
-                .navigationTitle("Create App Group")
+                .navigationTitle(localized("Create App Group"))
                 .navigationBarItems(
-                    leading: SwiftUI.Button("Cancel") {
+                    leading: SwiftUI.Button(localized("Cancel")) {
                         showCreateSheet = false
                     },
-                    trailing: SwiftUI.Button("Create") {
+                    trailing: SwiftUI.Button(localized("Create")) {
                         let name = newGroupName.trimmingCharacters(in: .whitespacesAndNewlines)
                         let groupID = newGroupIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
                         guard !name.isEmpty, !groupID.isEmpty else { return }
@@ -180,11 +180,11 @@ struct AppGroupsListView: View {
         .sheet(item: $groupToEdit) { group in
             NavigationView {
                 Form {
-                    Section(header: Text("Description"), footer: Text("You cannot use special characters such as @, &, *, ', \", -, .")) {
-                        TextField("Description", text: $editGroupName)
+                    Section(header: Text(localized("Description")), footer: Text(localized("You cannot use special characters such as @, &, *, ', \", -, ."))) {
+                        TextField(localized("Description"), text: $editGroupName)
                     }
 
-                    Section(header: Text("Identifier")) {
+                    Section(header: Text(localized("Identifier"))) {
                         Text(group.groupIdentifier)
                             .foregroundColor(.secondary)
                     }
@@ -196,19 +196,19 @@ struct AppGroupsListView: View {
                             HStack {
                                 Spacer()
                                 Image(systemName: "trash")
-                                Text("Remove App Group")
+                                Text(localized("Remove App Group"))
                                     .fontWeight(.semibold)
                                 Spacer()
                             }
                         }
                     }
                 }
-                .navigationTitle("Edit Identifier Configuration")
+                .navigationTitle(localized("Edit Identifier Configuration"))
                 .navigationBarItems(
-                    leading: SwiftUI.Button("Cancel") {
+                    leading: SwiftUI.Button(localized("Cancel")) {
                         groupToEdit = nil
                     },
-                    trailing: SwiftUI.Button("Save") {
+                    trailing: SwiftUI.Button(localized("Save")) {
                         let trimmed = editGroupName.trimmingCharacters(in: .whitespacesAndNewlines)
                         guard !trimmed.isEmpty else { return }
                         Task {
@@ -224,9 +224,9 @@ struct AppGroupsListView: View {
                 )
                 .alert(isPresented: $showSheetDeleteConfirmation) {
                     Alert(
-                        title: Text("Delete App Group?"),
-                        message: Text("Are you sure you want to delete '\(group.name)' (\(group.groupIdentifier)) from Apple Developer Portal?"),
-                        primaryButton: .destructive(Text("Delete")) {
+                        title: Text(localized("Delete App Group?")),
+                        message: Text(localized("Are you sure you want to delete '\(group.name)' (\(group.groupIdentifier)) from Apple Developer Portal?")),
+                        primaryButton: .destructive(Text(localized("Delete"))) {
                             Task {
                                 let success = await viewModel.deleteAppGroup(group, presentingViewController: presentingViewController)
                                 if success {
@@ -241,9 +241,9 @@ struct AppGroupsListView: View {
         }
         .alert(isPresented: $showDeleteConfirmation) {
             Alert(
-                title: Text("Delete App Group?"),
-                message: Text("Are you sure you want to delete '\(groupToDelete?.name ?? "this App Group")' (\(groupToDelete?.groupIdentifier ?? "")) from Apple Developer Portal?"),
-                primaryButton: .destructive(Text("Delete")) {
+                title: Text(localized("Delete App Group?")),
+                message: Text(localized("Are you sure you want to delete '\(groupToDelete?.name ?? "this App Group")' (\(groupToDelete?.groupIdentifier ?? "")) from Apple Developer Portal?")),
+                primaryButton: .destructive(Text(localized("Delete"))) {
                     if let target = groupToDelete {
                         Task {
                             _ = await viewModel.deleteAppGroup(target, presentingViewController: presentingViewController)

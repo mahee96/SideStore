@@ -104,13 +104,13 @@ private struct CertGroupHeaderView: View {
     #endif
     
     private var headerTitle: String {
-        if group.name == "Certificates" {
+        if group.name == "Certificates" || group.name == localized("Certificates") {
             let localCount = viewModel.certificates.count
             if viewModel.hasFetchedRemote {
                 let remoteCount = viewModel.remoteSerials.count
-                return "Certificates \(localCount)(\(remoteCount)R)"
+                return localized("Certificates \(localCount)(\(remoteCount)R)")
             } else {
-                return "Certificates \(localCount)"
+                return localized("Certificates \(localCount)")
             }
         }
         return group.name
@@ -128,9 +128,9 @@ private struct CertGroupHeaderView: View {
                         else { viewModel.currentSort = option; viewModel.isAscending = (option == .name) }
                     } label: {
                         if viewModel.currentSort == option {
-                            Label("\(option.rawValue) \(viewModel.isAscending ? "↑" : "↓")", systemImage: "checkmark")
+                            Label("\(option.localizedName) \(viewModel.isAscending ? "↑" : "↓")", systemImage: "checkmark")
                         } else {
-                            Text(option.rawValue)
+                            Text(option.localizedName)
                         }
                     }
                 }
@@ -138,9 +138,9 @@ private struct CertGroupHeaderView: View {
                 Image(systemName: "arrow.up.arrow.down").font(.system(size: 13)).foregroundColor(.accentColor)
             }
             Menu {
-                Picker("Group By", selection: $viewModel.currentGroup) {
+                Picker(localized("Group By"), selection: $viewModel.currentGroup) {
                     ForEach(GroupOption.allCases) { option in
-                        Text(option.rawValue).tag(option)
+                        Text(option.localizedName).tag(option)
                     }
                 }
             } label: {
@@ -152,9 +152,9 @@ private struct CertGroupHeaderView: View {
             } label: {
                 Image(systemName: "arrow.up.arrow.down").font(.system(size: 13)).foregroundColor(.accentColor)
             }
-            .confirmationDialog("Sort Certificates", isPresented: $showSortDialog) {
+            .confirmationDialog(localized("Sort Certificates"), isPresented: $showSortDialog) {
                 ForEach(SortOption.allCases) { option in
-                    SwiftUI.Button("\(option.rawValue) \(viewModel.currentSort == option && viewModel.isAscending ? "↑" : "↓")") {
+                    SwiftUI.Button("\(option.localizedName) \(viewModel.currentSort == option && viewModel.isAscending ? "↑" : "↓")") {
                         if viewModel.currentSort == option { viewModel.isAscending.toggle() }
                         else { viewModel.currentSort = option; viewModel.isAscending = (option == .name) }
                     }
@@ -165,9 +165,9 @@ private struct CertGroupHeaderView: View {
             } label: {
                 Image(systemName: "rectangle.3.group").font(.system(size: 13)).foregroundColor(.accentColor)
             }
-            .confirmationDialog("Group Certificates", isPresented: $showGroupDialog) {
+            .confirmationDialog(localized("Group Certificates"), isPresented: $showGroupDialog) {
                 ForEach(GroupOption.allCases) { option in
-                    SwiftUI.Button(option.rawValue) {
+                    SwiftUI.Button(option.localizedName) {
                         viewModel.currentGroup = option
                     }
                 }

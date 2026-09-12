@@ -23,12 +23,12 @@ struct HealthCheckView: View {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(size: 44))
                                 .foregroundColor(.green)
-                            Text("SideStore Ready")
+                            Text(localized("SideStore Ready"))
                                 .font(.title2)
                                 .fontWeight(.bold)
                             Text(viewModel.connectionMode == .localVPN
-                                 ? "All requirements met. Local device pairing & VPN tunnel active."
-                                 : "All requirements met. Local device pairing & Remote server connection active."
+                                 ? localized("All requirements met. Local device pairing & VPN tunnel active.")
+                                 : localized("All requirements met. Local device pairing & Remote server connection active.")
                             )
                             .font(.subheadline)
                             .foregroundColor(.secondary)
@@ -37,7 +37,7 @@ struct HealthCheckView: View {
                             Image(systemName: "exclamationmark.triangle.fill")
                                 .font(.system(size: 44))
                                 .foregroundColor(.orange)
-                            Text("Action Required")
+                            Text(localized("Action Required"))
                                 .font(.title2)
                                 .fontWeight(.bold)
                             Text(err.localizedDescription)
@@ -46,7 +46,7 @@ struct HealthCheckView: View {
                                 .multilineTextAlignment(.center)
                         }
                     } else {
-                        ProgressView("Performing Diagnostic Check...")
+                        ProgressView(localized("Performing Diagnostic Check..."))
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -54,25 +54,25 @@ struct HealthCheckView: View {
             }
             
             // Section 2: Core Dependencies
-            Section(header: Text("Core Requirements")) {
+            Section(header: Text(localized("Core Requirements"))) {
                 DependencyRow(
-                    title: "Network Connectivity",
-                    subtitle: viewModel.networkSatisfied == nil ? "Unknown" : (viewModel.isWifiSatisfied ? "Wi-Fi Active" : "No Connection"),
+                    title: localized("Network Connectivity"),
+                    subtitle: viewModel.networkSatisfied == nil ? localized("Unknown") : (viewModel.isWifiSatisfied ? localized("Wi-Fi Active") : localized("No Connection")),
                     isSatisfied: viewModel.networkSatisfied
                 )
                 
                 if viewModel.connectionMode == .localVPN {
                     DependencyRow(
-                        title: "VPN Tunnel (utun)",
-                        subtitle: viewModel.vpnSatisfied == nil ? "Unknown" : (viewModel.isUTunAvailable ? "Connected" : "Disconnected"),
+                        title: localized("VPN Tunnel (utun)"),
+                        subtitle: viewModel.vpnSatisfied == nil ? localized("Unknown") : (viewModel.isUTunAvailable ? localized("Connected") : localized("Disconnected")),
                         isSatisfied: viewModel.vpnSatisfied
                     )
                     
                     if !viewModel.isRPPairing {
                         if #available(iOS 26.4, *) {
                             DependencyRow(
-                                title: "IPSec/IKEv2 Tunnel",
-                                subtitle: viewModel.ipsecSatisfied == nil ? "Unknown" : (viewModel.isIKEv2IPSecAvailable ? "Connected" : "Disconnected"),
+                                title: localized("IPSec/IKEv2 Tunnel"),
+                                subtitle: viewModel.ipsecSatisfied == nil ? localized("Unknown") : (viewModel.isIKEv2IPSecAvailable ? localized("Connected") : localized("Disconnected")),
                                 isSatisfied: viewModel.ipsecSatisfied
                             )
                         }
@@ -80,57 +80,57 @@ struct HealthCheckView: View {
                 }
                 
                 DependencyRow(
-                    title: "Device Reachability (Ping)",
-                    subtitle: viewModel.pingSatisfied == nil ? "Unknown" : (viewModel.isPingSuccessful ? "Reachable" : "Unreachable"),
+                    title: localized("Device Reachability (Ping)"),
+                    subtitle: viewModel.pingSatisfied == nil ? localized("Unknown") : (viewModel.isPingSuccessful ? localized("Reachable") : localized("Unreachable")),
                     isSatisfied: viewModel.pingSatisfied
                 )
                 
                 DependencyRow(
-                    title: "Pairing file",
-                    subtitle: viewModel.isPairingFileVerified ? "Verified" : (viewModel.isPairingFileLoaded ? "Loaded (Connection down)" : "Unverified / Missing"),
+                    title: localized("Pairing File"),
+                    subtitle: viewModel.isPairingFileVerified ? localized("Verified") : (viewModel.isPairingFileLoaded ? localized("Loaded (Connection down)") : localized("Unverified / Missing")),
                     isSatisfied: viewModel.pairingSatisfied
                 )
             }
             
             // Section 3: JIT Dependencies
-            Section(header: Text("JIT Requirements")) {
+            Section(header: Text(localized("JIT Requirements"))) {
                 DependencyRow(
-                    title: "Developer Disk Image (DDI)",
-                    subtitle: viewModel.isDDIMounted ? "Mounted" : "Not Mounted (JIT unavailable)",
+                    title: localized("Developer Disk Image (DDI)"),
+                    subtitle: viewModel.isDDIMounted ? localized("Mounted") : localized("Not Mounted (JIT unavailable)"),
                     isSatisfied: viewModel.ddiSatisfied,
                     isOptional: true
                 )
             }
             
             // Section 4: Connection Configuration
-            Section(header: Text("Connection Configuration")) {
+            Section(header: Text(localized("Connection Configuration"))) {
                 HStack {
-                    Text("Connection Mode")
+                    Text(localized("Connection Mode"))
                     Spacer()
-                    Text(viewModel.connectionMode == .localVPN ? "Local VPN" : "Remote Server")
+                    Text(viewModel.connectionMode == .localVPN ? localized("Local VPN") : localized("Remote Server"))
                         .foregroundColor(.secondary)
                 }
                 
                 if viewModel.connectionMode == .localVPN {
-                    ConfigRow(label: "Tunnel Iface IP", value: viewModel.tunnelIfaceIp)
-                    ConfigRow(label: "Tunnel Peer IP", value: viewModel.tunnelPeerIp)
-                    ConfigRow(label: "Override Peer IP", value: viewModel.overrideTunnelPeerIp.isEmpty ? nil : viewModel.overrideTunnelPeerIp)
+                    ConfigRow(label: localized("Tunnel Iface IP"), value: viewModel.tunnelIfaceIp)
+                    ConfigRow(label: localized("Tunnel Peer IP"), value: viewModel.tunnelPeerIp)
+                    ConfigRow(label: localized("Override Peer IP"), value: viewModel.overrideTunnelPeerIp.isEmpty ? nil : viewModel.overrideTunnelPeerIp)
                     HStack {
-                        Text("Override Status")
+                        Text(localized("Override Status"))
                         Spacer()
-                        Text(viewModel.overrideTunnelPeerEffective ? "Active" : "Inactive")
+                        Text(viewModel.overrideTunnelPeerEffective ? localized("Active") : localized("Inactive"))
                             .foregroundColor(viewModel.overrideTunnelPeerEffective ? .green : .secondary)
                     }
                     HStack {
-                        Text("Active Protocol")
+                        Text(localized("Active Protocol"))
                         Spacer()
                         Text(viewModel.activeProtocol)
                             .foregroundColor(.secondary)
                     }
                 } else {
-                    ConfigRow(label: "Remote Endpoint IP", value: viewModel.remoteServerIp.isEmpty ? nil : viewModel.remoteServerIp)
+                    ConfigRow(label: localized("Remote Endpoint IP"), value: viewModel.remoteServerIp.isEmpty ? nil : viewModel.remoteServerIp)
                     HStack {
-                        Text("Active Protocol")
+                        Text(localized("Active Protocol"))
                         Spacer()
                         Text(viewModel.activeProtocol)
                             .foregroundColor(.secondary)
@@ -139,9 +139,9 @@ struct HealthCheckView: View {
             }
             
             // Section 4: All Active Interfaces
-            Section(header: Text("Active Network Interfaces")) {
+            Section(header: Text(localized("Active Network Interfaces"))) {
                 if viewModel.availableInterfaces.isEmpty {
-                    Text("No active interfaces scanned.")
+                    Text(localized("No active interfaces scanned."))
                         .foregroundColor(.secondary)
                         .italic()
                 } else {
@@ -162,7 +162,7 @@ struct HealthCheckView: View {
                 }
             }
         }
-        .navigationTitle("Health Check")
+        .navigationTitle(localized("Health Check"))
         #if !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -219,7 +219,7 @@ struct ConfigRow: View {
         HStack {
             Text(label)
             Spacer()
-            Text(value ?? "N/A")
+            Text(value ?? localized("N/A"))
                 .foregroundColor(.secondary)
         }
     }

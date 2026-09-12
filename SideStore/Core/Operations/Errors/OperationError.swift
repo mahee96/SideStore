@@ -174,31 +174,31 @@ public enum OperationError: LocalizedError, CustomNSError, Sendable, Equatable {
     }
 
     public var failureReason: String? {
-        return NSLocalizedString(self.rawDescription, comment: "")
+        return localized("\(self.rawDescription)")
     }
 
     public var recoverySuggestion: String? {
         switch self {
         case .noConnection:
-            return NSLocalizedString("Connect to a Wi-Fi network, Bridge or a Wired network connection!", comment: "")
+            return localized("Connect to a Wi-Fi network, Bridge or a Wired network connection!")
         case .noVPN, .invalidVPN:
-            return NSLocalizedString("Make sure LocalDevVPN is connected and running!", comment: "")
+            return localized("Make sure LocalDevVPN is connected and running!")
         case .invalidPairingFile:
-            return NSLocalizedString("Import a valid mobiledevicepairing file.", comment: "")
+            return localized("Import a valid mobiledevicepairing file.")
         case .serverNotFound:
-            return NSLocalizedString("Make sure you're on the same Wi-Fi network as a computer running AltServer, or try connecting this device to your computer via USB.", comment: "")
+            return localized("Make sure you're on the same Wi-Fi network as a computer running AltServer, or try connecting this device to your computer via USB.")
         case .maximumAppIDLimitReached(let appName, let requiredAppIDs, let availableAppIDs, let expirationDate):
-            let baseMessage = NSLocalizedString("Delete sideloaded apps to free up App ID slots.", comment: "")
+            let baseMessage = localized("Delete sideloaded apps to free up App ID slots.")
             let availableText: String
             switch availableAppIDs {
-            case 0: availableText = NSLocalizedString("none are available", comment: "")
-            case 1: availableText = NSLocalizedString("only 1 is available", comment: "")
-            default: availableText = String(format: NSLocalizedString("only %@ are available", comment: ""), NSNumber(value: availableAppIDs))
+            case 0: availableText = localized("none are available")
+            case 1: availableText = localized("only 1 is available")
+            default: availableText = localized("only \(availableAppIDs) are available")
             }
 
             var message = ""
             if requiredAppIDs > 1 {
-                let prefixMessage = String(format: NSLocalizedString("%@ requires %@ App IDs, but %@.", comment: ""), appName, NSNumber(value: requiredAppIDs), availableText)
+                let prefixMessage = localized("\(appName) requires \(requiredAppIDs) App IDs, but \(availableText).")
                 message = prefixMessage + " " + baseMessage + "\n\n"
             } else {
                 message = baseMessage + " "
@@ -210,7 +210,7 @@ public enum OperationError: LocalizedError, CustomNSError, Sendable, Equatable {
             dateFormatter.unitsStyle = .full
 
             if let remainingTime = dateFormatter.string(from: dateComponents) {
-                message += String(format: NSLocalizedString("You can register another App ID in %@.", comment: ""), remainingTime)
+                message += localized("You can register another App ID in \(remainingTime).")
             }
             return message
         default:

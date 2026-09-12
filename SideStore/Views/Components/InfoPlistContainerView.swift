@@ -20,24 +20,24 @@ struct PlistNode: Identifiable {
     static func parse(key: String, value: Any) -> PlistNode {
         if let dict = value as? [String: Any] {
             let sortedChildren = dict.keys.sorted().map { parse(key: $0, value: dict[$0]!) }
-            return PlistNode(key: key, value: nil, typeInfo: "Dictionary (\(dict.count) keys)", children: sortedChildren)
+            return PlistNode(key: key, value: nil, typeInfo: localized("Dictionary (\(dict.count) keys)"), children: sortedChildren)
         } else if let array = value as? [Any] {
-            let children = array.enumerated().map { parse(key: "Index \($0)", value: $1) }
-            return PlistNode(key: key, value: nil, typeInfo: "Array (\(array.count) items)", children: children)
+            let children = array.enumerated().map { parse(key: localized("Index \($0)"), value: $1) }
+            return PlistNode(key: key, value: nil, typeInfo: localized("Array (\(array.count) items)"), children: children)
         } else if let data = value as? Data {
             let hex = data.map { String(format: "%02x", $0) }.joined()
-            return PlistNode(key: key, value: hex, typeInfo: "Data (\(data.count) bytes)", children: nil)
+            return PlistNode(key: key, value: hex, typeInfo: localized("Data (\(data.count) bytes)"), children: nil)
         } else if let date = value as? Date {
             let str = ISO8601DateFormatter().string(from: date)
-            return PlistNode(key: key, value: str, typeInfo: "Date", children: nil)
+            return PlistNode(key: key, value: str, typeInfo: localized("Date"), children: nil)
         } else {
             let typeStr: String
             if value is Bool {
-                typeStr = "Boolean"
+                typeStr = localized("Boolean")
             } else if value is NSNumber {
-                typeStr = "Number"
+                typeStr = localized("Number")
             } else {
-                typeStr = "String"
+                typeStr = localized("String")
             }
             return PlistNode(key: key, value: "\(value)", typeInfo: typeStr, children: nil)
         }
@@ -52,6 +52,15 @@ enum InfoPlistMode: String, CaseIterable, Identifiable {
     case rawXML = "Raw XML"
     
     var id: String { self.rawValue }
+
+    var localizedName: String {
+        switch self {
+        case .semantic: return localized("Semantic")
+        case .tree: return localized("Tree")
+        case .rawJSON: return localized("Raw JSON")
+        case .rawXML: return localized("Raw XML")
+        }
+    }
 }
 
 // MARK: - Container View
@@ -79,9 +88,9 @@ struct InfoPlistContainerView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            Picker("Visualization Mode", selection: $selectedMode) {
+            Picker(localized("Visualization Mode"), selection: $selectedMode) {
                 ForEach(InfoPlistMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
+                    Text(mode.localizedName).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
@@ -146,7 +155,7 @@ struct InfoPlistTreeView: View {
         #else
         .listStyle(GroupedListStyle())
         #endif
-        .searchable(text: $searchQuery, prompt: "Search keys")
+        .searchable(text: $searchQuery, prompt: Text(localized("Search keys")))
     }
     
     private func filterNodes(_ nodes: [PlistNode], query: String) -> [PlistNode] {
@@ -191,7 +200,7 @@ struct PlistNodeRow: View {
                     SwiftUI.Button {
                         UIPasteboard.general.string = node.key
                     } label: {
-                        Label("Copy Key", systemImage: "doc.on.doc")
+                        Label(localized("Copy Key"), systemImage: "doc.on.doc")
                     }
                 }
             }
@@ -286,7 +295,7 @@ struct InfoPlistRawXMLView: View {
                             isWrapped.toggle()
                         }
                     } label: {
-                        Label(isWrapped ? "Wrap: On" : "Wrap: Off", systemImage: isWrapped ? "text.alignleft" : "text.chevron.right")
+                        Label(isWrapped ? localized("Wrap: On") : localized("Wrap: Off"), systemImage: isWrapped ? "text.alignleft" : "text.chevron.right")
                             .font(.footnote)
                     }
                     .buttonStyle(.bordered)
@@ -303,7 +312,7 @@ struct InfoPlistRawXMLView: View {
                             }
                         }
                     } label: {
-                        Label(isCopied ? "Copied!" : "Copy XML", systemImage: isCopied ? "checkmark" : "doc.on.doc")
+                        Label(isCopied ? localized("Copied!") : localized("Copy XML"), systemImage: isCopied ? "checkmark" : "doc.on.doc")
                             .font(.footnote)
                     }
                     .buttonStyle(.borderedProminent)
@@ -377,7 +386,7 @@ struct InfoPlistRawView: View {
                             isWrapped.toggle()
                         }
                     } label: {
-                        Label(isWrapped ? "Wrap: On" : "Wrap: Off", systemImage: isWrapped ? "text.alignleft" : "text.chevron.right")
+                        Label(isWrapped ? localized("Wrap: On") : localized("Wrap: Off"), systemImage: isWrapped ? "text.alignleft" : "text.chevron.right")
                             .font(.footnote)
                     }
                     .buttonStyle(.bordered)
@@ -394,7 +403,7 @@ struct InfoPlistRawView: View {
                             }
                         }
                     } label: {
-                        Label(isCopied ? "Copied!" : "Copy JSON", systemImage: isCopied ? "checkmark" : "doc.on.doc")
+                        Label(isCopied ? localized("Copied!") : localized("Copy JSON"), systemImage: isCopied ? "checkmark" : "doc.on.doc")
                             .font(.footnote)
                     }
                     .buttonStyle(.borderedProminent)
@@ -564,17 +573,17 @@ struct InfoPlistSemanticView: View {
         List {
             // General Info — only show if app metadata is actually present in plist
             if hasAppMetadata {
-                Section(header: Text("General Info")) {
-                    SemanticValueRow(label: "App Name", value: appName)
-                    SemanticValueRow(label: "Bundle Identifier", value: bundleID)
-                    SemanticValueRow(label: "Version", value: version)
-                    SemanticValueRow(label: "Minimum OS", value: minOS)
+                Section(header: Text(localized("General Info"))) {
+                    SemanticValueRow(label: localized("App Name"), value: appName)
+                    SemanticValueRow(label: localized("Bundle Identifier"), value: bundleID)
+                    SemanticValueRow(label: localized("Version"), value: version)
+                    SemanticValueRow(label: localized("Minimum OS"), value: minOS)
                 }
             }
             
             // Privacy Permissions Card
             if !privacyPermissions.isEmpty {
-                Section(header: Text("Privacy Permissions (\(privacyPermissions.count))")) {
+                Section(header: Text(localized("Privacy Permissions (\(privacyPermissions.count))"))) {
                     ForEach(privacyPermissions.keys.sorted(), id: \.self) { key in
                         LocalCopyableDescriptionRow(key: key, value: privacyPermissions[key] ?? "")
                     }
@@ -583,7 +592,7 @@ struct InfoPlistSemanticView: View {
             
             // Custom URL Schemes Card
             if !customURLSchemes.isEmpty {
-                Section(header: Text("Custom URL Schemes")) {
+                Section(header: Text(localized("Custom URL Schemes"))) {
                     ForEach(customURLSchemes, id: \.self) { scheme in
                         LocalCopyableValueOnlyRow(value: scheme)
                     }
@@ -592,7 +601,7 @@ struct InfoPlistSemanticView: View {
             
             // Background Modes Card
             if !backgroundModes.isEmpty {
-                Section(header: Text("Background Modes")) {
+                Section(header: Text(localized("Background Modes"))) {
                     ForEach(backgroundModes, id: \.self) { mode in
                         HStack {
                             Image(systemName: getBackgroundModeIcon(mode))
@@ -608,7 +617,7 @@ struct InfoPlistSemanticView: View {
             
             // Queried URL Schemes Card
             if !queriedSchemes.isEmpty {
-                Section(header: Text("Queries Schemes")) {
+                Section(header: Text(localized("Queries Schemes"))) {
                     ForEach(queriedSchemes, id: \.self) { scheme in
                         HStack {
                             Text(scheme)
@@ -620,7 +629,7 @@ struct InfoPlistSemanticView: View {
             }
             
             // Other Custom/Advanced Keys
-            Section(header: Text("Advanced / Custom Keys")) {
+            Section(header: Text(localized("Advanced / Custom Keys"))) {
                 SearchBarView(text: $searchQuery)
                     .listRowInsets(EdgeInsets())
                     .padding(.horizontal)
@@ -679,7 +688,7 @@ struct SemanticValueRow: View {
                 UIPasteboard.general.string = value
                 #endif
             } label: {
-                Label("Copy", systemImage: "doc.on.doc")
+                Label(localized("Copy"), systemImage: "doc.on.doc")
             }
         }
     }
@@ -707,14 +716,14 @@ struct LocalCopyableDescriptionRow: View {
                 UIPasteboard.general.string = value
                 #endif
             } label: {
-                Label("Copy Value", systemImage: "doc.on.doc")
+                Label(localized("Copy Value"), systemImage: "doc.on.doc")
             }
             SwiftUI.Button {
                 #if !os(tvOS)
                 UIPasteboard.general.string = key
                 #endif
             } label: {
-                Label("Copy Key", systemImage: "doc.on.doc")
+                Label(localized("Copy Key"), systemImage: "doc.on.doc")
             }
         }
     }
@@ -767,14 +776,14 @@ struct CopyableValueRow: View {
                 UIPasteboard.general.string = formatValue(value)
                 #endif
             } label: {
-                Label("Copy Value", systemImage: "doc.on.doc")
+                Label(localized("Copy Value"), systemImage: "doc.on.doc")
             }
             SwiftUI.Button {
                 #if !os(tvOS)
                 UIPasteboard.general.string = key
                 #endif
             } label: {
-                Label("Copy Key", systemImage: "doc.on.doc")
+                Label(localized("Copy Key"), systemImage: "doc.on.doc")
             }
         }
     }
@@ -818,7 +827,7 @@ struct SearchBarView: View {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(.secondary)
             
-            TextField("Search keys", text: $text)
+            TextField(localized("Search keys"), text: $text)
                 .textFieldStyle(PlainTextFieldStyle())
                 
             if !text.isEmpty {

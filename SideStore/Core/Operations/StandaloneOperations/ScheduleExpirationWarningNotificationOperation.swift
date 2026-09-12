@@ -36,9 +36,9 @@ final class ScheduleExpirationWarningNotificationOperation: BaseStandaloneOperat
         }
 
         let milestones: [(id: String, timeBeforeExp: TimeInterval, title: String, body: String)] = [
-            ("24h", 24 * 60 * 60, "SideStore Expiring Soon", "SideStore will expire in 24 hours. Open the app and refresh it to prevent it from expiring."),
-            ("6h",   6 * 60 * 60, "SideStore Expiring Extremely Soon", "SideStore will expire in 6 hours! Refresh now to prevent expiration."),
-            ("0h",   0,           "SideStore Expired", "SideStore has expired. Please refresh or reinstall the app.")
+            ("24h", 24 * 60 * 60, localized("SideStore Expiring Soon"), localized("SideStore will expire in 24 hours. Open the app and refresh it to prevent it from expiring.")),
+            ("6h",   6 * 60 * 60, localized("SideStore Expiring Extremely Soon"), localized("SideStore will expire in 6 hours! Refresh now to prevent expiration.")),
+            ("0h",   0,           localized("SideStore Expired"), localized("SideStore has expired. Please refresh or reinstall the app."))
         ]
 
         let allIdentifiers = milestones.map { "\(AppManager.expirationWarningNotificationID).\($0.id)" }
@@ -65,8 +65,8 @@ final class ScheduleExpirationWarningNotificationOperation: BaseStandaloneOperat
             guard triggerInterval > 0 else { continue }
 
             let content = UNMutableNotificationContent()
-            content.title = NSLocalizedString(milestone.title, comment: "")
-            content.body = NSLocalizedString(milestone.body, comment: "")
+            content.title = milestone.title
+            content.body = milestone.body
             content.sound = .default
 
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: triggerInterval, repeats: false)

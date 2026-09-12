@@ -52,15 +52,15 @@ final class PipelineHandler: PipelineExecutionHandler,
             return false
         }
         
-        let title = NSLocalizedString("Bundle ID Mismatch", comment: "")
-        let message = String(format: NSLocalizedString("The app you are installing has a bundle ID (%@) that does not match the active app (%@). Would you like to proceed?", comment: ""), targetID, activeEffectiveID)
+        let title = localized("Bundle ID Mismatch")
+        let message = localized("The app you are installing has a bundle ID (\(targetID)) that does not match the active app (\(activeEffectiveID)). Would you like to proceed?")
         
         return await withCheckedContinuation { continuation in
             let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
             alertController.addAction(UIAlertAction(title: UIAlertAction.cancel.title, style: UIAlertAction.cancel.style) { _ in
                 continuation.resume(returning: false)
             })
-            alertController.addAction(UIAlertAction(title: NSLocalizedString("Proceed", comment: ""), style: .default) { _ in
+            alertController.addAction(UIAlertAction(title: localized("Proceed"), style: .default) { _ in
                 continuation.resume(returning: true)
             })
             presenter.present(alertController, animated: true)
@@ -101,28 +101,28 @@ final class PipelineHandler: PipelineExecutionHandler,
         return try await withCheckedThrowingContinuation { continuation in
             let firstSentence: String
             if UserDefaults.standard.activeAppLimitIncludesExtensions {
-                firstSentence = NSLocalizedString("Non-developer Apple IDs are limited to 3 active apps and app extensions.", comment: "")
+                firstSentence = localized("Non-developer Apple IDs are limited to 3 active apps and app extensions.")
             } else {
-                firstSentence = NSLocalizedString("Non-developer Apple IDs are limited to creating 10 App IDs per week.", comment: "")
+                firstSentence = localized("Non-developer Apple IDs are limited to creating 10 App IDs per week.")
             }
             
-            let message = firstSentence + " " + NSLocalizedString("Would you like to remove this app's extensions so they don't count towards your limit? There are \(appBundle.appExtensions.count) Extensions", comment: "")
+            let message = firstSentence + " " + localized("Would you like to remove this app's extensions so they don't count towards your limit? There are \(appBundle.appExtensions.count) Extensions")
             
-            let alertController = UIAlertController(title: NSLocalizedString("App Contains Extensions", comment: ""), message: message, preferredStyle: .alert)
+            let alertController = UIAlertController(title: localized("App Contains Extensions"), message: message, preferredStyle: .alert)
             alertController.addAction(UIAlertAction(title: UIAlertAction.cancel.title, style: UIAlertAction.cancel.style, handler: { _ in
                 continuation.resume(throwing: OperationError.cancelled)
             }))
-            alertController.addAction(UIAlertAction(title: NSLocalizedString("Keep App Extensions (Use Main Profile)", comment: ""), style: .default) { _ in
+            alertController.addAction(UIAlertAction(title: localized("Keep App Extensions (Use Main Profile)"), style: .default) { _ in
                 continuation.resume(returning: .keepAll(useMainProfile: true))
             })
-            alertController.addAction(UIAlertAction(title: NSLocalizedString("Keep App Extensions (Register App ID for Each Extension)", comment: ""), style: .default) { _ in
+            alertController.addAction(UIAlertAction(title: localized("Keep App Extensions (Register App ID for Each Extension)"), style: .default) { _ in
                 continuation.resume(returning: .keepAll(useMainProfile: false))
             })
-            alertController.addAction(UIAlertAction(title: NSLocalizedString("Remove App Extensions", comment: ""), style: .destructive) { _ in
+            alertController.addAction(UIAlertAction(title: localized("Remove App Extensions"), style: .destructive) { _ in
                 continuation.resume(returning: .removeAll)
             })
             
-            alertController.addAction(UIAlertAction(title: NSLocalizedString("Choose App Extensions", comment: ""), style: .default) { _ in
+            alertController.addAction(UIAlertAction(title: localized("Choose App Extensions"), style: .default) { _ in
                 let popoverContentController = AppExtensionViewHostingController(extensions: appBundle.appExtensions) { selection in
                     continuation.resume(returning: .removeSelected(Set(selection)))
                 }
@@ -162,15 +162,15 @@ final class PipelineHandler: PipelineExecutionHandler,
             return false
         }
         
-        let title = NSLocalizedString("Unsupported iOS Version", comment: "")
-        let message = errorDescription + "\n\n" + NSLocalizedString("Would you like to download the last version compatible with this device instead?", comment: "")
+        let title = localized("Unsupported iOS Version")
+        let message = errorDescription + "\n\n" + localized("Would you like to download the last version compatible with this device instead?")
         
         return await withCheckedContinuation { continuation in
             let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
             alertController.addAction(UIAlertAction(title: UIAlertAction.cancel.title, style: UIAlertAction.cancel.style) { _ in
                 continuation.resume(returning: false)
             })
-            alertController.addAction(UIAlertAction(title: String(format: NSLocalizedString("Download %@ %@", comment: ""), appName, compatibleVersion), style: .default) { _ in
+            alertController.addAction(UIAlertAction(title: localized("Download \(appName) \(compatibleVersion)"), style: .default) { _ in
                 continuation.resume(returning: true)
             })
             presenter.present(alertController, animated: true)
@@ -187,7 +187,7 @@ final class PipelineHandler: PipelineExecutionHandler,
                     """,
                     preferredStyle: .alert
                 )
-                alert.addAction(UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .default, handler: { _ in
+                alert.addAction(UIAlertAction(title: localized("Continue"), style: .default, handler: { _ in
                     continuation.resume()
                 }))
                 
@@ -227,8 +227,8 @@ final class PipelineHandler: PipelineExecutionHandler,
             return (initialBundleID, true)
         }
         
-        let titleText = NSLocalizedString("AppID Customization", comment: "")
-        let messageText = NSLocalizedString("Customize the AppID if required and press 'Confirm' to proceed.", comment: "")
+        let titleText = localized("AppID Customization")
+        let messageText = localized("Customize the AppID if required and press 'Confirm' to proceed.")
         
         let alert = UIAlertController(
             title: titleText,
@@ -292,14 +292,14 @@ final class PipelineHandler: PipelineExecutionHandler,
         }
         
         return await withCheckedContinuation { continuation in
-            let okAction = UIAlertAction(title: NSLocalizedString("Confirm", comment: ""), style: .default) { _ in
+            let okAction = UIAlertAction(title: localized("Confirm"), style: .default) { _ in
                 let text = alert.textFields?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines)
                 let customID = (text?.isEmpty == false) ? text! : initialBundleID
                 let appendTeamID = checkboxView.isChecked
                 continuation.resume(returning: (customID, appendTeamID))
             }
             
-            let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { _ in
+            let cancelAction = UIAlertAction(title: localized("Cancel"), style: .cancel) { _ in
                 continuation.resume(returning: nil)
             }
             alert.addAction(cancelAction)
@@ -315,17 +315,17 @@ final class PipelineHandler: PipelineExecutionHandler,
             return .correctAndProceed(correctedGroup)
         }
         
-        let title = NSLocalizedString("App Group Discrepancy", comment: "")
-        let message = String(format: NSLocalizedString("The app group '%@' does not match the app's bundle ID casing. Would you like to correct it to '%@'?", comment: ""), originalGroup, correctedGroup)
+        let title = localized("App Group Discrepancy")
+        let message = localized("The app group '\(originalGroup)' does not match the app's bundle ID casing. Would you like to correct it to '\(correctedGroup)'?")
         
         return await withCheckedContinuation { continuation in
             let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
             
-            alert.addAction(UIAlertAction(title: NSLocalizedString("Correct & Proceed", comment: ""), style: .default) { _ in
+            alert.addAction(UIAlertAction(title: localized("Correct & Proceed"), style: .default) { _ in
                 continuation.resume(returning: .correctAndProceed(correctedGroup))
             })
             
-            alert.addAction(UIAlertAction(title: NSLocalizedString("Keep Original", comment: ""), style: .destructive) { _ in
+            alert.addAction(UIAlertAction(title: localized("Keep Original"), style: .destructive) { _ in
                 continuation.resume(returning: .keepOriginal(originalGroup))
             })
             

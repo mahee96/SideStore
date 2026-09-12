@@ -32,7 +32,7 @@ struct PrivateKeyTextInputView: View {
                         .padding(.horizontal)
                 }
                 
-                Text("Paste your PEM-formatted private key below, or import it from a text file.")
+                Text(localized("Paste your PEM-formatted private key below, or import it from a text file."))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .padding(.horizontal)
@@ -57,7 +57,7 @@ struct PrivateKeyTextInputView: View {
                         if let topVC = UIApplication.shared.topViewController() {
                             TVWebFileTransferManager.shared.startImport(
                                 acceptedExtensions: ["pem", "key", "txt"],
-                                title: "Import PEM Private Key File",
+                                title: localized("Import PEM Private Key File"),
                                 presentingVC: topVC
                             ) { fileURL in
                                 guard let fileURL = fileURL else { return }
@@ -67,13 +67,13 @@ struct PrivateKeyTextInputView: View {
                                     isEditing = false
                                     errorMessage = nil
                                 } catch {
-                                    errorMessage = "Failed to read file: \(error.localizedDescription)"
+                                    errorMessage = localized("Failed to read file: \(error.localizedDescription)")
                                 }
                             }
                         }
                         #endif
                     } label: {
-                        Label("Import from File", systemImage: "doc.badge.plus")
+                        Label(localized("Import from File"), systemImage: "doc.badge.plus")
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 8)
                     }
@@ -92,7 +92,7 @@ struct PrivateKeyTextInputView: View {
                             }
                         }
                     } label: {
-                        Text("Add PEM Key")
+                        Text(localized("Add PEM Key"))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 8)
                     }
@@ -102,14 +102,14 @@ struct PrivateKeyTextInputView: View {
                 .padding(.horizontal)
                 .padding(.bottom)
             }
-            .navigationTitle("Add Private Key")
+            .navigationTitle(localized("Add Private Key"))
             #if !os(tvOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     if isEditing {
-                        SwiftUI.Button("Done") {
+                        SwiftUI.Button(localized("Done")) {
                             isEditing = false
                         }
                     } else {
@@ -138,20 +138,20 @@ struct PrivateKeyTextInputView: View {
                             isEditing = false
                             errorMessage = nil
                         } catch {
-                            errorMessage = "Failed to read file: \(error.localizedDescription)"
+                            errorMessage = localized("Failed to read file: \(error.localizedDescription)")
                         }
                     }
                 case .failure(let error):
-                    errorMessage = "Failed to select file: \(error.localizedDescription)"
+                    errorMessage = localized("Failed to select file: \(error.localizedDescription)")
                 }
             }
             #endif
-            .alert("Key Added", isPresented: $showSuccessAlert) {
-                SwiftUI.Button("OK") {
+            .alert(localized("Key Added"), isPresented: $showSuccessAlert) {
+                SwiftUI.Button(localized("OK")) {
                     onCancel()
                 }
             } message: {
-                Text("Key was added to certificate \(cert.name) (SN: \(cert.serialNumber)).")
+                Text(localized("Key was added to certificate \(cert.name) (SN: \(cert.serialNumber))."))
             }
         }
     }

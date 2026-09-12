@@ -24,21 +24,21 @@ public struct DirectoryExplorerView: View {
     private var folderSummaryString: String {
         let items = viewModel.filteredAndSortedItems
         if items.isEmpty {
-            return "0 items (Zero KB)"
+            return localized("0 items (Zero KB)")
         }
         let folders = items.filter { $0.isDirectory }
         let files = items.filter { !$0.isDirectory }
         let sizeStr = ByteCountFormatter.string(fromByteCount: viewModel.currentFolderSize, countStyle: .file)
         
         if !folders.isEmpty && !files.isEmpty {
-            let folderLabel = folders.count == 1 ? "1 Folder" : "\(folders.count) Folders"
-            let fileLabel = files.count == 1 ? "1 File" : "\(files.count) Files"
+            let folderLabel = folders.count == 1 ? localized("1 Folder") : localized("\(folders.count) Folders")
+            let fileLabel = files.count == 1 ? localized("1 File") : localized("\(files.count) Files")
             return "\(folderLabel), \(fileLabel) (\(sizeStr))"
         } else if !folders.isEmpty {
-            let folderLabel = folders.count == 1 ? "1 Folder" : "\(folders.count) Folders"
+            let folderLabel = folders.count == 1 ? localized("1 Folder") : localized("\(folders.count) Folders")
             return "\(folderLabel) (\(sizeStr))"
         } else {
-            let fileLabel = files.count == 1 ? "1 File" : "\(files.count) Files"
+            let fileLabel = files.count == 1 ? localized("1 File") : localized("\(files.count) Files")
             return "\(fileLabel) (\(sizeStr))"
         }
     }
@@ -52,7 +52,7 @@ public struct DirectoryExplorerView: View {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle())
                         .scaleEffect(1.2)
-                    Text("Loading directory contents...")
+                    Text(localized("Loading directory contents..."))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -68,11 +68,11 @@ public struct DirectoryExplorerView: View {
                         .foregroundColor(.secondary.opacity(0.7))
                     
                     VStack(spacing: 4) {
-                        Text("Empty Directory")
+                        Text(localized("Empty Directory"))
                             .font(.title3.weight(.semibold))
                             .foregroundColor(.primary)
                         
-                        Text("No files or subfolders found in this directory.")
+                        Text(localized("No files or subfolders found in this directory."))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -96,7 +96,7 @@ public struct DirectoryExplorerView: View {
                 #else
                 .listStyle(.grouped)
                 #endif
-                .searchable(text: $viewModel.searchText, prompt: "Search files & folders")
+                .searchable(text: $viewModel.searchText, prompt: localized("Search files & folders"))
             }
             
             // Bottom Status & Storage Information Bar + Selection Actions Bar
@@ -142,9 +142,9 @@ public struct DirectoryExplorerView: View {
         switch alertType {
         case .confirmSingleDelete(let item):
             return Alert(
-                title: Text("Delete “\(item.name)”?"),
-                message: Text("This item will be permanently removed."),
-                primaryButton: .destructive(Text("Delete")) {
+                title: Text(localized("Delete “\(item.name)”")),
+                message: Text(localized("This item will be permanently removed.")),
+                primaryButton: .destructive(Text(localized("Delete"))) {
                     vm.delete(item: item)
                 },
                 secondaryButton: .cancel()
@@ -152,18 +152,18 @@ public struct DirectoryExplorerView: View {
         case .confirmBulkDelete:
             let count = vm.selectedURLs.count
             return Alert(
-                title: Text("Delete \(count) Selected Items?"),
-                message: Text("Are you sure you want to permanently delete these \(count) items?"),
-                primaryButton: .destructive(Text("Delete All")) {
+                title: Text(localized("Delete \(count) Selected Items?")),
+                message: Text(localized("Are you sure you want to permanently delete these \(count) items?")),
+                primaryButton: .destructive(Text(localized("Delete All"))) {
                     vm.bulkDeleteSelected()
                 },
                 secondaryButton: .cancel()
             )
         case .rename(let item):
             return Alert(
-                title: Text("Rename “\(item.name)”"),
-                message: Text("Enter a new name for this item:"),
-                primaryButton: .default(Text("Rename")) {
+                title: Text(localized("Rename “\(item.name)”")),
+                message: Text(localized("Enter a new name for this item:")),
+                primaryButton: .default(Text(localized("Rename"))) {
                     vm.rename(item: item, to: vm.renameInput)
                 },
                 secondaryButton: .cancel()
@@ -172,29 +172,29 @@ public struct DirectoryExplorerView: View {
             let count = vm.selectedURLs.count
             let input = vm.renameInput
             return Alert(
-                title: Text(count == 1 ? "Rename Item" : "Bulk Rename \(count) Items"),
-                message: Text(count == 1 ? "Enter a new name:" : "Enter a base name (items will be renamed Name_1, Name_2...):"),
-                primaryButton: .default(Text("Rename")) {
+                title: Text(count == 1 ? localized("Rename Item") : localized("Bulk Rename \(count) Items")),
+                message: Text(count == 1 ? localized("Enter a new name:") : localized("Enter a base name (items will be renamed Name_1, Name_2...):")),
+                primaryButton: .default(Text(localized("Rename"))) {
                     vm.bulkRenameSelected(to: input)
                 },
                 secondaryButton: .cancel()
             )
         case .pasteConflict(let conflict):
             return Alert(
-                title: Text("File Already Exists"),
-                message: Text("An item named “\(conflict.existingName)” already exists in this folder. Enter a new name to copy:"),
-                primaryButton: .default(Text("Copy as New Name")) {
+                title: Text(localized("File Already Exists")),
+                message: Text(localized("An item named “\(conflict.existingName)” already exists in this folder. Enter a new name to copy:")),
+                primaryButton: .default(Text(localized("Copy as New Name"))) {
                     vm.resolveConflictWithNewName()
                 },
-                secondaryButton: .cancel(Text("Cancel All")) {
+                secondaryButton: .cancel(Text(localized("Cancel All"))) {
                     vm.cancelRemainingConflicts()
                 }
             )
         case .error(let message):
             return Alert(
-                title: Text("Storage Explorer Error"),
+                title: Text(localized("Storage Explorer Error")),
                 message: Text(message),
-                dismissButton: .default(Text("OK"))
+                dismissButton: .default(Text(localized("OK")))
             )
         }
     }
@@ -218,25 +218,25 @@ private struct DirectoryItemListSectionView: View {
         
         Group {
             if !folders.isEmpty && !files.isEmpty {
-                Section("Folders (\(folders.count))") {
+                Section(localized("Folders (\(folders.count))")) {
                     ForEach(folders) { item in
                         renderRow(item: item)
                     }
                 }
                 
-                Section("Files (\(files.count))") {
+                Section(localized("Files (\(files.count))")) {
                     ForEach(files) { item in
                         renderRow(item: item)
                     }
                 }
             } else if !folders.isEmpty {
-                Section("Folders (\(folders.count))") {
+                Section(localized("Folders (\(folders.count))")) {
                     ForEach(folders) { item in
                         renderRow(item: item)
                     }
                 }
             } else {
-                Section("Files (\(files.count))") {
+                Section(localized("Files (\(files.count))")) {
                     ForEach(files) { item in
                         renderRow(item: item)
                     }
@@ -319,11 +319,11 @@ private struct SelectionActionBarView: View {
     
     var body: some View {
         let count = selectedURLs.count
-        let copyTitle = count > 0 ? "Copy (\(count))" : "Copy"
-        let renameTitle = count > 0 ? "Rename (\(count))" : "Rename"
-        let deleteTitle = count > 0 ? "Delete (\(count))" : "Delete"
+        let copyTitle = count > 0 ? localized("Copy (\(count))") : localized("Copy")
+        let renameTitle = count > 0 ? localized("Rename (\(count))") : localized("Rename")
+        let deleteTitle = count > 0 ? localized("Delete (\(count))") : localized("Delete")
         let isAllSelected = count > 0 && count == filteredCount
-        let selectTitle = isAllSelected ? "Deselect All" : "Select All"
+        let selectTitle = isAllSelected ? localized("Deselect All") : localized("Select All")
         
         HStack(spacing: 6) {
             SwiftUI.Button {
@@ -419,7 +419,7 @@ private struct BottomInformationBarView: View {
     @State private var freeDiskSpaceString: String = ""
     @State private var isSelectionMode: Bool = false
     @State private var hasCopiedItems: Bool = false
-    @State private var pasteLabelText: String = "Paste"
+    @State private var pasteLabelText: String = localized("Paste")
     
     var body: some View {
         HStack {
@@ -427,7 +427,7 @@ private struct BottomInformationBarView: View {
                 Text(folderSummaryString)
                     .font(.caption)
                     .foregroundColor(.primary)
-                Text("Available Space: \(freeDiskSpaceString)")
+                Text(localized("Available Space: \(freeDiskSpaceString)"))
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }
@@ -489,12 +489,12 @@ private struct TrailingToolbarMenuView: View {
                 viewModel.isSelectionMode.toggle()
                 if !viewModel.isSelectionMode { viewModel.selectedURLs.removeAll() }
             } label: {
-                Label(isSelectionMode ? "Done Selecting" : "Select", systemImage: "checkmark.circle")
+                Label(isSelectionMode ? localized("Done Selecting") : localized("Select"), systemImage: "checkmark.circle")
             }
             
             Divider()
             
-            Menu("Sort By") {
+            Menu(localized("Sort By")) {
                 ForEach(StorageSortOption.allCases) { option in
                     SwiftUI.Button {
                         if viewModel.sortOption == option {
@@ -505,20 +505,20 @@ private struct TrailingToolbarMenuView: View {
                         }
                     } label: {
                         if sortOption == option {
-                            Label("\(option.rawValue) (\(sortAscending ? "Ascending" : "Descending"))", systemImage: sortAscending ? "arrow.up" : "arrow.down")
+                            Label("\(option.localizedName) (\(sortAscending ? localized("Ascending") : localized("Descending")))", systemImage: sortAscending ? "arrow.up" : "arrow.down")
                         } else {
-                            Text(option.rawValue)
+                            Text(option.localizedName)
                         }
                     }
                 }
             }
             
             Toggle(isOn: Binding(get: { groupFoldersFirst }, set: { viewModel.groupFoldersFirst = $0 })) {
-                Text("Folders First")
+                Text(localized("Folders First"))
             }
             
             Toggle(isOn: Binding(get: { isTextWrapEnabled }, set: { viewModel.isTextWrapEnabled = $0 })) {
-                Text("Wrap File Names")
+                Text(localized("Wrap File Names"))
             }
         } label: {
             Image(systemName: "ellipsis.circle")
@@ -535,13 +535,13 @@ private struct TrailingToolbarMenuView: View {
         } label: {
             Image(systemName: "ellipsis.circle")
         }
-        .confirmationDialog("Options", isPresented: $showTvMenu) {
-            SwiftUI.Button(isSelectionMode ? "Done Selecting" : "Select") {
+        .confirmationDialog(localized("Options"), isPresented: $showTvMenu) {
+            SwiftUI.Button(isSelectionMode ? localized("Done Selecting") : localized("Select")) {
                 viewModel.isSelectionMode.toggle()
                 if !viewModel.isSelectionMode { viewModel.selectedURLs.removeAll() }
             }
             ForEach(StorageSortOption.allCases) { option in
-                SwiftUI.Button("Sort: \(option.rawValue)") {
+                SwiftUI.Button(localized("Sort: \(option.localizedName)")) {
                     if viewModel.sortOption == option {
                         viewModel.sortAscending.toggle()
                     } else {
@@ -550,10 +550,10 @@ private struct TrailingToolbarMenuView: View {
                     }
                 }
             }
-            SwiftUI.Button(groupFoldersFirst ? "Don't Group Folders First" : "Group Folders First") {
+            SwiftUI.Button(groupFoldersFirst ? localized("Don't Group Folders First") : localized("Group Folders First")) {
                 viewModel.groupFoldersFirst.toggle()
             }
-            SwiftUI.Button(isTextWrapEnabled ? "Disable Text Wrap" : "Enable Text Wrap") {
+            SwiftUI.Button(isTextWrapEnabled ? localized("Disable Text Wrap") : localized("Enable Text Wrap")) {
                 viewModel.isTextWrapEnabled.toggle()
             }
         }
@@ -586,7 +586,7 @@ private struct ItemContextMenuView: View {
             SwiftUI.Button {
                 viewModel.copyToClipboard(item: item)
             } label: {
-                Label("Copy", systemImage: "doc.on.doc")
+                Label(localized("Copy"), systemImage: "doc.on.doc")
             }
             
             SwiftUI.Button {
@@ -594,21 +594,21 @@ private struct ItemContextMenuView: View {
                 viewModel.itemToRename = item
                 viewModel.activeAlert = .rename(item)
             } label: {
-                Label("Rename", systemImage: "pencil")
+                Label(localized("Rename"), systemImage: "pencil")
             }
             
             if !item.isDirectory {
                 SwiftUI.Button {
                     viewModel.shareURL = item.url
                 } label: {
-                    Label("Share", systemImage: "square.and.arrow.up")
+                    Label(localized("Share"), systemImage: "square.and.arrow.up")
                 }
             }
             
             SwiftUI.Button(role: .destructive) {
                 viewModel.activeAlert = .confirmSingleDelete(item)
             } label: {
-                Label("Delete", systemImage: "trash")
+                Label(localized("Delete"), systemImage: "trash")
             }
         }
     }
@@ -619,7 +619,7 @@ private struct EmptyAreaContextMenuView: View {
     let clipboard: StorageExplorerClipboard
     
     @State private var hasCopiedItems: Bool = false
-    @State private var pasteLabelText: String = "Paste"
+    @State private var pasteLabelText: String = localized("Paste")
     
     var body: some View {
         if hasCopiedItems {
@@ -666,7 +666,7 @@ private struct ItemRow: View {
                 
                 HStack(spacing: 6) {
                     if item.isDirectory {
-                        Text("\(item.itemCount) items")
+                        Text(localized("\(item.itemCount) items"))
                         Text("•")
                         Text(item.formattedSize)
                     } else {

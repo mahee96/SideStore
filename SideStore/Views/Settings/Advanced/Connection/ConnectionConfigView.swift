@@ -73,11 +73,11 @@ struct ConnectionConfigView: View {
         ZStack {
             List {
                 Section {
-                    Toggle("Use Local VPN", isOn: $draftUseLocalVPN)
+                    Toggle(localized("Use Local VPN"), isOn: $draftUseLocalVPN)
                 }
 
                 if draftUseLocalVPN {
-                    Section(header: Text("Auto Discovered from network")) {
+                    Section(header: Text(localized("Auto Discovered from network"))) {
                         Group {
                             networkConfigRow(label: "Tunnel IP", text: Binding<String?>(get: { config.formattedTunnelIface }, set: { _ in }), editable: false)
                             networkConfigRow(label: "Device IP", text: Binding<String?>(get: { config.formattedTunnelPeer }, set: { _ in }), editable: false)
@@ -119,11 +119,11 @@ struct ConnectionConfigView: View {
                             )
                         }
                     } header: {
-                        Text("User Configuration")
+                        Text(localized("User Configuration"))
                     } footer: {
                         HStack(alignment: .top, spacing: 0) {
-                            Text("Note: ")
-                            Text("'Device IP' and 'RemotePair Port' are optional and if specified should match exactly as in the target VPN's config or Leave empty to prefer auto-discovery/default port \(String(AppConstants.Minimuxer.remotePairingPort)).")
+                            Text(localized("Note: "))
+                            Text(localized("'Device IP' and 'RemotePair Port' are optional and if specified should match exactly as in the target VPN's config or Leave empty to prefer auto-discovery/default port \(String(AppConstants.Minimuxer.remotePairingPort))."))
                         }
                     }
                 } else {
@@ -148,11 +148,11 @@ struct ConnectionConfigView: View {
                             textColor: config.remoteActive == .yes ? .green : .red
                         )
                     } header: {
-                        Text("Remote Endpoint")
+                        Text(localized("Remote Endpoint"))
                     } footer: {
                         HStack(alignment: .top, spacing: 0) {
-                            Text("Note: ")
-                            Text("'Device IP' is mandatory. 'RemotePair Port' is optional (prefers auto-discovery or default \(String(AppConstants.Minimuxer.remotePairingPort)).")
+                            Text(localized("Note: "))
+                            Text(localized("'Device IP' is mandatory. 'RemotePair Port' is optional (prefers auto-discovery or default \(String(AppConstants.Minimuxer.remotePairingPort))."))
                         }
                     }
                 }
@@ -171,16 +171,16 @@ struct ConnectionConfigView: View {
                             isPort: true
                         )
                     } header: {
-                        Text("WireGuard Server Parameters")
+                        Text(localized("WireGuard Server Parameters"))
                     } footer: {
-                        Text("Configures the local UDP loopback host and port bound by EMProxy.")
+                        Text(localized("Configures the local UDP loopback host and port bound by EMProxy."))
                     }
                 }
             }
-            .navigationTitle("Connection Config")
+            .navigationTitle(localized("Connection Config"))
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    SButton("Confirm") {
+                    SButton(localized("Confirm")) {
                         Task { await commitChanges() }
                     }
                 }
@@ -197,10 +197,10 @@ struct ConnectionConfigView: View {
                 alwaysShowWireGuardConfig = UserDefaults.standard.alwaysShowWireGuardConfig
                 acceptIPv6ConnectionConfig = UserDefaults.standard.acceptIPv6ConnectionConfig
             }
-            .alert("Invalid Configuration", isPresented: $showValidationErrorAlert) {
-                SwiftUI.Button("OK", role: .cancel) {}
+            .alert(localized("Invalid Configuration"), isPresented: $showValidationErrorAlert) {
+                SwiftUI.Button(localized("OK"), role: .cancel) {}
             } message: {
-                Text(validationError ?? "Please check your configuration settings.")
+                Text(validationError ?? localized("Please check your configuration settings."))
             }
             
             if showConfirmDialog {
@@ -216,14 +216,14 @@ struct ConnectionConfigView: View {
                     AnimatedCheckmarkView()
                         .padding(.top, 10)
                     
-                    Text("Changes saved")
+                    Text(localized("Changes saved"))
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(.white)
                     
                     SwiftUI.Button(action: {
                         showConfirmDialog = false
                     }) {
-                        Text("OK")
+                        Text(localized("OK"))
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -272,23 +272,23 @@ struct ConnectionConfigView: View {
             let overridePeer = draftOverrideTunnelPeerIp.trimmingCharacters(in: .whitespacesAndNewlines)
             if !overridePeer.isEmpty && isIPv6Address(overridePeer) {
                 guard acceptIPv6 else {
-                    return "IPv6 addresses are not supported for Device IP unless 'Accept IPv6 Config' is enabled in Developer Options."
+                    return localized("IPv6 addresses are not supported for Device IP unless 'Accept IPv6 Config' is enabled in Developer Options.")
                 }
                 guard isValidIPv6Address(overridePeer) else {
-                    return "Invalid IPv6 address for Device IP."
+                    return localized("Invalid IPv6 address for Device IP.")
                 }
             }
         } else {
             let remoteIp = draftRemoteServerIp.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !remoteIp.isEmpty else {
-                return "Device IP is mandatory for Remote Endpoint mode."
+                return localized("Device IP is mandatory for Remote Endpoint mode.")
             }
             if isIPv6Address(remoteIp) {
                 guard acceptIPv6 else {
-                    return "IPv6 addresses are not supported for Device IP unless 'Accept IPv6 Config' is enabled in Developer Options."
+                    return localized("IPv6 addresses are not supported for Device IP unless 'Accept IPv6 Config' is enabled in Developer Options.")
                 }
                 guard isValidIPv6Address(remoteIp) else {
-                    return "Invalid IPv6 address for Device IP."
+                    return localized("Invalid IPv6 address for Device IP.")
                 }
             }
         }
@@ -296,25 +296,25 @@ struct ConnectionConfigView: View {
             let portStr = draftRemotePairingPortOverride.trimmingCharacters(in: .whitespacesAndNewlines)
             if !portStr.isEmpty {
                 guard let port = UInt16(portStr), port > 0 else {
-                    return "RemotePair Port must be a valid number between 1 and 65535 or left empty for auto-discovery."
+                    return localized("RemotePair Port must be a valid number between 1 and 65535 or left empty for auto-discovery.")
                 }
             }
         }
         if UserDefaults.standard.enableEMPforWireguard || UserDefaults.standard.alwaysShowWireGuardConfig {
             let host = draftWireGuardServerHost.trimmingCharacters(in: .whitespaces)
             guard !host.isEmpty else {
-                return "Bind Host / IP cannot be empty."
+                return localized("Bind Host / IP cannot be empty.")
             }
             if isIPv6Address(host) {
                 guard acceptIPv6 else {
-                    return "IPv6 addresses are not supported for Bind Host / IP unless 'Accept IPv6 Config' is enabled in Developer Options."
+                    return localized("IPv6 addresses are not supported for Bind Host / IP unless 'Accept IPv6 Config' is enabled in Developer Options.")
                 }
                 guard isValidIPv6Address(host) else {
-                    return "Invalid IPv6 address for Bind Host / IP."
+                    return localized("Invalid IPv6 address for Bind Host / IP.")
                 }
             }
             guard let port = UInt16(draftWireGuardServerPort), port > 0 else {
-                return "Bind Port must be a valid number between 1 and 65535."
+                return localized("Bind Port must be a valid number between 1 and 65535.")
             }
         }
         return nil

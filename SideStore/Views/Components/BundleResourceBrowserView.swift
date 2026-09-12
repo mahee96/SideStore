@@ -45,7 +45,7 @@ struct BundleResourceBrowserView: View {
     var body: some View {
         List {
             if filteredItems.isEmpty {
-                Text(items.isEmpty ? "Empty directory" : "No results")
+                Text(items.isEmpty ? localized("Empty Directory") : localized("No results"))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             } else {
@@ -72,13 +72,13 @@ struct BundleResourceBrowserView: View {
         .listStyle(GroupedListStyle())
         #endif
         .navigationTitle(isSelecting
-            ? (selectedURLs.isEmpty ? "Select Files" : "\(selectedURLs.count) selected")
+            ? (selectedURLs.isEmpty ? localized("Select Files") : localized("\(selectedURLs.count) selected"))
             : title)
-        .searchable(text: $searchQuery, prompt: "Search files")
+        .searchable(text: $searchQuery, prompt: Text(localized("Search files")))
         .toolbar {
             // Trailing: Select / Done
             ToolbarItem(placement: .navigationBarTrailing) {
-                SwiftUI.Button(isSelecting ? "Done" : "Select") {
+                SwiftUI.Button(isSelecting ? localized("Done") : localized("Select")) {
                     withAnimation {
                         isSelecting.toggle()
                         if !isSelecting { selectedURLs.removeAll() }
@@ -242,7 +242,7 @@ struct BundleItemRow: View {
 
     private var subtitle: String {
         if item.isDirectory {
-            return "\(item.childCount) item\(item.childCount == 1 ? "" : "s")"
+            return item.childCount == 1 ? localized("1 item") : localized("\(item.childCount) items")
         }
         let fmt = ByteCountFormatter()
         fmt.allowedUnits = [.useBytes, .useKB, .useMB, .useGB]
@@ -370,7 +370,7 @@ struct IPAContentsView: View {
                 VStack(spacing: 16) {
                     ProgressView()
                         .scaleEffect(1.5)
-                    Text("Extracting \(ipaURL.lastPathComponent)\u{2026}")
+                    Text(localized("Extracting \(ipaURL.lastPathComponent)…"))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -384,7 +384,7 @@ struct IPAContentsView: View {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 44))
                         .foregroundColor(.orange)
-                    Text("Extraction Failed")
+                    Text(localized("Extraction Failed"))
                         .font(.headline)
                     Text(error)
                         .font(.subheadline)
@@ -450,27 +450,27 @@ struct FullAppBundleView: View {
             }
 
             // General Info — all from Info.plist
-            Section(header: Text("General Info")) {
+            Section(header: Text(localized("General Info"))) {
                 let plist = infoPlist
-                let bundleID = plist?["CFBundleIdentifier"] as? String ?? "N/A"
+                let bundleID = plist?["CFBundleIdentifier"] as? String ?? localized("N/A")
                 let short = plist?["CFBundleShortVersionString"] as? String
                 let build = plist?["CFBundleVersion"] as? String
                 let versionStr: String = {
                     if let s = short, let b = build { return "\(s) (\(b))" }
-                    return short ?? build ?? "N/A"
+                    return short ?? build ?? localized("N/A")
                 }()
 
-                InfoRow(label: "Bundle Identifier", value: bundleID)
-                InfoRow(label: "Version", value: versionStr)
+                InfoRow(label: localized("Bundle Identifier"), value: bundleID)
+                InfoRow(label: localized("Version"), value: versionStr)
                 if let minOS = plist?["MinimumOSVersion"] as? String {
-                    InfoRow(label: "Min iOS", value: minOS)
+                    InfoRow(label: localized("Min iOS"), value: minOS)
                 }
                 if let exec = plist?["CFBundleExecutable"] as? String {
                     let execURL = bundleURL.appendingPathComponent(exec)
                     if FileManager.default.fileExists(atPath: execURL.path) && CodeSignKit.MachOParser.isMachOBinary(at: execURL) {
                         NavigationLink(destination: MachOResourceViewer(url: execURL)) {
                             HStack {
-                                Text("Executable")
+                                Text(localized("Executable"))
                                     .font(.subheadline)
                                     .foregroundColor(.primary)
                                 Spacer()
@@ -480,22 +480,22 @@ struct FullAppBundleView: View {
                             }
                         }
                     } else {
-                        InfoRow(label: "Executable", value: exec)
+                        InfoRow(label: localized("Executable"), value: exec)
                     }
                 }
             }
 
             // Provisioning Profile — from embedded.mobileprovision
             if let profile = provisioningProfile {
-                Section(header: Text("Provisioning Profile")) {
+                Section(header: Text(localized("Provisioning Profile"))) {
                     NavigationLink(destination: ProvisioningProfileDetailView(profile: profile, certificatesViewModel: certificatesViewModel)) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(profile.name)
                                 .font(.subheadline)
-                            Text("UUID: \(profile.uuid.uuidString)")
+                            Text(localized("UUID: \(profile.uuid.uuidString)"))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                            Text("Expires: \(formatDate(profile.expirationDate))")
+                            Text(localized("Expires: \(formatDate(profile.expirationDate))"))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -505,9 +505,9 @@ struct FullAppBundleView: View {
 
             // Info.plist
             if let plist = infoPlist {
-                Section(header: Text("Info.plist")) {
+                Section(header: Text(localized("Info.plist"))) {
                     NavigationLink(destination: InfoPlistContainerView(plist: plist)) {
-                        Text("View Info.plist (\(plist.count) keys)")
+                        Text(localized("View Info.plist (\(plist.count) keys)"))
                             .font(.subheadline)
                     }
                 }
@@ -515,13 +515,13 @@ struct FullAppBundleView: View {
 
             // App Extensions
             if !appExtensions.isEmpty {
-                Section(header: Text("App Extensions (\(appExtensions.count))")) {
+                Section(header: Text(localized("App Extensions (\(appExtensions.count))"))) {
                     ForEach(appExtensions, id: \.path) { extURL in
                         let extPlist = NSDictionary(contentsOf: extURL.appendingPathComponent("Info.plist")) as? [String: Any]
                         let extName = extPlist?["CFBundleDisplayName"] as? String
                             ?? extPlist?["CFBundleName"] as? String
                             ?? extURL.deletingPathExtension().lastPathComponent
-                        let extBundleID = extPlist?["CFBundleIdentifier"] as? String ?? "Unknown"
+                        let extBundleID = extPlist?["CFBundleIdentifier"] as? String ?? localized("Unknown")
                         NavigationLink(destination: BundleInspectorView(bundleURL: extURL, certificatesViewModel: certificatesViewModel)) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(extName)
@@ -536,9 +536,9 @@ struct FullAppBundleView: View {
             }
 
             // Resources — recursive browser
-            Section(header: Text("Resources")) {
-                NavigationLink(destination: BundleResourceBrowserView(rootURL: bundleURL, title: "Bundle Contents")) {
-                    Text("Browse Bundle Contents")
+            Section(header: Text(localized("Resources"))) {
+                NavigationLink(destination: BundleResourceBrowserView(rootURL: bundleURL, title: localized("Bundle Contents"))) {
+                    Text(localized("Browse Bundle Contents"))
                         .font(.subheadline)
                 }
             }
@@ -576,7 +576,7 @@ struct PlistResourceViewer: View {
                 InfoPlistContainerView(plist: dict, title: url.lastPathComponent)
             } else {
                 ScrollView {
-                    Text(rawText.isEmpty ? "Loading\u{2026}" : rawText)
+                    Text(rawText.isEmpty ? localized("Loading…") : rawText)
                         .font(.system(size: 12, design: .monospaced))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding()
@@ -596,7 +596,7 @@ struct PlistResourceViewer: View {
             } else {
                 rawText = (try? String(contentsOf: url, encoding: .utf8))
                     ?? (try? String(contentsOf: url, encoding: .isoLatin1))
-                    ?? "(Cannot decode file)"
+                    ?? localized("(Cannot decode file)")
             }
         }
     }
@@ -621,7 +621,7 @@ struct ResourceImageViewer: View {
                     Image(systemName: "photo.slash")
                         .font(.system(size: 44))
                         .foregroundColor(.secondary)
-                    Text("Could not load image")
+                    Text(localized("Could not load image"))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -648,12 +648,12 @@ struct ResourceTextViewer: View {
 
     var body: some View {
         ScrollView {
-            Text(content.isEmpty ? "Loading\u{2026}" : content)
+            Text(content.isEmpty ? localized("Loading…") : content)
                 .font(.system(size: 12, design: .monospaced))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
         }
-        .navigationTitle(title ?? url?.lastPathComponent ?? "Text")
+        .navigationTitle(title ?? url?.lastPathComponent ?? localized("Text"))
         #if !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -676,7 +676,7 @@ struct ResourceTextViewer: View {
             } else if let url = url {
                 content = (try? String(contentsOf: url, encoding: .utf8))
                     ?? (try? String(contentsOf: url, encoding: .isoLatin1))
-                    ?? "(Cannot decode file as text)"
+                    ?? localized("(Cannot decode file as text)")
             }
         }
     }
@@ -727,9 +727,9 @@ struct ProvisioningProfileResourceViewer: View {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 44))
                         .foregroundColor(.orange)
-                    Text("Invalid Provisioning Profile")
+                    Text(localized("Invalid Provisioning Profile"))
                         .font(.headline)
-                    Text("Could not decode provisioning profile from \(url.lastPathComponent).")
+                    Text(localized("Could not decode provisioning profile from \(url.lastPathComponent)."))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)

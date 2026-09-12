@@ -81,13 +81,13 @@ extension PairingFileManager: UIDocumentPickerDelegate {
             completion?(url)
             self.completion = nil
         }
-        let title = isRetry ? NSLocalizedString("Invalid Pairing File", comment: "") : NSLocalizedString("Pairing File", comment: "")
+        let title = isRetry ? localized("Invalid Pairing File") : localized("Pairing File")
         let message = isRetry
-            ? NSLocalizedString("The selected pairing file is invalid or not usable. Please select a valid pairing file.", comment: "")
-            : NSLocalizedString("Select the pairing file or select \"Help\" for help.", comment: "")
+            ? localized("The selected pairing file is invalid or not usable. Please select a valid pairing file.")
+            : localized("Select the pairing file or select \"Help\" for help.")
         
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Help", comment: ""), style: .default) { _ in
+        alert.addAction(UIAlertAction(title: localized("Help"), style: .default) { _ in
             UIApplication.shared.open(AppConstants.URLs.pairingDocumentation)
             if completion == nil {
                 sleep(2); exit(0)
@@ -95,7 +95,7 @@ extension PairingFileManager: UIDocumentPickerDelegate {
                 completion?(nil)
             }
         })
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Select File", comment: ""), style: .default) { _ in
+        alert.addAction(UIAlertAction(title: localized("Select File"), style: .default) { _ in
             var types = UTType.types(tag: "plist", tagClass: .filenameExtension, conformingTo: nil)
             types.append(contentsOf: UTType.types(tag: AppConstants.Pairing.fileExtension, tagClass: .filenameExtension, conformingTo: .data))
             types.append(.xml)
@@ -106,7 +106,7 @@ extension PairingFileManager: UIDocumentPickerDelegate {
             UserDefaults.standard.isPairingReset = false
         })
         
-        let cancelTitle = isRetry ? NSLocalizedString("Skip", comment: "") : NSLocalizedString("Cancel", comment: "")
+        let cancelTitle = isRetry ? localized("Skip") : localized("Cancel")
         alert.addAction(UIAlertAction(title: cancelTitle, style: .cancel) { _ in
             if completion == nil {
                 self.showPairingWarningAndProceed(on: vc)
@@ -119,11 +119,11 @@ extension PairingFileManager: UIDocumentPickerDelegate {
     
     func showPairingWarningAndProceed(on vc: UIViewController) {
         let warningAlert = UIAlertController(
-            title: "⚠️ " + NSLocalizedString("Pairing Required", comment: ""),
-            message: NSLocalizedString("Without a valid pairing file, operations that require a pairing file (such as installing, refreshing, or resigning apps) will not function.", comment: ""),
+            title: localized("⚠️ Pairing Required"),
+            message: localized("Without a valid pairing file, operations that require a pairing file (such as installing, refreshing, or resigning apps) will not function."),
             preferredStyle: .alert
         )
-        warningAlert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .default))
+        warningAlert.addAction(UIAlertAction(title: localized("OK"), style: .default))
         vc.present(warningAlert, animated: true)
     }
 
@@ -185,7 +185,7 @@ extension PairingFileManager {
             self.completion = nil
         }
 
-        let title = isRetry ? NSLocalizedString("Invalid Pairing File", comment: "") : NSLocalizedString("Pairing File Required", comment: "")
+        let title = isRetry ? localized("Invalid Pairing File") : localized("Pairing File Required")
         TVWebFileTransferManager.shared.startImport(
             acceptedExtensions: ["mobiledevicepairing", "plist", "xml"],
             title: title,
@@ -228,11 +228,11 @@ extension PairingFileManager {
 
     func showPairingWarningAndProceed(on vc: UIViewController) {
         let warningAlert = UIAlertController(
-            title: "⚠️ " + NSLocalizedString("Pairing Required", comment: ""),
-            message: NSLocalizedString("Without a valid pairing file, operations that require a pairing file (such as installing, refreshing, or resigning apps) will not function.", comment: ""),
+            title: localized("⚠️ Pairing Required"),
+            message: localized("Without a valid pairing file, operations that require a pairing file (such as installing, refreshing, or resigning apps) will not function."),
             preferredStyle: .alert
         )
-        warningAlert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .default))
+        warningAlert.addAction(UIAlertAction(title: localized("OK"), style: .default))
         vc.present(warningAlert, animated: true)
     }
 

@@ -15,6 +15,15 @@ enum SortOption: String, CaseIterable, Identifiable {
     case keys         = "Keys"
     case type         = "Type"
     var id: String { rawValue }
+    var localizedName: String {
+        switch self {
+        case .creationDate: return localized("Creation Date")
+        case .expiryDate:   return localized("Expiry Date")
+        case .name:         return localized("Name")
+        case .keys:         return localized("Keys")
+        case .type:         return localized("Type")
+        }
+    }
 }
 
 enum GroupOption: String, CaseIterable, Identifiable {
@@ -25,6 +34,16 @@ enum GroupOption: String, CaseIterable, Identifiable {
     case keys         = "Keys"
     case type         = "Type"
     var id: String { rawValue }
+    var localizedName: String {
+        switch self {
+        case .none:         return localized("None")
+        case .creationDate: return localized("Creation Date")
+        case .expiryDate:   return localized("Expiry Date")
+        case .name:         return localized("Name")
+        case .keys:         return localized("Keys")
+        case .type:         return localized("Type")
+        }
+    }
 }
 
 enum FileImportMode {

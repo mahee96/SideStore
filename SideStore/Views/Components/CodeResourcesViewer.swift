@@ -45,6 +45,15 @@ struct CodeResourcesViewer: View {
         case required = "Required"
         case optional = "Optional"
         case rules = "Rules"
+
+        var localizedName: String {
+            switch self {
+            case .all: return localized("All")
+            case .required: return localized("Required")
+            case .optional: return localized("Optional")
+            case .rules: return localized("Rules")
+            }
+        }
     }
 
     private var filteredEntries: [CodeResourceEntry] {
@@ -71,27 +80,27 @@ struct CodeResourcesViewer: View {
     var body: some View {
         List {
             if isLoaded && parseError == nil {
-                Section(header: Text("Code Signature Seal")) {
-                    InfoRow(label: "File", value: url.lastPathComponent)
-                    InfoRow(label: "Total Sealed Files", value: "\(entries.count)")
-                    InfoRow(label: "Signing Rules", value: "\(rules.count)")
+                Section(header: Text(localized("Code Signature Seal"))) {
+                    InfoRow(label: localized("File"), value: url.lastPathComponent)
+                    InfoRow(label: localized("Total Sealed Files"), value: "\(entries.count)")
+                    InfoRow(label: localized("Signing Rules"), value: "\(rules.count)")
                     let hasV2 = rawPlist?["files2"] != nil
-                    InfoRow(label: "Format Version", value: hasV2 ? "Version 2 (SHA-256)" : "Version 1 (SHA-1)")
+                    InfoRow(label: localized("Format Version"), value: hasV2 ? localized("Version 2 (SHA-256)") : localized("Version 1 (SHA-1)"))
                 }
 
                 Section {
-                    Picker("Display Mode", selection: $filterMode) {
+                    Picker(localized("Display Mode"), selection: $filterMode) {
                         ForEach(FilterMode.allCases, id: \.self) { mode in
-                            Text(mode.rawValue).tag(mode)
+                            Text(mode.localizedName).tag(mode)
                         }
                     }
                     .pickerStyle(SegmentedPickerStyle())
                 }
 
                 if filterMode == .rules {
-                    Section(header: Text("Signing Rules (\(filteredRules.count))")) {
+                    Section(header: Text(localized("Signing Rules (\(filteredRules.count))"))) {
                         if filteredRules.isEmpty {
-                            Text("No rules matching '\(searchQuery)'")
+                            Text(localized("No rules matching '\(searchQuery)'"))
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                         } else {
@@ -103,7 +112,7 @@ struct CodeResourcesViewer: View {
                                             .foregroundColor(.primary)
                                         Spacer()
                                         if rule.isOmitted {
-                                            Text("Omit")
+                                            Text(localized("Omit"))
                                                 .font(.caption)
                                                 .foregroundColor(.red)
                                                 .padding(.horizontal, 6)
@@ -111,7 +120,7 @@ struct CodeResourcesViewer: View {
                                                 .background(Color.red.opacity(0.1))
                                                 .cornerRadius(6)
                                         } else {
-                                            Text("Seal")
+                                            Text(localized("Seal"))
                                                 .font(.caption)
                                                 .foregroundColor(.green)
                                                 .padding(.horizontal, 6)
@@ -121,7 +130,7 @@ struct CodeResourcesViewer: View {
                                         }
                                     }
                                     if let w = rule.weight {
-                                        Text("Weight: \(String(format: "%.1f", w))")
+                                        Text(localized("Weight: \(String(format: "%.1f", w))"))
                                             .font(.caption)
                                             .foregroundColor(.secondary)
                                     }
@@ -131,9 +140,9 @@ struct CodeResourcesViewer: View {
                         }
                     }
                 } else {
-                    Section(header: Text("Sealed Files (\(filteredEntries.count))")) {
+                    Section(header: Text(localized("Sealed Files (\(filteredEntries.count))"))) {
                         if filteredEntries.isEmpty {
-                            Text(entries.isEmpty ? "No sealed files found" : "No files matching '\(searchQuery)'")
+                            Text(entries.isEmpty ? localized("No sealed files found") : localized("No files matching '\(searchQuery)'"))
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                         } else {
@@ -154,7 +163,7 @@ struct CodeResourcesViewer: View {
                                                     .foregroundColor(.primary)
                                                 Spacer()
                                                 if entry.isOptional {
-                                                    Text("Optional")
+                                                    Text(localized("Optional"))
                                                         .font(.caption2)
                                                         .foregroundColor(.orange)
                                                         .padding(.horizontal, 5)
@@ -186,22 +195,22 @@ struct CodeResourcesViewer: View {
                 }
 
                 if let plist = rawPlist {
-                    Section(header: Text("Raw Inspection")) {
-                        NavigationLink(destination: InfoPlistContainerView(plist: plist, title: "CodeResources")) {
+                    Section(header: Text(localized("Raw Inspection"))) {
+                        NavigationLink(destination: InfoPlistContainerView(plist: plist, title: localized("CodeResources"))) {
                             HStack {
                                 Image(systemName: "list.bullet.rectangle")
                                     .foregroundColor(.green)
-                                Text("Explore Structure (\(plist.count) keys)")
+                                Text(localized("Explore Structure (\(plist.count) keys)"))
                                     .font(.subheadline)
                             }
                         }
 
                         if !rawXML.isEmpty {
-                            NavigationLink(destination: ResourceTextViewer(title: "CodeResources XML", explicitContent: rawXML)) {
+                            NavigationLink(destination: ResourceTextViewer(title: localized("CodeResources XML"), explicitContent: rawXML)) {
                                 HStack {
                                     Image(systemName: "doc.plaintext")
                                         .foregroundColor(.blue)
-                                    Text("View Raw XML")
+                                    Text(localized("View Raw XML"))
                                         .font(.subheadline)
                                 }
                             }
@@ -213,7 +222,7 @@ struct CodeResourcesViewer: View {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 44))
                         .foregroundColor(.orange)
-                    Text("Parse Error")
+                    Text(localized("Parse Error"))
                         .font(.headline)
                     Text(err)
                         .font(.subheadline)
@@ -223,7 +232,7 @@ struct CodeResourcesViewer: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ProgressView("Reading CodeResources\u{2026}")
+                ProgressView(localized("Reading CodeResources…"))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
@@ -234,7 +243,7 @@ struct CodeResourcesViewer: View {
         .listStyle(GroupedListStyle())
         #endif
         .navigationTitle(url.lastPathComponent)
-        .searchable(text: $searchQuery, prompt: "Search sealed files or rules")
+        .searchable(text: $searchQuery, prompt: Text(localized("Search sealed files or rules")))
         .overlay(
             AppInfoToastView(isShowing: $isShowingToast, message: toastMessage)
         )
@@ -246,7 +255,7 @@ struct CodeResourcesViewer: View {
 
     private func loadCodeResources() {
         guard let data = try? Data(contentsOf: url) else {
-            self.parseError = "Unable to read file contents at \(url.path)."
+            self.parseError = localized("Unable to read file contents at \(url.path).")
             self.isLoaded = true
             return
         }
@@ -256,7 +265,7 @@ struct CodeResourcesViewer: View {
         }
 
         guard let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any] else {
-            self.parseError = "Could not decode file as a property list."
+            self.parseError = localized("Could not decode file as a property list.")
             self.isLoaded = true
             return
         }
@@ -336,7 +345,8 @@ struct CodeResourcesViewer: View {
         #if !os(tvOS)
         UIPasteboard.general.string = textToCopy
         #endif
-        self.toastMessage = "Copied \(entry.path.components(separatedBy: "/").last ?? entry.path) to clipboard"
+        let filename = entry.path.components(separatedBy: "/").last ?? entry.path
+        self.toastMessage = localized("Copied \(filename) to clipboard")
         withAnimation {
             self.isShowingToast = true
         }

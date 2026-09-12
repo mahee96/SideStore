@@ -30,10 +30,10 @@ struct WirelessPairTargetDialog: View {
             }
             #if !os(tvOS)
             .background(Color(.systemGroupedBackground).ignoresSafeArea())
-            .navigationBarTitle(viewModel.dialogMode == .client ? "Select Device To Pair" : "Select Server Interface", displayMode: .inline)
+            .navigationBarTitle(viewModel.dialogMode == .client ? localized("Select Device To Pair") : localized("Select Server Interface"), displayMode: .inline)
             #else
             .background(Color.black.ignoresSafeArea())
-            .navigationTitle(viewModel.dialogMode == .client ? "Select Device To Pair" : "Select Server Interface")
+            .navigationTitle(viewModel.dialogMode == .client ? localized("Select Device To Pair") : localized("Select Server Interface"))
             #endif
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -51,7 +51,7 @@ struct WirelessPairTargetDialog: View {
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    SwiftUI.Button("Select") {
+                    SwiftUI.Button(localized("Select")) {
                         debugLog("[WirelessPairTargetDialog] Select button tapped (mode=\(viewModel.dialogMode.rawValue))")
                         viewModel.confirmSelection()
                     }
@@ -73,14 +73,14 @@ struct WirelessPairTargetDialog: View {
     @ViewBuilder
     private var serverModeContent: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("LOCAL NETWORK INTERFACES")
+            Text(localized("LOCAL NETWORK INTERFACES"))
                 .font(.caption)
                 .fontWeight(.bold)
                 .foregroundColor(.secondary)
                 .padding(.horizontal, 4)
             
             if viewModel.activeInterfaces.isEmpty {
-                Text("No active local interfaces detected.")
+                Text(localized("No active local interfaces detected."))
                     .font(.footnote)
                     .foregroundColor(.secondary)
                     .padding(.vertical, 12)
@@ -194,7 +194,7 @@ struct WirelessPairTargetDialog: View {
     private var clientModeContent: some View {
         // Section: Configured Fallback Endpoint
         VStack(alignment: .leading, spacing: 10) {
-            Text("CONFIGURED ENDPOINT")
+            Text(localized("CONFIGURED ENDPOINT"))
                 .font(.caption)
                 .fontWeight(.bold)
                 .foregroundColor(.secondary)
@@ -205,7 +205,7 @@ struct WirelessPairTargetDialog: View {
         
         // Section: Discovered Devices
         VStack(alignment: .leading, spacing: 10) {
-            Text("DISCOVERED NEARBY")
+            Text(localized("DISCOVERED NEARBY"))
                 .font(.caption)
                 .fontWeight(.bold)
                 .foregroundColor(.secondary)
@@ -216,11 +216,11 @@ struct WirelessPairTargetDialog: View {
                     if viewModel.isScanning {
                         ProgressView()
                             .scaleEffect(0.7)
-                        Text("Searching local network for devices…")
+                        Text(localized("Searching local network for devices…"))
                             .font(.footnote)
                             .foregroundColor(.secondary)
                     } else {
-                        Text("No pairing targets found via Bonjour.")
+                        Text(localized("No pairing targets found via Bonjour."))
                             .font(.footnote)
                             .foregroundColor(.secondary)
                     }
@@ -286,15 +286,15 @@ struct WirelessPairTargetDialog: View {
                     
                     if (target.ipv4 == nil || target.ipv4?.isEmpty == true) && (target.ipv6 == nil || target.ipv6?.isEmpty == true) {
                         if !portString.isEmpty {
-                            Text("Port: \(portString)")
+                            Text(localized("Port: \(portString)"))
                                 .font(.caption.monospaced())
                                 .foregroundColor(.secondary)
                         } else if viewModel.isScanning {
-                            Text("Resolving IP address…")
+                            Text(localized("Resolving IP address…"))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         } else {
-                            Text("Address unavailable")
+                            Text(localized("Address unavailable"))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -335,7 +335,7 @@ struct WirelessPairTargetDialog: View {
                         .foregroundColor(isSelected ? .accentColor : .secondary)
                         .frame(width: 20)
                     
-                    interfaceTypeTag(name: "Manual", color: .secondary)
+                    interfaceTypeTag(name: localized("Manual"), color: .secondary)
                     
                     Spacer()
                     
@@ -344,7 +344,7 @@ struct WirelessPairTargetDialog: View {
                         .foregroundColor(isSelected ? .green : Color(.tertiaryLabel))
                 }
                 
-                Text("Configured Target")
+                Text(localized("Configured Target"))
                     .font(.footnote)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)

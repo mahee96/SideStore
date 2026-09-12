@@ -25,11 +25,11 @@ public final class StorageExplorerClipboard: ObservableObject {
     
     public var pasteLabelText: String {
         if copiedURLs.count == 1, let first = copiedURLs.first {
-            return "Paste “\(first.lastPathComponent)”"
+            return localized("Paste “\(first.lastPathComponent)”")
         } else if copiedURLs.count > 1 {
-            return "Paste \(copiedURLs.count) Items"
+            return localized("Paste \(copiedURLs.count) Items")
         }
-        return "Paste"
+        return localized("Paste")
     }
     
     public func setCopied(urls: [URL]) {
@@ -92,6 +92,15 @@ public enum StorageSortOption: String, CaseIterable, Identifiable {
     case type = "Type"
     
     public var id: String { rawValue }
+
+    public var localizedName: String {
+        switch self {
+        case .name: return localized("Name")
+        case .date: return localized("Date Modified")
+        case .size: return localized("Size")
+        case .type: return localized("Type")
+        }
+    }
 }
 
 // MARK: - Directory Explorer ViewModel
@@ -174,7 +183,7 @@ public final class StorageExplorerViewModel: ObservableObject {
             }
             #endif
         } catch {}
-        return "Unknown"
+        return localized("Unknown")
     }
     
     private var loadTask: Task<Void, Never>?

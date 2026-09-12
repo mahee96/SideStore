@@ -23,14 +23,13 @@ enum SideJITConnectionStatus: Equatable {
         case .disconnected: return .red
         }
     }
-    
-    var title: String {
+        var title: String {
         switch self {
-        case .disabled: return "Disabled"
-        case .ready(let latency, _): return "Ready (\(latency) ms)"
-        case .discovering: return "Discovering Bonjour…"
-        case .checking: return "Checking Connection…"
-        case .disconnected: return "Unreachable"
+        case .disabled: return localized("Disabled")
+        case .ready(let latency, _): return localized("Ready (\(latency) ms)")
+        case .discovering: return localized("Discovering Bonjour…")
+        case .checking: return localized("Checking Connection…")
+        case .disconnected: return localized("Unreachable")
         }
     }
 }
@@ -97,7 +96,7 @@ struct SideJITServerConfigView: View {
         #else
         .listStyle(.grouped)
         #endif
-        .navigationTitle("SideJITServer")
+        .navigationTitle(localized("SideJITServer"))
         .overlay(
             Group {
                 if showCopiedToast {
@@ -124,9 +123,9 @@ struct SideJITServerConfigView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Enable SideJITServer")
+                        Text(localized("Enable SideJITServer"))
                             .font(.body.weight(.semibold))
-                        Text("Required for JIT on iOS 17+")
+                        Text(localized("Required for JIT on iOS 17+"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -144,9 +143,9 @@ struct SideJITServerConfigView: View {
     }
     
     private var statusSection: some View {
-        Section(header: Text("Connection Status")) {
+        Section(header: Text(localized("Connection Status"))) {
             HStack {
-                Text("Status")
+                Text(localized("Status"))
                 Spacer()
                 HStack(spacing: 6) {
                     Circle()
@@ -159,10 +158,10 @@ struct SideJITServerConfigView: View {
             }
             
             HStack {
-                Text("Resolved Address")
+                Text(localized("Resolved Address"))
                     .layoutPriority(1)
                 Spacer()
-                Text(resolvedAddress.isEmpty ? "Resolving…" : resolvedAddress)
+                Text(resolvedAddress.isEmpty ? localized("Resolving…") : resolvedAddress)
                     .font(.system(size: 13, design: .monospaced))
                     .foregroundColor(resolvedAddress.isEmpty ? .secondary : .primary)
                     .lineLimit(1)
@@ -176,15 +175,15 @@ struct SideJITServerConfigView: View {
                         showCopied()
                         #endif
                     } label: {
-                        Label("Copy Address", systemImage: "doc.on.doc")
+                        Label(localized("Copy Address"), systemImage: "doc.on.doc")
                     }
                 }
             }
             
             HStack {
-                Text("Resolution Mode")
+                Text(localized("Resolution Mode"))
                 Spacer()
-                Text(customAddress.isEmpty ? "Auto (Bonjour mDNS)" : "Manual Override")
+                Text(customAddress.isEmpty ? localized("Auto (Bonjour mDNS)") : localized("Manual Override"))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -193,8 +192,8 @@ struct SideJITServerConfigView: View {
     
     private var configurationSection: some View {
         Section(
-            header: Text("Server Address"),
-            footer: Text("Leave empty to automatically discover SideJITServer on your local network via Bonjour.")
+            header: Text(localized("Server Address")),
+            footer: Text(localized("Leave empty to automatically discover SideJITServer on your local network via Bonjour."))
         ) {
             HStack {
                 TextField(AppConstants.SideJIT.defaultServerURL, text: $customAddress)
@@ -226,12 +225,12 @@ struct SideJITServerConfigView: View {
     }
     
     private var diagnosticActionsSection: some View {
-        Section(header: Text("Diagnostics & Tools")) {
+        Section(header: Text(localized("Diagnostics & Tools"))) {
             SwiftUI.Button {
                 testHealthCheck()
             } label: {
                 HStack {
-                    Label("Test Connection (Ping)", systemImage: "network")
+                    Label(localized("Test Connection (Ping)"), systemImage: "network")
                         .foregroundColor(.primary)
                     Spacer()
                     if activeAction == .ping {
@@ -248,7 +247,7 @@ struct SideJITServerConfigView: View {
                 triggerDeviceRefresh()
             } label: {
                 HStack {
-                    Label("Refresh Device Cache (/re/)", systemImage: "arrow.clockwise")
+                    Label(localized("Refresh Device Cache (/re/)"), systemImage: "arrow.clockwise")
                         .foregroundColor(.primary)
                     Spacer()
                     if activeAction == .refresh {
@@ -265,7 +264,7 @@ struct SideJITServerConfigView: View {
                 queryVersionEndpoint()
             } label: {
                 HStack {
-                    Label("Check Version Info (/ver/)", systemImage: "info.circle")
+                    Label(localized("Check Version Info (/ver/)"), systemImage: "info.circle")
                         .foregroundColor(.primary)
                     Spacer()
                     if activeAction == .version {
@@ -281,7 +280,7 @@ struct SideJITServerConfigView: View {
     }
     
     private func responseInspectorSection(log: SideJITResponseLog) -> some View {
-        Section(header: Text("Latest Server Response")) {
+        Section(header: Text(localized("Latest Server Response"))) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text(log.httpMethod)
@@ -338,20 +337,20 @@ struct SideJITServerConfigView: View {
                     showCopied()
                     #endif
                 } label: {
-                    Label("Copy Response", systemImage: "doc.on.doc")
+                    Label(localized("Copy Response"), systemImage: "doc.on.doc")
                 }
             }
         }
     }
     
     private var aboutSection: some View {
-        Section(header: Text("About")) {
+        Section(header: Text(localized("About"))) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("SideJITServer attaches Apple's debugserver service on macOS to running apps on iOS 17+ over local Wi-Fi or USB.")
+                Text(localized("SideJITServer attaches Apple's debugserver service on macOS to running apps on iOS 17+ over local Wi-Fi or USB."))
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                Text("When SideStore triggers JIT, SideJITServer sends the debug attach signal and enables Just-In-Time execution instantly.")
+                Text(localized("When SideStore triggers JIT, SideJITServer sends the debug attach signal and enables Just-In-Time execution instantly."))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -360,7 +359,7 @@ struct SideJITServerConfigView: View {
     }
     
     private var copiedToastView: some View {
-        Text("Copied to Clipboard")
+        Text(localized("Copied to Clipboard"))
             .font(.subheadline.weight(.medium))
             .foregroundColor(.white)
             .padding(.horizontal, 20)
@@ -402,7 +401,7 @@ struct SideJITServerConfigView: View {
         guard let url = URL(string: serverURL) else {
             debugLog("[SideJITConfig] performPing: invalid URL string '\(serverURL)'")
             await MainActor.run {
-                self.connectionStatus = .disconnected(reason: "Invalid URL")
+                self.connectionStatus = .disconnected(reason: localized("Invalid URL"))
             }
             return
         }

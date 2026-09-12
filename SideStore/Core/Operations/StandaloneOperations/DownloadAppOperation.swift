@@ -63,7 +63,7 @@ final class DownloadAppOperation: BasePipelineOperation<InstallAppOperationConte
                 appVersion = version
             } else if let storeApp = app as? StoreApp {
                 guard let latestVersion = storeApp.latestAvailableVersion else {
-                    let failureReason = String(format: NSLocalizedString("The latest version of %@ could not be downloaded.", comment: ""), self.appName)
+                    let failureReason = localized("The latest version of \(self.appName) could not be downloaded.")
                     throw OperationError.unknown(failureReason: failureReason)
                 }
 
@@ -272,7 +272,7 @@ final class DownloadAppOperation: BasePipelineOperation<InstallAppOperationConte
             try FileManager.default.copyItem(at: fileURL, to: destinationURL, shouldReplace: true)
             return destinationURL
         } catch let error as NSError {
-            let localizedFailure = String(format: NSLocalizedString("The dependency '%@' could not be downloaded.", comment: ""), dependency.preferredFilename)
+            let localizedFailure = localized("The dependency '\(dependency.preferredFilename)' could not be downloaded.")
             throw error.withLocalizedFailure(localizedFailure)
         }
     }
