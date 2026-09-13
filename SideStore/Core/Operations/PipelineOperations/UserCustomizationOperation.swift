@@ -54,7 +54,8 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
             )
 
             // Resolve cached plist if previously customized
-            let mainCachedURL = InstalledApp.customInfoPlistURL(forBundleIdentifier: cacheFolderID, targetID: context.targetBundleIdentifier)
+            let mainCachedID = context.installedApp?.resignedBundleIdentifier ?? context.targetBundleIdentifier
+            let mainCachedURL = InstalledApp.customInfoPlistURL(forBundleIdentifier: cacheFolderID, targetID: mainCachedID)
             let mainCachedParser = mainCachedURL.flatMap { try? InfoPlistParser(plistURL: $0) }
             let initialBundleID = mainCachedParser?.bundleIdentifier ?? context.targetBundleIdentifier
 
@@ -68,7 +69,8 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
                 list.append(InfoPlistTarget(id: initialBundleID, name: targetAppBundle.name, isExtension: false, initialPlist: mainPlist))
 
                 for ext in targetAppBundle.allAppBundles where ext.isExtension {
-                    let extCachedURL = InstalledApp.customInfoPlistURL(forBundleIdentifier: cacheFolderID, targetID: ext.bundleIdentifier)
+                    let extCachedID = context.installedApp?.appExtensions.first(where: { $0.bundleIdentifier == ext.bundleIdentifier })?.resignedBundleIdentifier ?? ext.bundleIdentifier
+                    let extCachedURL = InstalledApp.customInfoPlistURL(forBundleIdentifier: cacheFolderID, targetID: extCachedID)
                     let extPlist = extCachedURL.flatMap { try? InfoPlistParser(plistURL: $0).rawDictionary } ?? ext.infoPlist
                     list.append(InfoPlistTarget(id: ext.bundleIdentifier, name: ext.name, isExtension: true, initialPlist: extPlist))
                 }
@@ -143,9 +145,10 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
             let mainTargetID = context.targetBundleIdentifier
             self.setProgress(70)
 
+            let mainCachedID = context.installedApp?.resignedBundleIdentifier ?? mainTargetID
             let targets: [EntitlementsTarget] = {
                 guard let targetAppBundle = context.targetAppBundle else {
-                    let cachedEntitlements = InstalledApp.customEntitlements(forBundleIdentifier: cacheFolderID, targetID: mainTargetID) ?? [:]
+                    let cachedEntitlements = InstalledApp.customEntitlements(forBundleIdentifier: cacheFolderID, targetID: mainCachedID) ?? [:]
                     return [
                         EntitlementsTarget(
                             id: mainTargetID,
@@ -156,7 +159,7 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
                     ]
                 }
 
-                let mainCachedEntitlements = InstalledApp.customEntitlements(forBundleIdentifier: cacheFolderID, targetID: mainTargetID)
+                let mainCachedEntitlements = InstalledApp.customEntitlements(forBundleIdentifier: cacheFolderID, targetID: mainCachedID)
                     ?? targetAppBundle.entitlements
 
                 var list: [EntitlementsTarget] = [
@@ -169,7 +172,8 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
                 ]
 
                 for ext in targetAppBundle.allAppBundles where ext.isExtension {
-                    let extCachedEntitlements = InstalledApp.customEntitlements(forBundleIdentifier: cacheFolderID, targetID: ext.bundleIdentifier)
+                    let extCachedID = context.installedApp?.appExtensions.first(where: { $0.bundleIdentifier == ext.bundleIdentifier })?.resignedBundleIdentifier ?? ext.bundleIdentifier
+                    let extCachedEntitlements = InstalledApp.customEntitlements(forBundleIdentifier: cacheFolderID, targetID: extCachedID)
                         ?? ext.entitlements
 
                     list.append(

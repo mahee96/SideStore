@@ -465,16 +465,8 @@ public extension InstalledApp
     }
 
     class func customInfoPlistURL(forBundleIdentifier bundleIdentifier: String, targetID: String) -> URL? {
-        let appDirectory = InstalledApp.appsDirectoryURL.appendingPathComponent(bundleIdentifier)
-        let multiTargetURL = appDirectory.appendingPathComponent("Info.plist").appendingPathComponent("\(targetID).plist")
-        if FileManager.default.fileExists(atPath: multiTargetURL.path) {
-            return multiTargetURL
-        }
-        let legacyURL = appDirectory.appendingPathComponent("custom_info.plist")
-        if targetID == bundleIdentifier && FileManager.default.fileExists(atPath: legacyURL.path) {
-            return legacyURL
-        }
-        return nil
+        let fileURL = customInfoPlistDirectoryURL(forBundleIdentifier: bundleIdentifier).appendingPathComponent("\(targetID).plist")
+        return FileManager.default.fileExists(atPath: fileURL.path) ? fileURL : nil
     }
 
     class func customEntitlementsURL(forBundleIdentifier bundleIdentifier: String, targetID: String) -> URL? {
@@ -502,15 +494,8 @@ public extension InstalledApp
     }
 
     class func customProvisioningProfileURL(forBundleIdentifier bundleIdentifier: String, targetID: String) -> URL? {
-        let multiTargetURL = customProvisioningProfilesDirectoryURL(forBundleIdentifier: bundleIdentifier).appendingPathComponent("\(targetID).mobileprovision")
-        if FileManager.default.fileExists(atPath: multiTargetURL.path) {
-            return multiTargetURL
-        }
-        let legacyURL = InstalledApp.appsDirectoryURL.appendingPathComponent(bundleIdentifier).appendingPathComponent("embedded.mobileprovision")
-        if targetID == bundleIdentifier && FileManager.default.fileExists(atPath: legacyURL.path) {
-            return legacyURL
-        }
-        return nil
+        let fileURL = customProvisioningProfilesDirectoryURL(forBundleIdentifier: bundleIdentifier).appendingPathComponent("\(targetID).mobileprovision")
+        return FileManager.default.fileExists(atPath: fileURL.path) ? fileURL : nil
     }
 
     class func customProvisioningProfile(forBundleIdentifier bundleIdentifier: String, targetID: String) -> ALTProvisioningProfile? {

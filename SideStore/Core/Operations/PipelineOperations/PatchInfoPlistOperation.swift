@@ -27,11 +27,14 @@ final class PatchInfoPlistOperation: BasePipelineOperation<InstallAppOperationCo
         }
 
         for bundle in targetAppBundle.allAppBundles {
-            let targetID = bundle.bundleIdentifier
-            if let plistURL = InstalledApp.customInfoPlistURL(forBundleIdentifier: bundleID, targetID: targetID) {
+            let cachedTargetID = (bundle == targetAppBundle)
+                ? (self.context.installedApp?.resignedBundleIdentifier ?? bundle.bundleIdentifier)
+                : (self.context.installedApp?.appExtensions.first(where: { $0.bundleIdentifier == bundle.bundleIdentifier })?.resignedBundleIdentifier ?? bundle.bundleIdentifier)
+            
+            if let plistURL = InstalledApp.customInfoPlistURL(forBundleIdentifier: bundleID, targetID: cachedTargetID) {
                 do {
                     let customParser = try InfoPlistParser(plistURL: plistURL)
-                    self.context.customInfoPlistByBundleID[targetID] = customParser.rawDictionary
+                    self.context.customInfoPlistByBundleID[bundle.bundleIdentifier] = customParser.rawDictionary
                     
                     if bundle == targetAppBundle {
                         if let customID = customParser.bundleIdentifier,
@@ -42,21 +45,21 @@ final class PatchInfoPlistOperation: BasePipelineOperation<InstallAppOperationCo
                     }
                     
                     try bundle.updateInfoPlist(with: customParser.rawDictionary)
-                    debugLog("[PatchInfoPlistOperation] Successfully patched Info.plist for \(targetID) from \(plistURL.lastPathComponent)")
+                    debugLog("[PatchInfoPlistOperation] Successfully patched Info.plist for \(bundle.bundleIdentifier) from \(plistURL.lastPathComponent)")
                 } catch {
-                    debugLog("[PatchInfoPlistOperation] Error applying custom Info.plist for \(targetID): \(error)")
+                    debugLog("[PatchInfoPlistOperation] Error applying custom Info.plist for \(bundle.bundleIdentifier): \(error)")
                     throw error
                 }
             }
 
-            if let customEntitlements = InstalledApp.customEntitlements(forBundleIdentifier: bundleID, targetID: targetID) {
-                self.context.customEntitlementsByBundleID[targetID] = customEntitlements
+            if let customEntitlements = InstalledApp.customEntitlements(forBundleIdentifier: bundleID, targetID: cachedTargetID) {
+                self.context.customEntitlementsByBundleID[bundle.bundleIdentifier] = customEntitlements
                 if bundle == targetAppBundle {
                     for (key, value) in customEntitlements {
                         self.context.additionalEntitlements[ALTEntitlement(key)] = value
                     }
                 }
-                debugLog("[PatchInfoPlistOperation] Successfully loaded custom entitlements for \(targetID)")
+                debugLog("[PatchInfoPlistOperation] Successfully loaded custom entitlements for \(bundle.bundleIdentifier)")
             }
         }
     }

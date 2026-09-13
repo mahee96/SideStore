@@ -612,7 +612,7 @@ struct ExtensionInfoView: View {
     }
 
     private var resignedProfileURL: URL? {
-        InstalledApp.customProvisioningProfileURL(forBundleIdentifier: parentBundleIdentifier, targetID: appExtension.bundleIdentifier)
+        InstalledApp.customProvisioningProfileURL(forBundleIdentifier: parentBundleIdentifier, targetID: appExtension.resignedBundleIdentifier)
     }
 
     private var bundleProfileURL: URL? {
@@ -631,7 +631,7 @@ struct ExtensionInfoView: View {
     }
 
     private var resignedInfoPlistURL: URL? {
-        InstalledApp.customInfoPlistURL(forBundleIdentifier: parentBundleIdentifier, targetID: appExtension.bundleIdentifier)
+        InstalledApp.customInfoPlistURL(forBundleIdentifier: parentBundleIdentifier, targetID: appExtension.resignedBundleIdentifier)
     }
 
     private var bundleInfoPlistURL: URL? {
