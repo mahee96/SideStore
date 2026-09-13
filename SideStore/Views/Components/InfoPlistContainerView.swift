@@ -18,9 +18,15 @@ struct PlistNode: Identifiable {
     let children: [PlistNode]?
     
     static func parse(key: String, value: Any) -> PlistNode {
-        if let dict = value as? [String: Any] {
+        if let dict = value as? [String: any Sendable] {
             let sortedChildren = dict.keys.sorted().map { parse(key: $0, value: dict[$0]!) }
             return PlistNode(key: key, value: nil, typeInfo: "Dictionary (\(dict.count) keys)", children: sortedChildren)
+        } else if let dict = value as? [String: Any] {
+            let sortedChildren = dict.keys.sorted().map { parse(key: $0, value: dict[$0]!) }
+            return PlistNode(key: key, value: nil, typeInfo: "Dictionary (\(dict.count) keys)", children: sortedChildren)
+        } else if let array = value as? [any Sendable] {
+            let children = array.enumerated().map { parse(key: "Index \($0)", value: $1) }
+            return PlistNode(key: key, value: nil, typeInfo: "Array (\(array.count) items)", children: children)
         } else if let array = value as? [Any] {
             let children = array.enumerated().map { parse(key: "Index \($0)", value: $1) }
             return PlistNode(key: key, value: nil, typeInfo: "Array (\(array.count) items)", children: children)
@@ -56,7 +62,7 @@ enum InfoPlistMode: String, CaseIterable, Identifiable {
 
 // MARK: - Container View
 struct InfoPlistContainerView: View {
-    let plist: [String: Any]
+    let plist: [String: any Sendable]
     var title: String = "Info.plist"
     
     @State private var selectedMode: InfoPlistMode
@@ -65,7 +71,7 @@ struct InfoPlistContainerView: View {
     @State private var xmlString: String = ""
     @State private var jsonString: String = ""
     
-    init(plist: [String: Any], title: String = "Info.plist") {
+    init(plist: [String: any Sendable], title: String = "Info.plist") {
         self.plist = plist
         self.title = title
         let hasAppMetadata = plist["CFBundleDisplayName"] != nil ||
@@ -75,11 +81,6 @@ struct InfoPlistContainerView: View {
             plist["CFBundleVersion"] != nil ||
             plist["MinimumOSVersion"] != nil
         _selectedMode = State(initialValue: hasAppMetadata ? .semantic : .tree)
-    }
-
-    init(plist: [String: any Sendable], title: String = "Info.plist") {
-        let converted = Dictionary(uniqueKeysWithValues: plist.map { ($0.key, $0.value as Any) })
-        self.init(plist: converted, title: title)
     }
     
     var body: some View {
@@ -128,7 +129,7 @@ struct InfoPlistContainerView: View {
 
 // MARK: - Mode 1: Tree View
 struct InfoPlistTreeView: View {
-    let plist: [String: Any]
+    let plist: [String: any Sendable]
     
     @State private var searchQuery = ""
     
@@ -273,7 +274,7 @@ struct PlistNodeRow: View {
 
 // MARK: - Mode 1.5: Raw XML View
 struct InfoPlistRawXMLView: View {
-    let plist: [String: Any]
+    let plist: [String: any Sendable]
     
     @State private var isCopied = false
     @State private var isWrapped = true
@@ -353,7 +354,7 @@ struct InfoPlistRawXMLView: View {
         }
     }
     
-    private func generateXMLString(from plist: [String: Any]) -> String {
+    private func generateXMLString(from plist: [String: any Sendable]) -> String {
         guard let data = try? PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0),
               let string = String(data: data, encoding: .utf8) else {
             return ""
@@ -364,7 +365,7 @@ struct InfoPlistRawXMLView: View {
 
 // MARK: - Mode 2: Raw JSON View
 struct InfoPlistRawView: View {
-    let plist: [String: Any]
+    let plist: [String: any Sendable]
     
     @State private var isCopied = false
     @State private var isWrapped = true
@@ -464,7 +465,7 @@ struct InfoPlistRawView: View {
         }
     }
     
-    private func generateJSONString(from plist: [String: Any]) -> String {
+    private func generateJSONString(from plist: [String: any Sendable]) -> String {
         let sanitized = Self.jsonSanitize(plist)
         guard JSONSerialization.isValidJSONObject(sanitized),
               let data = try? JSONSerialization.data(withJSONObject: sanitized, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]),
@@ -477,7 +478,7 @@ struct InfoPlistRawView: View {
 
 // MARK: - Mode 3: Semantic View
 struct InfoPlistSemanticView: View {
-    let plist: [String: Any]
+    let plist: [String: any Sendable]
     
     @State private var searchQuery = ""
     
@@ -513,7 +514,7 @@ struct InfoPlistSemanticView: View {
     
     var customURLSchemes: [String] {
         var schemes = [String]()
-        if let urlTypes = plist["CFBundleURLTypes"] as? [[String: Any]] {
+        if let urlTypes = (plist["CFBundleURLTypes"] as? [[String: any Sendable]]) ?? (plist["CFBundleURLTypes"] as? [[String: Any]]) {
             for type in urlTypes {
                 if let typeSchemes = type["CFBundleURLSchemes"] as? [String] {
                     schemes.append(contentsOf: typeSchemes)
@@ -532,14 +533,14 @@ struct InfoPlistSemanticView: View {
     }
     
     // Custom/Uncategorized keys
-    var customKeys: [String: Any] {
+    var customKeys: [String: any Sendable] {
         let categorized: Set<String> = [
             "CFBundleDisplayName", "CFBundleName", "CFBundleIdentifier",
             "CFBundleShortVersionString", "CFBundleVersion", "MinimumOSVersion",
             "CFBundleURLTypes", "UIBackgroundModes", "LSApplicationQueriesSchemes"
         ]
         
-        var dict = [String: Any]()
+        var dict = [String: any Sendable]()
         for key in plist.keys {
             if categorized.contains(key) { continue }
             if key.hasPrefix("NS") && key.hasSuffix("UsageDescription") { continue }

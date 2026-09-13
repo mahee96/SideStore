@@ -570,7 +570,7 @@ struct FullAppBundleView: View {
 struct PlistResourceViewer: View {
     let url: URL
 
-    @State private var plistDict: [String: Any]? = nil
+    @State private var plistDict: [String: any Sendable]? = nil
     @State private var rawText: String = ""
     @State private var isLoaded = false
 
