@@ -37,8 +37,9 @@ final class AccountVerificationRow: InsetGroupTableViewCell {
     
     private func setupViews() {
         self.style = .bottom
-        self.backgroundColor = nil
-        self.contentView.backgroundColor = nil
+        self.backgroundColor = .clear
+        self.contentView.backgroundColor = .clear
+        self.backgroundConfiguration = .clear()
         self.tintColor = UIColor.white.withAlphaComponent(0.6)
         self.layoutMargins = UIEdgeInsets(top: 8, left: 30, bottom: 8, right: 30)
         
@@ -52,8 +53,6 @@ final class AccountVerificationRow: InsetGroupTableViewCell {
         
         self.iconImageView.translatesAutoresizingMaskIntoConstraints = false
         self.iconImageView.contentMode = .scaleAspectFit
-        self.iconImageView.setContentHuggingPriority(.required, for: .horizontal)
-        self.iconImageView.setContentCompressionResistancePriority(.required, for: .horizontal)
         
         self.spinner.translatesAutoresizingMaskIntoConstraints = false
         self.spinner.color = .white
@@ -64,27 +63,54 @@ final class AccountVerificationRow: InsetGroupTableViewCell {
         textStack.axis = .vertical
         textStack.spacing = 2
         textStack.alignment = .leading
+        textStack.setContentHuggingPriority(.defaultLow, for: .horizontal)
         
-        let mainStack = UIStackView(arrangedSubviews: [self.iconImageView, textStack, self.spinner])
+        let rightContainer = UIView()
+        rightContainer.translatesAutoresizingMaskIntoConstraints = false
+        rightContainer.addSubview(self.iconImageView)
+        rightContainer.addSubview(self.spinner)
+        
+        let mainStack = UIStackView(arrangedSubviews: [textStack, rightContainer])
         mainStack.translatesAutoresizingMaskIntoConstraints = false
         mainStack.axis = .horizontal
         mainStack.spacing = 12
         mainStack.alignment = .center
+        mainStack.distribution = .fill
         
         self.contentView.addSubview(mainStack)
         
         NSLayoutConstraint.activate([
             mainStack.leadingAnchor.constraint(equalTo: self.contentView.leadingAnchor, constant: 30),
-            mainStack.trailingAnchor.constraint(equalTo: self.contentView.trailingAnchor, constant: -20),
+            mainStack.trailingAnchor.constraint(equalTo: self.contentView.trailingAnchor, constant: -30),
             mainStack.topAnchor.constraint(equalTo: self.contentView.topAnchor, constant: 8),
             mainStack.bottomAnchor.constraint(equalTo: self.contentView.bottomAnchor, constant: -8),
             
-            self.iconImageView.widthAnchor.constraint(equalToConstant: 24),
-            self.iconImageView.heightAnchor.constraint(equalToConstant: 24)
+            rightContainer.widthAnchor.constraint(equalToConstant: 24),
+            rightContainer.heightAnchor.constraint(equalToConstant: 24),
+            
+            self.iconImageView.centerXAnchor.constraint(equalTo: rightContainer.centerXAnchor),
+            self.iconImageView.centerYAnchor.constraint(equalTo: rightContainer.centerYAnchor),
+            self.iconImageView.widthAnchor.constraint(equalToConstant: 22),
+            self.iconImageView.heightAnchor.constraint(equalToConstant: 22),
+            
+            self.spinner.centerXAnchor.constraint(equalTo: rightContainer.centerXAnchor),
+            self.spinner.centerYAnchor.constraint(equalTo: rightContainer.centerYAnchor)
         ])
     }
     
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        self.style = .bottom
+        self.backgroundColor = .clear
+        self.contentView.backgroundColor = .clear
+        self.backgroundConfiguration = .clear()
+    }
+    
     func configure(with status: Status) {
+        self.style = .bottom
+        self.backgroundColor = .clear
+        self.contentView.backgroundColor = .clear
+        self.backgroundConfiguration = .clear()
         switch status {
         case .completed:
             self.titleLabel.text = nil
@@ -126,7 +152,7 @@ final class AccountVerificationRow: InsetGroupTableViewCell {
                 .withTintColor(.systemOrange, renderingMode: .alwaysOriginal)
             self.iconImageView.isHidden = false
             self.spinner.stopAnimating()
-            self.accessoryType = .disclosureIndicator
+            self.accessoryType = .none
             self.isSelectable = true
         }
     }
@@ -170,37 +196,110 @@ extension AccountVerificationRow {
     static func resolvePendingActions(for status: Status, team: ALTTeam, presentingViewController: UIViewController) async {
         guard case .actionRequired(let certMissing, let deviceUnregistered) = status else { return }
         
+        var pendingItems: [String] = []
+        if deviceUnregistered {
+            pendingItems.append(NSLocalizedString("Register Device", comment: ""))
+        }
+        if certMissing {
+            pendingItems.append(NSLocalizedString("Provision Signing Certificate", comment: ""))
+        }
+        
+        guard !pendingItems.isEmpty else { return }
+        
+        let count = pendingItems.count
+        let title = count == 1
+            ? NSLocalizedString("1 Pending Action", comment: "")
+            : String(format: NSLocalizedString("%d Pending Actions", comment: ""), count)
+        
+        let bulletList = pendingItems.map { "• \($0)" }.joined(separator: "\n")
+        let message = NSLocalizedString("The following action(s) from sign-in are required to complete account setup:\n\n\(bulletList)", comment: "")
+        
+        let confirmed = await withCheckedContinuation { continuation in
+            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { _ in
+                continuation.resume(returning: false)
+            })
+            alert.addAction(UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .default) { _ in
+                continuation.resume(returning: true)
+            })
+            presentingViewController.present(alert, animated: true)
+        }
+        
+        guard confirmed else { return }
+        
+        let initialDescription = deviceUnregistered
+            ? NSLocalizedString("Registering device…", comment: "")
+            : NSLocalizedString("Provisioning signing certificate…", comment: "")
+            
+        let progressAlert = UIAlertController(
+            title: NSLocalizedString("Setting Up Account", comment: ""),
+            message: "\(initialDescription)\n\n\n",
+            preferredStyle: .alert
+        )
+        
+        let spinner = UIActivityIndicatorView(style: .medium)
+        spinner.translatesAutoresizingMaskIntoConstraints = false
+        spinner.startAnimating()
+        progressAlert.view.addSubview(spinner)
+        
+        NSLayoutConstraint.activate([
+            spinner.centerXAnchor.constraint(equalTo: progressAlert.view.centerXAnchor),
+            spinner.bottomAnchor.constraint(equalTo: progressAlert.view.bottomAnchor, constant: -20)
+        ])
+        
+        await withCheckedContinuation { continuation in
+            presentingViewController.present(progressAlert, animated: true) {
+                continuation.resume()
+            }
+        }
+        
+        func executeStep(description: String, operation: () async throws -> Void) async throws {
+            progressAlert.message = "\(description)\n\n\n"
+            let startTime = Date()
+            try await operation()
+            let elapsed = Date().timeIntervalSince(startTime)
+            if elapsed < 0.5 {
+                try? await Task.sleep(nanoseconds: UInt64((0.5 - elapsed) * 1_000_000_000))
+            }
+        }
+        
         let handler = SignInFlowHandler(presentingViewController: presentingViewController)
         handler.showsDoItLater = true
         
-        if deviceUnregistered {
-            let deviceFlow = DeviceRegistrationFlow(handler: handler)
-            do {
-                _ = try await deviceFlow.registerCurrentDevice(for: team)
-            } catch {
-                verboseLog("[AccountVerificationRow] resolvePendingActions: device registration cancelled: \(error)")
-                return
+        do {
+            if deviceUnregistered {
+                try await executeStep(description: NSLocalizedString("Registering device…", comment: "")) {
+                    let deviceFlow = DeviceRegistrationFlow(handler: handler)
+                    _ = try await deviceFlow.registerCurrentDevice(for: team)
+                }
             }
+            
+            if certMissing {
+                try await executeStep(description: NSLocalizedString("Provisioning signing certificate…", comment: "")) {
+                    let certFlow = CertificateProvisioningFlow(handler: handler)
+                    _ = try await certFlow.resolveCertificate(for: team)
+                }
+            }
+            
+            if UserDefaults.standard.isDeviceRegistered,
+               let activeCert = CertificateManager.shared.activeCertificate?.certificate ?? (try? CertificateManager.shared.loadActiveCertificate())?.certificate
+            {
+                try await executeStep(description: NSLocalizedString("Validating signatures…", comment: "")) {
+                    let resignFlow = CodeSignValidationFlow(handler: handler)
+                    _ = try? await resignFlow.validateAndResignIfNeeded(
+                        team: team,
+                        certificate: activeCert
+                    )
+                }
+            }
+        } catch {
+            verboseLog("[AccountVerificationRow] resolvePendingActions error: \(error)")
         }
         
-        if certMissing {
-            let certFlow = CertificateProvisioningFlow(handler: handler)
-            do {
-                _ = try await certFlow.resolveCertificate(for: team)
-            } catch {
-                verboseLog("[AccountVerificationRow] resolvePendingActions: certificate provisioning cancelled: \(error)")
-                return
+        await withCheckedContinuation { continuation in
+            progressAlert.dismiss(animated: true) {
+                continuation.resume()
             }
-        }
-        
-        if UserDefaults.standard.isDeviceRegistered,
-           let activeCert = CertificateManager.shared.activeCertificate?.certificate ?? (try? CertificateManager.shared.loadActiveCertificate())?.certificate
-        {
-            let resignFlow = CodeSignValidationFlow(handler: handler)
-            _ = try? await resignFlow.validateAndResignIfNeeded(
-                team: team,
-                certificate: activeCert
-            )
         }
     }
 }

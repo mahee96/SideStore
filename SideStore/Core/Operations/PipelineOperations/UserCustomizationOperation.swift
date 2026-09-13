@@ -69,9 +69,12 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
                 let request = InstalledApp.fetchRequest()
                 return (try? context.dbBackgroundContext.fetch(request)) ?? []
             }
-            let installedAppIdentities = Dictionary(uniqueKeysWithValues: installedApps.compactMap { app -> (String, String)? in
-                (app.bundleIdentifier, app.name)
-            })
+            let installedAppIdentities = Dictionary(
+                installedApps.compactMap { app -> (String, String)? in
+                    (app.bundleIdentifier, app.name)
+                },
+                uniquingKeysWith: { first, _ in first }
+            )
 
             self.setProgress(40)
 

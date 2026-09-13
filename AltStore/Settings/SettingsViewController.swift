@@ -418,6 +418,7 @@ private extension SettingsViewController
                 self.accountVerificationTask?.cancel()
                 self.accountVerificationTask = nil
                 self.accountStatus = .completed
+                self.updateAccountCardRowStyles()
             }
             self.tableView.reloadData()
         }
@@ -454,12 +455,23 @@ private extension SettingsViewController
             if !UserDefaults.standard.isDeviceRegistered {
                 self.accountStatus = .checking
                 self.tableView.reloadData()
+                self.updateAccountCardRowStyles()
             }
             let status = await AccountVerificationRow.verifyStatus(for: team)
             if !Task.isCancelled {
                 self.accountStatus = status
                 self.tableView.reloadData()
+                self.updateAccountCardRowStyles()
             }
+        }
+    }
+    
+    private func updateAccountCardRowStyles()
+    {
+        guard self.isViewLoaded else { return }
+        let typeIndexPath = IndexPath(row: 2, section: Section.account.rawValue)
+        if let typeCell = self.tableView.cellForRow(at: typeIndexPath) as? InsetGroupTableViewCell {
+            typeCell.style = (self.accountStatus == .completed) ? .bottom : .middle
         }
     }
     
@@ -951,6 +963,20 @@ extension SettingsViewController
         return super.tableView(tableView, heightForRowAt: effectiveIndexPath)
     }
 
+    override func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath)
+    {
+        if Section.allCases[indexPath.section] == .account {
+            if indexPath.row == 2, let insetCell = cell as? InsetGroupTableViewCell {
+                insetCell.style = (self.accountStatus == .completed) ? .bottom : .middle
+            } else if indexPath.row == 3, let actionCell = cell as? AccountVerificationRow {
+                actionCell.style = .bottom
+                actionCell.backgroundColor = .clear
+                actionCell.contentView.backgroundColor = .clear
+                actionCell.backgroundConfiguration = .clear()
+            }
+        }
+    }
+
     override func tableView(_ tableView: UITableView, indentationLevelForRowAt indexPath: IndexPath) -> Int
     {
         if Section.allCases[indexPath.section] == .account && indexPath.row == 3 {
@@ -986,6 +1012,7 @@ extension SettingsViewController
             let cell = tableView.dequeueReusableCell(withIdentifier: AccountVerificationRow.reuseIdentifier) as? AccountVerificationRow
                 ?? AccountVerificationRow()
             cell.configure(with: self.accountStatus)
+            cell.style = .bottom
             return cell
         }
         
@@ -1107,6 +1134,7 @@ extension SettingsViewController
         case .signIn: self.signIn()
         case .account:
             if indexPath.row == 3 {
+                tableView.deselectRow(at: indexPath, animated: true)
                 self.resolvePendingAccountActions()
             }
         case .appRefresh:

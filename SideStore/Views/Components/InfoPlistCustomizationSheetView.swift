@@ -120,11 +120,9 @@ extension InfoPlistCustomizationSheetView {
             controller.dismissDelegate = dismissDelegate
             controller.modalPresentationStyle = .pageSheet
             controller.presentationController?.delegate = dismissDelegate
-            if #available(iOS 15.0, *) {
-                if let sheet = controller.sheetPresentationController {
-                    sheet.detents = [.large()]
-                    sheet.prefersGrabberVisible = true
-                }
+            if let sheet = controller.sheetPresentationController {
+                sheet.detents = [.large()]
+                sheet.prefersGrabberVisible = true
             }
             hostingController = controller
 

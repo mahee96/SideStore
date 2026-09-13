@@ -235,24 +235,26 @@ final class PipelineHandler: PipelineExecutionHandler,
             return (initialPlist, appendTeamID)
         }
         
-        /*
-        let result = await InfoPlistCustomizationView.present(
-            from: presenter,
-            initialPlist: initialPlist,
-            initialBundleID: initialBundleID,
-            appendTeamID: appendTeamID,
-            installedAppIdentities: installedAppIdentities,
-            teamID: teamID
-        )
-        */
-        let result = await InfoPlistCustomizationSheetView.present(
-            from: presenter,
-            initialPlist: initialPlist,
-            initialBundleID: initialBundleID,
-            appendTeamID: appendTeamID,
-            installedAppIdentities: installedAppIdentities,
-            teamID: teamID
-        )
+        let result: (modifiedPlist: [String: Any], appendTeamID: Bool)?
+        if UserDefaults.standard.preferSheetForInfoPlistCustomization {
+            result = await InfoPlistCustomizationSheetView.present(
+                from: presenter,
+                initialPlist: initialPlist,
+                initialBundleID: initialBundleID,
+                appendTeamID: appendTeamID,
+                installedAppIdentities: installedAppIdentities,
+                teamID: teamID
+            )
+        } else {
+            result = await InfoPlistCustomizationView.present(
+                from: presenter,
+                initialPlist: initialPlist,
+                initialBundleID: initialBundleID,
+                appendTeamID: appendTeamID,
+                installedAppIdentities: installedAppIdentities,
+                teamID: teamID
+            )
+        }
         debugLog("[PipelineHandler] resolveInfoPlistCustomization result: modifiedPlist CFBundleIdentifier='\(result?.modifiedPlist["CFBundleIdentifier"] ?? "nil")', appendTeamID=\(result?.appendTeamID ?? false)")
         return result
     }

@@ -156,6 +156,10 @@ public extension UserDefaults
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
     }
+    @objc var preferSheetForInfoPlistCustomization: Bool {
+        get { self.bool(forKey: #function) }
+        set { self.set(newValue, forKey: #function) }
+    }
     @objc var customizeAppId: Bool {
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
@@ -447,6 +451,7 @@ public extension UserDefaults
             
             #keyPath(UserDefaults.responseCachingDisabled): false,
             #keyPath(UserDefaults.customizeInfoPlist): false,
+            #keyPath(UserDefaults.preferSheetForInfoPlistCustomization): true,
             #keyPath(UserDefaults.customizeAppId): false,
             #keyPath(UserDefaults._customizeAppExtensions): AppExtensionCustomization.promptUser.rawValue,
             #keyPath(UserDefaults.preferResignedIPA): true,
