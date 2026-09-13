@@ -10,8 +10,8 @@ import SwiftUI
 import UIKit
 
 public struct InfoPlistCustomizationSheetView: View {
-    public typealias RawPlistType = InfoPlistCustomizationCoreView.RawPlistType
-    public typealias RawPlistEntry = InfoPlistCustomizationCoreView.RawPlistEntry
+    private typealias RawPlistType = InfoPlistCustomizationCoreView.RawPlistType
+    private typealias RawPlistEntry = InfoPlistCustomizationCoreView.RawPlistEntry
 
     public let initialPlist: [String: any Sendable]
     public let initialBundleID: String
@@ -76,18 +76,18 @@ extension InfoPlistCustomizationSheetView {
     @MainActor
     public static func present(
         from presenter: UIViewController,
-        initialPlist: [String: any Sendable],
+        targets: [InfoPlistTarget],
         initialBundleID: String,
         appendTeamID: Bool = true,
         installedAppIdentities: [String: String] = [:],
         teamID: String = ""
-    ) async -> (modifiedPlist: [String: any Sendable], appendTeamID: Bool)? {
+    ) async -> (modifiedPlists: [String: [String: any Sendable]], appendTeamID: Bool)? {
         await withCheckedContinuation { continuation in
             var hostingController: SheetHostingController<AnyView>?
             let dismissDelegate = SheetDismissDelegate()
 
             var hasResumed = false
-            let safeResume: ((modifiedPlist: [String: any Sendable], appendTeamID: Bool)?) -> Void = { result in
+            let safeResume: ((modifiedPlists: [String: [String: any Sendable]], appendTeamID: Bool)?) -> Void = { result in
                 guard !hasResumed else { return }
                 hasResumed = true
                 dismissDelegate.resumeOnce()
@@ -98,15 +98,16 @@ extension InfoPlistCustomizationSheetView {
                 safeResume(nil)
             }
 
-            let view = InfoPlistCustomizationSheetView(
-                initialPlist: initialPlist,
+            let coreView = InfoPlistCustomizationCoreView(
+                style: .sheet,
+                targets: targets,
                 initialBundleID: initialBundleID,
                 appendTeamID: appendTeamID,
                 installedAppIdentities: installedAppIdentities,
                 teamID: teamID,
-                onProceed: { modifiedPlist, shouldAppend in
+                onProceed: { modifiedPlists, shouldAppend in
                     hostingController?.dismiss(animated: true) {
-                        safeResume((modifiedPlist, shouldAppend))
+                        safeResume((modifiedPlists, shouldAppend))
                     }
                 },
                 onCancel: {
@@ -116,7 +117,7 @@ extension InfoPlistCustomizationSheetView {
                 }
             )
 
-            let controller = SheetHostingController(rootView: AnyView(view))
+            let controller = SheetHostingController(rootView: AnyView(coreView))
             controller.dismissDelegate = dismissDelegate
             controller.modalPresentationStyle = .pageSheet
             controller.presentationController?.delegate = dismissDelegate
@@ -128,5 +129,31 @@ extension InfoPlistCustomizationSheetView {
 
             presenter.present(controller, animated: true)
         }
+    }
+
+    @MainActor
+    public static func present(
+        from presenter: UIViewController,
+        initialPlist: [String: any Sendable],
+        initialBundleID: String,
+        appendTeamID: Bool = true,
+        installedAppIdentities: [String: String] = [:],
+        teamID: String = ""
+    ) async -> (modifiedPlist: [String: any Sendable], appendTeamID: Bool)? {
+        let target = InfoPlistTarget(
+            id: initialBundleID,
+            initialPlist: initialPlist
+        )
+        guard let result = await present(
+            from: presenter,
+            targets: [target],
+            initialBundleID: initialBundleID,
+            appendTeamID: appendTeamID,
+            installedAppIdentities: installedAppIdentities,
+            teamID: teamID
+        ) else { return nil }
+
+        let plist = result.modifiedPlists[initialBundleID] ?? initialPlist
+        return (plist, result.appendTeamID)
     }
 }

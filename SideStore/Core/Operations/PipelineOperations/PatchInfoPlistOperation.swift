@@ -19,31 +19,51 @@ final class PatchInfoPlistOperation: BasePipelineOperation<InstallAppOperationCo
         }
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         
-        let bundleID = self.context.targetBundleIdentifier
-        let customPlistURL = InstalledApp.appsDirectoryURL.appendingPathComponent(bundleID).appendingPathComponent("custom_info.plist")
+        let bundleID = self.context.installedApp?.bundleIdentifier ?? self.context.targetBundleIdentifier
+        let appDirectory = InstalledApp.appsDirectoryURL.appendingPathComponent(bundleID)
+        let infoPlistDirectory = appDirectory.appendingPathComponent("Info.plist")
+        let legacyPlistURL = appDirectory.appendingPathComponent("custom_info.plist")
         
-        guard FileManager.default.fileExists(atPath: customPlistURL.path) else {
-            debugLog("[PatchInfoPlistOperation] No custom_info.plist found for \(bundleID). Skipping.")
+        guard let targetAppBundle = self.context.targetAppBundle else {
+            debugLog("[PatchInfoPlistOperation] No targetAppBundle found. Skipping.")
             return
         }
-        
-        do {
-            let customParser = try InfoPlistParser(plistURL: customPlistURL)
-            self.context.customInfoPlist = customParser.rawDictionary
+
+        for bundle in targetAppBundle.allAppBundles {
+            let targetID = bundle.bundleIdentifier
+            let targetPlistURL = infoPlistDirectory.appendingPathComponent("\(targetID).plist")
             
-            if let customID = customParser.bundleIdentifier,
-               !customID.isEmpty,
-               customID != self.context.bundleIdentifier {
-                self.context.customBundleIdentifier = customID
+            let plistURLToRead: URL?
+            if FileManager.default.fileExists(atPath: targetPlistURL.path) {
+                plistURLToRead = targetPlistURL
+            } else if bundle == targetAppBundle && FileManager.default.fileExists(atPath: legacyPlistURL.path) {
+                plistURLToRead = legacyPlistURL
+            } else {
+                plistURLToRead = nil
             }
             
-            if let targetAppBundle = self.context.targetAppBundle {
-                try targetAppBundle.updateInfoPlist(with: customParser.rawDictionary)
-                debugLog("[PatchInfoPlistOperation] Successfully patched staged app Info.plist for \(bundleID)")
+            guard let plistURL = plistURLToRead else {
+                continue
             }
-        } catch {
-            debugLog("[PatchInfoPlistOperation] Error applying custom Info.plist: \(error)")
-            throw error
+            
+            do {
+                let customParser = try InfoPlistParser(plistURL: plistURL)
+                self.context.customInfoPlistByBundleID[targetID] = customParser.rawDictionary
+                
+                if bundle == targetAppBundle {
+                    if let customID = customParser.bundleIdentifier,
+                       !customID.isEmpty,
+                       customID != self.context.bundleIdentifier {
+                        self.context.customBundleIdentifier = customID
+                    }
+                }
+                
+                try bundle.updateInfoPlist(with: customParser.rawDictionary)
+                debugLog("[PatchInfoPlistOperation] Successfully patched Info.plist for \(targetID) from \(plistURL.lastPathComponent)")
+            } catch {
+                debugLog("[PatchInfoPlistOperation] Error applying custom Info.plist for \(targetID): \(error)")
+                throw error
+            }
         }
     }
 }
