@@ -24,7 +24,7 @@ enum RevokeDecision {
     case revokeSelected([ALTX509Certificate])
 }
 
-protocol SignInHandler: AnyObject, CertificateProvisioningHandler, DeviceProvisioningHandler {
+protocol SignInHandler: AnyObject, CertificateProvisioningHandler, DeviceProvisioningHandler, CodeSignValidationHandler {
     func credentials() async throws -> (String, String)
     func verificationCode(for request: TwoFactorRequest) async throws -> TwoFactorResponse
     func accountRepair(url: URL, message: String) async -> AccountRepairDecision
@@ -35,7 +35,6 @@ protocol SignInHandler: AnyObject, CertificateProvisioningHandler, DeviceProvisi
     func resolvePostAuth() async
     
     func resolveRevocation(certificates: [ALTX509Certificate], teamType: ALTTeamType) async throws -> RevokeDecision
-    func resolveResign(mismatchReason: CodeSignValidationReason, context: StandaloneOperationContext) async throws -> Bool
     
     func showCertificateSkipAcknowledgment() async
     func showDeviceRegistrationSkipAcknowledgment() async

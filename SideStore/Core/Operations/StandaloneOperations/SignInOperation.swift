@@ -218,10 +218,17 @@ final class SignInOperation: BaseStandaloneOperation<StandaloneOperationContext,
 
                 self.verboseLog("[SignInOperation] finalizeAuthentication: Authentication Success for team \(team.identifier) account.")
                 
-                if let signingCertificate = certificate, !self.skipCertificateProvisioning
+                if let signingCertificate = certificate,
+                   !self.skipCertificateProvisioning,
+                   UserDefaults.standard.isDeviceRegistered
                 {
-                    let signer = ALTSigner(team: team, certificate: signingCertificate)
-                    let didResign = try await self.validateCodeSign(signer: signer, session: session)
+                    let resignFlow = CodeSignValidationFlow(handler: self.signInHandler)
+                    let didResign = try await resignFlow.validateAndResignIfNeeded(
+                        team: team,
+                        certificate: signingCertificate,
+                        portalCertificates: self.certificateFlow.portalCertificates,
+                        context: self.context
+                    )
                     self.verboseLog("[SignInOperation] finalizeAuthentication: didResign = \(didResign)")
                     
                     if !didResign && self.requiresPostAuthFlow {
@@ -236,7 +243,7 @@ final class SignInOperation: BaseStandaloneOperation<StandaloneOperationContext,
     }
 }
 
-// Persistence and Codesign Validity Check Helpers
+// Persistence Helpers
 private extension SignInOperation {
 
     private func saveTeamAndAccount(_ altTeam: ALTTeam, makeActive: Bool = false) async throws {
@@ -306,47 +313,7 @@ private extension SignInOperation {
             try context.save()
         }
     }
-    
-    private func validateCodeSign(signer: ALTSigner, session: ALTAppleAPISession) async throws -> Bool {
-        self.verboseLog("[SignInOperation] validateCodeSign: entering method")
-        guard let appBundle = ALTApplication(fileURL: Bundle.Info.activeBundleURL), 
-              let provisioningProfile = appBundle.provisioningProfile else 
-        {
-            self.verboseLog("[SignInOperation] validateCodeSign: Application bundle or provisioning profile nil, returning false")
-            return false
-        }
-        
-        let portalCertificates = try await self.certificateFlow.fetchPortalCertificates(for: signer.team)
-        
-        let result = CodeSignValidator.validate(
-            runningProfile: provisioningProfile,
-            portalCertificates: portalCertificates,
-            signerCertificate: signer.certificate.x509,
-            signerTeam: signer.team
-        )
-        
-        switch result {
-            case .success:
-                self.verboseLog("[SignInOperation] validateCodeSign: Validation succeeded, no resign required.")
-                return false
-                
-            case .failure(let reason):
-                self.debugLog("[SignInOperation] Signing certificate mismatch detected: \(reason)")
-                
-                if signer.team.type != .free && (reason == .privateKeyLost || reason == .externalSigner) {
-                    self.debugLog("[SignInOperation] Running certificate is still active on the Paid account portal. Skipping resign screen.")
-                    return false
-                }
-                
-                let handler = self.signInHandler
-                do {
-                    return try await handler.resolveResign(mismatchReason: reason, context: self.context)
-                } catch {
-                    self.verboseLog("[SignInOperation] validateCodeSign: error occured when handling resolveResign error: \(error)")
-                    return false
-                }
-        }
-    }
+
 
 
     private func fetchTeam(for account: ALTAccount, session: ALTAppleAPISession) async throws -> ALTTeam {

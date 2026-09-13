@@ -192,5 +192,15 @@ extension AccountVerificationRow {
                 return
             }
         }
+        
+        if UserDefaults.standard.isDeviceRegistered,
+           let activeCert = CertificateManager.shared.activeCertificate?.certificate ?? (try? CertificateManager.shared.loadActiveCertificate())?.certificate
+        {
+            let resignFlow = CodeSignValidationFlow(handler: handler)
+            _ = try? await resignFlow.validateAndResignIfNeeded(
+                team: team,
+                certificate: activeCert
+            )
+        }
     }
 }
