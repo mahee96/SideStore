@@ -91,110 +91,25 @@ final class SignInOperation: BaseStandaloneOperation<StandaloneOperationContext,
     private func startAuthentication(reportProgress: @escaping @Sendable (Int64) -> Void) async throws -> SignInResult {
         let (account, session) = try await self.authenticationLoop()
 
-        let authResult = try await self.provisioningLoop(
-            account: account,
+        let stepWeight: Int64 = self.skipDeviceRegistration ? 33 : 25
+        reportProgress(stepWeight)
+
+        if self.isCancelled { throw OperationError.cancelled }
+
+        // Resolve Team & Save State
+        let team = try await self.fetchTeam(for: account, session: session)
+        try await self.saveTeamAndAccount(team, makeActive: true)
+        reportProgress(stepWeight * 2)
+
+        let authResult = try await self.provision(
+            team: team,
             session: session,
+            stepWeight: stepWeight,
             reportProgress: reportProgress
         )
         
         return authResult
     }
-
-    private func provisioningLoop(account: ALTAccount,
-                                  session: ALTAppleAPISession,
-                                  reportProgress: @escaping @Sendable (Int64) -> Void) async throws -> SignInResult
-    {
-        let stepWeight: Int64 = self.skipDeviceRegistration ? 33 : 25
-        reportProgress(stepWeight)
-
-        var resolvedTeam: ALTTeam?
-        var resolvedCertificate: ALTCertificate?
-
-        var isCertificateResolved = false
-        var isDeviceRegistered = false
-
-        while true {
-            if self.isCancelled { throw OperationError.cancelled }
-
-            do {
-                // 1. Resolve Team & Save State
-                if resolvedTeam == nil {
-                    let team = try await self.fetchTeam(for: account, session: session)
-
-                    try await self.saveTeamAndAccount(team)
-                    reportProgress(stepWeight * 2)
-                    resolvedTeam = team
-                }
-
-                guard let team = resolvedTeam else { continue }
-
-                // 2. Resolve Certificate (Custom vs Developer Portal)
-                if !isCertificateResolved {
-                    self.verboseLog("[SignInOperation] Resolving signing certificate...")
-                    let certificate = try await self.certificateFlow.resolveCertificate(for: team)
-                    if let certificate = certificate {
-                        self.debugLog("[SignInOperation] Resolved signing certificate (serial: \(certificate.serialNumber)).")
-                        resolvedCertificate = certificate
-                    } else {
-                        self.debugLog("[SignInOperation] Certificate resolution skipped by user.")
-                        await self.signInHandler.showCertificateSkipAcknowledgment()
-                        resolvedCertificate = nil
-                    }
-                    isCertificateResolved = true
-                }
-
-                guard isCertificateResolved else { continue }
-
-                // 3. Register Current Device
-                if !isDeviceRegistered {
-                    if !self.skipDeviceRegistration {
-                        self.verboseLog("[SignInOperation] Registering current device...")
-                        let device = try await self.deviceRegistrationFlow.registerCurrentDevice(for: team)
-                        if let device = device {
-                            self.debugLog("[SignInOperation] Registered current device UDID: \(device.identifier).")
-                            reportProgress(stepWeight * 3)
-                        } else {
-                            self.debugLog("[SignInOperation] Device registration skipped by user.")
-                            await self.signInHandler.showDeviceRegistrationSkipAcknowledgment()
-                        }
-                    }
-                    isDeviceRegistered = true
-                }
-
-                return SignInResult(
-                    team: team,
-                    certificate: resolvedCertificate,
-                    session: session
-                )
-                
-            } catch {
-                if self.isCancelled || error is CancellationError { throw OperationError.cancelled }
-
-                self.debugLog("[SignInOperation] provisioningLoop caught error: \(error)")
-                let decision = await self.signInHandler.resolveProvisioningError(error)
-                switch decision {
-                    case .retry:
-                        self.debugLog("[SignInOperation] User chose retry in provisioningLoop")
-                        continue
-                    case .skip:
-                        self.debugLog("[SignInOperation] User chose skip in provisioningLoop")
-                        if let team = resolvedTeam {
-                            return SignInResult(
-                                team: team,
-                                certificate: resolvedCertificate,
-                                session: session
-                            )
-                        } else {
-                            throw OperationError.cancelled
-                        }
-                    case .cancel:
-                        self.debugLog("[SignInOperation] User cancelled in provisioningLoop")
-                        throw OperationError.cancelled
-                }
-            }
-        }
-    }
-    
 
     private func authenticationLoop() async throws -> (account: ALTAccount, session: ALTAppleAPISession) {
         self.verboseLog("[SignInOperation] authenticationLoop: Requesting credentials...")
@@ -248,6 +163,45 @@ final class SignInOperation: BaseStandaloneOperation<StandaloneOperationContext,
         return (account, session)
     }
 
+
+    private func provision(team: ALTTeam,
+                           session: ALTAppleAPISession,
+                           stepWeight: Int64,
+                           reportProgress: @escaping @Sendable (Int64) -> Void) async throws -> SignInResult
+    {
+        if self.isCancelled { throw OperationError.cancelled }
+
+        // 1. Resolve Certificate (Custom vs Developer Portal)
+        self.verboseLog("[SignInOperation] Resolving signing certificate...")
+        let resolvedCertificate: ALTCertificate?
+        if let certificate = try await self.certificateFlow.resolveCertificate(for: team) {
+            self.debugLog("[SignInOperation] Resolved signing certificate (serial: \(certificate.serialNumber)).")
+            resolvedCertificate = certificate
+        } else {
+            self.debugLog("[SignInOperation] Certificate resolution skipped by user.")
+            await self.signInHandler.showCertificateSkipAcknowledgment()
+            resolvedCertificate = nil
+        }
+
+        // 2. Register Current Device
+        if !self.skipDeviceRegistration {
+            self.verboseLog("[SignInOperation] Registering current device...")
+            if let device = try await self.deviceRegistrationFlow.registerCurrentDevice(for: team) {
+                self.debugLog("[SignInOperation] Registered current device UDID: \(device.identifier).")
+                reportProgress(stepWeight * 3)
+            } else {
+                self.debugLog("[SignInOperation] Device registration skipped by user.")
+                await self.signInHandler.showDeviceRegistrationSkipAcknowledgment()
+            }
+        }
+
+        return SignInResult(
+            team: team,
+            certificate: resolvedCertificate,
+            session: session
+        )
+    }
+    
     private func finalizeAuthentication(result: Result<SignInResult, Error>) async throws {
         self.verboseLog("[SignInOperation] finalizeAuthentication: Starting cleanup...")
         
@@ -263,12 +217,6 @@ final class SignInOperation: BaseStandaloneOperation<StandaloneOperationContext,
                 let session = result.session
 
                 self.verboseLog("[SignInOperation] finalizeAuthentication: Authentication Success for team \(team.identifier) account.")
-                do {
-                    try await self.saveTeamAndAccount(team, makeActive: true)
-                } catch {
-                    self.debugLog("[SignInOperation] finalizeAuthentication: error occured when performing cleanup: \(error)")
-                }
-                self.verboseLog("[SignInOperation] finalizeAuthentication: Database updates completed.")
                 
                 if let signingCertificate = certificate, !self.skipCertificateProvisioning
                 {
@@ -399,10 +347,7 @@ private extension SignInOperation {
                 }
         }
     }
-}
 
-// Team Resolution Helpers
-private extension SignInOperation {
 
     private func fetchTeam(for account: ALTAccount, session: ALTAppleAPISession) async throws -> ALTTeam {
         self.verboseLog("[SignInOperation] fetchTeam: Requesting teams from Apple...")
