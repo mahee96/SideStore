@@ -334,34 +334,22 @@ public class DatabaseManager: @unchecked Sendable
                 dict[ext.resignedBundleIdentifier] = ext.bundleIdentifier
             }
             
-            Task.detached(priority: .background) {
-                FileManager.default.prepareTemporaryURL() { (temporaryFileURL) in
-                    do
-                    {
-                        try FileManager.default.copyItem(at: bundleURL, to: temporaryFileURL)
-                        
-                        guard let tempAppBundle = ALTApplication(fileURL: temporaryFileURL) else { throw ALTError(.invalidApp) }
-                        try tempAppBundle.updateInfoPlist(with: [kCFBundleIdentifierKey as String: altstoreAppID])
-                        
-                        for appExtension in tempAppBundle.appExtensions
-                        {
-                            guard let originalBundleID = extensionBundleIDMap[appExtension.bundleIdentifier] else { throw ALTError(.invalidApp) }
-                            try appExtension.updateInfoPlist(with: [kCFBundleIdentifierKey as String: originalBundleID])
-                        }
-                        
-                        let (signature, _) = try CacheAppOperation.cachePayload(for: temporaryFileURL)
-                        
-                        context.perform {
-                            if installedApp.appBundleFingerprint != signature {
-                                installedApp.appBundleFingerprint = signature
-                                try? context.save()
-                            }
-                        }
+            FileManager.default.prepareTemporaryURL { temporaryFileURL in
+                do {
+                    try FileManager.default.copyItem(at: bundleURL, to: temporaryFileURL)
+                    
+                    guard let tempAppBundle = ALTApplication(fileURL: temporaryFileURL) else { throw ALTError(.invalidApp) }
+                    try tempAppBundle.updateInfoPlist(with: [kCFBundleIdentifierKey as String: altstoreAppID])
+                    
+                    for appExtension in tempAppBundle.appExtensions {
+                        guard let originalBundleID = extensionBundleIDMap[appExtension.bundleIdentifier] else { throw ALTError(.invalidApp) }
+                        try appExtension.updateInfoPlist(with: [kCFBundleIdentifierKey as String: originalBundleID])
                     }
-                    catch
-                    {
-                        debugLog("Failed to cache SideStore app bundle: \(error)")
-                    }
+                    
+                    let (signature, _) = try CacheAppOperation.cachePayload(for: temporaryFileURL)
+                    installedApp.appBundleFingerprint = signature
+                } catch {
+                    debugLog("Failed to cache SideStore app bundle: \(error)")
                 }
             }
             
