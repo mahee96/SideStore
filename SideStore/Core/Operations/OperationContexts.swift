@@ -243,7 +243,8 @@ class InstallAppOperationContext: PipelineOperationContext
 {
     let bundleIdentifier: String
     var customBundleIdentifier: String?
-    var customInfoPlist: [String: Any]?
+    var customInfoPlist: [String: any Sendable]?
+    var customEntitlements: [String: any Sendable]?
     var isStoreUpdate: Bool = false
     var targetAppBundle: ALTApplication?
 

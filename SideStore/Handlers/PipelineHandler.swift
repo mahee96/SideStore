@@ -223,19 +223,19 @@ final class PipelineHandler: PipelineExecutionHandler,
     
     @MainActor
     func resolveInfoPlistCustomization(
-        initialPlist: [String: Any],
+        initialPlist: [String: any Sendable],
         initialBundleID: String,
         appendTeamID: Bool,
         installedAppIdentities: [String: String],
         teamID: String
-    ) async throws -> (modifiedPlist: [String: Any], appendTeamID: Bool)? {
+    ) async throws -> (modifiedPlist: [String: any Sendable], appendTeamID: Bool)? {
         debugLog("[PipelineHandler] resolveInfoPlistCustomization: initialBundleID='\(initialBundleID)', teamID='\(teamID)', appendTeamID=\(appendTeamID)")
         guard let presenter = self.activePresenter else {
             debugLog("[PipelineHandler] resolveInfoPlistCustomization: activePresenter is nil!")
             return (initialPlist, appendTeamID)
         }
         
-        let result: (modifiedPlist: [String: Any], appendTeamID: Bool)?
+        let result: (modifiedPlist: [String: any Sendable], appendTeamID: Bool)?
         if UserDefaults.standard.preferSheetForInfoPlistCustomization {
             result = await InfoPlistCustomizationSheetView.present(
                 from: presenter,
@@ -256,6 +256,38 @@ final class PipelineHandler: PipelineExecutionHandler,
             )
         }
         debugLog("[PipelineHandler] resolveInfoPlistCustomization result: modifiedPlist CFBundleIdentifier='\(result?.modifiedPlist["CFBundleIdentifier"] ?? "nil")', appendTeamID=\(result?.appendTeamID ?? false)")
+        return result
+    }
+
+    @MainActor
+    func resolveEntitlementsCustomization(
+        initialEntitlements: [String: any Sendable],
+        bundleID: String,
+        teamType: ALTTeamType
+    ) async throws -> [String: any Sendable]? {
+        debugLog("[PipelineHandler] resolveEntitlementsCustomization: bundleID='\(bundleID)', initialCount=\(initialEntitlements.count), teamType=\(teamType.displayName)")
+        guard let presenter = self.activePresenter else {
+            debugLog("[PipelineHandler] resolveEntitlementsCustomization: activePresenter is nil!")
+            return initialEntitlements
+        }
+
+        let result: [String: any Sendable]?
+        if UserDefaults.standard.preferSheetForEntitlementsCustomization {
+            result = await EntitlementsCustomizationSheetView.present(
+                from: presenter,
+                initialEntitlements: initialEntitlements,
+                bundleID: bundleID,
+                teamType: teamType
+            )
+        } else {
+            result = await EntitlementsCustomizationView.present(
+                from: presenter,
+                initialEntitlements: initialEntitlements,
+                bundleID: bundleID,
+                teamType: teamType
+            )
+        }
+        debugLog("[PipelineHandler] resolveEntitlementsCustomization result: \(result?.count ?? 0) entitlements returned")
         return result
     }
 

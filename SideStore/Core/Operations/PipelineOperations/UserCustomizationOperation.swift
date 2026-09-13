@@ -9,6 +9,7 @@
 
 import Foundation
 import CoreData
+import SideSign
 
 final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperationContext, String?>, @unchecked Sendable {
 
@@ -131,6 +132,26 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
             } else {
                 context.customBundleIdentifier = nil
             }
+        }
+
+        if UserDefaults.standard.customizeEntitlements {
+            let authTeam = try await AuthManager.shared.getAuthenticatedTeam()
+            let initialEntitlements = context.targetAppBundle?.entitlements ?? [:]
+            self.setProgress(70)
+
+            guard let result = try await handler.resolveEntitlementsCustomization(
+                initialEntitlements: initialEntitlements,
+                bundleID: context.targetBundleIdentifier,
+                teamType: authTeam.type
+            ) else {
+                throw OperationError.cancelled
+            }
+
+            context.customEntitlements = result
+            for (key, value) in result {
+                context.additionalEntitlements[ALTEntitlement(key)] = value
+            }
+        }
 
             self.setProgress(100)
             return context.targetBundleIdentifier
