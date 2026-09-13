@@ -64,16 +64,21 @@ enum InfoPlistMode: String, CaseIterable, Identifiable {
 struct InfoPlistContainerView: View {
     let plist: [String: any Sendable]
     var title: String = "Info.plist"
+    var plistURL: URL? = nil
     
     @State private var selectedMode: InfoPlistMode
     
     // Parent level cache to persist raw output between tab switches
     @State private var xmlString: String = ""
     @State private var jsonString: String = ""
-    
-    init(plist: [String: any Sendable], title: String = "Info.plist") {
+    #if !os(tvOS)
+    @State private var showingShareSheet = false
+    #endif
+
+    init(plist: [String: any Sendable], title: String = "Info.plist", plistURL: URL? = nil) {
         self.plist = plist
         self.title = title
+        self.plistURL = plistURL
         let parser = InfoPlistParser(dictionary: plist)
         let hasAppMetadata = parser.displayName != nil ||
             parser.bundleName != nil ||
@@ -82,6 +87,20 @@ struct InfoPlistContainerView: View {
             parser.rawDictionary["CFBundleVersion"] != nil ||
             parser.minimumOSVersion != nil
         _selectedMode = State(initialValue: hasAppMetadata ? .semantic : .tree)
+    }
+    
+    private var shareURL: URL? {
+        if let plistURL = plistURL, FileManager.default.fileExists(atPath: plistURL.path) {
+            return plistURL
+        }
+        let sanitizedTitle = title.replacingOccurrences(of: " ", with: "_")
+                                   .replacingOccurrences(of: "(", with: "").replacingOccurrences(of: ")", with: "")
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(sanitizedTitle).plist")
+        if let data = try? PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0) {
+            try? data.write(to: tempURL, options: .atomic)
+            return tempURL
+        }
+        return nil
     }
     
     var body: some View {
@@ -123,6 +142,20 @@ struct InfoPlistContainerView: View {
         .navigationTitle(title)
         #if !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                SwiftUI.Button {
+                    showingShareSheet = true
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }
+            }
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            if let url = shareURL {
+                ActivityViewController(items: [url])
+            }
+        }
         #endif
         .interactiveDismissDisabled(true)
     }
