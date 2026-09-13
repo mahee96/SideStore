@@ -134,7 +134,16 @@ final class SignInOperation: BaseStandaloneOperation<StandaloneOperationContext,
 
                 // 2. Resolve Certificate (Custom vs Developer Portal)
                 if !isCertificateResolved {
-                    resolvedCertificate = try await self.certificateFlow.resolveCertificate(for: team)
+                    self.verboseLog("[SignInOperation] Resolving signing certificate...")
+                    let certificate = try await self.certificateFlow.resolveCertificate(for: team)
+                    if let certificate = certificate {
+                        self.debugLog("[SignInOperation] Resolved signing certificate (serial: \(certificate.serialNumber)).")
+                        resolvedCertificate = certificate
+                    } else {
+                        self.debugLog("[SignInOperation] Certificate resolution skipped by user.")
+                        await self.signInHandler.showCertificateSkipAcknowledgment()
+                        resolvedCertificate = nil
+                    }
                     isCertificateResolved = true
                 }
 
@@ -145,8 +154,13 @@ final class SignInOperation: BaseStandaloneOperation<StandaloneOperationContext,
                     if !self.skipDeviceRegistration {
                         self.verboseLog("[SignInOperation] Registering current device...")
                         let device = try await self.deviceRegistrationFlow.registerCurrentDevice(for: team)
-                        self.debugLog("[SignInOperation] Registered current device UDID: \(device.identifier).")
-                        reportProgress(stepWeight * 3)
+                        if let device = device {
+                            self.debugLog("[SignInOperation] Registered current device UDID: \(device.identifier).")
+                            reportProgress(stepWeight * 3)
+                        } else {
+                            self.debugLog("[SignInOperation] Device registration skipped by user.")
+                            await self.signInHandler.showDeviceRegistrationSkipAcknowledgment()
+                        }
                     }
                     isDeviceRegistered = true
                 }
@@ -158,7 +172,7 @@ final class SignInOperation: BaseStandaloneOperation<StandaloneOperationContext,
                 )
                 
             } catch {
-                if self.isCancelled { throw OperationError.cancelled }
+                if self.isCancelled || error is CancellationError { throw OperationError.cancelled }
 
                 self.debugLog("[SignInOperation] provisioningLoop caught error: \(error)")
                 let decision = await self.signInHandler.resolveProvisioningError(error)
@@ -166,6 +180,17 @@ final class SignInOperation: BaseStandaloneOperation<StandaloneOperationContext,
                     case .retry:
                         self.debugLog("[SignInOperation] User chose retry in provisioningLoop")
                         continue
+                    case .skip:
+                        self.debugLog("[SignInOperation] User chose skip in provisioningLoop")
+                        if let team = resolvedTeam {
+                            return SignInResult(
+                                team: team,
+                                certificate: resolvedCertificate,
+                                session: session
+                            )
+                        } else {
+                            throw OperationError.cancelled
+                        }
                     case .cancel:
                         self.debugLog("[SignInOperation] User cancelled in provisioningLoop")
                         throw OperationError.cancelled

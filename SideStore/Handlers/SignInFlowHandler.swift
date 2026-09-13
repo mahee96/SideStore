@@ -16,6 +16,7 @@ class SignInFlowHandler: AnyObject, SignInHandler, AnisetteServerHandler {
     
     private var credentialsContinuation: CheckedContinuation<(String, String), Error>?
     private var activeAuthCompletionHandler: ((Result<(ALTAccount, ALTAppleAPISession), Error>) -> Void)?
+    var showsDoItLater: Bool = false
     
     private lazy var navigationController: UINavigationController = {
         let storyboard = UIStoryboard(name: "Authentication", bundle: nil)
@@ -565,20 +566,42 @@ class SignInFlowHandler: AnyObject, SignInHandler, AnisetteServerHandler {
                 preferredStyle: .alert
             )
             
-            let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { _ in
-                alertController.dismiss(animated: true) {
-                    continuation.resume(returning: .cancel)
+            if self.showsDoItLater {
+                let retryAction = UIAlertAction(title: NSLocalizedString("Retry", comment: ""), style: .default) { _ in
+                    alertController.dismiss(animated: true) {
+                        continuation.resume(returning: .retry)
+                    }
                 }
-            }
-            
-            let retryAction = UIAlertAction(title: NSLocalizedString("Retry", comment: ""), style: .default) { _ in
-                alertController.dismiss(animated: true) {
-                    continuation.resume(returning: .retry)
+                let laterAction = UIAlertAction(title: NSLocalizedString("Do It Later", comment: ""), style: .cancel) { _ in
+                    alertController.dismiss(animated: true) {
+                        continuation.resume(returning: .cancel)
+                    }
                 }
+                alertController.addAction(retryAction)
+                alertController.addAction(laterAction)
+            } else {
+                let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { _ in
+                    alertController.dismiss(animated: true) {
+                        continuation.resume(returning: .cancel)
+                    }
+                }
+                
+                let skipAction = UIAlertAction(title: NSLocalizedString("Skip", comment: ""), style: .default) { _ in
+                    alertController.dismiss(animated: true) {
+                        continuation.resume(returning: .skip)
+                    }
+                }
+                
+                let retryAction = UIAlertAction(title: NSLocalizedString("Retry", comment: ""), style: .default) { _ in
+                    alertController.dismiss(animated: true) {
+                        continuation.resume(returning: .retry)
+                    }
+                }
+                
+                alertController.addAction(retryAction)
+                alertController.addAction(skipAction)
+                alertController.addAction(cancelAction)
             }
-            
-            alertController.addAction(cancelAction)
-            alertController.addAction(retryAction)
             
             self.present(alertController)
         }
@@ -593,21 +616,77 @@ class SignInFlowHandler: AnyObject, SignInHandler, AnisetteServerHandler {
                 preferredStyle: .alert
             )
             
-            let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { _ in
-                alertController.dismiss(animated: true) {
-                    continuation.resume(returning: .cancel)
+            if self.showsDoItLater {
+                let retryAction = UIAlertAction(title: NSLocalizedString("Retry", comment: ""), style: .default) { _ in
+                    alertController.dismiss(animated: true) {
+                        continuation.resume(returning: .retry)
+                    }
                 }
+                let laterAction = UIAlertAction(title: NSLocalizedString("Do It Later", comment: ""), style: .cancel) { _ in
+                    alertController.dismiss(animated: true) {
+                        continuation.resume(returning: .cancel)
+                    }
+                }
+                alertController.addAction(retryAction)
+                alertController.addAction(laterAction)
+            } else {
+                let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { _ in
+                    alertController.dismiss(animated: true) {
+                        continuation.resume(returning: .cancel)
+                    }
+                }
+                
+                let skipAction = UIAlertAction(title: NSLocalizedString("Skip", comment: ""), style: .default) { _ in
+                    alertController.dismiss(animated: true) {
+                        continuation.resume(returning: .skip)
+                    }
+                }
+                
+                let retryAction = UIAlertAction(title: NSLocalizedString("Retry", comment: ""), style: .default) { _ in
+                    alertController.dismiss(animated: true) {
+                        continuation.resume(returning: .retry)
+                    }
+                }
+                
+                alertController.addAction(cancelAction)
+                alertController.addAction(skipAction)
+                alertController.addAction(retryAction)
             }
             
-            let retryAction = UIAlertAction(title: NSLocalizedString("Retry", comment: ""), style: .default) { _ in
+            self.present(alertController)
+        }
+    }
+    
+    @MainActor
+    func showCertificateSkipAcknowledgment() async {
+        await withCheckedContinuation { continuation in
+            let alertController = UIAlertController(
+                title: NSLocalizedString("Certificate Setup Skipped", comment: ""),
+                message: NSLocalizedString("Active signing certificate is not present and wasn't fetched/setup properly. You can complete the pending actions later or go into Settings -> Certificate Management and setup certificates manually.", comment: ""),
+                preferredStyle: .alert
+            )
+            alertController.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .default) { _ in
                 alertController.dismiss(animated: true) {
-                    continuation.resume(returning: .retry)
+                    continuation.resume()
                 }
-            }
-            
-            alertController.addAction(cancelAction)
-            alertController.addAction(retryAction)
-            
+            })
+            self.present(alertController)
+        }
+    }
+
+    @MainActor
+    func showDeviceRegistrationSkipAcknowledgment() async {
+        await withCheckedContinuation { continuation in
+            let alertController = UIAlertController(
+                title: NSLocalizedString("Device Registration Skipped", comment: ""),
+                message: NSLocalizedString("Your device is not yet registered under this developer team. Apps cannot be installed or refreshed until registration is completed. You can complete this later in Settings.", comment: ""),
+                preferredStyle: .alert
+            )
+            alertController.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .default) { _ in
+                alertController.dismiss(animated: true) {
+                    continuation.resume()
+                }
+            })
             self.present(alertController)
         }
     }

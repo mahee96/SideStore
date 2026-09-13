@@ -16,6 +16,7 @@ protocol AnisetteServerHandler: AnyObject {
 enum ProvisioningErrorDecision {
     case retry
     case cancel
+    case skip
 }
 
 enum RevokeDecision {
@@ -35,6 +36,9 @@ protocol SignInHandler: AnyObject, CertificateProvisioningHandler, DeviceProvisi
     
     func resolveRevocation(certificates: [ALTX509Certificate], teamType: ALTTeamType) async throws -> RevokeDecision
     func resolveResign(mismatchReason: CodeSignValidationReason, context: StandaloneOperationContext) async throws -> Bool
+    
+    func showCertificateSkipAcknowledgment() async
+    func showDeviceRegistrationSkipAcknowledgment() async
     
     func complete() async
 }

@@ -219,6 +219,10 @@ public extension UserDefaults
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
     }
+    @objc var isDeviceRegistered: Bool {
+        get { self.bool(forKey: #function) }
+        set { self.set(newValue, forKey: #function) }
+    }
     @objc var keepAnisetteHeadersAfterLogout: Bool {
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
@@ -456,6 +460,7 @@ public extension UserDefaults
             #keyPath(UserDefaults.isCellularRefreshEnabled): false,
             #keyPath(UserDefaults.isPairingReset): true,
             #keyPath(UserDefaults.isDebugModeEnabled): false,
+            #keyPath(UserDefaults.isDeviceRegistered): false,
 
         ] as [String: Any]
 

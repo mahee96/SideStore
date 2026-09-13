@@ -116,6 +116,8 @@ extension SettingsViewController
 final class SettingsViewController: UITableViewController
 {
     private var activeTeam: ALTTeam?
+    private var accountStatus: AccountVerificationRow.Status = .completed
+    private var accountVerificationTask: Task<Void, Never>?
     
     private var prototypeHeaderFooterView: SettingsHeaderFooterView!
     
@@ -290,6 +292,12 @@ final class SettingsViewController: UITableViewController
         self.update()
     }
     
+    override func viewWillDisappear(_ animated: Bool)
+    {
+        super.viewWillDisappear(animated)
+        self.accountVerificationTask?.cancel()
+    }
+    
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "anisetteServers" || segue.identifier == "developerServices" || segue.identifier == "certificateManagement" || segue.identifier == "diagnostics" {
             let controller = segue.destination
@@ -402,10 +410,14 @@ private extension SettingsViewController
                 self.accountTypeLabel.text = team.type.localizedDescription
                 
                 self.activeTeam = team
+                self.startAccountVerification(for: team)
             }
             else
             {
                 self.activeTeam = nil
+                self.accountVerificationTask?.cancel()
+                self.accountVerificationTask = nil
+                self.accountStatus = .completed
             }
             self.tableView.reloadData()
         }
@@ -431,6 +443,33 @@ private extension SettingsViewController
         if self.isViewLoaded
         {
             self.tableView.reloadData()
+        }
+    }
+    
+    private func startAccountVerification(for team: ALTTeam)
+    {
+        self.accountVerificationTask?.cancel()
+        self.accountVerificationTask = Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            if !UserDefaults.standard.isDeviceRegistered {
+                self.accountStatus = .checking
+                self.tableView.reloadData()
+            }
+            let status = await AccountVerificationRow.verifyStatus(for: team)
+            if !Task.isCancelled {
+                self.accountStatus = status
+                self.tableView.reloadData()
+            }
+        }
+    }
+    
+    private func resolvePendingAccountActions()
+    {
+        guard let team = self.activeTeam else { return }
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            await AccountVerificationRow.resolvePendingActions(for: self.accountStatus, team: team, presentingViewController: self)
+            self.startAccountVerification(for: team)
         }
     }
     
@@ -899,6 +938,9 @@ extension SettingsViewController
     
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat
     {
+        if Section.allCases[indexPath.section] == .account && indexPath.row == 3 {
+            return AccountVerificationRow.preferredHeight
+        }
         let effectiveIndexPath: IndexPath
         if Section.allCases[indexPath.section] == .advancedSettings {
             let row = AdvancedSettingsRow.allCases[indexPath.row]
@@ -908,6 +950,21 @@ extension SettingsViewController
         }
         return super.tableView(tableView, heightForRowAt: effectiveIndexPath)
     }
+
+    override func tableView(_ tableView: UITableView, indentationLevelForRowAt indexPath: IndexPath) -> Int
+    {
+        if Section.allCases[indexPath.section] == .account && indexPath.row == 3 {
+            return 0
+        }
+        let effectiveIndexPath: IndexPath
+        if Section.allCases[indexPath.section] == .advancedSettings {
+            let row = AdvancedSettingsRow.allCases[indexPath.row]
+            effectiveIndexPath = IndexPath(row: row.rawValue, section: indexPath.section)
+        } else {
+            effectiveIndexPath = indexPath
+        }
+        return super.tableView(tableView, indentationLevelForRowAt: effectiveIndexPath)
+    }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int
     {
@@ -916,7 +973,7 @@ extension SettingsViewController
         {
         case _ where isSectionHidden(section): return 0
         case .signIn: return (self.activeTeam == nil) ? 1 : 0
-        case .account: return (self.activeTeam == nil) ? 0 : 3
+        case .account: return (self.activeTeam == nil) ? 0 : (self.accountStatus == .completed ? 3 : 4)
         case .appRefresh: return AppRefreshRow.allCases.count
         case .advancedSettings: return AdvancedSettingsRow.allCases.count
         default: return super.tableView(tableView, numberOfRowsInSection: section.rawValue)
@@ -925,6 +982,13 @@ extension SettingsViewController
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell
     {
+        if Section.allCases[indexPath.section] == .account && indexPath.row == 3 {
+            let cell = tableView.dequeueReusableCell(withIdentifier: AccountVerificationRow.reuseIdentifier) as? AccountVerificationRow
+                ?? AccountVerificationRow()
+            cell.configure(with: self.accountStatus)
+            return cell
+        }
+        
         let effectiveIndexPath: IndexPath
         if Section.allCases[indexPath.section] == .advancedSettings {
             let row = AdvancedSettingsRow.allCases[indexPath.row]
@@ -933,6 +997,14 @@ extension SettingsViewController
             effectiveIndexPath = indexPath
         }
         let cell = super.tableView(tableView, cellForRowAt: effectiveIndexPath)
+        
+        if Section.allCases[indexPath.section] == .account {
+            if indexPath.row == 2 {
+                if let insetCell = cell as? InsetGroupTableViewCell {
+                    insetCell.style = (self.accountStatus == .completed) ? .bottom : .middle
+                }
+            }
+        }
         
 
         if AppRefreshRow.AllCases().count == 1
@@ -1033,6 +1105,10 @@ extension SettingsViewController
         switch section
         {
         case .signIn: self.signIn()
+        case .account:
+            if indexPath.row == 3 {
+                self.resolvePendingAccountActions()
+            }
         case .appRefresh:
             let row = AppRefreshRow.allCases[indexPath.row]
             switch row
@@ -1272,7 +1348,7 @@ extension SettingsViewController
             
             
         // case .account, .patreon, .display, .instructions, .macDirtyCow: break
-        case .account, .patreon, .display, .instructions, .betaTesting: break
+        case .patreon, .display, .instructions, .betaTesting: break
         }
         
         

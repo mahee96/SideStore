@@ -21,9 +21,9 @@ final class DeviceRegistrationFlow: @unchecked Sendable {
     init(handler: DeviceProvisioningHandler? = nil) {
         self.handler = handler
     }
-    
+
     @discardableResult
-    func registerCurrentDevice(for team: ALTTeam) async throws -> ALTDevice {
+    func registerCurrentDevice(for team: ALTTeam) async throws -> ALTDevice? {
         while true {
             do {
                 return try await self.performDeviceRegistration(for: team)
@@ -33,8 +33,10 @@ final class DeviceRegistrationFlow: @unchecked Sendable {
                     switch decision {
                     case .retry:
                         continue
+                    case .skip:
+                        return nil
                     case .cancel:
-                        throw error
+                        throw OperationError.cancelled
                     }
                 } else {
                     throw error
@@ -75,14 +77,16 @@ final class DeviceRegistrationFlow: @unchecked Sendable {
         debugLog("[DeviceRegistrationFlow] Fetched device UDID: \(udid). Fetching team devices...")
         
         let devices = try await DeveloperPortalProxy.shared.fetchDevices(for: team, types: .all)
-        if let device = devices.first(where: { $0.identifier == udid }) {
+        if let device = devices.first(where: { $0.identifier.caseInsensitiveCompare(udid) == .orderedSame }) {
             debugLog("[DeviceRegistrationFlow] Device '\(device.name)' (UDID: \(udid)) is registered on team.")
+            UserDefaults.standard.isDeviceRegistered = true
             return device
         } else {
             let deviceName = await MainActor.run { UIDevice.current.name }
             debugLog("[DeviceRegistrationFlow] Registering new device '\(deviceName)' (UDID: \(udid))...")
             let device = try await DeveloperPortalProxy.shared.registerDevice(name: deviceName, identifier: udid, type: DeveloperPortalProxy.currentDeviceType, team: team)
             debugLog("[DeviceRegistrationFlow] Device '\(device.name)' (UDID: \(udid)) successfully registered.")
+            UserDefaults.standard.isDeviceRegistered = true
             return device
         }
     }

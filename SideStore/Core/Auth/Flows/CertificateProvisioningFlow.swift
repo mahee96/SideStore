@@ -12,6 +12,7 @@ import SideSign
 
 protocol CertificateProvisioningHandler: AnyObject, Sendable {
     func resolveRevocation(certificates: [ALTX509Certificate], teamType: ALTTeamType) async throws -> RevokeDecision
+    func resolveProvisioningError(_ error: Error) async -> ProvisioningErrorDecision
 }
 
 final class CertificateProvisioningFlow: @unchecked Sendable {
@@ -25,6 +26,28 @@ final class CertificateProvisioningFlow: @unchecked Sendable {
     }
     
     func resolveCertificate(for team: ALTTeam) async throws -> ALTCertificate? {
+        while true {
+            do {
+                return try await self.performCertificateResolution(for: team)
+            } catch {
+                if let handler = self.handler {
+                    let decision = await handler.resolveProvisioningError(error)
+                    switch decision {
+                    case .retry:
+                        continue
+                    case .skip:
+                        return nil
+                    case .cancel:
+                        throw OperationError.cancelled
+                    }
+                } else {
+                    throw error
+                }
+            }
+        }
+    }
+    
+    private func performCertificateResolution(for team: ALTTeam) async throws -> ALTCertificate? {
         let activeCert = CertificateManager.shared.activeCertificate?.certificate
         let isCustomCert = activeCert?.data.map { data in
             let details = parseCertificate(derData: data)
