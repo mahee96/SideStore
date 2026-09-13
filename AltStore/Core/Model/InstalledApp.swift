@@ -49,6 +49,7 @@ public protocol InstalledAppProtocol: Fetchable
     var installedDate: Date { get }
     
     var appBundleFingerprint: String? { get }
+    var signingCertificateURL: URL { get }
 }
 
 public extension InstalledAppProtocol {
@@ -588,5 +589,9 @@ public extension InstalledApp
     
     var alternateIconURL: URL {
         return InstalledApp.alternateIconURL(for: self)
+    }
+    
+    public var signingCertificateURL: URL {
+        return self.directoryURL.appendingPathComponent("signing_certificate.der")
     }
 }

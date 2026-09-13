@@ -72,6 +72,13 @@ public class InstalledExtension: BaseEntity, InstalledAppProtocol
         self.refreshedDate = provisioningProfile.creationDate
         self.expirationDate = provisioningProfile.expirationDate
     }
+    
+    public var signingCertificateURL: URL {
+        if let parentApp = self.parentApp {
+            return parentApp.signingCertificateURL
+        }
+        return InstalledApp.directoryURL(forResignedID: self.resignedBundleIdentifier).appendingPathComponent("signing_certificate.der")
+    }
 }
 
 public extension InstalledExtension

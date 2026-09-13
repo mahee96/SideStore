@@ -2726,7 +2726,7 @@ extension MyAppsViewController {
         picker.onSelectCertificate = { [weak self] cert in
             guard let self = self else { return }
             
-            let binaryCert = CertificateManager.shared.getSigningCertificate(at: installedApp.fileURL)
+            let binaryCert = CertificateManager.shared.getSigningCertificate(for: installedApp)
             if let binaryCert = binaryCert, cert.serialNumber == binaryCert.serialNumber {
                 let alert = UIAlertController(
                     title: NSLocalizedString("Same Certificate", comment: ""),
