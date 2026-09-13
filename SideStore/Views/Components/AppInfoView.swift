@@ -44,7 +44,7 @@ struct AppInfoView: View {
         if isSideStoreSelf {
             return Bundle.Info.activeBundleURL.appendingPathComponent("embedded.mobileprovision")
         }
-        return InstalledApp.customProvisioningProfileURL(forBundleIdentifier: installedApp.bundleIdentifier, targetID: installedApp.resignedBundleIdentifier)
+        return installedApp.customProvisioningProfileURL()
     }
     
     private var bundleProfileURL: URL? {
@@ -65,7 +65,7 @@ struct AppInfoView: View {
         if isSideStoreSelf {
             return Bundle.Info.activeBundleURL.appendingPathComponent("Info.plist")
         }
-        return InstalledApp.customInfoPlistURL(forBundleIdentifier: installedApp.bundleIdentifier, targetID: installedApp.resignedBundleIdentifier)
+        return installedApp.customInfoPlistURL()
     }
     
     private var bundleInfoPlistURL: URL? {
@@ -585,7 +585,7 @@ struct ExtensionInfoView: View {
     #endif
 
     private var parentBundleIdentifier: String {
-        appExtension.parentApp?.bundleIdentifier
+        appExtension.parentApp?.resignedBundleIdentifier
             ?? (try? InfoPlistParser(bundleURL: parentAppURL))?.bundleIdentifier
             ?? ""
     }

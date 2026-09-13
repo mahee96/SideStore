@@ -27,7 +27,9 @@ final class CacheAppOperation: BasePipelineOperation<InstallAppOperationContext,
         }
 
         self.setProgress(40)
-        let targetFileURL = InstalledApp.fileURL(for: appBundle)
+        let appDirectoryURL = InstalledApp.appsDirectoryURL.appendingPathComponent(appBundle.bundleIdentifier)
+        try FileManager.default.createDirectory(at: appDirectoryURL, withIntermediateDirectories: true, attributes: nil)
+        let targetFileURL = appDirectoryURL.appendingPathComponent("App.app")
         
         self.setProgress(70)
         debugLog("[CacheAppOperation] Copying app bundle from \(appBundle.fileURL.path) to \(targetFileURL.path)")

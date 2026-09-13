@@ -76,17 +76,14 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
     }
     
     private func removeRefreshedIPA() {
-        if let appBundle = context.targetAppBundle {
-            let updatedApp = AnyApp(from: appBundle, bundleId: self.context.targetBundleIdentifier)
-            let fileURL = InstalledApp.refreshedIPAURL(for: updatedApp)
-            
-            if FileManager.default.fileExists(atPath: fileURL.path) {
-                do {
-                    try FileManager.default.removeItem(at: fileURL)
-                    debugLog("[InstallAppOperation] Removed refreshed IPA")
-                } catch {
-                    debugLog("[InstallAppOperation] Failed to remove refreshed .ipa: \(error)")
-                }
+        let fileURL = InstalledApp.refreshedIPAURL(forResignedID: self.context.targetBundleIdentifier)
+        
+        if FileManager.default.fileExists(atPath: fileURL.path) {
+            do {
+                try FileManager.default.removeItem(at: fileURL)
+                debugLog("[InstallAppOperation] Removed refreshed IPA")
+            } catch {
+                debugLog("[InstallAppOperation] Failed to remove refreshed .ipa: \(error)")
             }
         }
     }

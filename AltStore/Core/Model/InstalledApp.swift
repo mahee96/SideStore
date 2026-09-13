@@ -390,29 +390,14 @@ public extension InstalledApp
 
 public extension InstalledApp
 {
-    // TODO: @mahee96: Do NOT hardcode app's url scheme prefixes as in here
-    //       Need to get it dynamically from the Info.plist of other means
     var openAppURL: URL {
-        return InstalledApp.openAppURL(resignedBundleIdentifier: self.resignedBundleIdentifier)
+        return InstalledApp.openAppURL(targetBundleIdentifier: self.resignedBundleIdentifier)
     }
     
-    // TODO: @mahee96: Do NOT hardcode app's url scheme prefixes as in here
-    //       Need to get it dynamically from the Info.plist of other means
-    class func openAppURL(resignedBundleIdentifier: String) -> URL
+    class func openAppURL(targetBundleIdentifier: String) -> URL
     {
-        let openAppURL = URL(string: "sidestore-" + resignedBundleIdentifier + "://")!
+        let openAppURL = URL(string: "sidestore-" + targetBundleIdentifier + "://")!
         return openAppURL
-    }
-    
-    class func openAppURL(for app: InstalledAppProtocol) -> URL
-    {
-        return self.openAppURL(resignedBundleIdentifier: app.resignedBundleIdentifier)
-    }
-    
-    class func openAppURL(for app: AppProtocol) -> URL
-    {
-        let identifier = (app as? InstalledAppProtocol)?.resignedBundleIdentifier ?? app.bundleIdentifier
-        return self.openAppURL(resignedBundleIdentifier: identifier)
     }
 }
 
@@ -433,27 +418,42 @@ public extension InstalledApp
         return appsDirectoryURL
     }
     
-    class func fileURL(for app: AppProtocol) -> URL
+    class func directoryURL(forResignedID resignedID: String) -> URL
     {
-        let appURL = self.directoryURL(for: app).appendingPathComponent("App.app")
-        return appURL
-    }
-    
-    class func refreshedIPAURL(for app: AppProtocol) -> URL
-    {
-        let ipaURL = self.directoryURL(for: app).appendingPathComponent("Refreshed.ipa")
-        debugLog("[InstalledApp] 'ipaURL': \(ipaURL.absoluteString)")
-        return ipaURL
-    }
-    
-    class func directoryURL(for app: AppProtocol) -> URL
-    {
-        let directoryURL = InstalledApp.appsDirectoryURL.appendingPathComponent(app.bundleIdentifier)
+        let directoryURL = InstalledApp.appsDirectoryURL.appendingPathComponent(resignedID)
         
         do { try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true, attributes: nil) }
         catch { debugLog("\(error)") }
         
         return directoryURL
+    }
+    
+    class func directoryURL(for app: InstalledAppProtocol) -> URL
+    {
+        return self.directoryURL(forResignedID: app.resignedBundleIdentifier)
+    }
+    
+    class func fileURL(forResignedID resignedID: String) -> URL
+    {
+        let appURL = self.directoryURL(forResignedID: resignedID).appendingPathComponent("App.app")
+        return appURL
+    }
+    
+    class func fileURL(for app: InstalledAppProtocol) -> URL
+    {
+        return self.fileURL(forResignedID: app.resignedBundleIdentifier)
+    }
+    
+    class func refreshedIPAURL(forResignedID resignedID: String) -> URL
+    {
+        let ipaURL = self.directoryURL(forResignedID: resignedID).appendingPathComponent("Refreshed.ipa")
+        debugLog("[InstalledApp] 'ipaURL': \(ipaURL.absoluteString)")
+        return ipaURL
+    }
+    
+    class func refreshedIPAURL(for app: InstalledAppProtocol) -> URL
+    {
+        return self.refreshedIPAURL(forResignedID: app.resignedBundleIdentifier)
     }
 
     class func customInfoPlistDirectoryURL(forBundleIdentifier bundleIdentifier: String) -> URL {
@@ -501,6 +501,21 @@ public extension InstalledApp
     class func customProvisioningProfile(forBundleIdentifier bundleIdentifier: String, targetID: String) -> ALTProvisioningProfile? {
         guard let url = customProvisioningProfileURL(forBundleIdentifier: bundleIdentifier, targetID: targetID) else { return nil }
         return try? ALTProvisioningProfile(url: url)
+    }
+
+    public func customInfoPlistURL(forResignedID resignedID: String? = nil) -> URL? {
+        let targetID = resignedID ?? self.resignedBundleIdentifier
+        return Self.customInfoPlistURL(forBundleIdentifier: self.bundleIdentifier, targetID: targetID)
+    }
+
+    public func customEntitlements(forResignedID resignedID: String? = nil) -> [String: any Sendable]? {
+        let targetID = resignedID ?? self.resignedBundleIdentifier
+        return Self.customEntitlements(forBundleIdentifier: self.bundleIdentifier, targetID: targetID)
+    }
+
+    public func customProvisioningProfileURL(forResignedID resignedID: String? = nil) -> URL? {
+        let targetID = resignedID ?? self.resignedBundleIdentifier
+        return Self.customProvisioningProfileURL(forBundleIdentifier: self.bundleIdentifier, targetID: targetID)
     }
     
     class func installedAppUTI(forBundleIdentifier bundleIdentifier: String) -> String

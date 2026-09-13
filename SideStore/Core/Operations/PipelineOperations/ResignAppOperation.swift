@@ -65,7 +65,7 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         }
         
         // Use customized bundle ID if applicable
-        let openURL = InstalledApp.openAppURL(for: AnyApp(from: targetAppBundle, bundleId: finalBundleIdentifier))
+        let openURL = InstalledApp.openAppURL(targetBundleIdentifier: finalBundleIdentifier)
         let fileURL = targetAppBundle.fileURL
 
         let appBundleURL = self.context.temporaryDirectory.appendingPathComponent("App.app")

@@ -19,16 +19,20 @@ final class CacheResignedMetadataOperation: BasePipelineOperation<InstallAppOper
         }
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         
-        let bundleID = self.context.targetBundleIdentifier
-        if bundleID.isAltStoreAppID {
-            debugLog("[CacheResignedMetadataOperation] Skipping caching of resigned metadata for self (\(bundleID)).")
+        guard let targetAppBundle = self.context.resignedAppBundle else {
+            debugLog("[CacheResignedMetadataOperation] FAILED: self.context.resignedAppBundle is nil; cannot cache metadata.")
             return
         }
         
-        let targetAppBundle = self.context.resignedAppBundle ?? self.context.targetAppBundle
-        try cacheProvisioningProfiles(forBundleID: bundleID)
-        try cacheInfoPlist(forBundleID: bundleID, targetAppBundle: targetAppBundle)
-        try cacheEntitlements(forBundleID: bundleID)
+        let resignedID = targetAppBundle.bundleIdentifier
+        if resignedID.isAltStoreAppID {
+            debugLog("[CacheResignedMetadataOperation] Skipping caching of resigned metadata for self (\(resignedID)).")
+            return
+        }
+        
+        try cacheProvisioningProfiles(forBundleID: resignedID)
+        try cacheInfoPlist(forBundleID: resignedID, targetAppBundle: targetAppBundle)
+        try cacheEntitlements(forBundleID: resignedID)
         
         self.setProgress(100)
     }
@@ -49,31 +53,22 @@ final class CacheResignedMetadataOperation: BasePipelineOperation<InstallAppOper
         }
     }
     
-    private func cacheInfoPlist(forBundleID bundleID: String, targetAppBundle: ALTApplication?) throws {
+    private func cacheInfoPlist(forBundleID bundleID: String, targetAppBundle: ALTApplication) throws {
         let infoPlistDirectory = InstalledApp.customInfoPlistDirectoryURL(forBundleIdentifier: bundleID)
         try FileManager.default.createDirectory(at: infoPlistDirectory, withIntermediateDirectories: true, attributes: nil)
         
-        if let targetAppBundle {
-            let validBundleIDs = Set(targetAppBundle.allAppBundles.map { $0.bundleIdentifier })
-            cleanupStaleFiles(in: infoPlistDirectory, matchingExtension: "plist", validIDs: validBundleIDs, description: "Info.plist")
-            
-            for bundle in targetAppBundle.allAppBundles {
-                let targetID = bundle.bundleIdentifier
-                let destURL = infoPlistDirectory.appendingPathComponent("\(targetID).plist")
-                do {
-                    let parser = try InfoPlistParser(bundleURL: bundle.fileURL)
-                    try parser.write(to: destURL)
-                    debugLog("[CacheResignedMetadataOperation] Cached resigned Info.plist for \(targetID) to \(destURL.path)")
-                } catch {
-                    debugLog("[CacheResignedMetadataOperation] Failed to cache Info.plist for \(targetID) from \(bundle.fileURL.path): \(error)")
-                }
-            }
-        } else if !self.context.customInfoPlistByBundleID.isEmpty {
-            for (targetID, plist) in self.context.customInfoPlistByBundleID {
-                let effectiveTargetID = (targetID == bundleID) ? (targetAppBundle?.bundleIdentifier ?? targetID) : targetID
-                let destURL = infoPlistDirectory.appendingPathComponent("\(effectiveTargetID).plist")
-                try InfoPlistParser(dictionary: plist).write(to: destURL)
-                debugLog("[CacheResignedMetadataOperation] Cached custom Info.plist for \(effectiveTargetID) to \(destURL.path)")
+        let validBundleIDs = Set(targetAppBundle.allAppBundles.map { $0.bundleIdentifier })
+        cleanupStaleFiles(in: infoPlistDirectory, matchingExtension: "plist", validIDs: validBundleIDs, description: "Info.plist")
+        
+        for bundle in targetAppBundle.allAppBundles {
+            let targetID = bundle.bundleIdentifier
+            let destURL = infoPlistDirectory.appendingPathComponent("\(targetID).plist")
+            do {
+                let parser = try InfoPlistParser(bundleURL: bundle.fileURL)
+                try parser.write(to: destURL)
+                debugLog("[CacheResignedMetadataOperation] Cached resigned Info.plist for \(targetID) to \(destURL.path)")
+            } catch {
+                debugLog("[CacheResignedMetadataOperation] Failed to cache Info.plist for \(targetID) from \(bundle.fileURL.path): \(error)")
             }
         }
     }

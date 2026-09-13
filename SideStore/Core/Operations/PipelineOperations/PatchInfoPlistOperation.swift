@@ -19,24 +19,43 @@ final class PatchInfoPlistOperation: BasePipelineOperation<InstallAppOperationCo
         }
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         
-        let bundleID = self.context.installedApp?.bundleIdentifier ?? self.context.targetBundleIdentifier
-        
         guard let targetAppBundle = self.context.targetAppBundle else {
             debugLog("[PatchInfoPlistOperation] No targetAppBundle found. Skipping.")
             return
         }
 
         for bundle in targetAppBundle.allAppBundles {
-            let cachedTargetID = (bundle == targetAppBundle)
-                ? (self.context.installedApp?.resignedBundleIdentifier ?? bundle.bundleIdentifier)
-                : (self.context.installedApp?.appExtensions.first(where: { $0.bundleIdentifier == bundle.bundleIdentifier })?.resignedBundleIdentifier ?? bundle.bundleIdentifier)
+            let isMain = (bundle == targetAppBundle)
             
-            if let plistURL = InstalledApp.customInfoPlistURL(forBundleIdentifier: bundleID, targetID: cachedTargetID) {
-                do {
-                    let customParser = try InfoPlistParser(plistURL: plistURL)
+            // 1. If not already in context, load from installedApp's cache
+            if self.context.customInfoPlistByBundleID[bundle.bundleIdentifier] == nil {
+                let resignedID = isMain
+                    ? self.context.installedApp?.resignedBundleIdentifier
+                    : self.context.installedApp?.appExtensions.first(where: { $0.bundleIdentifier == bundle.bundleIdentifier })?.resignedBundleIdentifier
+                
+                if let resignedID,
+                   let plistURL = self.context.installedApp?.customInfoPlistURL(forResignedID: resignedID),
+                   let customParser = try? InfoPlistParser(plistURL: plistURL) {
                     self.context.customInfoPlistByBundleID[bundle.bundleIdentifier] = customParser.rawDictionary
-                    
-                    if bundle == targetAppBundle {
+                }
+            }
+            
+            if self.context.customEntitlementsByBundleID[bundle.bundleIdentifier] == nil {
+                let resignedID = isMain
+                    ? self.context.installedApp?.resignedBundleIdentifier
+                    : self.context.installedApp?.appExtensions.first(where: { $0.bundleIdentifier == bundle.bundleIdentifier })?.resignedBundleIdentifier
+                
+                if let resignedID,
+                   let customEntitlements = self.context.installedApp?.customEntitlements(forResignedID: resignedID) {
+                    self.context.customEntitlementsByBundleID[bundle.bundleIdentifier] = customEntitlements
+                }
+            }
+
+            // 2. Apply custom Info.plist if available
+            if let customPlist = self.context.customInfoPlistByBundleID[bundle.bundleIdentifier] {
+                do {
+                    if isMain {
+                        let customParser = InfoPlistParser(dictionary: customPlist)
                         if let customID = customParser.bundleIdentifier,
                            !customID.isEmpty,
                            customID != self.context.bundleIdentifier {
@@ -44,17 +63,17 @@ final class PatchInfoPlistOperation: BasePipelineOperation<InstallAppOperationCo
                         }
                     }
                     
-                    try bundle.updateInfoPlist(with: customParser.rawDictionary)
-                    debugLog("[PatchInfoPlistOperation] Successfully patched Info.plist for \(bundle.bundleIdentifier) from \(plistURL.lastPathComponent)")
+                    try bundle.updateInfoPlist(with: customPlist)
+                    debugLog("[PatchInfoPlistOperation] Successfully patched Info.plist for \(bundle.bundleIdentifier)")
                 } catch {
                     debugLog("[PatchInfoPlistOperation] Error applying custom Info.plist for \(bundle.bundleIdentifier): \(error)")
                     throw error
                 }
             }
 
-            if let customEntitlements = InstalledApp.customEntitlements(forBundleIdentifier: bundleID, targetID: cachedTargetID) {
-                self.context.customEntitlementsByBundleID[bundle.bundleIdentifier] = customEntitlements
-                if bundle == targetAppBundle {
+            // 3. Register custom entitlements if available
+            if let customEntitlements = self.context.customEntitlementsByBundleID[bundle.bundleIdentifier] {
+                if isMain {
                     for (key, value) in customEntitlements {
                         self.context.additionalEntitlements[ALTEntitlement(key)] = value
                     }

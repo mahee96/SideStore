@@ -184,7 +184,10 @@ final class VerifyAppOperation: BasePipelineOperation<InstallAppOperationContext
             }
             
         case .added:
-            let installedAppURL = InstalledApp.fileURL(for: appBundle)
+            guard let installedApp = self.context.installedApp else {
+                throw OperationError.missingAppBundle(reason: "Could not locate installed app for '\(appBundle.name)' to verify added permissions.")
+            }
+            let installedAppURL = installedApp.fileURL
             guard let previousApp = ALTApplication(fileURL: installedAppURL) else {
                 throw OperationError.missingAppBundle(reason: "Could not locate installed bundle for '\(appBundle.name)' at '\(installedAppURL.lastPathComponent)'")
             }
