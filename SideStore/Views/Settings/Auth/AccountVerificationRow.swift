@@ -280,18 +280,6 @@ extension AccountVerificationRow {
                     _ = try await certFlow.resolveCertificate(for: team)
                 }
             }
-            
-            if UserDefaults.standard.isDeviceRegistered,
-               let activeCert = CertificateManager.shared.activeCertificate?.certificate ?? (try? CertificateManager.shared.loadActiveCertificate())?.certificate
-            {
-                try await executeStep(description: NSLocalizedString("Validating signatures…", comment: "")) {
-                    let resignFlow = CodeSignValidationFlow(handler: handler)
-                    _ = try? await resignFlow.validateAndResignIfNeeded(
-                        team: team,
-                        certificate: activeCert
-                    )
-                }
-            }
         } catch {
             verboseLog("[AccountVerificationRow] resolvePendingActions error: \(error)")
         }
@@ -301,5 +289,17 @@ extension AccountVerificationRow {
                 continuation.resume()
             }
         }
+        
+        if UserDefaults.standard.isDeviceRegistered,
+           let activeCert = CertificateManager.shared.activeCertificate?.certificate ?? (try? CertificateManager.shared.loadActiveCertificate())?.certificate
+        {
+            let resignFlow = CodeSignValidationFlow(handler: handler)
+            _ = try? await resignFlow.validateAndResignIfNeeded(
+                team: team,
+                certificate: activeCert
+            )
+        }
+        
+        await handler.complete()
     }
 }
