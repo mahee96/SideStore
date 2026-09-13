@@ -333,12 +333,14 @@ public class DatabaseManager: @unchecked Sendable
             #if DEBUG
             let replaceCachedApp = true
             #else
-            let replaceCachedApp = !FileManager.default.fileExists(atPath: fileURL.path) || installedApp.version != localAppBundle.version || installedApp.buildVersion != localAppBundle.buildVersion
+            let hasNoFingerprint = installedApp.appBundleFingerprint == nil
+            let cacheMissing = !FileManager.default.fileExists(atPath: fileURL.path)
+            let versionMismatch = (installedApp.version != localAppBundle.version) || (installedApp.buildVersion != localAppBundle.buildVersion)
+            let replaceCachedApp = hasNoFingerprint || cacheMissing || versionMismatch
             #endif
             
             if replaceCachedApp
             {
-                let fileURL = installedApp.fileURL
                 let bundleURL = Bundle.Info.activeBundleURL
                 let altstoreAppID = StoreApp.altstoreAppID
                 let extensionBundleIDMap = installedExtensions.reduce(into: [String: String]()) { dict, ext in
@@ -360,11 +362,16 @@ public class DatabaseManager: @unchecked Sendable
                                 try appExtension.updateInfoPlist(with: [kCFBundleIdentifierKey as String: originalBundleID])
                             }
                             
-                            try FileManager.default.copyItem(at: temporaryFileURL, to: fileURL, shouldReplace: true)
+                            let (signature, _) = try CacheAppOperation.cachePayload(for: temporaryFileURL)
+                            
+                            context.perform {
+                                installedApp.appBundleFingerprint = signature
+                                try? context.save()
+                            }
                         }
                         catch
                         {
-                            debugLog("Failed to copy SideStore app bundle to its proper location. \(error)")
+                            debugLog("Failed to cache SideStore app bundle: \(error)")
                         }
                     }
                 }

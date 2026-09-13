@@ -27,23 +27,27 @@ final class CacheAppOperation: BasePipelineOperation<InstallAppOperationContext,
         }
 
         self.setProgress(40)
-        guard let signature = AppBundleFingerprint.compute(for: appBundle.fileURL) else {
-            throw OperationError.invalidApp(reason: "Failed to compute app bundle fingerprint for '\(appBundle.fileURL.lastPathComponent)'")
-        }
+        let (signature, targetFileURL) = try Self.cachePayload(for: appBundle.fileURL)
         self.context.appBundleFingerprint = signature
-
-        let targetFileURL = InstalledApp.payloadURL(forSignature: signature)
-        
-        self.setProgress(70)
-        if !FileManager.default.fileExists(atPath: targetFileURL.path) {
-            debugLog("[CacheAppOperation] Caching app bundle for signature \(signature) to \(targetFileURL.path)")
-            try FileManager.default.copyItem(at: appBundle.fileURL, to: targetFileURL, shouldReplace: true)
-        } else {
-            debugLog("[CacheAppOperation] Payload already cached for signature \(signature), skipping copy.")
-        }
-        
         self.setProgress(100)
         return targetFileURL
+    }
+
+    @discardableResult
+    static func cachePayload(for bundleURL: URL) throws -> (signature: String, targetFileURL: URL) {
+        guard let signature = AppBundleFingerprint.compute(for: bundleURL) else {
+            throw OperationError.invalidApp(reason: "Failed to compute app bundle fingerprint for '\(bundleURL.lastPathComponent)'")
+        }
+
+        let targetFileURL = InstalledApp.payloadURL(forSignature: signature)
+        if !FileManager.default.fileExists(atPath: targetFileURL.path) {
+            SideStore.debugLog("[CacheAppOperation] Caching app bundle for signature \(signature) to \(targetFileURL.path)")
+            try FileManager.default.copyItem(at: bundleURL, to: targetFileURL, shouldReplace: true)
+        } else {
+            SideStore.debugLog("[CacheAppOperation] Payload already cached for signature \(signature), skipping copy.")
+        }
+
+        return (signature, targetFileURL)
     }
 
     static func pruneUnusedCaches(activeSignatures: Set<String> = [], activeBundleIDs: Set<String>, isActivelyManaging: (String) -> Bool) {
