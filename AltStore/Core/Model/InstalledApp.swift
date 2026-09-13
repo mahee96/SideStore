@@ -496,6 +496,27 @@ public extension InstalledApp
         else { return nil }
         return plist
     }
+
+    class func customProvisioningProfilesDirectoryURL(forBundleIdentifier bundleIdentifier: String) -> URL {
+        return InstalledApp.appsDirectoryURL.appendingPathComponent(bundleIdentifier).appendingPathComponent("ProvisioningProfiles")
+    }
+
+    class func customProvisioningProfileURL(forBundleIdentifier bundleIdentifier: String, targetID: String) -> URL? {
+        let multiTargetURL = customProvisioningProfilesDirectoryURL(forBundleIdentifier: bundleIdentifier).appendingPathComponent("\(targetID).mobileprovision")
+        if FileManager.default.fileExists(atPath: multiTargetURL.path) {
+            return multiTargetURL
+        }
+        let legacyURL = InstalledApp.appsDirectoryURL.appendingPathComponent(bundleIdentifier).appendingPathComponent("embedded.mobileprovision")
+        if targetID == bundleIdentifier && FileManager.default.fileExists(atPath: legacyURL.path) {
+            return legacyURL
+        }
+        return nil
+    }
+
+    class func customProvisioningProfile(forBundleIdentifier bundleIdentifier: String, targetID: String) -> ALTProvisioningProfile? {
+        guard let url = customProvisioningProfileURL(forBundleIdentifier: bundleIdentifier, targetID: targetID) else { return nil }
+        return try? ALTProvisioningProfile(url: url)
+    }
     
     class func installedAppUTI(forBundleIdentifier bundleIdentifier: String) -> String
     {

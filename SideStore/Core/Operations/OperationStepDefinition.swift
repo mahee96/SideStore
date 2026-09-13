@@ -49,7 +49,8 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.fetchProvisioningProfiles,        10),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,      1),
         PipelineExecutionStep(.embedSigningCert,                  1),
-        PipelineExecutionStep(.resignApp,                        15),
+        PipelineExecutionStep(.cacheProvisioningProfiles,         1),
+        PipelineExecutionStep(.resignApp,                        14),
         PipelineExecutionStep(.createIPA,                         2),
         PipelineExecutionStep(.exportResignedIPA,                 1),
         PipelineExecutionStep(.sendApp,                          18),
@@ -69,7 +70,8 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.fetchProvisioningProfiles,        15),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,      2),
         PipelineExecutionStep(.embedSigningCert,                  1),
-        PipelineExecutionStep(.resignApp,                        18),
+        PipelineExecutionStep(.cacheProvisioningProfiles,         1),
+        PipelineExecutionStep(.resignApp,                        17),
         PipelineExecutionStep(.createIPA,                         2),
         PipelineExecutionStep(.exportResignedIPA,                 2),
         PipelineExecutionStep(.sendApp,                          18),
@@ -82,14 +84,16 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.updateAppCertificate,              5),
         PipelineExecutionStep(.verifyCertificate,                10),
         PipelineExecutionStep(.fetchProvisioningProfiles,        45),
-        PipelineExecutionStep(.refreshApp,                       40)
+        PipelineExecutionStep(.cacheProvisioningProfiles,         1),
+        PipelineExecutionStep(.refreshApp,                       39)
     ]
 
     static let activateLegacy: [PipelineExecutionStep] = [
         PipelineExecutionStep(.updateAppCertificate,              5),
         PipelineExecutionStep(.verifyCertificate,                10),
         PipelineExecutionStep(.fetchProvisioningProfiles,        45),
-        PipelineExecutionStep(.refreshApp,                       40)
+        PipelineExecutionStep(.cacheProvisioningProfiles,         1),
+        PipelineExecutionStep(.refreshApp,                       39)
     ]
 
     static let activate: [PipelineExecutionStep] = [
@@ -117,7 +121,8 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.fetchProvisioningProfiles,         5),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,      1),
         PipelineExecutionStep(.embedSigningCert,                  1),
-        PipelineExecutionStep(.resignApp,                        15),
+        PipelineExecutionStep(.cacheProvisioningProfiles,         1),
+        PipelineExecutionStep(.resignApp,                        14),
         PipelineExecutionStep(.createIPA,                         2),
         PipelineExecutionStep(.exportResignedIPA,                 1),
         PipelineExecutionStep(.sendApp,                          10),
@@ -179,7 +184,8 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.fetchProvisioningProfiles,         5),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,      1),
         PipelineExecutionStep(.embedSigningCert,                  1),
-        PipelineExecutionStep(.resignApp,                         5),
+        PipelineExecutionStep(.cacheProvisioningProfiles,         1),
+        PipelineExecutionStep(.resignApp,                         4),
         PipelineExecutionStep(.createIPA,                         1),
         PipelineExecutionStep(.exportResignedIPA,                 1),
         PipelineExecutionStep(.sendApp,                           1),
@@ -193,7 +199,8 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.updateAppCertificate,              5),
         PipelineExecutionStep(.verifyCertificate,                10),
         PipelineExecutionStep(.fetchProvisioningProfiles,        45),
-        PipelineExecutionStep(.refreshApp,                       40)
+        PipelineExecutionStep(.cacheProvisioningProfiles,         1),
+        PipelineExecutionStep(.refreshApp,                       39)
     ]
 
     static let restore: [PipelineExecutionStep] = [
@@ -221,7 +228,8 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.fetchProvisioningProfiles,         5),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,      1),
         PipelineExecutionStep(.embedSigningCert,                  1),
-        PipelineExecutionStep(.resignApp,                        15),
+        PipelineExecutionStep(.cacheProvisioningProfiles,         1),
+        PipelineExecutionStep(.resignApp,                        14),
         PipelineExecutionStep(.createIPA,                         2),
         PipelineExecutionStep(.exportResignedIPA,                 1),
         PipelineExecutionStep(.sendApp,                          10),
