@@ -291,9 +291,13 @@ func fetchUDID(useStatic: Bool = false) async throws -> String? {
         try await minimuxer.core.fetchUDID()
     }
     if let udid = result ?? nil, !udid.isEmpty {
+        Keychain.shared.deviceUDID = udid
         return udid
     }
     if useStatic {
+        if let cachedUDID = Keychain.shared.deviceUDID, !cachedUDID.isEmpty {
+            return cachedUDID
+        }
         return PairingFileManager.shared.pairingUDID
     }
     return nil
