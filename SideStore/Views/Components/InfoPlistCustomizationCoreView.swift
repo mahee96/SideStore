@@ -27,11 +27,9 @@ public struct InfoPlistTarget: Identifiable, Sendable {
         isExtension: Bool = false,
         initialPlist: [String: any Sendable]
     ) {
+        let parser = InfoPlistParser(dictionary: initialPlist)
         self.id = id
-        self.name = name
-            ?? (initialPlist["CFBundleDisplayName"] as? String)
-            ?? (initialPlist["CFBundleName"] as? String)
-            ?? id
+        self.name = name ?? parser.displayName ?? parser.bundleName ?? id
         self.isExtension = isExtension
         self.initialPlist = initialPlist
     }
@@ -94,16 +92,36 @@ public struct InfoPlistCustomizationCoreView: View {
         var openingDocumentsInPlace: Bool
         var rawEntries: [RawPlistEntry]
 
+        init(
+            bundleID: String,
+            previousValidBundleID: String,
+            displayName: String,
+            versionString: String,
+            buildNumber: String,
+            minimumOSVersion: String,
+            fileSharingEnabled: Bool,
+            openingDocumentsInPlace: Bool,
+            rawEntries: [RawPlistEntry]
+        ) {
+            self.bundleID = bundleID
+            self.previousValidBundleID = previousValidBundleID
+            self.displayName = displayName
+            self.versionString = versionString
+            self.buildNumber = buildNumber
+            self.minimumOSVersion = minimumOSVersion
+            self.fileSharingEnabled = fileSharingEnabled
+            self.openingDocumentsInPlace = openingDocumentsInPlace
+            self.rawEntries = rawEntries
+        }
+
         init(target: InfoPlistTarget, teamID: String, appendTeamID: Bool) {
-            let initialPlist = target.initialPlist
-            self.displayName = (initialPlist["CFBundleDisplayName"] as? String)
-                ?? (initialPlist["CFBundleName"] as? String)
-                ?? ""
-            self.versionString = (initialPlist["CFBundleShortVersionString"] as? String) ?? ""
-            self.buildNumber = (initialPlist["CFBundleVersion"] as? String) ?? ""
-            self.minimumOSVersion = (initialPlist["MinimumOSVersion"] as? String) ?? ""
-            self.fileSharingEnabled = (initialPlist["UIFileSharingEnabled"] as? Bool) ?? false
-            self.openingDocumentsInPlace = (initialPlist["LSSupportsOpeningDocumentsInPlace"] as? Bool) ?? false
+            let parser = InfoPlistParser(dictionary: target.initialPlist)
+            self.displayName = parser.displayName ?? parser.bundleName ?? ""
+            self.versionString = (target.initialPlist["CFBundleShortVersionString"] as? String) ?? parser.shortVersionString ?? ""
+            self.buildNumber = (target.initialPlist["CFBundleVersion"] as? String) ?? parser.buildVersion ?? ""
+            self.minimumOSVersion = parser.minimumOSVersion ?? ""
+            self.fileSharingEnabled = parser.isFileSharingEnabled
+            self.openingDocumentsInPlace = parser.supportsOpeningDocumentsInPlace
 
             let trimmed = target.id.trimmingCharacters(in: .whitespacesAndNewlines)
             let base: String

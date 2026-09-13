@@ -74,12 +74,13 @@ struct InfoPlistContainerView: View {
     init(plist: [String: any Sendable], title: String = "Info.plist") {
         self.plist = plist
         self.title = title
-        let hasAppMetadata = plist["CFBundleDisplayName"] != nil ||
-            plist["CFBundleName"] != nil ||
-            plist["CFBundleIdentifier"] != nil ||
+        let parser = InfoPlistParser(dictionary: plist)
+        let hasAppMetadata = parser.displayName != nil ||
+            parser.bundleName != nil ||
+            parser.bundleIdentifier != nil ||
             plist["CFBundleShortVersionString"] != nil ||
             plist["CFBundleVersion"] != nil ||
-            plist["MinimumOSVersion"] != nil
+            parser.minimumOSVersion != nil
         _selectedMode = State(initialValue: hasAppMetadata ? .semantic : .tree)
     }
     
@@ -482,12 +483,16 @@ struct InfoPlistSemanticView: View {
     
     @State private var searchQuery = ""
     
+    private var parser: InfoPlistParser {
+        InfoPlistParser(dictionary: plist)
+    }
+
     // Core App Metadata
     var appName: String {
-        return (plist["CFBundleDisplayName"] as? String) ?? (plist["CFBundleName"] as? String) ?? "N/A"
+        return parser.displayName ?? parser.bundleName ?? "N/A"
     }
     var bundleID: String {
-        return (plist["CFBundleIdentifier"] as? String) ?? "N/A"
+        return parser.bundleIdentifier ?? "N/A"
     }
     var version: String {
         let short = plist["CFBundleShortVersionString"] as? String
@@ -498,38 +503,24 @@ struct InfoPlistSemanticView: View {
         return short ?? build ?? "N/A"
     }
     var minOS: String {
-        return (plist["MinimumOSVersion"] as? String) ?? "N/A"
+        return parser.minimumOSVersion ?? "N/A"
     }
     
     // Categorized Groups
     var privacyPermissions: [String: String] {
-        var dict = [String: String]()
-        for key in plist.keys where key.hasPrefix("NS") && key.hasSuffix("UsageDescription") {
-            if let val = plist[key] as? String {
-                dict[key] = val
-            }
-        }
-        return dict
+        return parser.privacyPermissions
     }
     
     var customURLSchemes: [String] {
-        var schemes = [String]()
-        if let urlTypes = (plist["CFBundleURLTypes"] as? [[String: any Sendable]]) ?? (plist["CFBundleURLTypes"] as? [[String: Any]]) {
-            for type in urlTypes {
-                if let typeSchemes = type["CFBundleURLSchemes"] as? [String] {
-                    schemes.append(contentsOf: typeSchemes)
-                }
-            }
-        }
-        return schemes
+        return parser.customURLSchemes
     }
     
     var backgroundModes: [String] {
-        return (plist["UIBackgroundModes"] as? [String]) ?? []
+        return parser.backgroundModes
     }
     
     var queriedSchemes: [String] {
-        return (plist["LSApplicationQueriesSchemes"] as? [String]) ?? []
+        return parser.queriedURLSchemes
     }
     
     // Custom/Uncategorized keys
@@ -558,12 +549,12 @@ struct InfoPlistSemanticView: View {
     }
     
     private var hasAppMetadata: Bool {
-        plist["CFBundleDisplayName"] != nil ||
-        plist["CFBundleName"] != nil ||
-        plist["CFBundleIdentifier"] != nil ||
+        parser.displayName != nil ||
+        parser.bundleName != nil ||
+        parser.bundleIdentifier != nil ||
         plist["CFBundleShortVersionString"] != nil ||
         plist["CFBundleVersion"] != nil ||
-        plist["MinimumOSVersion"] != nil
+        parser.minimumOSVersion != nil
     }
     
     var body: some View {
