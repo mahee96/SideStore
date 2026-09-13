@@ -60,7 +60,7 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
             let targets: [InfoPlistTarget]
 
             if let installedApp = context.installedApp {
-                let cachedParser = installedApp.customInfoPlistURL().flatMap { try? InfoPlistParser(plistURL: $0) }
+                let cachedParser = installedApp.customInfoPlistURL.flatMap { try? InfoPlistParser(plistURL: $0) }
                 initialBundleID = cachedParser?.bundleIdentifier ?? installedApp.resignedBundleIdentifier
                 let mainPlist = cachedParser?.rawDictionary ?? targetAppBundle.infoPlist
 
@@ -69,8 +69,8 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
                 ]
 
                 for ext in targetAppBundle.allAppBundles where ext.isExtension {
-                    let extResignedID = installedApp.appExtensions.first(where: { $0.bundleIdentifier == ext.bundleIdentifier })?.resignedBundleIdentifier
-                    let extCachedURL = extResignedID.flatMap { installedApp.customInfoPlistURL(forResignedID: $0) }
+                    let matchingExtension = installedApp.appExtensions.first(where: { $0.bundleIdentifier == ext.bundleIdentifier })
+                    let extCachedURL = matchingExtension?.customInfoPlistURL
                     let extPlist = extCachedURL.flatMap { try? InfoPlistParser(plistURL: $0).rawDictionary } ?? ext.infoPlist
                     list.append(InfoPlistTarget(id: ext.bundleIdentifier, name: ext.name, isExtension: true, initialPlist: extPlist))
                 }
@@ -146,7 +146,7 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
 
             let targets: [EntitlementsTarget]
             if let installedApp = context.installedApp {
-                let mainEntitlements = installedApp.customEntitlements() ?? targetAppBundle.entitlements
+                let mainEntitlements = installedApp.customEntitlements ?? targetAppBundle.entitlements
                 var list: [EntitlementsTarget] = [
                     EntitlementsTarget(
                         id: mainTargetID,
@@ -157,8 +157,8 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
                 ]
 
                 for ext in targetAppBundle.allAppBundles where ext.isExtension {
-                    let extResignedID = installedApp.appExtensions.first(where: { $0.bundleIdentifier == ext.bundleIdentifier })?.resignedBundleIdentifier
-                    let extEntitlements = extResignedID.flatMap { installedApp.customEntitlements(forResignedID: $0) } ?? ext.entitlements
+                    let matchingExtension = installedApp.appExtensions.first(where: { $0.bundleIdentifier == ext.bundleIdentifier })
+                    let extEntitlements = matchingExtension?.customEntitlements ?? ext.entitlements
                     list.append(
                         EntitlementsTarget(
                             id: ext.bundleIdentifier,

@@ -67,6 +67,7 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
                 storeBuildVersion: storeBuildVersion,
                 authTeam: authTeam
             )
+            self.context.installedApp = installedApp
             await CellularRefreshManager.shared.turnOnDataIfNeeded()
             return installedApp
         } catch {
@@ -76,7 +77,7 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
     }
     
     private func removeRefreshedIPA() {
-        let fileURL = InstalledApp.directoryURL(forResignedID: self.context.targetBundleIdentifier).appendingPathComponent("Refreshed.ipa")
+        guard let fileURL = self.context.installedApp?.refreshedIPAURL else { return }
         
         if FileManager.default.fileExists(atPath: fileURL.path) {
             do {

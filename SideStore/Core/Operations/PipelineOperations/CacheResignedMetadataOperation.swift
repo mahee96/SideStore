@@ -24,22 +24,27 @@ final class CacheResignedMetadataOperation: BasePipelineOperation<InstallAppOper
             return
         }
         
-        let resignedID = targetAppBundle.bundleIdentifier
+        guard let installedApp = self.context.installedApp else {
+            debugLog("[CacheResignedMetadataOperation] FAILED: self.context.installedApp is nil; cannot cache metadata.")
+            return
+        }
+        
+        let resignedID = installedApp.resignedBundleIdentifier
         if resignedID.isAltStoreAppID {
             debugLog("[CacheResignedMetadataOperation] Skipping caching of resigned metadata for self (\(resignedID)).")
             return
         }
         
-        try cacheProvisioningProfiles(forBundleID: resignedID)
-        try cacheInfoPlist(forBundleID: resignedID, targetAppBundle: targetAppBundle)
-        try cacheEntitlements(forBundleID: resignedID)
+        try cacheProvisioningProfiles(for: installedApp)
+        try cacheInfoPlist(for: installedApp, targetAppBundle: targetAppBundle)
+        try cacheEntitlements(for: installedApp)
         
         self.setProgress(100)
     }
     
-    private func cacheProvisioningProfiles(forBundleID bundleID: String) throws {
+    private func cacheProvisioningProfiles(for app: InstalledApp) throws {
         guard let profiles = self.context.provisioningProfiles, !profiles.isEmpty else { return }
-        let profilesDirectory = InstalledApp.directoryURL(forResignedID: bundleID).appendingPathComponent("ProvisioningProfiles")
+        let profilesDirectory = app.directoryURL.appendingPathComponent("ProvisioningProfiles")
         try FileManager.default.createDirectory(at: profilesDirectory, withIntermediateDirectories: true, attributes: nil)
         
         let validProfileIDs = Set(profiles.values.map { $0.bundleIdentifier })
@@ -53,8 +58,8 @@ final class CacheResignedMetadataOperation: BasePipelineOperation<InstallAppOper
         }
     }
     
-    private func cacheInfoPlist(forBundleID bundleID: String, targetAppBundle: ALTApplication) throws {
-        let infoPlistDirectory = InstalledApp.directoryURL(forResignedID: bundleID).appendingPathComponent("Info.plist")
+    private func cacheInfoPlist(for app: InstalledApp, targetAppBundle: ALTApplication) throws {
+        let infoPlistDirectory = app.directoryURL.appendingPathComponent("Info.plist")
         try FileManager.default.createDirectory(at: infoPlistDirectory, withIntermediateDirectories: true, attributes: nil)
         
         let validBundleIDs = Set(targetAppBundle.allAppBundles.map { $0.bundleIdentifier })
@@ -73,9 +78,9 @@ final class CacheResignedMetadataOperation: BasePipelineOperation<InstallAppOper
         }
     }
     
-    private func cacheEntitlements(forBundleID bundleID: String) throws {
+    private func cacheEntitlements(for app: InstalledApp) throws {
         guard let profiles = self.context.provisioningProfiles else { return }
-        let entitlementsDirectory = InstalledApp.directoryURL(forResignedID: bundleID).appendingPathComponent("Entitlements")
+        let entitlementsDirectory = app.directoryURL.appendingPathComponent("Entitlements")
         try FileManager.default.createDirectory(at: entitlementsDirectory, withIntermediateDirectories: true, attributes: nil)
         
         let validEntitlementIDs = Set(profiles.values.map { $0.bundleIdentifier })

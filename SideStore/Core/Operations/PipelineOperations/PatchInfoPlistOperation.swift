@@ -26,27 +26,20 @@ final class PatchInfoPlistOperation: BasePipelineOperation<InstallAppOperationCo
 
         for bundle in targetAppBundle.allAppBundles {
             let isMain = (bundle == targetAppBundle)
+            let targetEntity: (any InstalledAppProtocol)? = isMain
+                ? self.context.installedApp
+                : self.context.installedApp?.appExtensions.first(where: { $0.bundleIdentifier == bundle.bundleIdentifier })
             
             // 1. If not already in context, load from installedApp's cache
             if self.context.customInfoPlistByBundleID[bundle.bundleIdentifier] == nil {
-                let resignedID = isMain
-                    ? self.context.installedApp?.resignedBundleIdentifier
-                    : self.context.installedApp?.appExtensions.first(where: { $0.bundleIdentifier == bundle.bundleIdentifier })?.resignedBundleIdentifier
-                
-                if let resignedID,
-                   let plistURL = self.context.installedApp?.customInfoPlistURL(forResignedID: resignedID),
+                if let plistURL = targetEntity?.customInfoPlistURL,
                    let customParser = try? InfoPlistParser(plistURL: plistURL) {
                     self.context.customInfoPlistByBundleID[bundle.bundleIdentifier] = customParser.rawDictionary
                 }
             }
             
             if self.context.customEntitlementsByBundleID[bundle.bundleIdentifier] == nil {
-                let resignedID = isMain
-                    ? self.context.installedApp?.resignedBundleIdentifier
-                    : self.context.installedApp?.appExtensions.first(where: { $0.bundleIdentifier == bundle.bundleIdentifier })?.resignedBundleIdentifier
-                
-                if let resignedID,
-                   let customEntitlements = self.context.installedApp?.customEntitlements(forResignedID: resignedID) {
+                if let customEntitlements = targetEntity?.customEntitlements {
                     self.context.customEntitlementsByBundleID[bundle.bundleIdentifier] = customEntitlements
                 }
             }

@@ -77,7 +77,7 @@ public class InstalledExtension: BaseEntity, InstalledAppProtocol
         if let parentApp = self.parentApp {
             return parentApp.directoryURL
         }
-        return InstalledApp.directoryURL(forResignedID: self.resignedBundleIdentifier)
+        return InstalledApp.appsDirectoryURL.appendingPathComponent(self.resignedBundleIdentifier)
     }
 }
 
