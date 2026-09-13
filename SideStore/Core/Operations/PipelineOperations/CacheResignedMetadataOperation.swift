@@ -30,14 +30,15 @@ final class CacheResignedMetadataOperation: BasePipelineOperation<InstallAppOper
             let profilesDirectory = InstalledApp.customProvisioningProfilesDirectoryURL(forBundleIdentifier: bundleID)
             try FileManager.default.createDirectory(at: profilesDirectory, withIntermediateDirectories: true, attributes: nil)
             
-            for (targetID, profile) in profiles {
+            for (_, profile) in profiles {
+                let targetID = profile.bundleIdentifier
                 let fileURL = profilesDirectory.appendingPathComponent("\(targetID).mobileprovision")
                 try profile.data.write(to: fileURL, options: .atomic)
                 debugLog("[CacheResignedMetadataOperation] Cached provisioning profile for \(targetID) to \(fileURL.path)")
             }
             
             // Also write main profile as embedded.mobileprovision in the app's cache directory
-            if let mainProfile = self.context.useMainProfile ? profiles.values.first : profiles[bundleID] {
+            if let mainProfile = self.context.useMainProfile ? profiles.values.first : (profiles[bundleID] ?? profiles.values.first) {
                 let mainURL = InstalledApp.appsDirectoryURL.appendingPathComponent(bundleID).appendingPathComponent("embedded.mobileprovision")
                 try? mainProfile.data.write(to: mainURL, options: .atomic)
             }
@@ -47,9 +48,10 @@ final class CacheResignedMetadataOperation: BasePipelineOperation<InstallAppOper
         let infoPlistDirectory = InstalledApp.customInfoPlistDirectoryURL(forBundleIdentifier: bundleID)
         try FileManager.default.createDirectory(at: infoPlistDirectory, withIntermediateDirectories: true, attributes: nil)
         
-        if let targetAppBundle = self.context.resignedAppBundle ?? self.context.targetAppBundle {
+        let targetAppBundle = self.context.resignedAppBundle ?? self.context.targetAppBundle
+        if let targetAppBundle {
             for bundle in targetAppBundle.allAppBundles {
-                let targetID = (bundle == targetAppBundle) ? bundleID : bundle.bundleIdentifier
+                let targetID = bundle.bundleIdentifier
                 let destURL = infoPlistDirectory.appendingPathComponent("\(targetID).plist")
                 do {
                     let parser = try InfoPlistParser(bundleURL: bundle.fileURL)
@@ -66,9 +68,10 @@ final class CacheResignedMetadataOperation: BasePipelineOperation<InstallAppOper
             }
         } else if !self.context.customInfoPlistByBundleID.isEmpty {
             for (targetID, plist) in self.context.customInfoPlistByBundleID {
-                let destURL = infoPlistDirectory.appendingPathComponent("\(targetID).plist")
+                let effectiveTargetID = (targetID == bundleID) ? (targetAppBundle?.bundleIdentifier ?? targetID) : targetID
+                let destURL = infoPlistDirectory.appendingPathComponent("\(effectiveTargetID).plist")
                 try InfoPlistParser(dictionary: plist).write(to: destURL)
-                debugLog("[CacheResignedMetadataOperation] Cached custom Info.plist for \(targetID) to \(destURL.path)")
+                debugLog("[CacheResignedMetadataOperation] Cached custom Info.plist for \(effectiveTargetID) to \(destURL.path)")
                 if targetID == bundleID {
                     let legacyURL = InstalledApp.appsDirectoryURL.appendingPathComponent(bundleID).appendingPathComponent("custom_info.plist")
                     try? InfoPlistParser(dictionary: plist).write(to: legacyURL)
@@ -81,14 +84,16 @@ final class CacheResignedMetadataOperation: BasePipelineOperation<InstallAppOper
         try FileManager.default.createDirectory(at: entitlementsDirectory, withIntermediateDirectories: true, attributes: nil)
         
         for (targetID, entitlements) in self.context.customEntitlementsByBundleID {
-            let fileURL = entitlementsDirectory.appendingPathComponent("\(targetID).plist")
+            let effectiveTargetID = (targetID == bundleID) ? (targetAppBundle?.bundleIdentifier ?? targetID) : targetID
+            let fileURL = entitlementsDirectory.appendingPathComponent("\(effectiveTargetID).plist")
             let plistData = try PropertyListSerialization.data(fromPropertyList: entitlements, format: .xml, options: 0)
             try plistData.write(to: fileURL, options: .atomic)
-            debugLog("[CacheResignedMetadataOperation] Cached custom Entitlements for \(targetID) to \(fileURL.path)")
+            debugLog("[CacheResignedMetadataOperation] Cached custom Entitlements for \(effectiveTargetID) to \(fileURL.path)")
         }
         
         if let profiles = self.context.provisioningProfiles {
-            for (targetID, profile) in profiles {
+            for (_, profile) in profiles {
+                let targetID = profile.bundleIdentifier
                 let fileURL = entitlementsDirectory.appendingPathComponent("\(targetID).plist")
                 if !FileManager.default.fileExists(atPath: fileURL.path) {
                     if let plistData = try? PropertyListSerialization.data(fromPropertyList: profile.entitlements, format: .xml, options: 0) {
