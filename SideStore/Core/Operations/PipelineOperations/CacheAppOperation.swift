@@ -27,19 +27,48 @@ final class CacheAppOperation: BasePipelineOperation<InstallAppOperationContext,
         }
 
         self.setProgress(40)
-        let appDirectoryURL = InstalledApp.appsDirectoryURL.appendingPathComponent(appBundle.bundleIdentifier)
-        try FileManager.default.createDirectory(at: appDirectoryURL, withIntermediateDirectories: true, attributes: nil)
-        let targetFileURL = appDirectoryURL.appendingPathComponent("App.app")
+        guard let signature = AppBundleFingerprint.compute(for: appBundle.fileURL) else {
+            throw OperationError.invalidApp(reason: "Failed to compute app bundle fingerprint for '\(appBundle.fileURL.lastPathComponent)'")
+        }
+        self.context.appBundleFingerprint = signature
+
+        let targetFileURL = InstalledApp.payloadURL(forSignature: signature)
         
         self.setProgress(70)
-        debugLog("[CacheAppOperation] Copying app bundle from \(appBundle.fileURL.path) to \(targetFileURL.path)")
-        try FileManager.default.copyItem(at: appBundle.fileURL, to: targetFileURL, shouldReplace: true)
+        if !FileManager.default.fileExists(atPath: targetFileURL.path) {
+            debugLog("[CacheAppOperation] Caching app bundle for signature \(signature) to \(targetFileURL.path)")
+            try FileManager.default.copyItem(at: appBundle.fileURL, to: targetFileURL, shouldReplace: true)
+        } else {
+            debugLog("[CacheAppOperation] Payload already cached for signature \(signature), skipping copy.")
+        }
         
         self.setProgress(100)
         return targetFileURL
     }
 
-    static func pruneUnusedCaches(activeBundleIDs: Set<String>, isActivelyManaging: (String) -> Bool) {
+    static func pruneUnusedCaches(activeSignatures: Set<String> = [], activeBundleIDs: Set<String>, isActivelyManaging: (String) -> Bool) {
+        // 1. Prune unused payloads in Apps/Payloads/
+        let payloadsDirectory = InstalledApp.appsDirectoryURL.appendingPathComponent("Payloads")
+        if let cachedPayloadDirs = try? FileManager.default.contentsOfDirectory(
+            at: payloadsDirectory,
+            includingPropertiesForKeys: [.isDirectoryKey, .nameKey],
+            options: [.skipsSubdirectoryDescendants, .skipsHiddenFiles]
+        ) {
+            for payloadDir in cachedPayloadDirs {
+                do {
+                    let resourceValues = try payloadDir.resourceValues(forKeys: [.isDirectoryKey, .nameKey])
+                    guard let isDirectory = resourceValues.isDirectory, let signature = resourceValues.name else { continue }
+                    if isDirectory && !activeSignatures.isEmpty && !activeSignatures.contains(signature) && !isActivelyManaging(signature) {
+                        SideStore.debugLog("[CacheAppOperation] DELETING UNUSED CACHED PAYLOAD: \(signature)")
+                        try FileManager.default.removeItem(at: payloadDir)
+                    }
+                } catch {
+                    SideStore.debugLog("[CacheAppOperation] Failed to remove cached payload directory: \(error)")
+                }
+            }
+        }
+
+        // 2. Prune unused instance directories in Apps/
         do {
             let cachedAppDirectories = try FileManager.default.contentsOfDirectory(
                 at: InstalledApp.appsDirectoryURL,
@@ -50,6 +79,7 @@ final class CacheAppOperation: BasePipelineOperation<InstallAppOperationContext,
                 do {
                     let resourceValues = try appDirectory.resourceValues(forKeys: [.isDirectoryKey, .nameKey])
                     guard let isDirectory = resourceValues.isDirectory, let bundleID = resourceValues.name else { continue }
+                    if bundleID == "Payloads" { continue }
                     
                     if isDirectory && !activeBundleIDs.contains(bundleID) && !isActivelyManaging(bundleID) {
                         SideStore.debugLog("[CacheAppOperation] DELETING CACHED APP: \(bundleID)")

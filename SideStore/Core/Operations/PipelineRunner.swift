@@ -308,10 +308,11 @@ final class PipelineRunner: Sendable
         if case .resign(_,  let mode)     = operation { context.alternateIconMode       = mode }
         
         if let app = operation.app as? InstalledApp {
-            context.targetAppBundle = ALTApplication(fileURL: app.fileURL)
+            context.installedApp = app
+            context.appBundleFingerprint = app.appBundleFingerprint
             context.useMainProfile = app.useMainProfile
             context.customBundleIdentifier = app.customBundleIdentifier
-            context.installedApp = app
+            context.targetAppBundle = ALTApplication(fileURL: app.fileURL)
         }
         
         context.beginInstallationHandler = { (installedApp) in

@@ -281,6 +281,7 @@ class InstallAppOperationContext: PipelineOperationContext
     var ipaURL: URL?
     var resignedAppBundle: ALTApplication?
     var installedApp: InstalledApp?
+    var appBundleFingerprint: String?
     var releaseTrack: ReleaseTrack?
     var additionalEntitlements: [ALTEntitlement: any Sendable] = [:]
     

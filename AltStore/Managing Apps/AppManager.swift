@@ -145,11 +145,14 @@ final class AppManager: ObservableObject, @unchecked Sendable
             }
             #endif
         
-            let installedAppBundleIDs = await dbBackgroundContext.perform {
-                Set(InstalledApp.all(in: dbBackgroundContext).map { $0.bundleIdentifier })
+            let (installedAppBundleIDs, activeSignatures) = await dbBackgroundContext.perform {
+                let allApps = InstalledApp.all(in: dbBackgroundContext)
+                let ids = Set(allApps.map { $0.bundleIdentifier } + allApps.map { $0.resignedBundleIdentifier })
+                let sigs = Set(allApps.compactMap { $0.appBundleFingerprint })
+                return (ids, sigs)
             }
             
-            CacheAppOperation.pruneUnusedCaches(activeBundleIDs: installedAppBundleIDs) { bundleID in
+            CacheAppOperation.pruneUnusedCaches(activeSignatures: activeSignatures, activeBundleIDs: installedAppBundleIDs) { bundleID in
                 self.isActivelyManagingApp(withBundleID: bundleID)
             }
         }.value

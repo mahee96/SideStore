@@ -47,6 +47,12 @@ public protocol InstalledAppProtocol: Fetchable
     var refreshedDate: Date { get }
     var expirationDate: Date { get }
     var installedDate: Date { get }
+    
+    var appBundleFingerprint: String? { get }
+}
+
+public extension InstalledAppProtocol {
+    var appBundleFingerprint: String? { nil }
 }
 
 @objc(InstalledApp)
@@ -72,6 +78,7 @@ public class InstalledApp: BaseEntity, InstalledAppProtocol
     @NSManaged public var certificateSerialNumber: String?
     @NSManaged public var storeBuildVersion: String?
     @NSManaged public var certificateStatusRaw: String?
+    @NSManaged public var appBundleFingerprint: String?
     
     public var certificateStatus: CertificateStatus {
         get {
@@ -433,6 +440,16 @@ public extension InstalledApp
         return self.directoryURL(forResignedID: app.resignedBundleIdentifier)
     }
     
+    class func payloadDirectoryURL(forSignature signature: String) -> URL {
+        let payloadDirectoryURL = InstalledApp.appsDirectoryURL.appendingPathComponent("Payloads").appendingPathComponent(signature)
+        try? FileManager.default.createDirectory(at: payloadDirectoryURL, withIntermediateDirectories: true, attributes: nil)
+        return payloadDirectoryURL
+    }
+
+    class func payloadURL(forSignature signature: String) -> URL {
+        return self.payloadDirectoryURL(forSignature: signature).appendingPathComponent("App.app")
+    }
+
     class func fileURL(forResignedID resignedID: String) -> URL
     {
         let appURL = self.directoryURL(forResignedID: resignedID).appendingPathComponent("App.app")
@@ -441,6 +458,12 @@ public extension InstalledApp
     
     class func fileURL(for app: InstalledAppProtocol) -> URL
     {
+        if let signature = app.appBundleFingerprint {
+            let payloadURL = self.payloadURL(forSignature: signature)
+            if FileManager.default.fileExists(atPath: payloadURL.path) {
+                return payloadURL
+            }
+        }
         return self.fileURL(forResignedID: app.resignedBundleIdentifier)
     }
     

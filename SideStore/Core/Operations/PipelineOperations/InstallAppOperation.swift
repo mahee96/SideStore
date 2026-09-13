@@ -198,6 +198,10 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
                                   storeBuildVersion: String?,
                                   authTeam: ALTTeam) throws -> InstalledApp
     {
+        guard let appBundleFingerprint = self.context.appBundleFingerprint else {
+            throw OperationError.invalidParameters("InstallAppOperation: context.appBundleFingerprint is nil. CacheAppOperation must guarantee a fingerprint reference.")
+        }
+        
         let target = self.context.targetBundleIdentifier
         let predicate = NSPredicate(
             format: "(%K == %@) OR (%K == %@)",
@@ -223,6 +227,7 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
             installedApp.certificateStatus = self.context.targetCertStatus ?? installedApp.certificateStatus
             installedApp.customBundleIdentifier = context.customBundleIdentifier
             installedApp.useMainProfile = context.useMainProfile
+            installedApp.appBundleFingerprint = appBundleFingerprint
             let teamPredicate = NSPredicate(format: "%K == %@", #keyPath(Team.identifier), authTeam.identifier)
             if let team = Team.first(satisfying: teamPredicate, in: backgroundContext) {
                 installedApp.team = team
