@@ -8,6 +8,7 @@
 
 @preconcurrency import UIKit
 import Foundation
+import SideSign
 
 class AppendTeamIDCheckboxView: UIView, UITextFieldDelegate {
     let checkboxButton = UIButton(type: .system)

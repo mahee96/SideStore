@@ -8,6 +8,7 @@
 
 import SwiftUI
 import UIKit
+import SideSign
 
 public enum InfoPlistCustomizationStyle {
     case sheet

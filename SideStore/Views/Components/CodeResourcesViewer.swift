@@ -223,7 +223,7 @@ struct CodeResourcesViewer: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ProgressView("Reading CodeResources\u{2026}")
+                ProgressView("Reading CodeResources...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }

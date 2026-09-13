@@ -119,7 +119,7 @@ public struct SuffixEnforcedTextField: UIViewRepresentable {
 
         public func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
             verboseLog("[SuffixEnforcedTextField] shouldChange: range=\(range), string='\(string)', current='\(textField.text ?? "")'")
-            let result = Self.shouldChangeBundleID(
+            let result = SuffixEnforcedTextField.shouldChangeBundleID(
                 in: textField,
                 range: range,
                 replacementString: string,
