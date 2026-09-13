@@ -582,7 +582,11 @@ private struct AppleIDStep: View {
                         defer { isSigningIn = false }
 
                         do {
-                            _ = try await AuthManager.shared.signIn(presentingViewController: UIApplication.shared.topViewController())
+                            _ = try await AuthManager.shared.signIn(
+                                presentingViewController: UIApplication.shared.topViewController(),
+                                skipResign: true,
+                                skipHowTos: true
+                            )
                             isAuthenticated = true
                             onNext()
                         } catch {
