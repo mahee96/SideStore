@@ -421,8 +421,8 @@ final class AppManager: ObservableObject, @unchecked Sendable
         
         Task.detached(priority: .utility) {
             do {
-                let managedObjectContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
-                let context = self.makeAuthenticatedContext(dbBackgroundContext: managedObjectContext)
+                let managedObjectContext = self.getValidDbContext()
+                let context = StandaloneOperationContext(steps: .syncAppIDs, dbBackgroundContext: managedObjectContext)
                 try await AuthManager.shared.getAuthenticatedSession()
                 
                 let syncAppIDsOperation = try SyncAppIDsOperation(context: context)
@@ -516,18 +516,19 @@ final class AppManager: ObservableObject, @unchecked Sendable
     @discardableResult
     func install(_ target: InstallTarget,
                  presentingViewController: UIViewController? = nil,
+                 dbBackgroundContext: NSManagedObjectContext? = nil,
                  context: StandaloneOperationContext? = nil,
                  completionHandler: @escaping (Result<InstalledApp, Error>) -> Void) -> RefreshGroup
     {
         debugLog("[AppManager] install() called for target: \(target)")
         let pipelineHandler = self.makePipelineHandler(presentingViewController: presentingViewController)
-        let baseContext = self.makeAuthenticatedContext(presentingViewController: presentingViewController, baseContext: context)
+        let dbContext = self.getValidDbContext(dbBackgroundContext ?? context?.dbBackgroundContext)
 
         let app = self.resolveApp(for: target)
         return self.pipelineRunner.performSingleOperation(
             .install(app),
             handler: pipelineHandler,
-            context: baseContext,
+            dbContext: dbContext,
             completionHandler: completionHandler
         )
     }
@@ -600,18 +601,21 @@ final class AppManager: ObservableObject, @unchecked Sendable
             return Progress.discreteProgress(totalUnitCount: 1)
         }
         let pipelineHandler = self.makePipelineHandler(presentingViewController: presentingViewController)
-        let context = self.makeAuthenticatedContext(presentingViewController: presentingViewController)
+        let dbContext = self.getValidDbContext()
         let group = self.pipelineRunner.performSingleOperation(
             .update(appVersion, customBundleIdentifier: installedApp.customBundleIdentifier), 
             handler: pipelineHandler, 
-            context: context, 
+            dbContext: dbContext, 
             completionHandler: completionHandler
         )
         return group.progress
     }
     
     @discardableResult
-    func refresh(_ installedApps: [InstalledApp], presentingViewController: UIViewController?, group: RefreshGroup? = nil) -> RefreshGroup
+    func refresh(_ installedApps: [InstalledApp],
+                 presentingViewController: UIViewController?,
+                 dbContext: NSManagedObjectContext? = nil,
+                 group: RefreshGroup? = nil) -> RefreshGroup
     {
         debugLog("[AppManager] refresh() called for apps: \(installedApps.map { $0.bundleIdentifier })")
         let pipelineHandler = self.makePipelineHandler(presentingViewController: presentingViewController)
@@ -620,15 +624,15 @@ final class AppManager: ObservableObject, @unchecked Sendable
         if let group = group {
             actualGroup = group
         } else {
-            let context = self.makeAuthenticatedContext(presentingViewController: presentingViewController)
-            actualGroup = RefreshGroup(context: context)
+            let context = self.getValidDbContext(dbContext)
+            actualGroup = RefreshGroup(dbContext: context)
         }
         
         actualGroup.activeTask = Task.detached {
             do {
                 try await self.pipelineRunner.perform(installedApps.map { .refresh($0) }, handler: pipelineHandler, group: actualGroup)
             } catch {
-                actualGroup.context.error = error
+                actualGroup.error = error
                 let results = Dictionary(uniqueKeysWithValues: installedApps.map { ($0.bundleIdentifier, Result<InstalledApp, Error>.failure(error)) })
                 actualGroup.completionHandler?(results)
             }
@@ -641,24 +645,24 @@ final class AppManager: ObservableObject, @unchecked Sendable
     {
         debugLog("[AppManager] activate() called for app: \(installedApp.bundleIdentifier)")
         let pipelineHandler = self.makePipelineHandler(presentingViewController: presentingViewController)
-        let context = self.makeAuthenticatedContext(presentingViewController: presentingViewController)
-        self.pipelineRunner.performSingleOperation(.activate(installedApp), handler: pipelineHandler, context: context, completionHandler: completionHandler)
+        let dbContext = self.getValidDbContext()
+        self.pipelineRunner.performSingleOperation(.activate(installedApp), handler: pipelineHandler, dbContext: dbContext, completionHandler: completionHandler)
     }
     
     func deactivate(_ installedApp: InstalledApp, presentingViewController: UIViewController?, completionHandler: @escaping (Result<InstalledApp, Error>) -> Void)
     {
         debugLog("[AppManager] deactivate() called for app: \(installedApp.bundleIdentifier)")
         let pipelineHandler = self.makePipelineHandler(presentingViewController: presentingViewController)
-        let context = self.makeAuthenticatedContext(presentingViewController: presentingViewController)
-        self.pipelineRunner.performSingleOperation(.deactivate(installedApp), handler: pipelineHandler, context: context, completionHandler: completionHandler)
+        let dbContext = self.getValidDbContext()
+        self.pipelineRunner.performSingleOperation(.deactivate(installedApp), handler: pipelineHandler, dbContext: dbContext, completionHandler: completionHandler)
     }
     
     func deleteApp(_ installedApp: InstalledApp, presentingViewController: UIViewController?, completionHandler: @escaping (Result<InstalledApp, Error>) -> Void)
     {
         debugLog("[AppManager] deleteApp() called for app: \(installedApp.bundleIdentifier)")
         let pipelineHandler = self.makePipelineHandler(presentingViewController: presentingViewController)
-        let context = self.makeAuthenticatedContext(presentingViewController: presentingViewController)
-        self.pipelineRunner.performSingleOperation(.deleteApp(installedApp), handler: pipelineHandler, context: context, completionHandler: completionHandler)
+        let dbContext = self.getValidDbContext()
+        self.pipelineRunner.performSingleOperation(.deleteApp(installedApp), handler: pipelineHandler, dbContext: dbContext, completionHandler: completionHandler)
     }
     
     @discardableResult
@@ -669,32 +673,32 @@ final class AppManager: ObservableObject, @unchecked Sendable
     {
         debugLog("[AppManager] resign() called for app: \(installedApp.bundleIdentifier)")
         let pipelineHandler = self.makePipelineHandler(presentingViewController: presentingViewController)
-        let context = self.makeAuthenticatedContext(presentingViewController: presentingViewController)
-        return self.pipelineRunner.performSingleOperation(.resign(installedApp, alternateIconMode: alternateIconMode), handler: pipelineHandler, context: context, completionHandler: completionHandler)
+        let dbContext = self.getValidDbContext()
+        return self.pipelineRunner.performSingleOperation(.resign(installedApp, alternateIconMode: alternateIconMode), handler: pipelineHandler, dbContext: dbContext, completionHandler: completionHandler)
     }
     
     func backup(_ installedApp: InstalledApp, presentingViewController: UIViewController?, completionHandler: @escaping (Result<InstalledApp, Error>) -> Void)
     {
         debugLog("[AppManager] backup() called for app: \(installedApp.bundleIdentifier)")
         let pipelineHandler = self.makePipelineHandler(presentingViewController: presentingViewController)
-        let context = self.makeAuthenticatedContext(presentingViewController: presentingViewController)
-        self.pipelineRunner.performSingleOperation(.backup(installedApp), handler: pipelineHandler, context: context, completionHandler: completionHandler)
+        let dbContext = self.getValidDbContext()
+        self.pipelineRunner.performSingleOperation(.backup(installedApp), handler: pipelineHandler, dbContext: dbContext, completionHandler: completionHandler)
     }
     
     func restore(_ installedApp: InstalledApp, presentingViewController: UIViewController?, completionHandler: @escaping (Result<InstalledApp, Error>) -> Void)
     {
         debugLog("[AppManager] restore() called for app: \(installedApp.bundleIdentifier)")
         let pipelineHandler = self.makePipelineHandler(presentingViewController: presentingViewController)
-        let context = self.makeAuthenticatedContext(presentingViewController: presentingViewController)
-        self.pipelineRunner.performSingleOperation(.restore(installedApp), handler: pipelineHandler, context: context, completionHandler: completionHandler)
+        let dbContext = self.getValidDbContext()
+        self.pipelineRunner.performSingleOperation(.restore(installedApp), handler: pipelineHandler, dbContext: dbContext, completionHandler: completionHandler)
     }
     
     func removeApp(_ installedApp: InstalledApp, presentingViewController: UIViewController? = nil, completionHandler: @escaping (Result<Void, Error>) -> Void)
     {
         debugLog("[AppManager] removeApp() called for app: \(installedApp.bundleIdentifier)")
         let pipelineHandler = self.makePipelineHandler(presentingViewController: presentingViewController)
-        let context = self.makeAuthenticatedContext(presentingViewController: presentingViewController)
-        self.pipelineRunner.performVoidOperation(.removeApp(installedApp), handler: pipelineHandler, context: context, completionHandler: completionHandler)
+        let dbContext = self.getValidDbContext()
+        self.pipelineRunner.performVoidOperation(.removeApp(installedApp), handler: pipelineHandler, dbContext: dbContext, completionHandler: completionHandler)
     }
     
     func removeDeactivatedApp(_ installedApp: InstalledApp, completionHandler: @escaping (Result<Void, Error>) -> Void)
@@ -788,14 +792,11 @@ extension AppManager: PipelineProgress, PipelineExecutionContext, PipelineErrorL
         )
     }
 
-    private func makeAuthenticatedContext(presentingViewController: UIViewController? = nil,
-                                          baseContext: StandaloneOperationContext? = nil,
-                                          dbBackgroundContext: NSManagedObjectContext? = nil) -> StandaloneOperationContext
-    {
-        if let baseContext = baseContext { return baseContext }
-        let backgroundContext = dbBackgroundContext ?? DatabaseManager.shared.persistentContainer.newBackgroundContext()
-        return StandaloneOperationContext(steps: .signIn, dbBackgroundContext: backgroundContext)
+    private func getValidDbContext(_ context: NSManagedObjectContext? = nil) -> NSManagedObjectContext {
+        context ?? DatabaseManager.shared.persistentContainer.newBackgroundContext()
     }
+
+
     
 
     func installationProgress(for app: AppProtocol) -> Progress?

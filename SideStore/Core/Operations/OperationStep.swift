@@ -90,20 +90,22 @@ enum PipelineStep: OperationStep {
 
 enum StandaloneStep: OperationStep {
     case signIn
+    case preflightChecks
     case backgroundRefreshApps
     case clearAppCache
     case enableJIT
-    case fetchAppIDs
+    case syncAppIDs
     case fetchSource
     case scheduleExpirationWarningNotification
     case unknown
 
     fileprivate static let stepMap: [ObjectIdentifier: StandaloneStep] = [
-        ObjectIdentifier(SignInOperation.self):                          .signIn,
+        ObjectIdentifier(SignInOperation.self):                                  .signIn,
+        ObjectIdentifier(PreflightChecksOperation.self):                         .preflightChecks,
         ObjectIdentifier(BackgroundRefreshAppsOperation.self):                   .backgroundRefreshApps,
         ObjectIdentifier(ClearAppCacheOperation.self):                           .clearAppCache,
         ObjectIdentifier(EnableJITOperation.self):                               .enableJIT,
-        ObjectIdentifier(SyncAppIDsOperation.self):                              .fetchAppIDs,
+        ObjectIdentifier(SyncAppIDsOperation.self):                              .syncAppIDs,
         ObjectIdentifier(FetchSourceOperation.self):                             .fetchSource,
         ObjectIdentifier(ScheduleExpirationWarningNotificationOperation.self):   .scheduleExpirationWarningNotification,
     ]

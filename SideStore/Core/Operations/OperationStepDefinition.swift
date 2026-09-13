@@ -275,6 +275,10 @@ struct StandaloneStepDefinition {
         StandaloneExecutionStep(.signIn, 100)
     ]
 
+    static let preflightChecks: [StandaloneExecutionStep] = [
+        StandaloneExecutionStep(.preflightChecks, 100)
+    ]
+
     static let backgroundRefreshApps: [StandaloneExecutionStep] = [
         StandaloneExecutionStep(.backgroundRefreshApps, 100)
     ]
@@ -285,6 +289,10 @@ struct StandaloneStepDefinition {
 
     static let enableJIT: [StandaloneExecutionStep] = [
         StandaloneExecutionStep(.enableJIT, 100)
+    ]
+
+    static let syncAppIDs: [StandaloneExecutionStep] = [
+        StandaloneExecutionStep(.syncAppIDs, 100)
     ]
 
     static let scheduleExpirationWarningNotification: [StandaloneExecutionStep] = [
@@ -307,8 +315,10 @@ extension Array where Element == PipelineExecutionStep {
 
 extension Array where Element == StandaloneExecutionStep {
     static var signIn:                                [StandaloneExecutionStep] { StandaloneStepDefinition.signIn                                }
+    static var preflightChecks:                       [StandaloneExecutionStep] { StandaloneStepDefinition.preflightChecks                       }
     static var backgroundRefreshApps:                 [StandaloneExecutionStep] { StandaloneStepDefinition.backgroundRefreshApps                 }
     static var clearAppCache:                         [StandaloneExecutionStep] { StandaloneStepDefinition.clearAppCache                         }
     static var enableJIT:                             [StandaloneExecutionStep] { StandaloneStepDefinition.enableJIT                             }
+    static var syncAppIDs:                            [StandaloneExecutionStep] { StandaloneStepDefinition.syncAppIDs                            }
     static var scheduleExpirationWarningNotification: [StandaloneExecutionStep] { StandaloneStepDefinition.scheduleExpirationWarningNotification }
 }
