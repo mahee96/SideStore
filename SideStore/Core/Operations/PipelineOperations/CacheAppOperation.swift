@@ -64,7 +64,7 @@ final class CacheAppOperation: BasePipelineOperation<InstallAppOperationContext,
                 do {
                     let resourceValues = try payloadDir.resourceValues(forKeys: [.isDirectoryKey, .nameKey])
                     guard let isDirectory = resourceValues.isDirectory, let signature = resourceValues.name else { continue }
-                    if isDirectory && !activeSignatures.isEmpty && !activeSignatures.contains(signature) && !isActivelyManaging(signature) {
+                    if isDirectory && !activeSignatures.contains(signature) {
                         SideStore.debugLog("[CacheAppOperation] DELETING UNUSED CACHED PAYLOAD: \(signature)")
                         try FileManager.default.removeItem(at: payloadDir)
                     }

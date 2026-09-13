@@ -70,92 +70,69 @@ final class AppManager: ObservableObject, @unchecked Sendable
     }
 
     func reconcileInstalledApps() async {
-        await Task.detached {
-            let dbBackgroundContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
-            var altstoreAppObjectID: NSManagedObjectID?
+        let dbBackgroundContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
 
-            #if targetEnvironment(simulator)
-            // Apps aren't ever actually installed to simulator, so just do nothing rather than delete them from database.
-            #else
-        
-            do {
-                try await dbBackgroundContext.perform {
-                    let installedApps = InstalledApp.all(in: dbBackgroundContext)
-                
-                    if UserDefaults.standard.legacySideloadedApps == nil {
-                        // First time updating apps since updating AltStore to use custom UTIs,
-                        // so cache all existing apps temporarily to prevent us from accidentally
-                        // deleting them due to their custom UTI not existing (yet).
-                        let apps = installedApps.map { $0.bundleIdentifier }
-                        UserDefaults.standard.legacySideloadedApps = apps
+        do {
+            let (activeBundleIDs, activeSignatures, altStoreApp) = try await dbBackgroundContext.perform {
+                let installedApps = InstalledApp.all(in: dbBackgroundContext)
+                var altStore: InstalledApp?
+
+                #if !targetEnvironment(simulator)
+                let legacyApps = Set(UserDefaults.standard.legacySideloadedApps ?? [])
+
+                for app in installedApps {
+                    if app.bundleIdentifier == StoreApp.altstoreAppID {
+                        altStore = app
+                        continue
                     }
-                
-                    let legacySideloadedApps = Set(UserDefaults.standard.legacySideloadedApps ?? [])
-                
-                    for app in installedApps {
-                        guard app.bundleIdentifier != StoreApp.altstoreAppID else {
-                            altstoreAppObjectID = app.objectID
-                            continue
-                        }
-                    
-                        guard !self.isActivelyManagingApp(withBundleID: app.bundleIdentifier) else { continue }
-                    
-                        if !UserDefaults.standard.isLegacyDeactivationSupported
-                        {
-                            // We can't (ab)use provisioning profiles to deactivate apps,
-                            // which means we must delete apps to free up active slots.
-                            // So, only check if active apps are installed to prevent
-                            // false positives when checking inactive apps.
-                            guard app.isActive else { continue }
-                        }
-                    
-                        let isDeclared = UTType(app.installedAppUTI)?.isDeclared ?? false
-                        if !isDeclared && !legacySideloadedApps.contains(app.bundleIdentifier)
-                        {
-                            // This UTI is not declared by any apps, which means this app has been deleted by the user.
-                            // This app is also not a legacy sideloaded app, so we can assume it's fine to delete it.
-                            dbBackgroundContext.delete(app)
-                        
-                            if var patchedApps = UserDefaults.standard.patchedApps, let index = patchedApps.firstIndex(of: app.bundleIdentifier)
-                            {
-                                patchedApps.remove(at: index)
-                                UserDefaults.standard.patchedApps = patchedApps
-                            }
-                        }
-                    }
-                
-                    if dbBackgroundContext.hasChanges {
-                        try dbBackgroundContext.save()
+
+                    guard app.isActive, !self.isActivelyManagingApp(withBundleID: app.bundleIdentifier) else { continue }
+
+                    let isDeclared = UTType(app.installedAppUTI)?.isDeclared ?? false
+                    guard !isDeclared, !legacyApps.contains(app.bundleIdentifier) else { continue }
+
+                    dbBackgroundContext.delete(app)
+                    if var patched = UserDefaults.standard.patchedApps {
+                        patched.removeAll { $0 == app.bundleIdentifier }
+                        UserDefaults.standard.patchedApps = patched
                     }
                 }
-            
-                if let objectID = altstoreAppObjectID {
-                    let context = StandaloneOperationContext(steps: .scheduleExpirationWarningNotification, dbBackgroundContext: dbBackgroundContext)
-                    let app = await dbBackgroundContext.perform {
-                        dbBackgroundContext.object(with: objectID) as! InstalledApp
-                    }
-                    let scheduleNotifOp = try ScheduleExpirationWarningNotificationOperation(
-                        installedApp: app,
-                        context: context
-                    )
-                    try await scheduleNotifOp.execute()
+
+                if dbBackgroundContext.hasChanges {
+                    try dbBackgroundContext.save()
                 }
-            } catch {
-                debugLog("Error while fetching installed apps. \(error)")
+                #else
+                altStore = installedApps.first { $0.bundleIdentifier == StoreApp.altstoreAppID }
+                #endif
+
+                let active = installedApps.filter { !$0.isDeleted }
+                let ids = Set(active.map(\.resignedBundleIdentifier))
+                let sigs = Set(active.compactMap(\.appBundleFingerprint))
+
+                return (ids, sigs, altStore)
             }
-            #endif
-        
-            let (installedAppBundleIDs, activeSignatures) = await dbBackgroundContext.perform {
-                let allApps = InstalledApp.all(in: dbBackgroundContext)
-                let ids = Set(allApps.map { $0.bundleIdentifier } + allApps.map { $0.resignedBundleIdentifier })
-                let sigs = Set(allApps.compactMap { $0.appBundleFingerprint })
-                return (ids, sigs)
+
+            await scheduleExpirationWarning(for: altStoreApp, in: dbBackgroundContext)
+
+            CacheAppOperation.pruneUnusedCaches(activeSignatures: activeSignatures, activeBundleIDs: activeBundleIDs) { [weak self] in
+                self?.isActivelyManagingApp(withBundleID: $0) ?? false
             }
-            
-            CacheAppOperation.pruneUnusedCaches(activeSignatures: activeSignatures, activeBundleIDs: installedAppBundleIDs) { bundleID in
-                self.isActivelyManagingApp(withBundleID: bundleID)
-            }
-        }.value
+        } catch {
+            debugLog("[AppManager] Error reconciling installed apps: \(error)")
+        }
+    }
+
+    private func scheduleExpirationWarning(for altStoreApp: InstalledApp?, in context: NSManagedObjectContext) async {
+        #if !targetEnvironment(simulator)
+        guard let altStoreApp else { return }
+        do {
+            let opContext = StandaloneOperationContext(steps: .scheduleExpirationWarningNotification, dbBackgroundContext: context)
+            let op = try ScheduleExpirationWarningNotificationOperation(installedApp: altStoreApp, context: opContext)
+            try await op.execute()
+        } catch {
+            debugLog("[AppManager] Failed to schedule expiration notification: \(error)")
+        }
+        #endif
     }
     
 
