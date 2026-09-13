@@ -89,11 +89,7 @@ final class SignInOperation: BaseStandaloneOperation<StandaloneOperationContext,
     }
     
     private func startAuthentication(reportProgress: @escaping @Sendable (Int64) -> Void) async throws -> SignInResult {
-        let (account, session) = if let silentResult = try await self.silentSignIn() {
-            silentResult
-        } else {
-            try await self.authenticationLoop()
-        }
+        let (account, session) = try await self.authenticationLoop()
 
         let authResult = try await self.provisioningLoop(
             account: account,
@@ -199,42 +195,6 @@ final class SignInOperation: BaseStandaloneOperation<StandaloneOperationContext,
         }
     }
     
-    private func silentSignIn() async throws -> (ALTAccount, ALTAppleAPISession)? {
-        // Try silent auth using Keychain Token
-        if let adsid = AuthManager.shared.adsid, 
-           let xcodeToken = AuthManager.shared.xcodeToken 
-        {
-            self.verboseLog("[SignInOperation] Authenticating Apple ID with tokens...")
-
-            do {
-                let anisetteData = try await self.getAnisetteData()
-                let xcodeVersion = await AnisetteConfigManager.shared.resolvedXcodeVersion()
-
-                return try await AuthManager.shared.authenticateWithToken(
-                    adsid: adsid,
-                    xcodeToken: xcodeToken, 
-                    anisetteData: anisetteData, 
-                    xcodeVersion: xcodeVersion
-                )
-            } catch {
-                self.debugLog("[SignInOperation] Token authentication failed: \(error)")
-            }
-        }
-        
-        // Try silent auth using Keychain Password
-        if let appleID = AuthManager.shared.currentAppleID, 
-           let password = AuthManager.shared.password 
-        {
-            self.debugLog("[SignInOperation] Authenticating Apple ID with saved password...")
-            do {
-                return try await self.signIn(appleID: appleID, password: password)
-            } catch {
-                self.debugLog("[SignInOperation] Saved password authentication failed: \(error)")
-            }
-        }
-
-        return nil
-    }
 
     private func authenticationLoop() async throws -> (account: ALTAccount, session: ALTAppleAPISession) {
         self.verboseLog("[SignInOperation] authenticationLoop: Requesting credentials...")
