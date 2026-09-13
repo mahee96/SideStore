@@ -84,6 +84,7 @@ public struct InfoPlistCustomizationCoreView: View {
     struct TargetState {
         var bundleID: String
         var previousValidBundleID: String
+        var appendTeamID: Bool
         var displayName: String
         var versionString: String
         var buildNumber: String
@@ -95,6 +96,7 @@ public struct InfoPlistCustomizationCoreView: View {
         init(
             bundleID: String,
             previousValidBundleID: String,
+            appendTeamID: Bool,
             displayName: String,
             versionString: String,
             buildNumber: String,
@@ -105,6 +107,7 @@ public struct InfoPlistCustomizationCoreView: View {
         ) {
             self.bundleID = bundleID
             self.previousValidBundleID = previousValidBundleID
+            self.appendTeamID = appendTeamID
             self.displayName = displayName
             self.versionString = versionString
             self.buildNumber = buildNumber
@@ -122,6 +125,7 @@ public struct InfoPlistCustomizationCoreView: View {
             self.minimumOSVersion = parser.minimumOSVersion ?? ""
             self.fileSharingEnabled = parser.isFileSharingEnabled
             self.openingDocumentsInPlace = parser.supportsOpeningDocumentsInPlace
+            self.appendTeamID = appendTeamID
 
             let trimmed = target.id.trimmingCharacters(in: .whitespacesAndNewlines)
             let base: String
@@ -413,10 +417,13 @@ public struct InfoPlistCustomizationCoreView: View {
 
     private func switchTarget(to newID: String) {
         guard newID != selectedTargetID else { return }
+        hideKeyboard()
 
+        // 1. Commit outgoing draft into its container
         targetStates[selectedTargetID] = TargetState(
             bundleID: bundleID,
             previousValidBundleID: previousValidBundleID,
+            appendTeamID: appendTeamID,
             displayName: displayName,
             versionString: versionString,
             buildNumber: buildNumber,
@@ -426,19 +433,30 @@ public struct InfoPlistCustomizationCoreView: View {
             rawEntries: rawEntries
         )
 
+        // 2. Switch selected target ID
         selectedTargetID = newID
 
-        if let state = targetStates[newID] {
-            bundleID = state.bundleID
-            previousValidBundleID = state.previousValidBundleID
-            displayName = state.displayName
-            versionString = state.versionString
-            buildNumber = state.buildNumber
-            minimumOSVersion = state.minimumOSVersion
-            fileSharingEnabled = state.fileSharingEnabled
-            openingDocumentsInPlace = state.openingDocumentsInPlace
-            rawEntries = state.rawEntries
+        // 3. Load incoming target draft container
+        let incoming: TargetState
+        if let existing = targetStates[newID] {
+            incoming = existing
+        } else if let target = targets.first(where: { $0.id == newID }) {
+            incoming = TargetState(target: target, teamID: teamID, appendTeamID: appendTeamID)
+            targetStates[newID] = incoming
+        } else {
+            return
         }
+
+        bundleID = incoming.bundleID
+        previousValidBundleID = incoming.previousValidBundleID
+        appendTeamID = incoming.appendTeamID
+        displayName = incoming.displayName
+        versionString = incoming.versionString
+        buildNumber = incoming.buildNumber
+        minimumOSVersion = incoming.minimumOSVersion
+        fileSharingEnabled = incoming.fileSharingEnabled
+        openingDocumentsInPlace = incoming.openingDocumentsInPlace
+        rawEntries = incoming.rawEntries
     }
 
     private var headerView: some View {
@@ -951,7 +969,7 @@ public struct InfoPlistCustomizationCoreView: View {
                 let trimmed = state.bundleID.trimmingCharacters(in: .whitespacesAndNewlines)
                 let suffix = ".\(teamID)"
                 let base: String
-                if appendTeamID && !teamID.isEmpty && trimmed.hasSuffix(suffix) {
+                if state.appendTeamID && !teamID.isEmpty && trimmed.hasSuffix(suffix) {
                     base = String(trimmed.dropLast(suffix.count))
                 } else {
                     base = trimmed
@@ -1010,9 +1028,12 @@ public struct InfoPlistCustomizationCoreView: View {
     }
 
     private func handleProceed() {
+        hideKeyboard()
+
         targetStates[selectedTargetID] = TargetState(
             bundleID: bundleID,
             previousValidBundleID: previousValidBundleID,
+            appendTeamID: appendTeamID,
             displayName: displayName,
             versionString: versionString,
             buildNumber: buildNumber,
@@ -1030,8 +1051,9 @@ public struct InfoPlistCustomizationCoreView: View {
 
         let mainID = targets.first(where: { !$0.isExtension })?.id ?? targets.first?.id ?? initialBundleID
         let mainPlist = allResults[mainID] ?? [:]
+        let mainAppendTeamID = targetStates[mainID]?.appendTeamID ?? appendTeamID
 
-        onProceedTargets?(allResults, appendTeamID)
-        onProceed?(mainPlist, appendTeamID)
+        onProceedTargets?(allResults, mainAppendTeamID)
+        onProceed?(mainPlist, mainAppendTeamID)
     }
 }

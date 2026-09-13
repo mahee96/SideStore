@@ -255,7 +255,8 @@ public struct EntitlementsCustomizationCoreView: View {
             Menu {
                 ForEach(viewModel.targets) { target in
                     SwiftUI.Button {
-                        viewModel.selectedTargetID = target.id
+                        hideKeyboard()
+                        viewModel.selectTarget(id: target.id)
                     } label: {
                         HStack {
                             Text(target.name)

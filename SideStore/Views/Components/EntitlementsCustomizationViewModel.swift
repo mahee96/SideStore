@@ -66,25 +66,7 @@ final class EntitlementsCustomizationViewModel: ObservableObject {
     let onProceedTargets: ([String: [String: any Sendable]]) -> Void
     let onCancel: () -> Void
 
-    @Published var selectedTargetID: String {
-        willSet {
-            entriesByTargetID[selectedTargetID] = activeEntries
-        }
-        didSet {
-            activeEntries = entriesByTargetID[selectedTargetID] ?? []
-            searchQuery = ""
-        }
-    }
-
-    private var entriesByTargetID: [String: [EntitlementEntry]] = [:]
-    var currentTarget: EntitlementsTarget? {
-        targets.first(where: { $0.id == selectedTargetID }) ?? targets.first
-    }
-
-    var bundleID: String {
-        currentTarget?.id ?? selectedTargetID
-    }
-
+    @Published var selectedTargetID: String
     @Published var activeEntries: [EntitlementEntry] = []
     @Published var searchQuery: String = ""
     @Published var isShowingAddCustomSheet: Bool = false
@@ -94,6 +76,59 @@ final class EntitlementsCustomizationViewModel: ObservableObject {
     @Published var newCustomBool: Bool = true
     @Published var newCustomArrayText: String = ""
     @Published var newArrayItemText: String = ""
+
+    private var draftContainers: [String: [EntitlementEntry]] = [:]
+
+    var currentTarget: EntitlementsTarget? {
+        targets.first(where: { $0.id == selectedTargetID }) ?? targets.first
+    }
+
+    var bundleID: String {
+        currentTarget?.id ?? selectedTargetID
+    }
+
+    static func parseInitialEntries(from dictionary: [String: any Sendable]) -> [EntitlementEntry] {
+        var entries: [EntitlementEntry] = []
+        for (key, val) in dictionary {
+            guard !nonCustomizableEntitlementKeys.contains(key) else {
+                continue
+            }
+
+            if let boolVal = val as? Bool {
+                entries.append(EntitlementEntry(key: key, type: .boolean, boolValue: boolVal, isAppDefault: true))
+            } else if let arrVal = val as? [String] {
+                entries.append(EntitlementEntry(key: key, type: .stringArray, arrayValue: arrVal, isAppDefault: true))
+            } else if let strVal = val as? String {
+                entries.append(EntitlementEntry(key: key, type: .string, stringValue: strVal, isAppDefault: true))
+            } else if let numVal = val as? NSNumber {
+                entries.append(EntitlementEntry(key: key, type: .number, stringValue: numVal.stringValue, isAppDefault: true))
+            }
+        }
+        entries.sort { $0.key.localizedCaseInsensitiveCompare($1.key) == .orderedAscending }
+        return entries
+    }
+
+    func selectTarget(id: String) {
+        guard id != selectedTargetID else { return }
+
+        // 1. Commit outgoing draft into its container
+        draftContainers[selectedTargetID] = activeEntries
+
+        // 2. Switch active target
+        selectedTargetID = id
+        searchQuery = ""
+
+        // 3. Load incoming target draft container (or initial entries if untouched)
+        if let existingDraft = draftContainers[id] {
+            activeEntries = existingDraft
+        } else if let target = targets.first(where: { $0.id == id }) {
+            let parsed = Self.parseInitialEntries(from: target.initialEntitlements)
+            draftContainers[id] = parsed
+            activeEntries = parsed
+        } else {
+            activeEntries = []
+        }
+    }
 
     init(
         targets: [EntitlementsTarget],
@@ -108,29 +143,12 @@ final class EntitlementsCustomizationViewModel: ObservableObject {
 
         var map: [String: [EntitlementEntry]] = [:]
         for target in targets {
-            var entries: [EntitlementEntry] = []
-            for (key, val) in target.initialEntitlements {
-                guard !Self.nonCustomizableEntitlementKeys.contains(key) else {
-                    continue
-                }
-
-                if let boolVal = val as? Bool {
-                    entries.append(EntitlementEntry(key: key, type: .boolean, boolValue: boolVal, isAppDefault: true))
-                } else if let arrVal = val as? [String] {
-                    entries.append(EntitlementEntry(key: key, type: .stringArray, arrayValue: arrVal, isAppDefault: true))
-                } else if let strVal = val as? String {
-                    entries.append(EntitlementEntry(key: key, type: .string, stringValue: strVal, isAppDefault: true))
-                } else if let numVal = val as? NSNumber {
-                    entries.append(EntitlementEntry(key: key, type: .number, stringValue: numVal.stringValue, isAppDefault: true))
-                }
-            }
-            entries.sort { $0.key.localizedCaseInsensitiveCompare($1.key) == .orderedAscending }
-            map[target.id] = entries
+            map[target.id] = Self.parseInitialEntries(from: target.initialEntitlements)
         }
 
         let initialID = targets.first?.id ?? ""
         self.selectedTargetID = initialID
-        self.entriesByTargetID = map
+        self.draftContainers = map
         self.activeEntries = map[initialID] ?? []
     }
 
@@ -307,12 +325,12 @@ final class EntitlementsCustomizationViewModel: ObservableObject {
     }
 
     func handleProceed() {
-        entriesByTargetID[selectedTargetID] = activeEntries
+        draftContainers[selectedTargetID] = activeEntries
 
         var allResults: [String: [String: any Sendable]] = [:]
 
         for target in targets {
-            let entries = entriesByTargetID[target.id] ?? []
+            let entries = draftContainers[target.id] ?? []
             var result: [String: any Sendable] = [:]
 
             for (key, val) in target.initialEntitlements {
