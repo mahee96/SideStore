@@ -183,19 +183,6 @@ public final class AuthManager: @unchecked Sendable {
             verificationHandler: verificationHandler
         )
     }
-    
-    public func authenticateWithToken(adsid: String,
-                                      xcodeToken: String,
-                                      anisetteData: ALTAnisetteData,
-                                      xcodeVersion: String) async throws -> (ALTAccount, ALTAppleAPISession)
-    {
-        return try await self.portalProxy.authenticateWithToken(
-            adsid: adsid,
-            xcodeToken: xcodeToken,
-            anisetteData: anisetteData,
-            xcodeVersion: xcodeVersion
-        )
-    }
 }
 
 fileprivate extension DatabaseManager {
