@@ -33,36 +33,13 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
 
         if UserDefaults.standard.customizeInfoPlist {
             let authoritativeBundleID = context.installedApp?.bundleIdentifier ?? context.targetBundleIdentifier
-            let appDirectory = InstalledApp.appsDirectoryURL.appendingPathComponent(authoritativeBundleID)
-            let cachedPlistURL = appDirectory.appendingPathComponent("custom_info.plist")
-            
-            var cachedPlist: [String: any Sendable]? = nil
-            if FileManager.default.fileExists(atPath: cachedPlistURL.path),
-               let parser = try? InfoPlistParser(plistURL: cachedPlistURL) {
-                cachedPlist = parser.rawDictionary
-                debugLog("[UserCustomizationOperation] Primed custom Info.plist from \(cachedPlistURL.path)")
-            }
-
-            let initialPlist: [String: any Sendable] = {
-                if let cached = cachedPlist {
-                    return cached
-                }
-                if let targetAppBundle = context.targetAppBundle {
-                    return targetAppBundle.infoPlist
-                }
-                return ["CFBundleIdentifier": context.targetBundleIdentifier]
-            }()
-
-            let initialBundleID = (cachedPlist?["CFBundleIdentifier"] as? String) ?? context.targetBundleIdentifier
-            let installedAppTeamID = context.installedApp?.team?.identifier
             let authTeam = try await AuthManager.shared.getAuthenticatedTeam()
             let teamID = authTeam.identifier
-            debugLog("[UserCustomizationOperation] initialBundleID='\(initialBundleID)', installedAppTeamID='\(installedAppTeamID ?? "nil")', authTeamID='\(teamID)', appendTeamID=\(context.appendTeamID)")
+            debugLog("[UserCustomizationOperation] authoritativeBundleID='\(authoritativeBundleID)', authTeamID='\(teamID)', appendTeamID=\(context.appendTeamID)")
             guard !teamID.isEmpty else {
                 debugLog("[UserCustomizationOperation] FAILED: authTeamID is empty")
                 throw OperationError.invalidParameters("Active developer team identifier is missing.")
             }
-            debugLog("[UserCustomizationOperation] resolved teamID='\(teamID)'")
 
             // Fetch installed apps to detect existing installations by authoritative bundle ID
             let installedApps: [InstalledApp] = context.dbBackgroundContext.performAndWait {
@@ -76,10 +53,32 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
                 uniquingKeysWith: { first, _ in first }
             )
 
+            // Resolve cached plist if previously customized
+            let mainCachedURL = InstalledApp.customInfoPlistURL(forBundleIdentifier: authoritativeBundleID, targetID: context.targetBundleIdentifier)
+            let mainCachedParser = mainCachedURL.flatMap { try? InfoPlistParser(plistURL: $0) }
+            let initialBundleID = mainCachedParser?.bundleIdentifier ?? context.targetBundleIdentifier
+
+            let targets: [InfoPlistTarget] = {
+                guard let targetAppBundle = context.targetAppBundle else {
+                    let mainPlist = mainCachedParser?.rawDictionary ?? ["CFBundleIdentifier": context.targetBundleIdentifier]
+                    return [InfoPlistTarget(id: initialBundleID, initialPlist: mainPlist)]
+                }
+                var list: [InfoPlistTarget] = []
+                let mainPlist = mainCachedParser?.rawDictionary ?? targetAppBundle.infoPlist
+                list.append(InfoPlistTarget(id: initialBundleID, name: targetAppBundle.name, isExtension: false, initialPlist: mainPlist))
+
+                for ext in targetAppBundle.allAppBundles where ext.isExtension {
+                    let extCachedURL = InstalledApp.customInfoPlistURL(forBundleIdentifier: authoritativeBundleID, targetID: ext.bundleIdentifier)
+                    let extPlist = extCachedURL.flatMap { try? InfoPlistParser(plistURL: $0).rawDictionary } ?? ext.infoPlist
+                    list.append(InfoPlistTarget(id: ext.bundleIdentifier, name: ext.name, isExtension: true, initialPlist: extPlist))
+                }
+                return list
+            }()
+
             self.setProgress(40)
 
             guard let result = try await handler.resolveInfoPlistCustomization(
-                initialPlist: initialPlist,
+                targets: targets,
                 initialBundleID: initialBundleID,
                 appendTeamID: context.appendTeamID,
                 installedAppIdentities: installedAppIdentities,
@@ -90,14 +89,18 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
 
             context.appendTeamID = result.appendTeamID
 
-            let customID = (result.modifiedPlist["CFBundleIdentifier"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let mainModifiedPlist = result.modifiedPlists[initialBundleID] ?? result.modifiedPlists[context.targetBundleIdentifier] ?? [:]
+            let customID = InfoPlistParser(dictionary: mainModifiedPlist).bundleIdentifier
             if let customID = customID, !customID.isEmpty, customID != context.bundleIdentifier {
                 context.customBundleIdentifier = customID
             } else {
                 context.customBundleIdentifier = nil
             }
 
-            context.customInfoPlistByBundleID[context.targetBundleIdentifier] = result.modifiedPlist
+            for (targetID, plist) in result.modifiedPlists {
+                let key = (targetID == initialBundleID) ? context.targetBundleIdentifier : targetID
+                context.customInfoPlistByBundleID[key] = plist
+            }
 
             // Dynamically link existing installed app if bundle ID matches
             let effectiveCustomID = customID ?? initialBundleID
@@ -111,7 +114,12 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
             }
 
             if let targetAppBundle = context.targetAppBundle {
-                try? targetAppBundle.updateInfoPlist(with: result.modifiedPlist)
+                try? targetAppBundle.updateInfoPlist(with: mainModifiedPlist)
+                for ext in targetAppBundle.allAppBundles where ext.isExtension {
+                    if let extPlist = result.modifiedPlists[ext.bundleIdentifier] {
+                        try? ext.updateInfoPlist(with: extPlist)
+                    }
+                }
             }
         } else if UserDefaults.standard.customizeAppId {
             let initialBundleID = context.targetBundleIdentifier
@@ -131,20 +139,55 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
 
         if UserDefaults.standard.customizeEntitlements {
             let authTeam = try await AuthManager.shared.getAuthenticatedTeam()
-            let initialEntitlements = context.targetAppBundle?.entitlements ?? [:]
             self.setProgress(70)
 
+            let targets: [EntitlementsTarget] = {
+                guard let targetAppBundle = context.targetAppBundle else {
+                    return [
+                        EntitlementsTarget(
+                            id: context.targetBundleIdentifier,
+                            name: context.targetBundleIdentifier,
+                            isExtension: false,
+                            initialEntitlements: [:]
+                        )
+                    ]
+                }
+                var list: [EntitlementsTarget] = [
+                    EntitlementsTarget(
+                        id: context.targetBundleIdentifier,
+                        name: targetAppBundle.name,
+                        isExtension: false,
+                        initialEntitlements: targetAppBundle.entitlements
+                    )
+                ]
+                for ext in targetAppBundle.allAppBundles where ext.isExtension {
+                    list.append(
+                        EntitlementsTarget(
+                            id: ext.bundleIdentifier,
+                            name: ext.name,
+                            isExtension: true,
+                            initialEntitlements: ext.entitlements
+                        )
+                    )
+                }
+                return list
+            }()
+
             guard let result = try await handler.resolveEntitlementsCustomization(
-                initialEntitlements: initialEntitlements,
-                bundleID: context.targetBundleIdentifier,
+                targets: targets,
                 teamType: authTeam.type
             ) else {
                 throw OperationError.cancelled
             }
 
-            context.customEntitlementsByBundleID[context.targetBundleIdentifier] = result
-            for (key, value) in result {
-                context.additionalEntitlements[ALTEntitlement(key)] = value
+            for (targetID, targetEntitlements) in result {
+                context.customEntitlementsByBundleID[targetID] = targetEntitlements
+            }
+            let mainKey = context.targetBundleIdentifier
+            if let mainEntitlements = result[mainKey] ?? result[context.bundleIdentifier] {
+                for (key, value) in mainEntitlements {
+                    context.additionalEntitlements[ALTEntitlement(key)] = value
+                }
             }
         }
 

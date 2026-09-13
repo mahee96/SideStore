@@ -20,9 +20,6 @@ final class PatchInfoPlistOperation: BasePipelineOperation<InstallAppOperationCo
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         
         let bundleID = self.context.installedApp?.bundleIdentifier ?? self.context.targetBundleIdentifier
-        let appDirectory = InstalledApp.appsDirectoryURL.appendingPathComponent(bundleID)
-        let infoPlistDirectory = appDirectory.appendingPathComponent("Info.plist")
-        let legacyPlistURL = appDirectory.appendingPathComponent("custom_info.plist")
         
         guard let targetAppBundle = self.context.targetAppBundle else {
             debugLog("[PatchInfoPlistOperation] No targetAppBundle found. Skipping.")
@@ -31,18 +28,7 @@ final class PatchInfoPlistOperation: BasePipelineOperation<InstallAppOperationCo
 
         for bundle in targetAppBundle.allAppBundles {
             let targetID = bundle.bundleIdentifier
-            let targetPlistURL = infoPlistDirectory.appendingPathComponent("\(targetID).plist")
-            
-            let plistURLToRead: URL?
-            if FileManager.default.fileExists(atPath: targetPlistURL.path) {
-                plistURLToRead = targetPlistURL
-            } else if bundle == targetAppBundle && FileManager.default.fileExists(atPath: legacyPlistURL.path) {
-                plistURLToRead = legacyPlistURL
-            } else {
-                plistURLToRead = nil
-            }
-            
-            guard let plistURL = plistURLToRead else {
+            guard let plistURL = InstalledApp.customInfoPlistURL(forBundleIdentifier: bundleID, targetID: targetID) else {
                 continue
             }
             

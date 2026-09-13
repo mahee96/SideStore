@@ -117,8 +117,8 @@ public struct InfoPlistCustomizationCoreView: View {
         init(target: InfoPlistTarget, teamID: String, appendTeamID: Bool) {
             let parser = InfoPlistParser(dictionary: target.initialPlist)
             self.displayName = parser.displayName ?? parser.bundleName ?? ""
-            self.versionString = (target.initialPlist["CFBundleShortVersionString"] as? String) ?? parser.shortVersionString ?? ""
-            self.buildNumber = (target.initialPlist["CFBundleVersion"] as? String) ?? parser.buildVersion ?? ""
+            self.versionString = parser.shortVersionString ?? ""
+            self.buildNumber = parser.buildVersion ?? ""
             self.minimumOSVersion = parser.minimumOSVersion ?? ""
             self.fileSharingEnabled = parser.isFileSharingEnabled
             self.openingDocumentsInPlace = parser.supportsOpeningDocumentsInPlace

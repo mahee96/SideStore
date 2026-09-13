@@ -78,8 +78,8 @@ struct InfoPlistContainerView: View {
         let hasAppMetadata = parser.displayName != nil ||
             parser.bundleName != nil ||
             parser.bundleIdentifier != nil ||
-            plist["CFBundleShortVersionString"] != nil ||
-            plist["CFBundleVersion"] != nil ||
+            parser.rawDictionary["CFBundleShortVersionString"] != nil ||
+            parser.rawDictionary["CFBundleVersion"] != nil ||
             parser.minimumOSVersion != nil
         _selectedMode = State(initialValue: hasAppMetadata ? .semantic : .tree)
     }
@@ -495,12 +495,7 @@ struct InfoPlistSemanticView: View {
         return parser.bundleIdentifier ?? "N/A"
     }
     var version: String {
-        let short = plist["CFBundleShortVersionString"] as? String
-        let build = plist["CFBundleVersion"] as? String
-        if let short = short, let build = build {
-            return "\(short) (\(build))"
-        }
-        return short ?? build ?? "N/A"
+        return parser.displayVersion
     }
     var minOS: String {
         return parser.minimumOSVersion ?? "N/A"
@@ -552,8 +547,8 @@ struct InfoPlistSemanticView: View {
         parser.displayName != nil ||
         parser.bundleName != nil ||
         parser.bundleIdentifier != nil ||
-        plist["CFBundleShortVersionString"] != nil ||
-        plist["CFBundleVersion"] != nil ||
+        parser.rawDictionary["CFBundleShortVersionString"] != nil ||
+        parser.rawDictionary["CFBundleVersion"] != nil ||
         parser.minimumOSVersion != nil
     }
     

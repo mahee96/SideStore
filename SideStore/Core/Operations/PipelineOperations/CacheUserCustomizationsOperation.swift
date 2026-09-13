@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import SideSign
 
 final class CacheUserCustomizationsOperation: BasePipelineOperation<InstallAppOperationContext, Void>, @unchecked Sendable {
     override func execute(parentProgress: Progress?) async throws {
@@ -24,32 +25,27 @@ final class CacheUserCustomizationsOperation: BasePipelineOperation<InstallAppOp
             return
         }
         
-        let appDirectory = InstalledApp.appsDirectoryURL.appendingPathComponent(bundleID)
-        let infoPlistDirectory = appDirectory.appendingPathComponent("Info.plist")
-        let entitlementsDirectory = appDirectory.appendingPathComponent("Entitlements")
-        
         // Cache Info.plist customizations
         let customInfoPlists = self.context.customInfoPlistByBundleID
         if !customInfoPlists.isEmpty {
+            let infoPlistDirectory = InstalledApp.customInfoPlistDirectoryURL(forBundleIdentifier: bundleID)
             try FileManager.default.createDirectory(at: infoPlistDirectory, withIntermediateDirectories: true, attributes: nil)
             for (targetID, plist) in customInfoPlists {
                 let fileURL = infoPlistDirectory.appendingPathComponent("\(targetID).plist")
-                let plistData = try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
-                try plistData.write(to: fileURL, options: .atomic)
+                try InfoPlistParser(dictionary: plist).write(to: fileURL)
                 debugLog("[CacheUserCustomizationsOperation] Cached Info.plist for \(targetID) to \(fileURL.path)")
             }
             // Also write legacy custom_info.plist for main app compatibility
             if let mainPlist = customInfoPlists[bundleID] {
-                let legacyURL = appDirectory.appendingPathComponent("custom_info.plist")
-                if let legacyData = try? PropertyListSerialization.data(fromPropertyList: mainPlist, format: .xml, options: 0) {
-                    try? legacyData.write(to: legacyURL, options: .atomic)
-                }
+                let legacyURL = InstalledApp.appsDirectoryURL.appendingPathComponent(bundleID).appendingPathComponent("custom_info.plist")
+                try? InfoPlistParser(dictionary: mainPlist).write(to: legacyURL)
             }
         }
         
         // Cache Entitlements customizations
         let customEntitlements = self.context.customEntitlementsByBundleID
         if !customEntitlements.isEmpty {
+            let entitlementsDirectory = InstalledApp.customEntitlementsDirectoryURL(forBundleIdentifier: bundleID)
             try FileManager.default.createDirectory(at: entitlementsDirectory, withIntermediateDirectories: true, attributes: nil)
             for (targetID, entitlements) in customEntitlements {
                 let fileURL = entitlementsDirectory.appendingPathComponent("\(targetID).plist")

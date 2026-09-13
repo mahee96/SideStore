@@ -455,6 +455,32 @@ public extension InstalledApp
         
         return directoryURL
     }
+
+    class func customInfoPlistDirectoryURL(forBundleIdentifier bundleIdentifier: String) -> URL {
+        return InstalledApp.appsDirectoryURL.appendingPathComponent(bundleIdentifier).appendingPathComponent("Info.plist")
+    }
+
+    class func customEntitlementsDirectoryURL(forBundleIdentifier bundleIdentifier: String) -> URL {
+        return InstalledApp.appsDirectoryURL.appendingPathComponent(bundleIdentifier).appendingPathComponent("Entitlements")
+    }
+
+    class func customInfoPlistURL(forBundleIdentifier bundleIdentifier: String, targetID: String) -> URL? {
+        let appDirectory = InstalledApp.appsDirectoryURL.appendingPathComponent(bundleIdentifier)
+        let multiTargetURL = appDirectory.appendingPathComponent("Info.plist").appendingPathComponent("\(targetID).plist")
+        if FileManager.default.fileExists(atPath: multiTargetURL.path) {
+            return multiTargetURL
+        }
+        let legacyURL = appDirectory.appendingPathComponent("custom_info.plist")
+        if targetID == bundleIdentifier && FileManager.default.fileExists(atPath: legacyURL.path) {
+            return legacyURL
+        }
+        return nil
+    }
+
+    class func customEntitlementsURL(forBundleIdentifier bundleIdentifier: String, targetID: String) -> URL? {
+        let fileURL = customEntitlementsDirectoryURL(forBundleIdentifier: bundleIdentifier).appendingPathComponent("\(targetID).plist")
+        return FileManager.default.fileExists(atPath: fileURL.path) ? fileURL : nil
+    }
     
     class func installedAppUTI(forBundleIdentifier bundleIdentifier: String) -> String
     {
