@@ -148,7 +148,7 @@ public struct InfoPlistCustomizationCoreView: View {
             ]
 
             var entries: [RawPlistEntry] = []
-            for (key, val) in initialPlist where !standardKeys.contains(key) {
+            for (key, val) in target.initialPlist where !standardKeys.contains(key) {
                 if let boolVal = val as? Bool {
                     entries.append(RawPlistEntry(key: key, value: boolVal ? "YES" : "NO", type: .boolean))
                 } else if let numVal = val as? NSNumber {

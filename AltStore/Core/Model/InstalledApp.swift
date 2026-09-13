@@ -481,6 +481,21 @@ public extension InstalledApp
         let fileURL = customEntitlementsDirectoryURL(forBundleIdentifier: bundleIdentifier).appendingPathComponent("\(targetID).plist")
         return FileManager.default.fileExists(atPath: fileURL.path) ? fileURL : nil
     }
+
+    class func customInfoPlist(forBundleIdentifier bundleIdentifier: String, targetID: String) -> [String: any Sendable]? {
+        guard let url = customInfoPlistURL(forBundleIdentifier: bundleIdentifier, targetID: targetID),
+              let parser = try? InfoPlistParser(plistURL: url)
+        else { return nil }
+        return parser.rawDictionary
+    }
+
+    class func customEntitlements(forBundleIdentifier bundleIdentifier: String, targetID: String) -> [String: any Sendable]? {
+        guard let url = customEntitlementsURL(forBundleIdentifier: bundleIdentifier, targetID: targetID),
+              let data = try? Data(contentsOf: url),
+              let plist = (try? PropertyListSerialization.propertyList(from: data, options: [], format: nil)) as? [String: any Sendable]
+        else { return nil }
+        return plist
+    }
     
     class func installedAppUTI(forBundleIdentifier bundleIdentifier: String) -> String
     {

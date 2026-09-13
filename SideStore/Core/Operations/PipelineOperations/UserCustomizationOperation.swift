@@ -32,10 +32,10 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
         let handler = context.handler.userCustomizationHandler
 
         if UserDefaults.standard.customizeInfoPlist {
-            let authoritativeBundleID = context.installedApp?.bundleIdentifier ?? context.targetBundleIdentifier
+            let cacheFolderID = context.installedApp?.bundleIdentifier ?? context.bundleIdentifier
             let authTeam = try await AuthManager.shared.getAuthenticatedTeam()
             let teamID = authTeam.identifier
-            debugLog("[UserCustomizationOperation] authoritativeBundleID='\(authoritativeBundleID)', authTeamID='\(teamID)', appendTeamID=\(context.appendTeamID)")
+            debugLog("[UserCustomizationOperation] cacheFolderID='\(cacheFolderID)', authTeamID='\(teamID)', appendTeamID=\(context.appendTeamID)")
             guard !teamID.isEmpty else {
                 debugLog("[UserCustomizationOperation] FAILED: authTeamID is empty")
                 throw OperationError.invalidParameters("Active developer team identifier is missing.")
@@ -54,7 +54,7 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
             )
 
             // Resolve cached plist if previously customized
-            let mainCachedURL = InstalledApp.customInfoPlistURL(forBundleIdentifier: authoritativeBundleID, targetID: context.targetBundleIdentifier)
+            let mainCachedURL = InstalledApp.customInfoPlistURL(forBundleIdentifier: cacheFolderID, targetID: context.targetBundleIdentifier)
             let mainCachedParser = mainCachedURL.flatMap { try? InfoPlistParser(plistURL: $0) }
             let initialBundleID = mainCachedParser?.bundleIdentifier ?? context.targetBundleIdentifier
 
@@ -68,7 +68,7 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
                 list.append(InfoPlistTarget(id: initialBundleID, name: targetAppBundle.name, isExtension: false, initialPlist: mainPlist))
 
                 for ext in targetAppBundle.allAppBundles where ext.isExtension {
-                    let extCachedURL = InstalledApp.customInfoPlistURL(forBundleIdentifier: authoritativeBundleID, targetID: ext.bundleIdentifier)
+                    let extCachedURL = InstalledApp.customInfoPlistURL(forBundleIdentifier: cacheFolderID, targetID: ext.bundleIdentifier)
                     let extPlist = extCachedURL.flatMap { try? InfoPlistParser(plistURL: $0).rawDictionary } ?? ext.infoPlist
                     list.append(InfoPlistTarget(id: ext.bundleIdentifier, name: ext.name, isExtension: true, initialPlist: extPlist))
                 }
@@ -89,7 +89,7 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
 
             context.appendTeamID = result.appendTeamID
 
-            let mainModifiedPlist = result.modifiedPlists[initialBundleID] ?? result.modifiedPlists[context.targetBundleIdentifier] ?? [:]
+            let mainModifiedPlist = result.modifiedPlists[initialBundleID] ?? [:]
             let customID = InfoPlistParser(dictionary: mainModifiedPlist).bundleIdentifier
             if let customID = customID, !customID.isEmpty, customID != context.bundleIdentifier {
                 context.customBundleIdentifier = customID
@@ -139,34 +139,45 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
 
         if UserDefaults.standard.customizeEntitlements {
             let authTeam = try await AuthManager.shared.getAuthenticatedTeam()
+            let cacheFolderID = context.installedApp?.bundleIdentifier ?? context.bundleIdentifier
+            let mainTargetID = context.targetBundleIdentifier
             self.setProgress(70)
 
             let targets: [EntitlementsTarget] = {
                 guard let targetAppBundle = context.targetAppBundle else {
+                    let cachedEntitlements = InstalledApp.customEntitlements(forBundleIdentifier: cacheFolderID, targetID: mainTargetID) ?? [:]
                     return [
                         EntitlementsTarget(
-                            id: context.targetBundleIdentifier,
-                            name: context.targetBundleIdentifier,
+                            id: mainTargetID,
+                            name: mainTargetID,
                             isExtension: false,
-                            initialEntitlements: [:]
+                            initialEntitlements: cachedEntitlements
                         )
                     ]
                 }
+
+                let mainCachedEntitlements = InstalledApp.customEntitlements(forBundleIdentifier: cacheFolderID, targetID: mainTargetID)
+                    ?? targetAppBundle.entitlements
+
                 var list: [EntitlementsTarget] = [
                     EntitlementsTarget(
-                        id: context.targetBundleIdentifier,
+                        id: mainTargetID,
                         name: targetAppBundle.name,
                         isExtension: false,
-                        initialEntitlements: targetAppBundle.entitlements
+                        initialEntitlements: mainCachedEntitlements
                     )
                 ]
+
                 for ext in targetAppBundle.allAppBundles where ext.isExtension {
+                    let extCachedEntitlements = InstalledApp.customEntitlements(forBundleIdentifier: cacheFolderID, targetID: ext.bundleIdentifier)
+                        ?? ext.entitlements
+
                     list.append(
                         EntitlementsTarget(
                             id: ext.bundleIdentifier,
                             name: ext.name,
                             isExtension: true,
-                            initialEntitlements: ext.entitlements
+                            initialEntitlements: extCachedEntitlements
                         )
                     )
                 }
@@ -183,8 +194,8 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
             for (targetID, targetEntitlements) in result {
                 context.customEntitlementsByBundleID[targetID] = targetEntitlements
             }
-            let mainKey = context.targetBundleIdentifier
-            if let mainEntitlements = result[mainKey] ?? result[context.bundleIdentifier] {
+
+            if let mainEntitlements = result[mainTargetID] {
                 for (key, value) in mainEntitlements {
                     context.additionalEntitlements[ALTEntitlement(key)] = value
                 }

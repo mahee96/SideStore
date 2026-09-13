@@ -28,27 +28,35 @@ final class PatchInfoPlistOperation: BasePipelineOperation<InstallAppOperationCo
 
         for bundle in targetAppBundle.allAppBundles {
             let targetID = bundle.bundleIdentifier
-            guard let plistURL = InstalledApp.customInfoPlistURL(forBundleIdentifier: bundleID, targetID: targetID) else {
-                continue
+            if let plistURL = InstalledApp.customInfoPlistURL(forBundleIdentifier: bundleID, targetID: targetID) {
+                do {
+                    let customParser = try InfoPlistParser(plistURL: plistURL)
+                    self.context.customInfoPlistByBundleID[targetID] = customParser.rawDictionary
+                    
+                    if bundle == targetAppBundle {
+                        if let customID = customParser.bundleIdentifier,
+                           !customID.isEmpty,
+                           customID != self.context.bundleIdentifier {
+                            self.context.customBundleIdentifier = customID
+                        }
+                    }
+                    
+                    try bundle.updateInfoPlist(with: customParser.rawDictionary)
+                    debugLog("[PatchInfoPlistOperation] Successfully patched Info.plist for \(targetID) from \(plistURL.lastPathComponent)")
+                } catch {
+                    debugLog("[PatchInfoPlistOperation] Error applying custom Info.plist for \(targetID): \(error)")
+                    throw error
+                }
             }
-            
-            do {
-                let customParser = try InfoPlistParser(plistURL: plistURL)
-                self.context.customInfoPlistByBundleID[targetID] = customParser.rawDictionary
-                
+
+            if let customEntitlements = InstalledApp.customEntitlements(forBundleIdentifier: bundleID, targetID: targetID) {
+                self.context.customEntitlementsByBundleID[targetID] = customEntitlements
                 if bundle == targetAppBundle {
-                    if let customID = customParser.bundleIdentifier,
-                       !customID.isEmpty,
-                       customID != self.context.bundleIdentifier {
-                        self.context.customBundleIdentifier = customID
+                    for (key, value) in customEntitlements {
+                        self.context.additionalEntitlements[ALTEntitlement(key)] = value
                     }
                 }
-                
-                try bundle.updateInfoPlist(with: customParser.rawDictionary)
-                debugLog("[PatchInfoPlistOperation] Successfully patched Info.plist for \(targetID) from \(plistURL.lastPathComponent)")
-            } catch {
-                debugLog("[PatchInfoPlistOperation] Error applying custom Info.plist for \(targetID): \(error)")
-                throw error
+                debugLog("[PatchInfoPlistOperation] Successfully loaded custom entitlements for \(targetID)")
             }
         }
     }
