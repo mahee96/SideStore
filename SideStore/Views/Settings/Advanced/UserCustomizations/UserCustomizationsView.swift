@@ -20,6 +20,8 @@ struct UserCustomizationsView: View {
     @State private var showAnisetteRestartConfirmation: Bool = false
     @State private var customizeInfoPlist: Bool = UserDefaults.standard.customizeInfoPlist
     @State private var preferSheetForInfoPlistCustomization: Bool = UserDefaults.standard.preferSheetForInfoPlistCustomization
+    @State private var customizeEntitlements: Bool = UserDefaults.standard.customizeEntitlements
+    @State private var preferSheetForEntitlementsCustomization: Bool = UserDefaults.standard.preferSheetForEntitlementsCustomization
     @State private var customizeAppId: Bool = UserDefaults.standard.customizeAppId
     @State private var customizeAppExtensions: AppExtensionCustomization = UserDefaults.standard.customizeAppExtensions
     @State private var autoFixAppGroupIDs: Bool = UserDefaults.standard.autoFixAppGroupIDs
@@ -174,27 +176,12 @@ struct UserCustomizationsView: View {
                         .padding(.horizontal, 16)
                     
                     VStack(spacing: 0) {
-                        toggleRow(
-                            title: "Prefer Sheet for Info.plist",
-                            subtitle: "Use sheet instead of dialog",
-                            isOn: Binding(
-                                get: { preferSheetForInfoPlistCustomization },
-                                set: { newValue in
-                                    preferSheetForInfoPlistCustomization = newValue
-                                    UserDefaults.standard.preferSheetForInfoPlistCustomization = newValue
-                                }
-                            )
-                        )
-                        .disabled(!customizeInfoPlist)
-                        .opacity(!customizeInfoPlist ? 0.4 : 1.0)
-                        
-                        divider
-                        
-                        toggleRow(title: "Customize Info.plist", isOn: Binding(
-                            get: { customizeInfoPlist },
+
+                        toggleRow(title: "Customize Entitlements", isOn: Binding(
+                            get: { customizeEntitlements },
                             set: { newValue in
-                                customizeInfoPlist = newValue
-                                UserDefaults.standard.customizeInfoPlist = newValue
+                                customizeEntitlements = newValue
+                                UserDefaults.standard.customizeEntitlements = newValue
                             }
                         ))
                         
@@ -287,6 +274,48 @@ struct UserCustomizationsView: View {
                     }
                     .background(Color.settingsRowBackground)
                     .cornerRadius(14)
+
+                    divider
+                    
+                    toggleRow(
+                        title: "Prefer Sheet for Info.plist",
+                        subtitle: "Use sheet instead of dialog",
+                        isOn: Binding(
+                            get: { preferSheetForInfoPlistCustomization },
+                            set: { newValue in
+                                preferSheetForInfoPlistCustomization = newValue
+                                UserDefaults.standard.preferSheetForInfoPlistCustomization = newValue
+                            }
+                        )
+                    )
+                    .disabled(!customizeInfoPlist)
+                    .opacity(!customizeInfoPlist ? 0.4 : 1.0)
+                    
+                    divider
+                    
+                    toggleRow(title: "Customize Info.plist", isOn: Binding(
+                        get: { customizeInfoPlist },
+                        set: { newValue in
+                            customizeInfoPlist = newValue
+                            UserDefaults.standard.customizeInfoPlist = newValue
+                        }
+                    ))
+                    
+                    divider
+                    
+                    toggleRow(
+                        title: "Prefer Sheet for Entitlements",
+                        subtitle: "Use sheet instead of dialog",
+                        isOn: Binding(
+                            get: { preferSheetForEntitlementsCustomization },
+                            set: { newValue in
+                                preferSheetForEntitlementsCustomization = newValue
+                                UserDefaults.standard.preferSheetForEntitlementsCustomization = newValue
+                            }
+                        )
+                    )
+                    .disabled(!customizeEntitlements)
+                    .opacity(!customizeEntitlements ? 0.4 : 1.0)
                 }
 
                 // Section 2: APP VERIFICATION
