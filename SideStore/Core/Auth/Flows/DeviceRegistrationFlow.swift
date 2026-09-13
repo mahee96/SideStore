@@ -56,11 +56,11 @@ final class DeviceRegistrationFlow: @unchecked Sendable {
             }
             
             var deviceUDID = try await fetchUDID()
-            if deviceUDID == nil || deviceUDID?.isEmpty == true || deviceUDID == "XXXXX-XXXX-XXXXX-XXXX" {
+            if deviceUDID == nil || deviceUDID?.isEmpty == true  {
                 deviceUDID = try? await fetchUDID(useStatic: true)
             }
             
-            guard let udid = deviceUDID, !udid.isEmpty, udid != "XXXXX-XXXX-XXXXX-XXXX" else {
+            guard let udid = deviceUDID, !udid.isEmpty else {
                 debugLog("[DeviceRegistrationFlow] Failed to fetch device UDID.")
                 throw OperationError.unknownUDID(reason: "No valid UDID found in minimuxer response or static pairing file.")
             }

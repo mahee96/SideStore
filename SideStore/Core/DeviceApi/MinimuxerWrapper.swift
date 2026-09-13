@@ -284,13 +284,13 @@ func fetchUDID(useStatic: Bool = false) async throws -> String? {
     defer { debugLog("[SideStore] fetchUDID() completed") }
     #if targetEnvironment(simulator)
     debugLog("[SideStore] fetchUDID() is no-op on simulator")
-    return "XXXXX-XXXX-XXXXX-XXXX"
+    return "00008030-001234567890ABCD"
     #else
     debugLog("[SideStore] fetchUDID() invoked")
     let result = try? await withRemotePairingRetry {
         try await minimuxer.core.fetchUDID()
     }
-    if let udid = result ?? nil, !udid.isEmpty, udid != "XXXXX-XXXX-XXXXX-XXXX" {
+    if let udid = result ?? nil, !udid.isEmpty {
         return udid
     }
     if useStatic {
