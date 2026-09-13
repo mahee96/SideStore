@@ -170,6 +170,9 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
 
         if let customPlist = context.customInfoPlist {
             for (key, value) in customPlist {
+                if key == (kCFBundleIdentifierKey as String) || key == "CFBundleIdentifier" {
+                    continue
+                }
                 infoDictionary[key] = value
             }
         }
