@@ -563,24 +563,22 @@ final class AppManager: ObservableObject, @unchecked Sendable
                 }
             } while reader.goToNextFile()
 
-            guard let data = plistData,
-                  let plist = try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
-                  let bundleIdentifier = (plist["CFBundleIdentifier"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
-                  !bundleIdentifier.isEmpty else {
+            guard let data = plistData else {
                 throw OperationError.invalidApp(reason: "Archive missing valid Payload/*.app/Info.plist")
             }
-            let appName = (plist["CFBundleDisplayName"] as? String) ?? (plist["CFBundleName"] as? String) ?? url.deletingPathExtension().lastPathComponent
+            let parser = try InfoPlistParser(data: data)
+            guard let bundleIdentifier = parser.bundleIdentifier, !bundleIdentifier.isEmpty else {
+                throw OperationError.invalidApp(reason: "Archive missing valid bundle identifier in Info.plist")
+            }
+            let appName = parser.displayName ?? parser.bundleName ?? url.deletingPathExtension().lastPathComponent
             return (bundleIdentifier, appName)
 
         case .app:
-            let plistURL = url.appendingPathComponent("Info.plist")
-            let data = try Data(contentsOf: plistURL)
-            guard let plist = try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
-                  let bundleIdentifier = (plist["CFBundleIdentifier"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
-                  !bundleIdentifier.isEmpty else {
+            let parser = try InfoPlistParser(bundleURL: url)
+            guard let bundleIdentifier = parser.bundleIdentifier, !bundleIdentifier.isEmpty else {
                 throw OperationError.invalidApp(reason: "Invalid Info.plist in app directory")
             }
-            let appName = (plist["CFBundleDisplayName"] as? String) ?? (plist["CFBundleName"] as? String) ?? url.lastPathComponent
+            let appName = parser.displayName ?? parser.bundleName ?? url.lastPathComponent
             return (bundleIdentifier, appName)
         }
     }

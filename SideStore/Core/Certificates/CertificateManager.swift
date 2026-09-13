@@ -313,7 +313,7 @@ public final class CertificateManager: @unchecked Sendable {
     public func readBinaryCertificate(at url: URL) -> ALTX509Certificate? {
         let executableURL: URL
         if url.pathExtension == "app" {
-            guard let execURL = Bundle(url: url)?.executableURL else {
+            guard let execURL = ALTApplication(fileURL: url)?.executableURL else {
                 debugLog("[CertificateManager] readBinaryCertificate: Failed to locate executable in bundle: \(url.path)")
                 return nil
             }

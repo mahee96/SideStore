@@ -135,12 +135,9 @@ final class DownloadAppOperation: BasePipelineOperation<InstallAppOperationConte
         let appBundle = try await downloadIPA(from: sourceURL)
         
         if self.context.bundleIdentifier == StoreApp.dolphinAppID, self.context.bundleIdentifier != appBundle.bundleIdentifier {
-            if var parser = try? InfoPlistParser(plistURL: appBundle.bundle.infoPlistURL) {
-                // Manually update the app's bundle identifier to match the one specified in the source.
-                // This allows people who previously installed the app to still update and refresh normally.
-                parser.set(value: StoreApp.dolphinAppID, for: kCFBundleIdentifierKey as String)
-                try? parser.write(to: appBundle.bundle.infoPlistURL)
-            }
+            // Manually update the app's bundle identifier to match the one specified in the source.
+            // This allows people who previously installed the app to still update and refresh normally.
+            try? appBundle.updateInfoPlist(with: [kCFBundleIdentifierKey as String: StoreApp.dolphinAppID])
         }
         
         let dependencies = try await self.downloadDependencies(for: appBundle)
@@ -187,7 +184,7 @@ final class DownloadAppOperation: BasePipelineOperation<InstallAppOperationConte
         
         if isDirectory.boolValue {
             // Directory, so assuming this is .app bundle.
-            guard Bundle(url: fileURL) != nil else {
+            guard ALTApplication(fileURL: fileURL) != nil else {
                 throw OperationError.missingAppBundle(reason: "Directory at '\(fileURL.lastPathComponent)' is not a valid bundle directory")
             }
             

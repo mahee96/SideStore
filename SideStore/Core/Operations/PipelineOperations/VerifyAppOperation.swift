@@ -233,7 +233,7 @@ final class VerifyAppOperation: BasePipelineOperation<InstallAppOperationContext
 
     private func privacyPermissions(for appBundle: ALTApplication) -> [ALTAppPrivacyPermission] {
         return ([appBundle] + appBundle.appExtensions).flatMap { (app) in
-            let permissions = app.bundle.infoDictionary?.keys.compactMap { key -> ALTAppPrivacyPermission? in
+            let permissions = app.infoPlist.keys.compactMap { key -> ALTAppPrivacyPermission? in
                 if #available(iOS 16, tvOS 16, *) {
                     guard key.wholeMatch(of: Regex.privacyPermission) != nil else { return nil }
                 } else {
@@ -241,7 +241,7 @@ final class VerifyAppOperation: BasePipelineOperation<InstallAppOperationContext
                 }
                 
                 return ALTAppPrivacyPermission(rawValue: key)
-            } ?? []
+            }
             
             return permissions
         }

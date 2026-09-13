@@ -63,13 +63,13 @@ struct AppInfoView: View {
     
     private var resignedInfoPlistURL: URL? {
         if isSideStoreSelf {
-            return Bundle.Info.activeBundleURL.appendingPathComponent("Info.plist")
+            return InfoPlistParser.resolveInfoPlistURL(for: Bundle.Info.activeBundleURL)
         }
         return installedApp.customInfoPlistURL()
     }
     
     private var bundleInfoPlistURL: URL? {
-        let url = appBundleURL.appendingPathComponent("Info.plist")
+        let url = InfoPlistParser.resolveInfoPlistURL(for: appBundleURL)
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
     
@@ -636,7 +636,7 @@ struct ExtensionInfoView: View {
 
     private var bundleInfoPlistURL: URL? {
         guard let url = extensionURL else { return nil }
-        let plistURL = url.appendingPathComponent("Info.plist")
+        let plistURL = InfoPlistParser.resolveInfoPlistURL(for: url)
         return FileManager.default.fileExists(atPath: plistURL.path) ? plistURL : nil
     }
 
@@ -969,7 +969,7 @@ struct BundleInspectorView: View {
 
             if let plist = infoPlist {
                 Section(header: Text("Info.plist")) {
-                    NavigationLink(destination: InfoPlistContainerView(plist: plist, plistURL: bundleURL.appendingPathComponent("Info.plist"))) {
+                    NavigationLink(destination: InfoPlistContainerView(plist: plist, plistURL: InfoPlistParser.resolveInfoPlistURL(for: bundleURL))) {
                         Text("View Info.plist (\(plist.count) keys)")
                             .font(.subheadline)
                     }

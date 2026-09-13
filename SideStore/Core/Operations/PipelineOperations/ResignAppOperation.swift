@@ -76,8 +76,10 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
             try FileManager.default.copyItem(at: fileURL, to: appBundleURL)
         }
         
-        guard let appBundle = Bundle(url: appBundleURL) else { throw OperationError.missingAppBundle(reason: "Could not load bundle at '\(appBundleURL.lastPathComponent)'") }
-        guard let infoDictionary = appBundle.completeInfoDictionary else { throw OperationError.missingInfoPlist(reason: "Could not read Info.plist at '\(appBundleURL.lastPathComponent)'") }
+        guard let appBundle = ALTApplication(fileURL: appBundleURL) else {
+            throw OperationError.missingAppBundle(reason: "Could not load bundle at '\(appBundleURL.lastPathComponent)'")
+        }
+        let infoDictionary = appBundle.infoPlist
         
         // replace scheme targets to match the bundle suffix so multiple instances can be correctly routed for helper apps like SideBackup
         var allURLSchemes = infoDictionary[Bundle.Info.urlTypes] as? [[String: Any]] ?? []
@@ -111,7 +113,8 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
             
             if let activeCert = CertificateManager.shared.activeCertificate {
                 additionalValues[Bundle.Info.certificateID] = activeCert.serialNumber
-                try activeCert.p12Data.write(to: appBundle.certificateURL, options: .atomic)
+                let certURL = appBundle.fileURL.appendingPathComponent("ALTCertificate.p12")
+                try activeCert.p12Data.write(to: certURL, options: .atomic)
             } else {
                 self.verboseLog("[ResignAppOperation] No activeCertificate found in CertificateManager. Embedded certificate + certificate identifier in app bundle will not be updated.")
             }
@@ -125,28 +128,25 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         try self.prepare(appBundle, bundleID: bundleIdentifier, additionalInfoDictionaryValues: additionalValues, profiles: profiles, appexBundleIds: appexBundleIds)
         try self.removeMissingAppExtensionReferences(from: appBundle)
         
-        if let directory = appBundle.builtInPlugInsURL,
-           let enumerator = FileManager.default.enumerator(at: directory, includingPropertiesForKeys: nil, options: [.skipsSubdirectoryDescendants]) {
-            while let fileURL = enumerator.nextObject() as? URL {
-                guard let appExtension = Bundle(url: fileURL) else { throw OperationError.missingAppBundle(reason: "Could not load extension bundle at '\(fileURL.lastPathComponent)'") }
-                let updatedAppExBundleId = appExtension.bundleIdentifier?.replacingOccurrences(of: targetAppBundle.bundleIdentifier, with: bundleIdentifier)
-                try self.prepare(appExtension, bundleID: updatedAppExBundleId, profiles: profiles, appexBundleIds: appexBundleIds)
-            }
+        for appExtension in appBundle.appExtensions {
+            let updatedAppExBundleId = appExtension.bundleIdentifier.replacingOccurrences(of: targetAppBundle.bundleIdentifier, with: bundleIdentifier)
+            try self.prepare(appExtension, bundleID: updatedAppExBundleId, profiles: profiles, appexBundleIds: appexBundleIds)
         }
         
         return appBundleURL
     }
     
-    private func prepare(_ bundle: Bundle, bundleID identifier: String?, additionalInfoDictionaryValues: [String: Any] = [:], profiles: [String: ALTProvisioningProfile], appexBundleIds: [String: String]) throws {
+    private func prepare(_ appBundle: ALTApplication, bundleID identifier: String?, additionalInfoDictionaryValues: [String: Any] = [:], profiles: [String: ALTProvisioningProfile], appexBundleIds: [String: String]) throws {
         guard let identifier else {
             throw OperationError.invalidParameters("Bundle is missing bundle identifier.")
         }
         guard let profile = context.useMainProfile ? profiles.values.first : profiles[identifier] else {
             throw OperationError.missingProvisioningProfile(reason: "No provisioning profile found for identifier '\(identifier)'.")
         }
-        guard var infoDictionary = bundle.completeInfoDictionary else {
+        guard var parser = try? InfoPlistParser(plistURL: appBundle.infoPlistURL) else {
             throw OperationError.missingInfoPlist(reason: "Could not read Info.plist for bundle '\(identifier)'.")
         }
+        var infoDictionary = parser.rawDictionary as [String: Any]
         
         let newBundleID = appexBundleIds[identifier] ?? profile.bundleIdentifier
         infoDictionary[kCFBundleIdentifierKey as String] = newBundleID
@@ -200,14 +200,14 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         exportedUTIs.append(installedAppUTI)
         infoDictionary[Bundle.Info.exportedUTIs] = exportedUTIs
         
-        try InfoPlistParser(dictionary: infoDictionary).write(to: bundle.infoPlistURL)
+        try InfoPlistParser(dictionary: infoDictionary).write(to: appBundle.infoPlistURL)
         
         // Remove _CodeSignature folder (if it exists) because it will be added when resigning and it may have files that aren't overwritten when resigning
         // These files might be the cause of some ApplicationVerificationFailed errors
-        let codeSignaturePath = bundle.bundleURL.appendingPathComponent("_CodeSignature").absoluteString.replacingOccurrences(of: "file://", with: "")
-        if FileManager.default.fileExists(atPath: codeSignaturePath) {
-            try FileManager.default.removeItem(atPath: codeSignaturePath)
-            self.verboseLog("[ResignAppOperation] Removed _CodeSignature folder at \(codeSignaturePath)")
+        let codeSignatureURL = appBundle.fileURL.appendingPathComponent("_CodeSignature")
+        if FileManager.default.fileExists(atPath: codeSignatureURL.path) {
+            try FileManager.default.removeItem(at: codeSignatureURL)
+            self.verboseLog("[ResignAppOperation] Removed _CodeSignature folder at \(codeSignatureURL.path)")
         }
     }
     
@@ -217,28 +217,29 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         return fileURL
     }
     
-    private func removeMissingAppExtensionReferences(from bundle: Bundle) throws {
+    private func removeMissingAppExtensionReferences(from appBundle: ALTApplication) throws {
         // If app extensions have been removed from an app (either by AltStore or the developer),
         // we must remove all references to them from SC_Info/Manifest.plist (if it exists).
         
-        let scInfoURL = bundle.bundleURL.appendingPathComponent("SC_Info")
+        let scInfoURL = appBundle.fileURL.appendingPathComponent("SC_Info")
         let manifestPlistURL = scInfoURL.appendingPathComponent("Manifest.plist")
         
-        guard let manifestPlist = NSMutableDictionary(contentsOf: manifestPlistURL),
-              let sinfReplicationPaths = manifestPlist["SinfReplicationPaths"] as? [String] else { return }
+        guard let manifestPlist = try? InfoPlistParser(plistURL: manifestPlistURL),
+              let sinfReplicationPaths = manifestPlist.rawDictionary["SinfReplicationPaths"] as? [String] else { return }
         
         // Remove references to missing files.
         let filteredReplicationPaths = sinfReplicationPaths.filter { path in
-            guard let fileURL = URL(string: path, relativeTo: bundle.bundleURL) else { return false }
+            guard let fileURL = URL(string: path, relativeTo: appBundle.fileURL) else { return false }
             
             let fileExists = FileManager.default.fileExists(atPath: fileURL.path)
             return fileExists
         }
         
-        manifestPlist["SinfReplicationPaths"] = filteredReplicationPaths
+        var updatedManifest = manifestPlist.rawDictionary
+        updatedManifest["SinfReplicationPaths"] = filteredReplicationPaths
         
         // Save updated Manifest.plist to disk.
-        try manifestPlist.write(to: manifestPlistURL)
+        try InfoPlistParser(dictionary: updatedManifest).write(to: manifestPlistURL)
     }
 
     private func rewrittenTaskSchedulerIdentifiers(_ taskIDs: [String], from originalBundleID: String, to newBundleID: String) -> [String] {

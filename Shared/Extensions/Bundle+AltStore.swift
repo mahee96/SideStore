@@ -82,10 +82,6 @@ public extension Bundle
         return appGroup
     }
     
-    var completeInfoDictionary: [String : Any]? {
-        let infoPlistURL = self.infoPlistURL
-        return NSDictionary(contentsOf: infoPlistURL) as? [String : Any]
-    }
 }
 
 public extension String {

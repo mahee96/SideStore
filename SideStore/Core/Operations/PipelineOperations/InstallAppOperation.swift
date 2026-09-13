@@ -283,52 +283,41 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
 
         var installedExtensions = Set<InstalledExtension>()
         
-        if let bundle = Bundle(url: resignedAppBundle.fileURL),
-            let directory = bundle.builtInPlugInsURL,
-            let enumerator = FileManager.default.enumerator(
-                at: directory,
-                includingPropertiesForKeys: nil,
-                options: [.skipsSubdirectoryDescendants])
-        {
-            for case let fileURL as URL in enumerator {
-                guard let appExtensionBundle = Bundle(url: fileURL) else { continue }
-                guard let resignedAppExtensionBundle = ALTApplication(fileURL: appExtensionBundle.bundleURL) else { continue }
-                
-                let filename = fileURL.lastPathComponent
-                guard let originalExtension = originalExtensionsByFilename[filename] else {
-                    throw OperationError.invalidParameters("InstallAppOperation: extension '\(filename)' not found in targetAppBundle.")
-                }
-                
-                let targetParentBundleID = context.targetBundleIdentifier
-                let resignedParentBundleID = resignedAppBundle.bundleIdentifier
-                
-                let originalAppExBundleID = originalExtension.bundleIdentifier
-                let resignedBundleID = resignedAppExtensionBundle.bundleIdentifier
-                var customAppExBundleID: String? = nil
-                if context.customBundleIdentifier != nil {
-                    customAppExBundleID = resignedBundleID.replacingOccurrences(of: resignedParentBundleID, with: targetParentBundleID)
-                }
-                
-                self.debugLog("""
-                [InstallAppOperation] Extension Bundle Mapping:
-                  • targetParentBundleID   : \(targetParentBundleID)
-                  • resignedParentBundleID : \(resignedParentBundleID)
-                  • originalAppExBundleID  : \(originalAppExBundleID)
-                  • customAppExBundleID    : \(customAppExBundleID ?? "nil")
-                  • resignedAppExBundleID  : \(resignedBundleID)
-                """)
-                
-                let installedExtension = try installedApp.appExtensions
-                                                .first(where: { $0.resignedBundleIdentifier == resignedBundleID })
-                                            ?? InstalledExtension(
-                                                resignedAppExtensionBundle: resignedAppExtensionBundle,
-                                                originalBundleIdentifier: originalAppExBundleID,
-                                                context: backgroundContext
-                                            )
-                installedExtension.customBundleIdentifier = customAppExBundleID
-                installedExtension.update(resignedAppExtensionBundle: resignedAppExtensionBundle)
-                installedExtensions.insert(installedExtension)
+        for resignedAppExtensionBundle in resignedAppBundle.appExtensions {
+            let filename = resignedAppExtensionBundle.fileURL.lastPathComponent
+            guard let originalExtension = originalExtensionsByFilename[filename] else {
+                throw OperationError.invalidParameters("InstallAppOperation: extension '\(filename)' not found in targetAppBundle.")
             }
+            
+            let targetParentBundleID = context.targetBundleIdentifier
+            let resignedParentBundleID = resignedAppBundle.bundleIdentifier
+            
+            let originalAppExBundleID = originalExtension.bundleIdentifier
+            let resignedBundleID = resignedAppExtensionBundle.bundleIdentifier
+            var customAppExBundleID: String? = nil
+            if context.customBundleIdentifier != nil {
+                customAppExBundleID = resignedBundleID.replacingOccurrences(of: resignedParentBundleID, with: targetParentBundleID)
+            }
+            
+            self.debugLog("""
+            [InstallAppOperation] Extension Bundle Mapping:
+              • targetParentBundleID   : \(targetParentBundleID)
+              • resignedParentBundleID : \(resignedParentBundleID)
+              • originalAppExBundleID  : \(originalAppExBundleID)
+              • customAppExBundleID    : \(customAppExBundleID ?? "nil")
+              • resignedAppExBundleID  : \(resignedBundleID)
+            """)
+            
+            let installedExtension = try installedApp.appExtensions
+                                            .first(where: { $0.resignedBundleIdentifier == resignedBundleID })
+                                        ?? InstalledExtension(
+                                            resignedAppExtensionBundle: resignedAppExtensionBundle,
+                                            originalBundleIdentifier: originalAppExBundleID,
+                                            context: backgroundContext
+                                        )
+            installedExtension.customBundleIdentifier = customAppExBundleID
+            installedExtension.update(resignedAppExtensionBundle: resignedAppExtensionBundle)
+            installedExtensions.insert(installedExtension)
         }
 
         return installedExtensions

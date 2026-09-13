@@ -483,10 +483,9 @@ public extension InstalledApp
 
     class func customEntitlements(forBundleIdentifier bundleIdentifier: String, targetID: String) -> [String: any Sendable]? {
         guard let url = customEntitlementsURL(forBundleIdentifier: bundleIdentifier, targetID: targetID),
-              let data = try? Data(contentsOf: url),
-              let plist = (try? PropertyListSerialization.propertyList(from: data, options: [], format: nil)) as? [String: any Sendable]
+              let parser = try? InfoPlistParser(plistURL: url)
         else { return nil }
-        return plist
+        return parser.rawDictionary
     }
 
     class func customProvisioningProfilesDirectoryURL(forBundleIdentifier bundleIdentifier: String) -> URL {

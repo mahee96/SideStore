@@ -346,31 +346,18 @@ public class DatabaseManager: @unchecked Sendable
                 }
                 
                 Task.detached(priority: .background) {
-                    func update(_ bundle: Bundle, bundleID: String) throws
-                    {
-                        let infoPlistURL = bundle.bundleURL.appendingPathComponent("Info.plist")
-                        
-                        guard var infoDictionary = bundle.completeInfoDictionary else { throw ALTError(.missingInfoPlist) }
-                        infoDictionary[kCFBundleIdentifierKey as String] = bundleID
-                        try (infoDictionary as NSDictionary).write(to: infoPlistURL)
-                    }
-                    
                     FileManager.default.prepareTemporaryURL() { (temporaryFileURL) in
                         do
                         {
                             try FileManager.default.copyItem(at: bundleURL, to: temporaryFileURL)
                             
-                            guard let appBundle = Bundle(url: temporaryFileURL) else { throw ALTError(.invalidApp) }
-                            try update(appBundle, bundleID: altstoreAppID)
+                            guard let tempAppBundle = ALTApplication(fileURL: temporaryFileURL) else { throw ALTError(.invalidApp) }
+                            try tempAppBundle.updateInfoPlist(with: [kCFBundleIdentifierKey as String: altstoreAppID])
                             
-                            if let tempAppBundle = ALTApplication(fileURL: temporaryFileURL)
+                            for appExtension in tempAppBundle.appExtensions
                             {
-                                for appExtension in tempAppBundle.appExtensions
-                                {
-                                    guard let extensionBundle = Bundle(url: appExtension.fileURL) else { throw ALTError(.invalidApp) }
-                                    guard let originalBundleID = extensionBundleIDMap[appExtension.bundleIdentifier] else { throw ALTError(.invalidApp) }
-                                    try update(extensionBundle, bundleID: originalBundleID)
-                                }
+                                guard let originalBundleID = extensionBundleIDMap[appExtension.bundleIdentifier] else { throw ALTError(.invalidApp) }
+                                try appExtension.updateInfoPlist(with: [kCFBundleIdentifierKey as String: originalBundleID])
                             }
                             
                             try FileManager.default.copyItem(at: temporaryFileURL, to: fileURL, shouldReplace: true)
