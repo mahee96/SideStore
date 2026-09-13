@@ -43,8 +43,10 @@ final class CacheSigningCertOperation: BasePipelineOperation<InstallAppOperation
         
         // 2. Resolve target App Group directory
         let certURL = installedApp.signingCertificateURL
+        let certDirectory = certURL.deletingLastPathComponent()
         
         do {
+            try FileManager.default.createDirectory(at: certDirectory, withIntermediateDirectories: true, attributes: nil)
             try certData.write(to: certURL, options: .atomic)
             debugLog("[CacheSigningCertOperation] Successfully cached signing certificate to \(certURL.path)")
         } catch {

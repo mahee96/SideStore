@@ -39,7 +39,7 @@ final class CacheResignedMetadataOperation: BasePipelineOperation<InstallAppOper
     
     private func cacheProvisioningProfiles(forBundleID bundleID: String) throws {
         guard let profiles = self.context.provisioningProfiles, !profiles.isEmpty else { return }
-        let profilesDirectory = InstalledApp.customProvisioningProfilesDirectoryURL(forBundleIdentifier: bundleID)
+        let profilesDirectory = InstalledApp.directoryURL(forResignedID: bundleID).appendingPathComponent("ProvisioningProfiles")
         try FileManager.default.createDirectory(at: profilesDirectory, withIntermediateDirectories: true, attributes: nil)
         
         let validProfileIDs = Set(profiles.values.map { $0.bundleIdentifier })
@@ -54,7 +54,7 @@ final class CacheResignedMetadataOperation: BasePipelineOperation<InstallAppOper
     }
     
     private func cacheInfoPlist(forBundleID bundleID: String, targetAppBundle: ALTApplication) throws {
-        let infoPlistDirectory = InstalledApp.customInfoPlistDirectoryURL(forBundleIdentifier: bundleID)
+        let infoPlistDirectory = InstalledApp.directoryURL(forResignedID: bundleID).appendingPathComponent("Info.plist")
         try FileManager.default.createDirectory(at: infoPlistDirectory, withIntermediateDirectories: true, attributes: nil)
         
         let validBundleIDs = Set(targetAppBundle.allAppBundles.map { $0.bundleIdentifier })
@@ -75,7 +75,7 @@ final class CacheResignedMetadataOperation: BasePipelineOperation<InstallAppOper
     
     private func cacheEntitlements(forBundleID bundleID: String) throws {
         guard let profiles = self.context.provisioningProfiles else { return }
-        let entitlementsDirectory = InstalledApp.customEntitlementsDirectoryURL(forBundleIdentifier: bundleID)
+        let entitlementsDirectory = InstalledApp.directoryURL(forResignedID: bundleID).appendingPathComponent("Entitlements")
         try FileManager.default.createDirectory(at: entitlementsDirectory, withIntermediateDirectories: true, attributes: nil)
         
         let validEntitlementIDs = Set(profiles.values.map { $0.bundleIdentifier })

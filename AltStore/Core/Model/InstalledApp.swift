@@ -50,10 +50,75 @@ public protocol InstalledAppProtocol: Fetchable
     
     var appBundleFingerprint: String? { get }
     var signingCertificateURL: URL { get }
+    var directoryURL: URL { get }
+    var fileURL: URL { get }
+    var refreshedIPAURL: URL { get }
+    var alternateIconURL: URL { get }
+
+    var customProvisioningProfileURL: URL? { get }
+    var customInfoPlistURL: URL? { get }
+    var customEntitlementsURL: URL? { get }
+    var customProvisioningProfile: ALTProvisioningProfile? { get }
+    var customEntitlements: [String: any Sendable]? { get }
 }
 
 public extension InstalledAppProtocol {
     var appBundleFingerprint: String? { nil }
+    
+    var directoryURL: URL {
+        return InstalledApp.directoryURL(forResignedID: self.resignedBundleIdentifier)
+    }
+    
+    var fileURL: URL {
+        if let signature = self.appBundleFingerprint {
+            let payloadURL = InstalledApp.payloadURL(forSignature: signature)
+            if FileManager.default.fileExists(atPath: payloadURL.path) {
+                return payloadURL
+            }
+        }
+        return self.directoryURL.appendingPathComponent("App.app")
+    }
+    
+    var refreshedIPAURL: URL {
+        return self.directoryURL.appendingPathComponent("Refreshed.ipa")
+    }
+    
+    var alternateIconURL: URL {
+        let bundleID = self.customBundleIdentifier ?? self.resignedBundleIdentifier
+        let appSupport = FileManager.default.applicationSupportDirectory
+        return appSupport.appendingPathComponent("AppIcons", isDirectory: true).appendingPathComponent("\(bundleID).png")
+    }
+    
+    var signingCertificateURL: URL {
+        return self.directoryURL.appendingPathComponent("signing_certificate.der")
+    }
+
+    var customProvisioningProfileURL: URL? {
+        let fileURL = self.directoryURL.appendingPathComponent("ProvisioningProfiles").appendingPathComponent("\(self.resignedBundleIdentifier).mobileprovision")
+        return FileManager.default.fileExists(atPath: fileURL.path) ? fileURL : nil
+    }
+
+    var customInfoPlistURL: URL? {
+        let fileURL = self.directoryURL.appendingPathComponent("Info.plist").appendingPathComponent("\(self.resignedBundleIdentifier).plist")
+        return FileManager.default.fileExists(atPath: fileURL.path) ? fileURL : nil
+    }
+
+    var customEntitlementsURL: URL? {
+        let fileURL = self.directoryURL.appendingPathComponent("Entitlements").appendingPathComponent("\(self.resignedBundleIdentifier).plist")
+        return FileManager.default.fileExists(atPath: fileURL.path) ? fileURL : nil
+    }
+
+    var customProvisioningProfile: ALTProvisioningProfile? {
+        guard let url = self.customProvisioningProfileURL else { return nil }
+        return try? ALTProvisioningProfile(url: url)
+    }
+
+    var customEntitlements: [String: any Sendable]? {
+        guard let url = self.customEntitlementsURL,
+              let parser = try? InfoPlistParser(plistURL: url)
+        else { return nil }
+        return parser.rawDictionary
+    }
 }
 
 @objc(InstalledApp)
@@ -428,170 +493,59 @@ public extension InstalledApp
     
     class func directoryURL(forResignedID resignedID: String) -> URL
     {
-        let directoryURL = InstalledApp.appsDirectoryURL.appendingPathComponent(resignedID)
-        
-        do { try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true, attributes: nil) }
-        catch { debugLog("\(error)") }
-        
-        return directoryURL
+        return InstalledApp.appsDirectoryURL.appendingPathComponent(resignedID)
     }
-    
-    class func directoryURL(for app: InstalledAppProtocol) -> URL
-    {
-        return self.directoryURL(forResignedID: app.resignedBundleIdentifier)
-    }
-    
+
     class func payloadDirectoryURL(forSignature signature: String) -> URL {
-        let payloadDirectoryURL = InstalledApp.appsDirectoryURL.appendingPathComponent("Payloads").appendingPathComponent(signature)
-        try? FileManager.default.createDirectory(at: payloadDirectoryURL, withIntermediateDirectories: true, attributes: nil)
-        return payloadDirectoryURL
+        return InstalledApp.appsDirectoryURL.appendingPathComponent("Payloads").appendingPathComponent(signature)
     }
 
     class func payloadURL(forSignature signature: String) -> URL {
         return self.payloadDirectoryURL(forSignature: signature).appendingPathComponent("App.app")
     }
 
-    class func fileURL(forResignedID resignedID: String) -> URL
-    {
-        let appURL = self.directoryURL(forResignedID: resignedID).appendingPathComponent("App.app")
-        return appURL
-    }
-    
-    class func fileURL(for app: InstalledAppProtocol) -> URL
-    {
-        if let signature = app.appBundleFingerprint {
-            let payloadURL = self.payloadURL(forSignature: signature)
-            if FileManager.default.fileExists(atPath: payloadURL.path) {
-                return payloadURL
-            }
-        }
-        return self.fileURL(forResignedID: app.resignedBundleIdentifier)
-    }
-    
-    class func refreshedIPAURL(forResignedID resignedID: String) -> URL
-    {
-        let ipaURL = self.directoryURL(forResignedID: resignedID).appendingPathComponent("Refreshed.ipa")
-        debugLog("[InstalledApp] 'ipaURL': \(ipaURL.absoluteString)")
-        return ipaURL
-    }
-    
-    class func refreshedIPAURL(for app: InstalledAppProtocol) -> URL
-    {
-        return self.refreshedIPAURL(forResignedID: app.resignedBundleIdentifier)
-    }
-
-    class func customInfoPlistDirectoryURL(forBundleIdentifier bundleIdentifier: String) -> URL {
-        return InstalledApp.appsDirectoryURL.appendingPathComponent(bundleIdentifier).appendingPathComponent("Info.plist")
-    }
-
-    class func customEntitlementsDirectoryURL(forBundleIdentifier bundleIdentifier: String) -> URL {
-        return InstalledApp.appsDirectoryURL.appendingPathComponent(bundleIdentifier).appendingPathComponent("Entitlements")
-    }
-
-    class func customInfoPlistURL(forBundleIdentifier bundleIdentifier: String, targetID: String) -> URL? {
-        let fileURL = customInfoPlistDirectoryURL(forBundleIdentifier: bundleIdentifier).appendingPathComponent("\(targetID).plist")
-        return FileManager.default.fileExists(atPath: fileURL.path) ? fileURL : nil
-    }
-
-    class func customEntitlementsURL(forBundleIdentifier bundleIdentifier: String, targetID: String) -> URL? {
-        let fileURL = customEntitlementsDirectoryURL(forBundleIdentifier: bundleIdentifier).appendingPathComponent("\(targetID).plist")
-        return FileManager.default.fileExists(atPath: fileURL.path) ? fileURL : nil
-    }
-
-    class func customInfoPlist(forBundleIdentifier bundleIdentifier: String, targetID: String) -> [String: any Sendable]? {
-        guard let url = customInfoPlistURL(forBundleIdentifier: bundleIdentifier, targetID: targetID),
-              let parser = try? InfoPlistParser(plistURL: url)
-        else { return nil }
-        return parser.rawDictionary
-    }
-
-    class func customEntitlements(forBundleIdentifier bundleIdentifier: String, targetID: String) -> [String: any Sendable]? {
-        guard let url = customEntitlementsURL(forBundleIdentifier: bundleIdentifier, targetID: targetID),
-              let parser = try? InfoPlistParser(plistURL: url)
-        else { return nil }
-        return parser.rawDictionary
-    }
-
-    class func customProvisioningProfilesDirectoryURL(forBundleIdentifier bundleIdentifier: String) -> URL {
-        return InstalledApp.appsDirectoryURL.appendingPathComponent(bundleIdentifier).appendingPathComponent("ProvisioningProfiles")
-    }
-
-    class func customProvisioningProfileURL(forBundleIdentifier bundleIdentifier: String, targetID: String) -> URL? {
-        let fileURL = customProvisioningProfilesDirectoryURL(forBundleIdentifier: bundleIdentifier).appendingPathComponent("\(targetID).mobileprovision")
-        return FileManager.default.fileExists(atPath: fileURL.path) ? fileURL : nil
-    }
-
-    class func customProvisioningProfile(forBundleIdentifier bundleIdentifier: String, targetID: String) -> ALTProvisioningProfile? {
-        guard let url = customProvisioningProfileURL(forBundleIdentifier: bundleIdentifier, targetID: targetID) else { return nil }
-        return try? ALTProvisioningProfile(url: url)
-    }
-
-    public func customInfoPlistURL(forResignedID resignedID: String? = nil) -> URL? {
-        let targetID = resignedID ?? self.resignedBundleIdentifier
-        return Self.customInfoPlistURL(forBundleIdentifier: self.bundleIdentifier, targetID: targetID)
-    }
-
-    public func customEntitlements(forResignedID resignedID: String? = nil) -> [String: any Sendable]? {
-        let targetID = resignedID ?? self.resignedBundleIdentifier
-        return Self.customEntitlements(forBundleIdentifier: self.bundleIdentifier, targetID: targetID)
-    }
-
-    public func customProvisioningProfileURL(forResignedID resignedID: String? = nil) -> URL? {
-        let targetID = resignedID ?? self.resignedBundleIdentifier
-        return Self.customProvisioningProfileURL(forBundleIdentifier: self.bundleIdentifier, targetID: targetID)
-    }
-    
     class func installedAppUTI(forBundleIdentifier bundleIdentifier: String) -> String
     {
         let installedAppUTI = "io.sidestore.Installed." + bundleIdentifier
         return installedAppUTI
     }
     
-    class func installedBackupAppUTI(forBundleIdentifier bundleIdentifier: String) -> String
-    {
-        let installedBackupAppUTI = InstalledApp.installedAppUTI(forBundleIdentifier: bundleIdentifier) + ".backup"
-        return installedBackupAppUTI
-    }
-    
-    class func alternateIconURL(forBundleIdentifier bundleIdentifier: String) -> URL
-    {
-        let appSupport = FileManager.default.applicationSupportDirectory
-        let iconsDirectory = appSupport.appendingPathComponent("AppIcons", isDirectory: true)
-        try? FileManager.default.createDirectory(at: iconsDirectory, withIntermediateDirectories: true, attributes: nil)
-        return iconsDirectory.appendingPathComponent("\(bundleIdentifier).png")
-    }
-    
-    class func alternateIconURL(for app: InstalledAppProtocol) -> URL
-    {
-        let bundleID = app.customBundleIdentifier ?? app.resignedBundleIdentifier
-        return self.alternateIconURL(forBundleIdentifier: bundleID)
-    }
-    
-    var directoryURL: URL {
-        return InstalledApp.directoryURL(for: self)
-    }
-    
-    var fileURL: URL {
-        return InstalledApp.fileURL(for: self)
-    }
-    
-    var refreshedIPAURL: URL {
-        return InstalledApp.refreshedIPAURL(for: self)
-    }
-    
-    var installedAppUTI: String {
+    public var installedAppUTI: String {
         return InstalledApp.installedAppUTI(forBundleIdentifier: self.resignedBundleIdentifier)
     }
     
-    var installedBackupAppUTI: String {
-        return InstalledApp.installedBackupAppUTI(forBundleIdentifier: self.resignedBundleIdentifier)
+    public var installedBackupAppUTI: String {
+        return self.installedAppUTI + ".backup"
     }
-    
-    var alternateIconURL: URL {
-        return InstalledApp.alternateIconURL(for: self)
+
+    public func customInfoPlistURL(forResignedID resignedID: String? = nil) -> URL? {
+        let targetID = resignedID ?? self.resignedBundleIdentifier
+        let fileURL = self.directoryURL.appendingPathComponent("Info.plist").appendingPathComponent("\(targetID).plist")
+        return FileManager.default.fileExists(atPath: fileURL.path) ? fileURL : nil
     }
-    
-    public var signingCertificateURL: URL {
-        return self.directoryURL.appendingPathComponent("signing_certificate.der")
+
+    public func customEntitlements(forResignedID resignedID: String? = nil) -> [String: any Sendable]? {
+        let targetID = resignedID ?? self.resignedBundleIdentifier
+        guard let url = self.customEntitlementsURL(forResignedID: targetID),
+              let parser = try? InfoPlistParser(plistURL: url)
+        else { return nil }
+        return parser.rawDictionary
+    }
+
+    public func customEntitlementsURL(forResignedID resignedID: String? = nil) -> URL? {
+        let targetID = resignedID ?? self.resignedBundleIdentifier
+        let fileURL = self.directoryURL.appendingPathComponent("Entitlements").appendingPathComponent("\(targetID).plist")
+        return FileManager.default.fileExists(atPath: fileURL.path) ? fileURL : nil
+    }
+
+    public func customProvisioningProfileURL(forResignedID resignedID: String? = nil) -> URL? {
+        let targetID = resignedID ?? self.resignedBundleIdentifier
+        let fileURL = self.directoryURL.appendingPathComponent("ProvisioningProfiles").appendingPathComponent("\(targetID).mobileprovision")
+        return FileManager.default.fileExists(atPath: fileURL.path) ? fileURL : nil
+    }
+
+    public func customProvisioningProfile(forResignedID resignedID: String? = nil) -> ALTProvisioningProfile? {
+        guard let url = customProvisioningProfileURL(forResignedID: resignedID) else { return nil }
+        return try? ALTProvisioningProfile(url: url)
     }
 }

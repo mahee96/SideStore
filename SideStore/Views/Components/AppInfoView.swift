@@ -44,7 +44,7 @@ struct AppInfoView: View {
         if isSideStoreSelf {
             return Bundle.Info.activeBundleURL.appendingPathComponent("embedded.mobileprovision")
         }
-        return installedApp.customProvisioningProfileURL()
+        return installedApp.customProvisioningProfileURL
     }
     
     private var bundleProfileURL: URL? {
@@ -65,7 +65,7 @@ struct AppInfoView: View {
         if isSideStoreSelf {
             return InfoPlistParser.resolveInfoPlistURL(for: Bundle.Info.activeBundleURL)
         }
-        return installedApp.customInfoPlistURL()
+        return installedApp.customInfoPlistURL
     }
     
     private var bundleInfoPlistURL: URL? {
@@ -584,12 +584,6 @@ struct ExtensionInfoView: View {
     @State private var shareSheetItem: ShareableURLItem? = nil
     #endif
 
-    private var parentBundleIdentifier: String {
-        appExtension.parentApp?.resignedBundleIdentifier
-            ?? (try? InfoPlistParser(bundleURL: parentAppURL))?.bundleIdentifier
-            ?? ""
-    }
-
     // Resolve the .appex bundle URL by scanning PlugIns/ and matching bundle ID
     private var extensionURL: URL? {
         let pluginsDir = parentAppURL.appendingPathComponent("PlugIns")
@@ -612,7 +606,7 @@ struct ExtensionInfoView: View {
     }
 
     private var resignedProfileURL: URL? {
-        InstalledApp.customProvisioningProfileURL(forBundleIdentifier: parentBundleIdentifier, targetID: appExtension.resignedBundleIdentifier)
+        appExtension.customProvisioningProfileURL
     }
 
     private var bundleProfileURL: URL? {
@@ -631,7 +625,7 @@ struct ExtensionInfoView: View {
     }
 
     private var resignedInfoPlistURL: URL? {
-        InstalledApp.customInfoPlistURL(forBundleIdentifier: parentBundleIdentifier, targetID: appExtension.resignedBundleIdentifier)
+        appExtension.customInfoPlistURL
     }
 
     private var bundleInfoPlistURL: URL? {

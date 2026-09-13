@@ -41,6 +41,8 @@ final class CacheAppOperation: BasePipelineOperation<InstallAppOperationContext,
 
         let targetFileURL = InstalledApp.payloadURL(forSignature: signature)
         if !FileManager.default.fileExists(atPath: targetFileURL.path) {
+            let parentDir = targetFileURL.deletingLastPathComponent()
+            try FileManager.default.createDirectory(at: parentDir, withIntermediateDirectories: true, attributes: nil)
             SideStore.debugLog("[CacheAppOperation] Caching app bundle for signature \(signature) to \(targetFileURL.path)")
             try FileManager.default.copyItem(at: bundleURL, to: targetFileURL, shouldReplace: true)
         } else {
