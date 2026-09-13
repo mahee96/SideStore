@@ -56,6 +56,11 @@ public struct EntitlementsTarget: Identifiable, Sendable {
 }
 
 final class EntitlementsCustomizationViewModel: ObservableObject {
+    static let nonCustomizableEntitlementKeys: Set<String> = [
+        "application-identifier",
+        "com.apple.developer.team-identifier"
+    ]
+
     let targets: [EntitlementsTarget]
     let teamType: ALTTeamType
     let onProceedTargets: ([String: [String: any Sendable]]) -> Void
@@ -105,6 +110,10 @@ final class EntitlementsCustomizationViewModel: ObservableObject {
         for target in targets {
             var entries: [EntitlementEntry] = []
             for (key, val) in target.initialEntitlements {
+                guard !Self.nonCustomizableEntitlementKeys.contains(key) else {
+                    continue
+                }
+
                 if let boolVal = val as? Bool {
                     entries.append(EntitlementEntry(key: key, type: .boolean, boolValue: boolVal, isAppDefault: true))
                 } else if let arrVal = val as? [String] {
@@ -149,6 +158,9 @@ final class EntitlementsCustomizationViewModel: ObservableObject {
     }
 
     func isEntitlementAllowed(_ key: String) -> Bool {
+        if Self.nonCustomizableEntitlementKeys.contains(key) {
+            return false
+        }
         if teamType == .free {
             let allowed = teamType.allowedEntitlements ?? Entitlement.freeEntitlements
             return allowed.map(\.rawValue).contains(key)
@@ -271,7 +283,7 @@ final class EntitlementsCustomizationViewModel: ObservableObject {
 
     func commitCustomKey() {
         let key = newCustomKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !key.isEmpty else { return }
+        guard !key.isEmpty, isEntitlementAllowed(key) else { return }
 
         let arrayVal: [String]
         if newCustomType == .stringArray {
@@ -302,6 +314,12 @@ final class EntitlementsCustomizationViewModel: ObservableObject {
         for target in targets {
             let entries = entriesByTargetID[target.id] ?? []
             var result: [String: any Sendable] = [:]
+
+            for (key, val) in target.initialEntitlements {
+                if Self.nonCustomizableEntitlementKeys.contains(key) {
+                    result[key] = val
+                }
+            }
 
             for entry in entries {
                 let key = entry.key.trimmingCharacters(in: .whitespacesAndNewlines)
