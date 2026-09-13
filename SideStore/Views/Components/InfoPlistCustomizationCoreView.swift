@@ -16,11 +16,11 @@ public enum InfoPlistCustomizationStyle {
 
 public struct InfoPlistCustomizationCoreView: View {
     public let style: InfoPlistCustomizationStyle
-    public let initialPlist: [String: Any]
+    public let initialPlist: [String: any Sendable]
     public let initialBundleID: String
     public let installedAppIdentities: [String: String]
     public let teamID: String
-    public let onProceed: ([String: Any], Bool) -> Void
+    public let onProceed: ([String: any Sendable], Bool) -> Void
     public let onCancel: () -> Void
 
     @State private var bundleID: String
@@ -58,12 +58,12 @@ public struct InfoPlistCustomizationCoreView: View {
 
     public init(
         style: InfoPlistCustomizationStyle,
-        initialPlist: [String: Any],
+        initialPlist: [String: any Sendable],
         initialBundleID: String,
         appendTeamID: Bool = true,
         installedAppIdentities: [String: String] = [:],
         teamID: String = "",
-        onProceed: @escaping ([String: Any], Bool) -> Void,
+        onProceed: @escaping ([String: any Sendable], Bool) -> Void,
         onCancel: @escaping () -> Void
     ) {
         self.style = style

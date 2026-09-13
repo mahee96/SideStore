@@ -76,6 +76,11 @@ struct InfoPlistContainerView: View {
             plist["MinimumOSVersion"] != nil
         _selectedMode = State(initialValue: hasAppMetadata ? .semantic : .tree)
     }
+
+    init(plist: [String: any Sendable], title: String = "Info.plist") {
+        let converted = Dictionary(uniqueKeysWithValues: plist.map { ($0.key, $0.value as Any) })
+        self.init(plist: converted, title: title)
+    }
     
     var body: some View {
         VStack(spacing: 0) {

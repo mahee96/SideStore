@@ -88,7 +88,7 @@ class AppendTeamIDCheckboxView: UIView, UITextFieldDelegate {
 
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         verboseLog("[AppendTeamIDCheckboxView] shouldChange: range=\(range), string='\(string)', current='\(textField.text ?? "")'")
-        let allowed = InfoPlistParser.shouldChangeBundleID(
+        let allowed = SuffixEnforcedTextField.shouldChangeBundleID(
             in: textField,
             range: range,
             replacementString: string,

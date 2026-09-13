@@ -35,7 +35,7 @@ struct AppInfoView: View {
         try? InfoPlistParser(bundleURL: appBundleURL)
     }
 
-    private var infoPlist: [String: Any]? {
+    private var infoPlist: [String: any Sendable]? {
         infoPlistParser?.rawDictionary
     }
     
@@ -434,7 +434,7 @@ struct ExtensionInfoView: View {
         return try? InfoPlistParser(bundleURL: url)
     }
 
-    private var infoPlist: [String: Any]? {
+    private var infoPlist: [String: any Sendable]? {
         infoPlistParser?.rawDictionary
     }
 
@@ -581,7 +581,7 @@ struct BundleInspectorView: View {
         try? InfoPlistParser(bundleURL: bundleURL)
     }
 
-    private var infoPlist: [String: Any]? {
+    private var infoPlist: [String: any Sendable]? {
         infoPlistParser?.rawDictionary
     }
 

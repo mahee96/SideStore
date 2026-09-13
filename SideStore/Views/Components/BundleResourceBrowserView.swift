@@ -414,7 +414,7 @@ struct FullAppBundleView: View {
         try? InfoPlistParser(bundleURL: bundleURL)
     }
 
-    private var infoPlist: [String: Any]? {
+    private var infoPlist: [String: any Sendable]? {
         infoPlistParser?.rawDictionary
     }
 

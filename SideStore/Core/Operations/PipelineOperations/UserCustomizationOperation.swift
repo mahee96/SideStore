@@ -36,20 +36,19 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
             let appDirectory = InstalledApp.appsDirectoryURL.appendingPathComponent(authoritativeBundleID)
             let cachedPlistURL = appDirectory.appendingPathComponent("custom_info.plist")
             
-            var cachedPlist: [String: Any]? = nil
+            var cachedPlist: [String: any Sendable]? = nil
             if FileManager.default.fileExists(atPath: cachedPlistURL.path),
                let parser = try? InfoPlistParser(plistURL: cachedPlistURL) {
                 cachedPlist = parser.rawDictionary
                 debugLog("[UserCustomizationOperation] Primed custom Info.plist from \(cachedPlistURL.path)")
             }
 
-            let initialPlist: [String: Any] = {
+            let initialPlist: [String: any Sendable] = {
                 if let cached = cachedPlist {
                     return cached
                 }
-                if let targetAppBundle = context.targetAppBundle,
-                   let dict = targetAppBundle.bundle.completeInfoDictionary ?? (try? InfoPlistParser(plistURL: targetAppBundle.bundle.infoPlistURL).rawDictionary) {
-                    return dict
+                if let targetAppBundle = context.targetAppBundle {
+                    return targetAppBundle.infoPlist
                 }
                 return ["CFBundleIdentifier": context.targetBundleIdentifier]
             }()
@@ -111,13 +110,8 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
             }
 
             if let targetAppBundle = context.targetAppBundle {
-                var targetParser = (try? InfoPlistParser(plistURL: targetAppBundle.bundle.infoPlistURL)) ?? InfoPlistParser(dictionary: [:])
-                targetParser.merge(result.modifiedPlist)
-                try? targetParser.write(to: targetAppBundle.bundle.infoPlistURL)
+                try? targetAppBundle.updateInfoPlist(with: result.modifiedPlist)
             }
-
-            self.setProgress(100)
-            return context.targetBundleIdentifier
         } else if UserDefaults.standard.customizeAppId {
             let initialBundleID = context.targetBundleIdentifier
             self.setProgress(40)
@@ -153,10 +147,10 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
             }
         }
 
-            self.setProgress(100)
+        self.setProgress(100)
+        if UserDefaults.standard.customizeInfoPlist || UserDefaults.standard.customizeAppId {
             return context.targetBundleIdentifier
         } else {
-            self.setProgress(100)
             return nil
         }
     }

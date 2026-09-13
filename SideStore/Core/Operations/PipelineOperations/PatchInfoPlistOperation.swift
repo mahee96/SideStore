@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import SideSign
 
 final class PatchInfoPlistOperation: BasePipelineOperation<InstallAppOperationContext, Void>, @unchecked Sendable {
     override func execute(parentProgress: Progress?) async throws {
@@ -37,9 +38,7 @@ final class PatchInfoPlistOperation: BasePipelineOperation<InstallAppOperationCo
             }
             
             if let targetAppBundle = self.context.targetAppBundle {
-                var targetParser = try InfoPlistParser(plistURL: targetAppBundle.bundle.infoPlistURL)
-                targetParser.merge(customParser.rawDictionary)
-                try targetParser.write(to: targetAppBundle.bundle.infoPlistURL)
+                try targetAppBundle.updateInfoPlist(with: customParser.rawDictionary)
                 debugLog("[PatchInfoPlistOperation] Successfully patched staged app Info.plist for \(bundleID)")
             }
         } catch {
