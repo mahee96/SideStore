@@ -62,6 +62,13 @@ enum AppGroupResolution: Sendable {
 protocol UserCustomizationHandler: AnyObject, Sendable {
     func resolveBundleIDOverride(initialBundleID: String) async throws -> (customID: String, appendTeamID: Bool)?
     func resolveInfoPlistCustomization(
+        targets: [InfoPlistTarget],
+        initialBundleID: String,
+        appendTeamID: Bool,
+        installedAppIdentities: [String: String],
+        teamID: String
+    ) async throws -> (modifiedPlists: [String: [String: any Sendable]], appendTeamID: Bool)?
+    func resolveInfoPlistCustomization(
         initialPlist: [String: any Sendable],
         initialBundleID: String,
         appendTeamID: Bool,

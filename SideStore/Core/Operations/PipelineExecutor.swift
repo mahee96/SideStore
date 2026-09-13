@@ -278,9 +278,9 @@ final class PipelineExecutor: @unchecked Sendable {
                 result = try await step.execute(parentProgress: progress)
                 return nil
 
-            case .cacheInfoPlist:
-                loggerType = CacheInfoPlistOperation.self
-                let step = try CacheInfoPlistOperation(context: context)
+            case .cacheCustomizations, .cacheInfoPlist:
+                loggerType = CacheUserCustomizationsOperation.self
+                let step = try CacheUserCustomizationsOperation(context: context)
                 result = try await step.execute(parentProgress: progress)
                 return nil
 

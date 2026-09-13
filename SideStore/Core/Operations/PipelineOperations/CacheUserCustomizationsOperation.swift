@@ -29,11 +29,7 @@ final class CacheUserCustomizationsOperation: BasePipelineOperation<InstallAppOp
         let entitlementsDirectory = appDirectory.appendingPathComponent("Entitlements")
         
         // Cache Info.plist customizations
-        var customInfoPlists = self.context.customInfoPlistByBundleID
-        if let mainPlist = self.context.customInfoPlist, customInfoPlists[bundleID] == nil {
-            customInfoPlists[bundleID] = mainPlist
-        }
-        
+        let customInfoPlists = self.context.customInfoPlistByBundleID
         if !customInfoPlists.isEmpty {
             try FileManager.default.createDirectory(at: infoPlistDirectory, withIntermediateDirectories: true, attributes: nil)
             for (targetID, plist) in customInfoPlists {
@@ -43,7 +39,7 @@ final class CacheUserCustomizationsOperation: BasePipelineOperation<InstallAppOp
                 debugLog("[CacheUserCustomizationsOperation] Cached Info.plist for \(targetID) to \(fileURL.path)")
             }
             // Also write legacy custom_info.plist for main app compatibility
-            if let mainPlist = customInfoPlists[bundleID] ?? self.context.customInfoPlist {
+            if let mainPlist = customInfoPlists[bundleID] {
                 let legacyURL = appDirectory.appendingPathComponent("custom_info.plist")
                 if let legacyData = try? PropertyListSerialization.data(fromPropertyList: mainPlist, format: .xml, options: 0) {
                     try? legacyData.write(to: legacyURL, options: .atomic)
@@ -52,11 +48,7 @@ final class CacheUserCustomizationsOperation: BasePipelineOperation<InstallAppOp
         }
         
         // Cache Entitlements customizations
-        var customEntitlements = self.context.customEntitlementsByBundleID
-        if let mainEntitlements = self.context.customEntitlements, customEntitlements[bundleID] == nil {
-            customEntitlements[bundleID] = mainEntitlements
-        }
-        
+        let customEntitlements = self.context.customEntitlementsByBundleID
         if !customEntitlements.isEmpty {
             try FileManager.default.createDirectory(at: entitlementsDirectory, withIntermediateDirectories: true, attributes: nil)
             for (targetID, entitlements) in customEntitlements {

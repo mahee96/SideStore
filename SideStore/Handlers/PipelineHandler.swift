@@ -223,23 +223,27 @@ final class PipelineHandler: PipelineExecutionHandler,
     
     @MainActor
     func resolveInfoPlistCustomization(
-        initialPlist: [String: any Sendable],
+        targets: [InfoPlistTarget],
         initialBundleID: String,
         appendTeamID: Bool,
         installedAppIdentities: [String: String],
         teamID: String
-    ) async throws -> (modifiedPlist: [String: any Sendable], appendTeamID: Bool)? {
-        debugLog("[PipelineHandler] resolveInfoPlistCustomization: initialBundleID='\(initialBundleID)', teamID='\(teamID)', appendTeamID=\(appendTeamID)")
+    ) async throws -> (modifiedPlists: [String: [String: any Sendable]], appendTeamID: Bool)? {
+        debugLog("[PipelineHandler] resolveInfoPlistCustomization (targets: \(targets.count)): initialBundleID='\(initialBundleID)', teamID='\(teamID)', appendTeamID=\(appendTeamID)")
         guard let presenter = self.activePresenter else {
             debugLog("[PipelineHandler] resolveInfoPlistCustomization: activePresenter is nil!")
-            return (initialPlist, appendTeamID)
+            var fallback: [String: [String: any Sendable]] = [:]
+            for t in targets {
+                fallback[t.id] = t.initialPlist
+            }
+            return (fallback, appendTeamID)
         }
-        
-        let result: (modifiedPlist: [String: any Sendable], appendTeamID: Bool)?
+
+        let result: (modifiedPlists: [String: [String: any Sendable]], appendTeamID: Bool)?
         if UserDefaults.standard.preferSheetForInfoPlistCustomization {
             result = await InfoPlistCustomizationSheetView.present(
                 from: presenter,
-                initialPlist: initialPlist,
+                targets: targets,
                 initialBundleID: initialBundleID,
                 appendTeamID: appendTeamID,
                 installedAppIdentities: installedAppIdentities,
@@ -248,16 +252,42 @@ final class PipelineHandler: PipelineExecutionHandler,
         } else {
             result = await InfoPlistCustomizationView.present(
                 from: presenter,
-                initialPlist: initialPlist,
+                targets: targets,
                 initialBundleID: initialBundleID,
                 appendTeamID: appendTeamID,
                 installedAppIdentities: installedAppIdentities,
                 teamID: teamID
             )
         }
-        debugLog("[PipelineHandler] resolveInfoPlistCustomization result: modifiedPlist CFBundleIdentifier='\(result?.modifiedPlist["CFBundleIdentifier"] ?? "nil")', appendTeamID=\(result?.appendTeamID ?? false)")
+        debugLog("[PipelineHandler] resolveInfoPlistCustomization result: \(result?.modifiedPlists.count ?? 0) target(s) returned, appendTeamID=\(result?.appendTeamID ?? false)")
         return result
     }
+
+    @MainActor
+    func resolveInfoPlistCustomization(
+        initialPlist: [String: any Sendable],
+        initialBundleID: String,
+        appendTeamID: Bool,
+        installedAppIdentities: [String: String],
+        teamID: String
+    ) async throws -> (modifiedPlist: [String: any Sendable], appendTeamID: Bool)? {
+        let target = InfoPlistTarget(
+            id: initialBundleID,
+            name: (initialPlist["CFBundleDisplayName"] as? String) ?? (initialPlist["CFBundleName"] as? String) ?? initialBundleID,
+            isExtension: false,
+            initialPlist: initialPlist
+        )
+        guard let result = try await resolveInfoPlistCustomization(
+            targets: [target],
+            initialBundleID: initialBundleID,
+            appendTeamID: appendTeamID,
+            installedAppIdentities: installedAppIdentities,
+            teamID: teamID
+        ) else { return nil }
+        let plist = result.modifiedPlists[initialBundleID] ?? initialPlist
+        return (plist, result.appendTeamID)
+    }
+
 
     @MainActor
     func resolveEntitlementsCustomization(
@@ -288,7 +318,7 @@ final class PipelineHandler: PipelineExecutionHandler,
                 teamType: teamType
             )
         }
-        debugLog("[PipelineHandler] resolveEntitlementsCustomization result: \(result?.count ?? 0) target(s) returned")
+        debugLog("[PipelineHandler] resolveEntitlementsCustomization result: \(result?.count) target(s) returned")
         return result
     }
 

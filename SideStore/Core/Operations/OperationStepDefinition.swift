@@ -55,7 +55,7 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.sendApp,                          18),
         PipelineExecutionStep(.installApp,                       15),
         PipelineExecutionStep(.cacheSigningCert,                  1),
-        PipelineExecutionStep(.cacheInfoPlist,                    1),
+        PipelineExecutionStep(.cacheCustomizations,               1),
         PipelineExecutionStep(.cleanStagedApp,                    1)
     ]
 
