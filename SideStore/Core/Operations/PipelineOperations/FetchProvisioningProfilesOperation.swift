@@ -216,7 +216,10 @@ private extension FetchProvisioningProfilesOperation{
     }
     
     func updateFeatures(for appID: ALTAppID, targetAppBundle: ALTApplication, team: ALTTeam) async throws -> ALTAppID {
-        var entitlements = self.context.customEntitlements ?? targetAppBundle.entitlements
+        let bundleID = targetAppBundle.bundleIdentifier
+        var entitlements = self.context.customEntitlementsByBundleID[bundleID]
+            ?? (bundleID == self.context.targetAppBundle?.bundleIdentifier ? self.context.customEntitlements : nil)
+            ?? targetAppBundle.entitlements
         for (key, value) in context.additionalEntitlements {
             entitlements[key] = value
         }
@@ -283,7 +286,10 @@ private extension FetchProvisioningProfilesOperation{
     }
     
     func updateAppGroups(for appID: ALTAppID, targetAppBundle: ALTApplication, team: ALTTeam) async throws -> ALTAppID {
-        var entitlements = self.context.customEntitlements ?? targetAppBundle.entitlements
+        let bundleID = targetAppBundle.bundleIdentifier
+        var entitlements = self.context.customEntitlementsByBundleID[bundleID]
+            ?? (bundleID == self.context.targetAppBundle?.bundleIdentifier ? self.context.customEntitlements : nil)
+            ?? targetAppBundle.entitlements
         for (key, value) in self.context.additionalEntitlements {
             entitlements[key] = value
         }

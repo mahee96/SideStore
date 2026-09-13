@@ -261,34 +261,51 @@ final class PipelineHandler: PipelineExecutionHandler,
 
     @MainActor
     func resolveEntitlementsCustomization(
-        initialEntitlements: [String: any Sendable],
-        bundleID: String,
+        targets: [EntitlementsTarget],
         teamType: ALTTeamType
-    ) async throws -> [String: any Sendable]? {
-        debugLog("[PipelineHandler] resolveEntitlementsCustomization: bundleID='\(bundleID)', initialCount=\(initialEntitlements.count), teamType=\(teamType.displayName)")
+    ) async throws -> [String: [String: any Sendable]]? {
+        debugLog("[PipelineHandler] resolveEntitlementsCustomization: targets=\(targets.count), teamType=\(teamType.displayName)")
         guard let presenter = self.activePresenter else {
             debugLog("[PipelineHandler] resolveEntitlementsCustomization: activePresenter is nil!")
-            return initialEntitlements
+            var fallback: [String: [String: any Sendable]] = [:]
+            for t in targets {
+                fallback[t.id] = t.initialEntitlements
+            }
+            return fallback
         }
 
-        let result: [String: any Sendable]?
+        let result: [String: [String: any Sendable]]?
         if UserDefaults.standard.preferSheetForEntitlementsCustomization {
             result = await EntitlementsCustomizationSheetView.present(
                 from: presenter,
-                initialEntitlements: initialEntitlements,
-                bundleID: bundleID,
+                targets: targets,
                 teamType: teamType
             )
         } else {
             result = await EntitlementsCustomizationView.present(
                 from: presenter,
-                initialEntitlements: initialEntitlements,
-                bundleID: bundleID,
+                targets: targets,
                 teamType: teamType
             )
         }
-        debugLog("[PipelineHandler] resolveEntitlementsCustomization result: \(result?.count ?? 0) entitlements returned")
+        debugLog("[PipelineHandler] resolveEntitlementsCustomization result: \(result?.count ?? 0) target(s) returned")
         return result
+    }
+
+    @MainActor
+    func resolveEntitlementsCustomization(
+        initialEntitlements: [String: any Sendable],
+        bundleID: String,
+        teamType: ALTTeamType
+    ) async throws -> [String: any Sendable]? {
+        let target = EntitlementsTarget(
+            id: bundleID,
+            name: bundleID,
+            isExtension: false,
+            initialEntitlements: initialEntitlements
+        )
+        let result = try await resolveEntitlementsCustomization(targets: [target], teamType: teamType)
+        return result?[bundleID]
     }
 
     @MainActor

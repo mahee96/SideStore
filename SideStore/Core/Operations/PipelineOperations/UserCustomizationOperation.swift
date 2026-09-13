@@ -130,20 +130,28 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
 
         if UserDefaults.standard.customizeEntitlements {
             let authTeam = try await AuthManager.shared.getAuthenticatedTeam()
-            let initialEntitlements = context.targetAppBundle?.entitlements ?? [:]
             self.setProgress(70)
 
+            let allBundles = context.targetAppBundle?.allAppBundles ?? []
+            let targets: [EntitlementsTarget] = allBundles.map { bundle in
+                EntitlementsTarget(
+                    id: bundle.bundleIdentifier,
+                    name: bundle.name,
+                    isExtension: bundle.isExtension,
+                    initialEntitlements: bundle.entitlements
+                )
+            }
+
             guard let result = try await handler.resolveEntitlementsCustomization(
-                initialEntitlements: initialEntitlements,
-                bundleID: context.targetBundleIdentifier,
+                targets: targets,
                 teamType: authTeam.type
             ) else {
                 throw OperationError.cancelled
             }
 
-            context.customEntitlements = result
-            for (key, value) in result {
-                context.additionalEntitlements[ALTEntitlement(key)] = value
+            context.customEntitlementsByBundleID = result
+            if let mainID = context.targetAppBundle?.bundleIdentifier {
+                context.customEntitlements = result[mainID]
             }
         }
 

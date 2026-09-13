@@ -47,20 +47,19 @@ extension EntitlementsCustomizationView {
     @MainActor
     public static func present(
         from presenter: UIViewController,
-        initialEntitlements: [String: any Sendable],
-        bundleID: String,
+        targets: [EntitlementsTarget],
         teamType: ALTTeamType
-    ) async -> [String: any Sendable]? {
+    ) async -> [String: [String: any Sendable]]? {
         await withCheckedContinuation { continuation in
             var hostingController: UIHostingController<AnyView>?
 
-            let view = EntitlementsCustomizationView(
-                initialEntitlements: initialEntitlements,
-                bundleID: bundleID,
+            let coreView = EntitlementsCustomizationCoreView(
+                style: .dialog,
+                targets: targets,
                 teamType: teamType,
-                onProceed: { modifiedEntitlements in
+                onProceed: { modifiedTargets in
                     hostingController?.dismiss(animated: true) {
-                        continuation.resume(returning: modifiedEntitlements)
+                        continuation.resume(returning: modifiedTargets)
                     }
                 },
                 onCancel: {
@@ -70,7 +69,7 @@ extension EntitlementsCustomizationView {
                 }
             )
 
-            let controller = UIHostingController(rootView: AnyView(view))
+            let controller = UIHostingController(rootView: AnyView(coreView))
             controller.modalPresentationStyle = .overFullScreen
             controller.modalTransitionStyle = .crossDissolve
             controller.view.backgroundColor = .clear
@@ -78,5 +77,22 @@ extension EntitlementsCustomizationView {
 
             presenter.present(controller, animated: true)
         }
+    }
+
+    @MainActor
+    public static func present(
+        from presenter: UIViewController,
+        initialEntitlements: [String: any Sendable],
+        bundleID: String,
+        teamType: ALTTeamType
+    ) async -> [String: any Sendable]? {
+        let target = EntitlementsTarget(
+            id: bundleID,
+            name: bundleID,
+            isExtension: false,
+            initialEntitlements: initialEntitlements
+        )
+        let result = await present(from: presenter, targets: [target], teamType: teamType)
+        return result?[bundleID]
     }
 }

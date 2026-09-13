@@ -30,6 +30,22 @@ public struct EntitlementsCustomizationCoreView: View {
 
     public init(
         style: EntitlementsCustomizationStyle,
+        targets: [EntitlementsTarget],
+        teamType: ALTTeamType,
+        onProceed: @escaping ([String: [String: any Sendable]]) -> Void,
+        onCancel: @escaping () -> Void
+    ) {
+        self.style = style
+        _viewModel = StateObject(wrappedValue: EntitlementsCustomizationViewModel(
+            targets: targets,
+            teamType: teamType,
+            onProceed: onProceed,
+            onCancel: onCancel
+        ))
+    }
+
+    public init(
+        style: EntitlementsCustomizationStyle,
         initialEntitlements: [String: any Sendable],
         bundleID: String,
         teamType: ALTTeamType,
@@ -141,10 +157,12 @@ public struct EntitlementsCustomizationCoreView: View {
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.primary)
 
-                Text(viewModel.bundleID)
-                    .font(.system(size: 12, weight: .medium, design: .monospaced))
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
+                if viewModel.targets.count <= 1 {
+                    Text(viewModel.bundleID)
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
             }
 
             Spacer()
@@ -205,16 +223,20 @@ public struct EntitlementsCustomizationCoreView: View {
         VStack(spacing: 20) {
             if style == .sheet {
                 HStack {
-                    Text(viewModel.bundleID)
-                        .font(.system(size: 12, weight: .medium, design: .monospaced))
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
+                    if viewModel.targets.count <= 1 {
+                        Text(viewModel.bundleID)
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
                     Spacer()
                     accountBadge
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
             }
+
+            targetPickerView
 
             searchBar
 
@@ -225,6 +247,60 @@ public struct EntitlementsCustomizationCoreView: View {
             addCustomKeyButton
         }
         .padding(.vertical, 16)
+    }
+
+    @ViewBuilder
+    private var targetPickerView: some View {
+        if viewModel.targets.count > 1 {
+            Menu {
+                ForEach(viewModel.targets) { target in
+                    SwiftUI.Button {
+                        viewModel.selectedTargetID = target.id
+                    } label: {
+                        HStack {
+                            Text(target.name)
+                            if target.id == viewModel.selectedTargetID {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 6) {
+                            Text(viewModel.currentTarget?.name ?? viewModel.selectedTargetID)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.primary)
+
+                            Text(viewModel.currentTarget?.isExtension == true ? "Extension" : "Main App")
+                                .font(.system(size: 10, weight: .semibold))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.secondary.opacity(0.15))
+                                .clipShape(Capsule())
+                                .foregroundColor(.secondary)
+                        }
+
+                        Text(viewModel.selectedTargetID)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.secondary)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(Color(UIColor.secondarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .padding(.horizontal, 16)
+        }
     }
 
     private var searchBar: some View {

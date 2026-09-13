@@ -66,16 +66,15 @@ extension EntitlementsCustomizationSheetView {
     @MainActor
     public static func present(
         from presenter: UIViewController,
-        initialEntitlements: [String: any Sendable],
-        bundleID: String,
+        targets: [EntitlementsTarget],
         teamType: ALTTeamType
-    ) async -> [String: any Sendable]? {
+    ) async -> [String: [String: any Sendable]]? {
         await withCheckedContinuation { continuation in
             var hostingController: SheetHostingController<AnyView>?
             let dismissDelegate = SheetDismissDelegate()
 
             var hasResumed = false
-            let safeResume: ([String: any Sendable]?) -> Void = { result in
+            let safeResume: ([String: [String: any Sendable]]?) -> Void = { result in
                 guard !hasResumed else { return }
                 hasResumed = true
                 dismissDelegate.resumeOnce()
@@ -86,13 +85,13 @@ extension EntitlementsCustomizationSheetView {
                 safeResume(nil)
             }
 
-            let view = EntitlementsCustomizationSheetView(
-                initialEntitlements: initialEntitlements,
-                bundleID: bundleID,
+            let coreView = EntitlementsCustomizationCoreView(
+                style: .sheet,
+                targets: targets,
                 teamType: teamType,
-                onProceed: { modifiedEntitlements in
+                onProceed: { modifiedTargets in
                     hostingController?.dismiss(animated: true) {
-                        safeResume(modifiedEntitlements)
+                        safeResume(modifiedTargets)
                     }
                 },
                 onCancel: {
@@ -102,7 +101,7 @@ extension EntitlementsCustomizationSheetView {
                 }
             )
 
-            let controller = SheetHostingController(rootView: AnyView(view))
+            let controller = SheetHostingController(rootView: AnyView(coreView))
             controller.dismissDelegate = dismissDelegate
             controller.presentationController?.delegate = dismissDelegate
             controller.modalPresentationStyle = .pageSheet
@@ -110,5 +109,22 @@ extension EntitlementsCustomizationSheetView {
 
             presenter.present(controller, animated: true)
         }
+    }
+
+    @MainActor
+    public static func present(
+        from presenter: UIViewController,
+        initialEntitlements: [String: any Sendable],
+        bundleID: String,
+        teamType: ALTTeamType
+    ) async -> [String: any Sendable]? {
+        let target = EntitlementsTarget(
+            id: bundleID,
+            name: bundleID,
+            isExtension: false,
+            initialEntitlements: initialEntitlements
+        )
+        let result = await present(from: presenter, targets: [target], teamType: teamType)
+        return result?[bundleID]
     }
 }

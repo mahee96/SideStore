@@ -36,11 +36,49 @@ public struct EntitlementEntry: Identifiable {
     }
 }
 
+public struct EntitlementsTarget: Identifiable, Sendable {
+    public let id: String
+    public let name: String
+    public let isExtension: Bool
+    public let initialEntitlements: [String: any Sendable]
+
+    public init(
+        id: String,
+        name: String,
+        isExtension: Bool,
+        initialEntitlements: [String: any Sendable]
+    ) {
+        self.id = id
+        self.name = name
+        self.isExtension = isExtension
+        self.initialEntitlements = initialEntitlements
+    }
+}
+
 final class EntitlementsCustomizationViewModel: ObservableObject {
-    let bundleID: String
+    let targets: [EntitlementsTarget]
     let teamType: ALTTeamType
-    let onProceed: ([String: any Sendable]) -> Void
+    let onProceedTargets: ([String: [String: any Sendable]]) -> Void
     let onCancel: () -> Void
+
+    @Published var selectedTargetID: String {
+        willSet {
+            entriesByTargetID[selectedTargetID] = activeEntries
+        }
+        didSet {
+            activeEntries = entriesByTargetID[selectedTargetID] ?? []
+            searchQuery = ""
+        }
+    }
+
+    private var entriesByTargetID: [String: [EntitlementEntry]] = [:]
+    var currentTarget: EntitlementsTarget? {
+        targets.first(where: { $0.id == selectedTargetID }) ?? targets.first
+    }
+
+    var bundleID: String {
+        currentTarget?.id ?? selectedTargetID
+    }
 
     @Published var activeEntries: [EntitlementEntry] = []
     @Published var searchQuery: String = ""
@@ -53,31 +91,61 @@ final class EntitlementsCustomizationViewModel: ObservableObject {
     @Published var newArrayItemText: String = ""
 
     init(
+        targets: [EntitlementsTarget],
+        teamType: ALTTeamType,
+        onProceed: @escaping ([String: [String: any Sendable]]) -> Void,
+        onCancel: @escaping () -> Void
+    ) {
+        self.targets = targets
+        self.teamType = teamType
+        self.onProceedTargets = onProceed
+        self.onCancel = onCancel
+
+        var map: [String: [EntitlementEntry]] = [:]
+        for target in targets {
+            var entries: [EntitlementEntry] = []
+            for (key, val) in target.initialEntitlements {
+                if let boolVal = val as? Bool {
+                    entries.append(EntitlementEntry(key: key, type: .boolean, boolValue: boolVal, isAppDefault: true))
+                } else if let arrVal = val as? [String] {
+                    entries.append(EntitlementEntry(key: key, type: .stringArray, arrayValue: arrVal, isAppDefault: true))
+                } else if let strVal = val as? String {
+                    entries.append(EntitlementEntry(key: key, type: .string, stringValue: strVal, isAppDefault: true))
+                } else if let numVal = val as? NSNumber {
+                    entries.append(EntitlementEntry(key: key, type: .number, stringValue: numVal.stringValue, isAppDefault: true))
+                }
+            }
+            entries.sort { $0.key.localizedCaseInsensitiveCompare($1.key) == .orderedAscending }
+            map[target.id] = entries
+        }
+
+        let initialID = targets.first?.id ?? ""
+        self.selectedTargetID = initialID
+        self.entriesByTargetID = map
+        self.activeEntries = map[initialID] ?? []
+    }
+
+    convenience init(
         initialEntitlements: [String: any Sendable],
         bundleID: String,
         teamType: ALTTeamType,
         onProceed: @escaping ([String: any Sendable]) -> Void,
         onCancel: @escaping () -> Void
     ) {
-        self.bundleID = bundleID
-        self.teamType = teamType
-        self.onProceed = onProceed
-        self.onCancel = onCancel
-
-        var entries: [EntitlementEntry] = []
-        for (key, val) in initialEntitlements {
-            if let boolVal = val as? Bool {
-                entries.append(EntitlementEntry(key: key, type: .boolean, boolValue: boolVal, isAppDefault: true))
-            } else if let arrVal = val as? [String] {
-                entries.append(EntitlementEntry(key: key, type: .stringArray, arrayValue: arrVal, isAppDefault: true))
-            } else if let strVal = val as? String {
-                entries.append(EntitlementEntry(key: key, type: .string, stringValue: strVal, isAppDefault: true))
-            } else if let numVal = val as? NSNumber {
-                entries.append(EntitlementEntry(key: key, type: .number, stringValue: numVal.stringValue, isAppDefault: true))
-            }
-        }
-        entries.sort { $0.key.localizedCaseInsensitiveCompare($1.key) == .orderedAscending }
-        self.activeEntries = entries
+        let target = EntitlementsTarget(
+            id: bundleID,
+            name: bundleID,
+            isExtension: false,
+            initialEntitlements: initialEntitlements
+        )
+        self.init(
+            targets: [target],
+            teamType: teamType,
+            onProceed: { dict in
+                onProceed(dict[bundleID] ?? [:])
+            },
+            onCancel: onCancel
+        )
     }
 
     func isEntitlementAllowed(_ key: String) -> Bool {
@@ -227,33 +295,41 @@ final class EntitlementsCustomizationViewModel: ObservableObject {
     }
 
     func handleProceed() {
-        var result: [String: any Sendable] = [:]
+        entriesByTargetID[selectedTargetID] = activeEntries
 
-        for entry in activeEntries {
-            let key = entry.key.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !key.isEmpty else { continue }
-            guard isEntitlementAllowed(key) else {
-                continue
-            }
+        var allResults: [String: [String: any Sendable]] = [:]
 
-            switch entry.type {
-            case .boolean:
-                result[key] = entry.boolValue
-            case .string:
-                result[key] = entry.stringValue
-            case .stringArray:
-                result[key] = entry.arrayValue
-            case .number:
-                if let intVal = Int(entry.stringValue) {
-                    result[key] = intVal
-                } else if let doubleVal = Double(entry.stringValue) {
-                    result[key] = doubleVal
-                } else {
+        for target in targets {
+            let entries = entriesByTargetID[target.id] ?? []
+            var result: [String: any Sendable] = [:]
+
+            for entry in entries {
+                let key = entry.key.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !key.isEmpty else { continue }
+                guard isEntitlementAllowed(key) else {
+                    continue
+                }
+
+                switch entry.type {
+                case .boolean:
+                    result[key] = entry.boolValue
+                case .string:
                     result[key] = entry.stringValue
+                case .stringArray:
+                    result[key] = entry.arrayValue
+                case .number:
+                    if let intVal = Int(entry.stringValue) {
+                        result[key] = intVal
+                    } else if let doubleVal = Double(entry.stringValue) {
+                        result[key] = doubleVal
+                    } else {
+                        result[key] = entry.stringValue
+                    }
                 }
             }
+            allResults[target.id] = result
         }
 
-        onProceed(result)
+        onProceedTargets(allResults)
     }
 }

@@ -245,6 +245,7 @@ class InstallAppOperationContext: PipelineOperationContext
     var customBundleIdentifier: String?
     var customInfoPlist: [String: any Sendable]?
     var customEntitlements: [String: any Sendable]?
+    var customEntitlementsByBundleID: [String: [String: any Sendable]] = [:]
     var isStoreUpdate: Bool = false
     var targetAppBundle: ALTApplication?
 

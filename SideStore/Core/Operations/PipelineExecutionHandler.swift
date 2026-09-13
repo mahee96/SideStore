@@ -69,6 +69,10 @@ protocol UserCustomizationHandler: AnyObject, Sendable {
         teamID: String
     ) async throws -> (modifiedPlist: [String: any Sendable], appendTeamID: Bool)?
     func resolveEntitlementsCustomization(
+        targets: [EntitlementsTarget],
+        teamType: ALTTeamType
+    ) async throws -> [String: [String: any Sendable]]?
+    func resolveEntitlementsCustomization(
         initialEntitlements: [String: any Sendable],
         bundleID: String,
         teamType: ALTTeamType
