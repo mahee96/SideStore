@@ -137,79 +137,21 @@ final class AppManager: ObservableObject, @unchecked Sendable
     
 
 
-    func deactivateApps(for appBundle: ALTApplication, presentingViewController: UIViewController?, completion: @escaping (Result<Void, Error>) -> Void)
-    {
-        guard !UserDefaults.standard.isAppLimitDisabled, let activeAppsLimit = UserDefaults.standard.activeAppsLimit else { return completion(.success(())) }
-        
-        DispatchQueue.main.async {
-            // Only apps signed with a free developer certificate count toward the 3-app free account limit.
-            // Apps signed with a paid certificate coexist independently and must not be counted here.
-            let activeApps = InstalledApp.fetchActiveApps(in: DatabaseManager.shared.viewContext)
-                .filter { $0.bundleIdentifier != appBundle.bundleIdentifier }   // Don't count app towards total if it matches activating app
-                .filter { ($0.team?.type ?? .unknown) == .free }                // Only free-cert-signed apps count against the free limit
-                .sorted { ($0.name, $0.refreshedDate) < ($1.name, $1.refreshedDate) }
-            
-            var title: String = NSLocalizedString("Cannot Activate More than 3 Apps", comment: "")
-            let message: String
-            
-            if UserDefaults.standard.activeAppLimitIncludesExtensions
-            {
-                if appBundle.appExtensions.isEmpty
-                {
-                    message = NSLocalizedString("Non-developer Apple IDs are limited to 3 active apps and app extensions. Please choose an app to deactivate.", comment: "")
-                }
-                else
-                {
-                    title = NSLocalizedString("Cannot Activate More than 3 Apps and App Extensions", comment: "")
-                    
-                    let appExtensionText = appBundle.appExtensions.count == 1 ? NSLocalizedString("app extension", comment: "") : NSLocalizedString("app extensions", comment: "")
-                    message = String(format: NSLocalizedString("Non-developer Apple IDs are limited to 3 active apps and app extensions, and \"%@\" contains %@ %@. Please choose an app to deactivate.", comment: ""), appBundle.name, NSNumber(value: appBundle.appExtensions.count), appExtensionText)
-                }
-            }
-            else
-            {
-                message = NSLocalizedString("Non-developer Apple IDs are limited to 3 active apps. Please choose an app to deactivate.", comment: "")
-            }
-            
-            let activeAppsCount = activeApps.map { $0.requiredActiveSlots }.reduce(0, +)
-                    
-            let availableActiveApps = max(activeAppsLimit - activeAppsCount, 0)
-            let requiredActiveSlots = UserDefaults.standard.activeAppLimitIncludesExtensions ? (1 + appBundle.appExtensions.count) : 1
-            guard requiredActiveSlots > availableActiveApps else { return completion(.success(())) }
+    func appsToDeactivate(for installedApp: InstalledApp) -> [InstalledApp]? {
+        guard !UserDefaults.standard.isAppLimitDisabled,
+              let activeAppsLimit = UserDefaults.standard.activeAppsLimit
+        else { return nil }
 
-            guard let presentingViewController else {
-                let failureReason = String(format: NSLocalizedString("SideStore needs to deactivate another app before installing %@.", comment: ""), appBundle.name)
-                return completion(.failure(OperationError.forbidden(failureReason: failureReason)))
-            }
-            
-            let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
-            alertController.addAction(UIAlertAction(title: UIAlertAction.cancel.title, style: UIAlertAction.cancel.style) { (action) in
-                completion(.failure(OperationError.cancelled))
-            })
-            
-            for activeApp in activeApps where activeApp.bundleIdentifier != StoreApp.altstoreAppID
-            {
-                alertController.addAction(UIAlertAction(title: activeApp.name, style: .default) { (action) in
-                    activeApp.isActive = false
-                                    
-                    self.deactivate(activeApp, presentingViewController: presentingViewController) { (result) in
-                        switch result
-                        {
-                        case .failure(let error):
-                            activeApp.managedObjectContext?.perform {
-                                activeApp.isActive = true
-                                completion(.failure(error))
-                            }
-                            
-                        case .success:
-                            self.deactivateApps(for: appBundle, presentingViewController: presentingViewController, completion: completion)
-                        }
-                    }
-                })
-            }
-            
-            presentingViewController.present(alertController, animated: true, completion: nil)
-        }
+        let activeApps = InstalledApp.fetchActiveApps(in: DatabaseManager.shared.viewContext)
+            .filter { $0.resignedBundleIdentifier != installedApp.resignedBundleIdentifier }
+            .filter { ($0.team?.type ?? .unknown) == .free }
+            .sorted { ($0.name, $0.refreshedDate) < ($1.name, $1.refreshedDate) }
+
+        let activeAppsCount = activeApps.map(\.requiredActiveSlots).reduce(0, +)
+        let availableActiveApps = max(activeAppsLimit - activeAppsCount, 0)
+
+        guard installedApp.requiredActiveSlots > availableActiveApps else { return nil }
+        return activeApps.filter { $0.bundleIdentifier != StoreApp.altstoreAppID }
     }
     
     func clearAppCache(completion: @escaping (Result<Void, Error>) -> Void)

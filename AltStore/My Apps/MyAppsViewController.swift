@@ -1217,11 +1217,7 @@ private extension MyAppsViewController
                     
             if !UserDefaults.standard.isAppLimitDisabled && UserDefaults.standard.activeAppsLimit != nil
             {
-                guard let appBundle = ALTApplication(fileURL: installedApp.fileURL) else {
-                    return finish(.failure(OperationError.invalidApp(reason: "Could not load app bundle at '\(installedApp.fileURL.lastPathComponent)'")))
-                }
-                
-                AppManager.shared.deactivateApps(for: appBundle, presentingViewController: self) { result in
+                self.promptToDeactivateApp(for: installedApp) { result in
                     installedApp.managedObjectContext?.perform {
                         switch result
                         {
@@ -1239,6 +1235,56 @@ private extension MyAppsViewController
                 AppManager.shared.activate(installedApp, presentingViewController: self, completionHandler: finish(_:))
             }
         }
+    }
+
+    private func promptToDeactivateApp(for installedApp: InstalledApp, completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let deactivationCandidates = AppManager.shared.appsToDeactivate(for: installedApp) else {
+            return completion(.success(()))
+        }
+
+        let title: String
+        let message: String
+
+        if UserDefaults.standard.activeAppLimitIncludesExtensions {
+            if installedApp.appExtensions.isEmpty {
+                title = NSLocalizedString("Cannot Activate More than 3 Apps", comment: "")
+                message = NSLocalizedString("Non-developer Apple IDs are limited to 3 active apps and app extensions. Please choose an app to deactivate.", comment: "")
+            } else {
+                title = NSLocalizedString("Cannot Activate More than 3 Apps and App Extensions", comment: "")
+                let extCount = installedApp.appExtensions.count
+                let extText = extCount == 1 ? NSLocalizedString("app extension", comment: "") : NSLocalizedString("app extensions", comment: "")
+                message = String(format: NSLocalizedString("Non-developer Apple IDs are limited to 3 active apps and app extensions, and \"%@\" contains %@ %@. Please choose an app to deactivate.", comment: ""), installedApp.name, NSNumber(value: extCount), extText)
+            }
+        } else {
+            title = NSLocalizedString("Cannot Activate More than 3 Apps", comment: "")
+            message = NSLocalizedString("Non-developer Apple IDs are limited to 3 active apps. Please choose an app to deactivate.", comment: "")
+        }
+
+        let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alertController.addAction(UIAlertAction(title: UIAlertAction.cancel.title, style: UIAlertAction.cancel.style) { _ in
+            completion(.failure(OperationError.cancelled))
+        })
+
+        for activeApp in deactivationCandidates {
+            alertController.addAction(UIAlertAction(title: activeApp.name, style: .default) { [weak self] _ in
+                guard let self else { return }
+                activeApp.isActive = false
+
+                AppManager.shared.deactivate(activeApp, presentingViewController: self) { result in
+                    switch result {
+                    case .failure(let error):
+                        activeApp.managedObjectContext?.perform {
+                            activeApp.isActive = true
+                            completion(.failure(error))
+                        }
+                    case .success:
+                        self.promptToDeactivateApp(for: installedApp, completion: completion)
+                    }
+                }
+            })
+        }
+
+        self.present(alertController, animated: true)
     }
     
     func deactivate(_ installedApp: InstalledApp, completionHandler: ((Result<InstalledApp, Error>) -> Void)? = nil)
