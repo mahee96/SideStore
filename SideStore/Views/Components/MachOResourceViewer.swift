@@ -179,7 +179,7 @@ struct MachOResourceViewer: View {
             }
         }
         .sheet(isPresented: $showingShareSheet) {
-            ActivityView(items: [dumpText])
+            ActivityViewController(items: [dumpText])
         }
         #else
         .listStyle(GroupedListStyle())

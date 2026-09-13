@@ -100,7 +100,7 @@ struct BundleResourceBrowserView: View {
         }
         #if !os(tvOS)
         .sheet(isPresented: $showingShareSheet) {
-            ActivityView(items: Array(selectedURLs))
+            ActivityViewController(items: Array(selectedURLs))
         }
         #endif
         .onAppear {
