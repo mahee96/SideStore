@@ -127,27 +127,26 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
     private func provisionAndFetchProfile(for targetAppBundle: ALTApplication,
                                           parentAppBundle: ALTApplication?,
                                           team: ALTTeam) async throws -> ALTProvisioningProfile {
-        let preferredBundleID = await self.getPreferredBundleID(for: targetAppBundle, team: team)
-        
-        let bundleID: String
-        
-        if let preferredBundleID = preferredBundleID {
-            bundleID = preferredBundleID
-            self.debugLog("[FetchProvisioningProfiles] Using preferredBundleID: \(bundleID)")
+        let parentID: String
+        if let preferredBundleID = await self.getPreferredBundleID(for: targetAppBundle, team: team) {
+            parentID = preferredBundleID
+        } else if self.context.appendTeamID {
+            parentID = "\(self.context.targetBundleIdentifier).\(team.identifier)"
         } else {
-            let parentBundleID = parentAppBundle?.bundleIdentifier ?? targetAppBundle.bundleIdentifier
-            let effectiveParentBundleID = self.context.targetBundleIdentifier
-            let updatedParentBundleID = self.context.appendTeamID ? (effectiveParentBundleID + "." + team.identifier) : effectiveParentBundleID
+            parentID = self.context.targetBundleIdentifier
+        }
 
-            if parentAppBundle != nil,
-               targetAppBundle.bundleIdentifier.hasPrefix(parentBundleID + ".") {
-                let suffix = String(targetAppBundle.bundleIdentifier.dropFirst(parentBundleID.count))
-                bundleID = updatedParentBundleID + suffix
-            } else {
-                bundleID = updatedParentBundleID
+        let bundleID: String
+        if let parentAppBundle = parentAppBundle {
+            guard targetAppBundle.bundleIdentifier.hasPrefix(parentAppBundle.bundleIdentifier + ".") else {
+                throw OperationError.invalidApp(reason: "Extension bundle ID '\(targetAppBundle.bundleIdentifier)' does not start with parent bundle ID '\(parentAppBundle.bundleIdentifier)'.")
             }
-            self.debugLog("[FetchProvisioningProfiles] Constructed mangled bundleID: \(bundleID) (effectiveParent: \(effectiveParentBundleID), appendTeamID: \(self.context.appendTeamID), team: \(team.identifier))")
-
+            let suffix = String(targetAppBundle.bundleIdentifier.dropFirst(parentAppBundle.bundleIdentifier.count))
+            bundleID = parentID + suffix
+            self.debugLog("[FetchProvisioningProfiles] Extension bundleID with suffix: \(bundleID)")
+        } else {
+            bundleID = parentID
+            self.debugLog("[FetchProvisioningProfiles] App bundleID: \(bundleID)")
         }
         
         let preferredName: String
