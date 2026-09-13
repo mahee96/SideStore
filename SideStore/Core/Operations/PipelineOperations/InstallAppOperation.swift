@@ -209,20 +209,21 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
             #keyPath(InstalledApp.customBundleIdentifier), target,
             #keyPath(InstalledApp.resignedBundleIdentifier), resignedAppBundle.bundleIdentifier
         )
+        let customCertSerial = self.context.overrideSigningCertificate?.serialNumber
         let installedApp = try InstalledApp.first(
                                 satisfying: predicate,
                                 in: backgroundContext
                             ) ?? InstalledApp(
                                 resignedAppBundle: resignedAppBundle,
                                 originalBundleIdentifier: self.context.bundleIdentifier,
-                                certificateSerialNumber: certificate.serialNumber,
+                                certificateSerialNumber: customCertSerial,
                                 storeBuildVersion: storeBuildVersion,
                                 context: backgroundContext
                             )
         if !Self.isDifferentSideStoreContainer(installedApp, resignedAppBundle) {
             installedApp.update(
                 resignedAppBundle: resignedAppBundle,
-                certificateSerialNumber: certificate.serialNumber,
+                certificateSerialNumber: customCertSerial,
                 storeBuildVersion: storeBuildVersion
             )
             installedApp.certificateStatus = self.context.targetCertStatus ?? installedApp.certificateStatus
