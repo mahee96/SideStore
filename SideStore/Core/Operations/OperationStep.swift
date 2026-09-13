@@ -39,9 +39,7 @@ enum PipelineStep: OperationStep {
     case updateAppCertificate
     case embedSigningCert
     case cacheSigningCert
-    case cacheCustomizations
-    case cacheProvisioningProfiles
-    case cacheInfoPlist
+    case cacheResignedMetadata
     case patchInfoPlist
     case createIPA
 
@@ -49,8 +47,7 @@ enum PipelineStep: OperationStep {
         ObjectIdentifier(PerformBackupRestoreOperation.self):             .backupAppData,
         ObjectIdentifier(CacheAppOperation.self):                         .cacheApp,
         ObjectIdentifier(CacheSigningCertOperation.self):                 .cacheSigningCert,
-        ObjectIdentifier(CacheUserCustomizationsOperation.self):          .cacheCustomizations,
-        ObjectIdentifier(CacheProvisioningProfilesOperation.self):        .cacheProvisioningProfiles,
+        ObjectIdentifier(CacheResignedMetadataOperation.self):            .cacheResignedMetadata,
         ObjectIdentifier(PatchInfoPlistOperation.self):                   .patchInfoPlist,
         ObjectIdentifier(CleanStagedAppOperation.self):                   .cleanStagedApp,
         ObjectIdentifier(DeactivateAppOperation.self):                    .deactivateApp,

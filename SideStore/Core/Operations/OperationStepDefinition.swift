@@ -49,14 +49,13 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.fetchProvisioningProfiles,        10),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,      1),
         PipelineExecutionStep(.embedSigningCert,                  1),
-        PipelineExecutionStep(.cacheProvisioningProfiles,         1),
-        PipelineExecutionStep(.resignApp,                        14),
+        PipelineExecutionStep(.resignApp,                        15),
         PipelineExecutionStep(.createIPA,                         2),
         PipelineExecutionStep(.exportResignedIPA,                 1),
         PipelineExecutionStep(.sendApp,                          18),
         PipelineExecutionStep(.installApp,                       15),
         PipelineExecutionStep(.cacheSigningCert,                  1),
-        PipelineExecutionStep(.cacheCustomizations,               1),
+        PipelineExecutionStep(.cacheResignedMetadata,             1),
         PipelineExecutionStep(.cleanStagedApp,                    1)
     ]
 
@@ -70,21 +69,21 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.fetchProvisioningProfiles,        15),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,      2),
         PipelineExecutionStep(.embedSigningCert,                  1),
-        PipelineExecutionStep(.cacheProvisioningProfiles,         1),
-        PipelineExecutionStep(.resignApp,                        17),
+        PipelineExecutionStep(.resignApp,                        18),
         PipelineExecutionStep(.createIPA,                         2),
         PipelineExecutionStep(.exportResignedIPA,                 2),
         PipelineExecutionStep(.sendApp,                          18),
         PipelineExecutionStep(.installApp,                       21),
         PipelineExecutionStep(.cacheSigningCert,                  1),
-        PipelineExecutionStep(.cleanStagedApp,                    2)
+        PipelineExecutionStep(.cacheResignedMetadata,             1),
+        PipelineExecutionStep(.cleanStagedApp,                    1)
     ]
 
     static let refresh: [PipelineExecutionStep] = [
         PipelineExecutionStep(.updateAppCertificate,              5),
         PipelineExecutionStep(.verifyCertificate,                10),
         PipelineExecutionStep(.fetchProvisioningProfiles,        45),
-        PipelineExecutionStep(.cacheProvisioningProfiles,         1),
+        PipelineExecutionStep(.cacheResignedMetadata,             1),
         PipelineExecutionStep(.refreshApp,                       39)
     ]
 
@@ -92,7 +91,7 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.updateAppCertificate,              5),
         PipelineExecutionStep(.verifyCertificate,                10),
         PipelineExecutionStep(.fetchProvisioningProfiles,        45),
-        PipelineExecutionStep(.cacheProvisioningProfiles,         1),
+        PipelineExecutionStep(.cacheResignedMetadata,             1),
         PipelineExecutionStep(.refreshApp,                       39)
     ]
 
@@ -121,17 +120,17 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.fetchProvisioningProfiles,         5),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,      1),
         PipelineExecutionStep(.embedSigningCert,                  1),
-        PipelineExecutionStep(.cacheProvisioningProfiles,         1),
-        PipelineExecutionStep(.resignApp,                        14),
+        PipelineExecutionStep(.resignApp,                        15),
         PipelineExecutionStep(.createIPA,                         2),
         PipelineExecutionStep(.exportResignedIPA,                 1),
         PipelineExecutionStep(.sendApp,                          10),
         PipelineExecutionStep(.installApp,                       15),
         PipelineExecutionStep(.cacheSigningCert,                  1),
+        PipelineExecutionStep(.cacheResignedMetadata,             1),
         // cleanup old backup
         PipelineExecutionStep(.removeBackupData,                  2),
         // cleanup staged app
-        PipelineExecutionStep(.cleanStagedApp,                    2)
+        PipelineExecutionStep(.cleanStagedApp,                    1)
     ]
 
     static let deactivateLegacy: [PipelineExecutionStep] = [
@@ -184,22 +183,22 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.fetchProvisioningProfiles,         5),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,      1),
         PipelineExecutionStep(.embedSigningCert,                  1),
-        PipelineExecutionStep(.cacheProvisioningProfiles,         1),
-        PipelineExecutionStep(.resignApp,                         4),
+        PipelineExecutionStep(.resignApp,                         5),
         PipelineExecutionStep(.createIPA,                         1),
         PipelineExecutionStep(.exportResignedIPA,                 1),
         PipelineExecutionStep(.sendApp,                           1),
         PipelineExecutionStep(.installApp,                        2),
         PipelineExecutionStep(.cacheSigningCert,                  1),
+        PipelineExecutionStep(.cacheResignedMetadata,             1),
         // cleanup staged app
-        PipelineExecutionStep(.cleanStagedApp,                    2)
+        PipelineExecutionStep(.cleanStagedApp,                    1)
     ]
 
     static let restoreLegacy: [PipelineExecutionStep] = [
         PipelineExecutionStep(.updateAppCertificate,              5),
         PipelineExecutionStep(.verifyCertificate,                10),
         PipelineExecutionStep(.fetchProvisioningProfiles,        45),
-        PipelineExecutionStep(.cacheProvisioningProfiles,         1),
+        PipelineExecutionStep(.cacheResignedMetadata,             1),
         PipelineExecutionStep(.refreshApp,                       39)
     ]
 
@@ -228,17 +227,17 @@ struct PipelineStepDefinition {
         PipelineExecutionStep(.fetchProvisioningProfiles,         5),
         PipelineExecutionStep(.prepareAppExtensionBundleIDs,      1),
         PipelineExecutionStep(.embedSigningCert,                  1),
-        PipelineExecutionStep(.cacheProvisioningProfiles,         1),
-        PipelineExecutionStep(.resignApp,                        14),
+        PipelineExecutionStep(.resignApp,                        15),
         PipelineExecutionStep(.createIPA,                         2),
         PipelineExecutionStep(.exportResignedIPA,                 1),
         PipelineExecutionStep(.sendApp,                          10),
         PipelineExecutionStep(.installApp,                       15),
         PipelineExecutionStep(.cacheSigningCert,                  1),
+        PipelineExecutionStep(.cacheResignedMetadata,             1),
         // cleanup old backup
         PipelineExecutionStep(.removeBackupData,                  2),
         // cleanup staged app
-        PipelineExecutionStep(.cleanStagedApp,                    2)
+        PipelineExecutionStep(.cleanStagedApp,                    1)
     ]
 
     static let removeApp: [PipelineExecutionStep] = [

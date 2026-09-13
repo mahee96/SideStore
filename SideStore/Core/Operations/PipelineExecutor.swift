@@ -278,15 +278,9 @@ final class PipelineExecutor: @unchecked Sendable {
                 result = try await step.execute(parentProgress: progress)
                 return nil
 
-            case .cacheProvisioningProfiles:
-                loggerType = CacheProvisioningProfilesOperation.self
-                let step = try CacheProvisioningProfilesOperation(context: context)
-                result = try await step.execute(parentProgress: progress)
-                return nil
-
-            case .cacheCustomizations, .cacheInfoPlist:
-                loggerType = CacheUserCustomizationsOperation.self
-                let step = try CacheUserCustomizationsOperation(context: context)
+            case .cacheResignedMetadata:
+                loggerType = CacheResignedMetadataOperation.self
+                let step = try CacheResignedMetadataOperation(context: context)
                 result = try await step.execute(parentProgress: progress)
                 return nil
 
