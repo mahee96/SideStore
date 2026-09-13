@@ -41,6 +41,7 @@ public struct InfoPlistCustomizationCoreView: View {
     @State private var newKeyName: String = ""
     @State private var newKeyValue: String = ""
     @State private var newKeyType: RawPlistType = .string
+    @State private var expandedKeyIDs: Set<UUID> = []
 
     public enum RawPlistType: String, CaseIterable, Identifiable {
         case string = "String"
@@ -570,12 +571,23 @@ public struct InfoPlistCustomizationCoreView: View {
     }
 
     private func rawKeyRow(for item: RawPlistEntry) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        let isExpanded = expandedKeyIDs.contains(item.id)
+        return VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text(item.key)
                     .font(.system(size: 13, weight: .medium, design: .monospaced))
                     .foregroundColor(.primary)
-                    .lineLimit(1)
+                    .lineLimit(isExpanded ? nil : 1)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            if expandedKeyIDs.contains(item.id) {
+                                expandedKeyIDs.remove(item.id)
+                            } else {
+                                expandedKeyIDs.insert(item.id)
+                            }
+                        }
+                    }
                 Spacer()
                 Text(item.type.rawValue)
                     .font(.system(size: 10, weight: .semibold))

@@ -18,6 +18,15 @@ public enum EntitlementsCustomizationStyle {
 public struct EntitlementsCustomizationCoreView: View {
     public let style: EntitlementsCustomizationStyle
     @StateObject private var viewModel: EntitlementsCustomizationViewModel
+    @State private var expandedItemIDs: Set<String> = []
+
+    private func toggleExpanded(_ id: String) {
+        if expandedItemIDs.contains(id) {
+            expandedItemIDs.remove(id)
+        } else {
+            expandedItemIDs.insert(id)
+        }
+    }
 
     public init(
         style: EntitlementsCustomizationStyle,
@@ -290,6 +299,7 @@ public struct EntitlementsCustomizationCoreView: View {
 
     private func activeEntitlementRow(entry: EntitlementEntry) -> some View {
         let isAllowed = viewModel.isEntitlementAllowed(entry.key)
+        let isKeyExpanded = expandedItemIDs.contains(entry.id.uuidString)
 
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 8) {
@@ -298,7 +308,13 @@ public struct EntitlementsCustomizationCoreView: View {
                         Text(entry.key)
                             .font(.system(size: 13, weight: .semibold, design: .monospaced))
                             .foregroundColor(.primary)
-                            .lineLimit(1)
+                            .lineLimit(isKeyExpanded ? nil : 1)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    toggleExpanded(entry.id.uuidString)
+                                }
+                            }
 
                         if entry.isAppDefault {
                             Text("App Default")
@@ -379,11 +395,19 @@ public struct EntitlementsCustomizationCoreView: View {
                     .foregroundColor(.secondary)
             } else {
                 ForEach(Array(entry.arrayValue.enumerated()), id: \.offset) { index, item in
+                    let itemKey = "\(entry.id.uuidString)-arr-\(index)"
+                    let isItemExpanded = expandedItemIDs.contains(itemKey)
                     HStack(spacing: 6) {
                         Text(item)
                             .font(.system(size: 12, design: .monospaced))
                             .foregroundColor(.primary)
-                            .lineLimit(1)
+                            .lineLimit(isItemExpanded ? nil : 1)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    toggleExpanded(itemKey)
+                                }
+                            }
 
                         Spacer()
 
@@ -465,7 +489,9 @@ public struct EntitlementsCustomizationCoreView: View {
     }
 
     private func availableEntitlementRow(entitlement: Entitlement) -> some View {
-        HStack(alignment: .center, spacing: 12) {
+        let isEntExpanded = expandedItemIDs.contains(entitlement.id)
+
+        return HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Text(entitlement.displayName)
@@ -484,12 +510,18 @@ public struct EntitlementsCustomizationCoreView: View {
                 Text(entitlement.rawValue)
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundColor(.secondary)
-                    .lineLimit(1)
+                    .lineLimit(isEntExpanded ? nil : 1)
 
                 Text(entitlement.summary)
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(isEntExpanded ? nil : 2)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    toggleExpanded(entitlement.id)
+                }
             }
 
             Spacer()
