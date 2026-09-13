@@ -55,15 +55,7 @@ final class DeviceRegistrationFlow: @unchecked Sendable {
                 throw minimuxerError.asOperationError
             }
             
-            var deviceUDID = try await fetchUDID()
-            if deviceUDID == nil || deviceUDID?.isEmpty == true  {
-                deviceUDID = try? await fetchUDID(useStatic: true)
-            }
-            
-            guard let udid = deviceUDID, !udid.isEmpty else {
-                debugLog("[DeviceRegistrationFlow] Failed to fetch device UDID.")
-                throw OperationError.unknownUDID(reason: "No valid UDID found in minimuxer response or static pairing file.")
-            }
+            let udid = try await fetchUDID()
             
             if isCellularEnabled {
                 await CellularRefreshManager.shared.turnOnDataIfNeeded(addOnDelay: 2.0)

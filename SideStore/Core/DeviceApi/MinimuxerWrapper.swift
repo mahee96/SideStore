@@ -280,27 +280,26 @@ func installAppBundle(_ bundleId: String, appName: String) async throws {
 }
 
 @discardableResult
-func fetchUDID(useStatic: Bool = false) async throws -> String? {
+func fetchUDID(forceLive: Bool = false) async throws -> String {
     defer { debugLog("[SideStore] fetchUDID() completed") }
     #if targetEnvironment(simulator)
     debugLog("[SideStore] fetchUDID() is no-op on simulator")
     return "00008030-001234567890ABCD"
+    
     #else
-    debugLog("[SideStore] fetchUDID() invoked")
-    let result = try? await withRemotePairingRetry {
+    if !forceLive, let cachedUDID = Keychain.shared.deviceUDID, !cachedUDID.isEmpty {
+        debugLog("[SideStore] fetchUDID() returning cached UDID from Keychain: \(cachedUDID)")
+        return cachedUDID
+    }
+    debugLog("[SideStore] fetchUDID() invoked (forceLive: \(forceLive))")
+    let result = try await withRemotePairingRetry {
         try await minimuxer.core.fetchUDID()
     }
-    if let udid = result ?? nil, !udid.isEmpty {
-        Keychain.shared.deviceUDID = udid
-        return udid
+    guard let udid = result, !udid.isEmpty else {
+        throw OperationError.unknownUDID(reason: "Minimuxer returned empty UDID.")
     }
-    if useStatic {
-        if let cachedUDID = Keychain.shared.deviceUDID, !cachedUDID.isEmpty {
-            return cachedUDID
-        }
-        return PairingFileManager.shared.pairingUDID
-    }
-    return nil
+    Keychain.shared.deviceUDID = udid
+    return udid
     #endif
 }
 
