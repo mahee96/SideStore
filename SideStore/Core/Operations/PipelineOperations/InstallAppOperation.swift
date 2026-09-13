@@ -16,8 +16,6 @@ import SideSign
 final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContext, InstalledApp>, @unchecked Sendable {
     let storeApp: StoreApp?
     
-    private var didCleanUp = false
-    
     init(context: InstallAppOperationContext, app: any AppProtocol) throws {
         self.storeApp = app as? StoreApp
         try super.init(context: context)
@@ -33,8 +31,7 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
         }
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         
-        defer{
-            self.cleanUp()
+        defer {
             self.removeRefreshedIPA()
         }
         
@@ -167,9 +164,6 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
         }
         
         self.setProgress(30)
-        
-        // Temporary directory and resigned .ipa no longer needed — delete now before AltStore quits.
-        cleanUp()
         
         // Self-reinstall background suspension
         if isSelfReinstall {
@@ -439,14 +433,5 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
         }
     }
     
-    private func cleanUp() {
-        guard !didCleanUp else { return }
-        didCleanUp = true
-        
-        do {
-            try FileManager.default.removeItem(at: context.temporaryDirectory)
-        } catch {
-            debugLog("[InstallAppOperation] Failed to remove temporary directory. \(error)")
-        }
-    }
+
 }

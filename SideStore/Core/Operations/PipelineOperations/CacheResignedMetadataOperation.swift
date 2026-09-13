@@ -47,11 +47,12 @@ final class CacheResignedMetadataOperation: BasePipelineOperation<InstallAppOper
         let infoPlistDirectory = InstalledApp.customInfoPlistDirectoryURL(forBundleIdentifier: bundleID)
         try FileManager.default.createDirectory(at: infoPlistDirectory, withIntermediateDirectories: true, attributes: nil)
         
-        if let targetAppBundle = self.context.targetAppBundle {
+        if let targetAppBundle = self.context.resignedAppBundle ?? self.context.targetAppBundle {
             for bundle in targetAppBundle.allAppBundles {
                 let targetID = (bundle == targetAppBundle) ? bundleID : bundle.bundleIdentifier
                 let destURL = infoPlistDirectory.appendingPathComponent("\(targetID).plist")
-                if let parser = try? InfoPlistParser(bundleURL: bundle.fileURL) {
+                do {
+                    let parser = try InfoPlistParser(bundleURL: bundle.fileURL)
                     try parser.write(to: destURL)
                     debugLog("[CacheResignedMetadataOperation] Cached resigned Info.plist for \(targetID) to \(destURL.path)")
                     
@@ -59,6 +60,8 @@ final class CacheResignedMetadataOperation: BasePipelineOperation<InstallAppOper
                         let legacyURL = InstalledApp.appsDirectoryURL.appendingPathComponent(bundleID).appendingPathComponent("custom_info.plist")
                         try? parser.write(to: legacyURL)
                     }
+                } catch {
+                    debugLog("[CacheResignedMetadataOperation] Failed to cache Info.plist for \(targetID) from \(bundle.fileURL.path): \(error)")
                 }
             }
         } else if !self.context.customInfoPlistByBundleID.isEmpty {
