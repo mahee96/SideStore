@@ -199,6 +199,7 @@ final class PipelineRunner: Sendable
         let operationsCount = operations.count
         let isCellularRefreshGroup = (operationsCount >= 2 && CellularRefreshManager.shared.isCellularMode)
         group.isCellularRefreshGroup = isCellularRefreshGroup
+        debugLog("[PipelineRunner] Configured pipeline for \(operationsCount) operation(s): isCellularRefreshGroup = \(isCellularRefreshGroup) (isCellularMode = \(CellularRefreshManager.shared.isCellularMode))")
 
         // run the operation pipeline
         try await withThrowingTaskGroup(of: Void.self) { taskGroup in
@@ -212,6 +213,7 @@ final class PipelineRunner: Sendable
 
         // Run standalone batch profile injection if cellular refresh group with at least 2 operations
         if isCellularRefreshGroup && operationsCount >= 2 && !group.sharedContext.pendingProfiles.isEmpty {
+            debugLog("[PipelineRunner] Starting batch profile injection for \(group.sharedContext.pendingProfiles.count) app(s)...")
             let injectContext = StandaloneOperationContext(steps: .injectBatchProfiles, dbBackgroundContext: group.dbContext)
             let injectOp = try InjectBatchProfilesOperation(
                 batches: Array(group.sharedContext.pendingProfiles.values),
