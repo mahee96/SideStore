@@ -193,181 +193,7 @@ struct UserCustomizationsView: View {
                 }
 
                 // Section 2: GENERAL
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("GENERAL")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.6))
-                        .padding(.horizontal, 16)
-                    
-                    VStack(spacing: 0) {
-                        toggleRow(title: "Customize Info.plist", isOn: Binding(
-                            get: { customizeInfoPlist },
-                            set: { newValue in
-                                customizeInfoPlist = newValue
-                                UserDefaults.standard.customizeInfoPlist = newValue
-                            }
-                        ))
-                        
-                        divider
-                        
-                        toggleRow(title: "Customize AppID", isOn: Binding(
-                            get: { customizeInfoPlist ? true : customizeAppId },
-                            set: { newValue in
-                                customizeAppId = newValue
-                                UserDefaults.standard.customizeAppId = newValue
-                            }
-                        ))
-                        .disabled(customizeInfoPlist)
-                        .opacity(customizeInfoPlist ? 0.4 : 1.0)
-                        
-                        divider
-                        
-                        HStack {
-                            Text("Customize Extensions")
-                                .font(.system(size: 17, weight: .bold))
-                                .foregroundColor(.white)
-                            Spacer()
-                            Picker("", selection: Binding(
-                                get: { customizeAppExtensions },
-                                set: { newValue in
-                                    customizeAppExtensions = newValue
-                                    UserDefaults.standard.customizeAppExtensions = newValue
-                                }
-                            )) {
-                                ForEach(AppExtensionCustomization.allCases) { option in
-                                    Text(option.displayName).tag(option)
-                                }
-                            }
-                            .pickerStyle(.menu)
-                            .tint(Color.white.opacity(0.7))
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .frame(minHeight: 50)
-                        
-                        divider
-                        
-                        toggleRow(title: "Customize Entitlements", isOn: Binding(
-                            get: { customizeEntitlements },
-                            set: { newValue in
-                                customizeEntitlements = newValue
-                                UserDefaults.standard.customizeEntitlements = newValue
-                            }
-                        ))
-                        
-                        divider
-                        
-                        toggleRow(
-                            title: "Auto-Fix AppGroup IDs",
-                            subtitle: isFreeAccount ? "Required for free developer accounts" : "Automatically fix App Group casing mismatches",
-                            isOn: Binding(
-                                get: { isFreeAccount ? true : autoFixAppGroupIDs },
-                                set: { newValue in
-                                    guard !isFreeAccount else { return }
-                                    autoFixAppGroupIDs = newValue
-                                    UserDefaults.standard.autoFixAppGroupIDs = newValue
-                                }
-                            )
-                        )
-                        .disabled(isFreeAccount)
-
-                        divider
-
-                        toggleRow(
-                            title: "Customize App Icon",
-                            subtitle: "Prompt to choose a custom icon before installing",
-                            isOn: Binding(
-                                get: { customizeAppIcon },
-                                set: { newValue in
-                                    customizeAppIcon = newValue
-                                    UserDefaults.standard.customizeAppIcon = newValue
-                                }
-                            )
-                        )
-
-                        divider
-
-                        toggleRow(
-                            title: "Customize Provisioning Profile",
-                            subtitle: "Prompt to select a provisioning profile before installing",
-                            isOn: Binding(
-                                get: { customizeProvisioningProfile },
-                                set: { newValue in
-                                    customizeProvisioningProfile = newValue
-                                    UserDefaults.standard.customizeProvisioningProfile = newValue
-                                }
-                            )
-                        )
-                        
-                        divider
-                        
-                        toggleRow(
-                            title: "Prefer Resigned IPA",
-                            subtitle: "Prefer IPA (speed) vs App (storage) efficiency",
-                            isOn: Binding(
-                                get: { preferResignedIPA },
-                                set: { newValue in
-                                    pendingPreferIPAOngoing = newValue
-                                    showPreferIPAToggleAlert = true
-                                }
-                            )
-                        )
-                        
-                        divider
-                        
-                        toggleRow(title: "Export Resigned IPAs", isOn: Binding(
-                            get: { isExportResignedAppEnabled },
-                            set: { newValue in
-                                isExportResignedAppEnabled = newValue
-                                UserDefaults.standard.isExportResignedAppEnabled = newValue
-                            }
-                        ))
-                        
-                        divider
-                        
-                        toggleRow(title: "Skip Uncopyable Backup Files", isOn: Binding(
-                            get: { skipNonCopyableFiles },
-                            set: { newValue in
-                                skipNonCopyableFiles = newValue
-                                UserDefaults.standard.skipNonCopyableBackupFiles = newValue
-                            }
-                        ))
-                        
-                        divider
-                        
-                        toggleRow(
-                            title: "Prefer Sheet for Info.plist",
-                            subtitle: "Use sheet instead of dialog",
-                            isOn: Binding(
-                                get: { preferSheetForInfoPlistCustomization },
-                                set: { newValue in
-                                    preferSheetForInfoPlistCustomization = newValue
-                                    UserDefaults.standard.preferSheetForInfoPlistCustomization = newValue
-                                }
-                            )
-                        )
-                        .disabled(!customizeInfoPlist)
-                        .opacity(!customizeInfoPlist ? 0.4 : 1.0)
-                        
-                        divider
-                        
-                        toggleRow(
-                            title: "Prefer Sheet for Entitlements",
-                            subtitle: "Use sheet instead of dialog",
-                            isOn: Binding(
-                                get: { preferSheetForEntitlementsCustomization },
-                                set: { newValue in
-                                    preferSheetForEntitlementsCustomization = newValue
-                                    UserDefaults.standard.preferSheetForEntitlementsCustomization = newValue
-                                }
-                            )
-                        )
-                        .disabled(!customizeEntitlements)
-                        .opacity(!customizeEntitlements ? 0.4 : 1.0)
-                    }
-                    .background(Color.settingsRowBackground)
-                    .cornerRadius(14)
-                }
+                generalSection
 
                 // Section 2: APP VERIFICATION
                 VStack(alignment: .leading, spacing: 8) {
@@ -505,133 +331,7 @@ struct UserCustomizationsView: View {
                 }
 
                 // Section 4: CELLULAR REFRESH SHORTCUTS
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("CELLULAR REFRESH SHORTCUTS")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.6))
-                        .padding(.horizontal, 16)
-
-                    VStack(spacing: 0) {
-                        editableValueRow(
-                            title: "Turn On Cellular Shortcut",
-                            subtitle: "Name of the shortcut in Apple Shortcuts app",
-                            value: turnOnDataShortcutName
-                        ) {
-                            editingValueText = turnOnDataShortcutName
-                            editDialog = EditDialogState(
-                                title: "Turn On Cellular Shortcut",
-                                message: "Name of the shortcut in Apple Shortcuts app",
-                                placeholder: AppConstants.Shortcuts.defaultTurnOnDataShortcutName,
-                                keyboardType: .default,
-                                onSave: { newValue in
-                                    let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                                    let resolved = trimmed.isEmpty ? AppConstants.Shortcuts.defaultTurnOnDataShortcutName : trimmed
-                                    let sanitized = CellularRefreshManager.sanitizeShortcutName(resolved, fallback: AppConstants.Shortcuts.defaultTurnOnDataShortcutName)
-                                    turnOnDataShortcutName = sanitized
-                                    CellularRefreshManager.shared.setTurnOnDataShortcutName(sanitized)
-                                }
-                            )
-                        }
-
-                        divider
-
-                        editableValueRow(
-                            title: "Turn Off Cellular Shortcut",
-                            subtitle: "Name of the shortcut in Apple Shortcuts app",
-                            value: turnOffDataShortcutName
-                        ) {
-                            editingValueText = turnOffDataShortcutName
-                            editDialog = EditDialogState(
-                                title: "Turn Off Cellular Shortcut",
-                                message: "Name of the shortcut in Apple Shortcuts app",
-                                placeholder: AppConstants.Shortcuts.defaultTurnOffDataShortcutName,
-                                keyboardType: .default,
-                                onSave: { newValue in
-                                    let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                                    let resolved = trimmed.isEmpty ? AppConstants.Shortcuts.defaultTurnOffDataShortcutName : trimmed
-                                    let sanitized = CellularRefreshManager.sanitizeShortcutName(resolved, fallback: AppConstants.Shortcuts.defaultTurnOffDataShortcutName)
-                                    turnOffDataShortcutName = sanitized
-                                    CellularRefreshManager.shared.setTurnOffDataShortcutName(sanitized)
-                                }
-                            )
-                        }
-
-                        divider
-
-                        editableValueRow(
-                            title: "Turn On Base Delay",
-                            subtitle: "Base wait time after turning on data (seconds, ≥ 0)",
-                            value: turnOnBaseDelayText,
-                            unit: "s"
-                        ) {
-                            editingValueText = turnOnBaseDelayText
-                            editDialog = EditDialogState(
-                                title: "Turn On Base Delay",
-                                message: "Base wait time after turning on data (seconds, ≥ 0)",
-                                placeholder: String(AppConstants.Shortcuts.defaultTurnOnDataBaseDelay),
-                                keyboardType: .decimalPad,
-                                onSave: { newValue in
-                                    let filtered = newValue.filter { "0123456789.".contains($0) }
-                                    if let delay = Double(filtered), delay >= 0 {
-                                        turnOnBaseDelayText = String(delay)
-                                        CellularRefreshManager.shared.setTurnOnDataBaseDelayOverride(delay)
-                                    } else {
-                                        turnOnBaseDelayText = String(AppConstants.Shortcuts.defaultTurnOnDataBaseDelay)
-                                        CellularRefreshManager.shared.setTurnOnDataBaseDelayOverride(nil)
-                                    }
-                                }
-                            )
-                        }
-
-                        divider
-
-                        editableValueRow(
-                            title: "Turn Off Base Delay",
-                            subtitle: "Base wait time after turning off data (seconds, ≥ 0)",
-                            value: turnOffBaseDelayText,
-                            unit: "s"
-                        ) {
-                            editingValueText = turnOffBaseDelayText
-                            editDialog = EditDialogState(
-                                title: "Turn Off Base Delay",
-                                message: "Base wait time after turning off data (seconds, ≥ 0)",
-                                placeholder: String(AppConstants.Shortcuts.defaultTurnOffDataBaseDelay),
-                                keyboardType: .decimalPad,
-                                onSave: { newValue in
-                                    let filtered = newValue.filter { "0123456789.".contains($0) }
-                                    if let delay = Double(filtered), delay >= 0 {
-                                        turnOffBaseDelayText = String(delay)
-                                        CellularRefreshManager.shared.setTurnOffDataBaseDelayOverride(delay)
-                                    } else {
-                                        turnOffBaseDelayText = String(AppConstants.Shortcuts.defaultTurnOffDataBaseDelay)
-                                        CellularRefreshManager.shared.setTurnOffDataBaseDelayOverride(nil)
-                                    }
-                                }
-                            )
-                        }
-
-                        divider
-
-                        SwiftUI.Button(action: {
-                            CellularRefreshManager.shared.resetToDefaults()
-                            turnOnDataShortcutName = AppConstants.Shortcuts.defaultTurnOnDataShortcutName
-                            turnOffDataShortcutName = AppConstants.Shortcuts.defaultTurnOffDataShortcutName
-                            turnOnBaseDelayText = String(AppConstants.Shortcuts.defaultTurnOnDataBaseDelay)
-                            turnOffBaseDelayText = String(AppConstants.Shortcuts.defaultTurnOffDataBaseDelay)
-                        }) {
-                            HStack {
-                                Spacer()
-                                Text("Reset to Defaults")
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .foregroundColor(.red)
-                                Spacer()
-                            }
-                            .padding(.vertical, 12)
-                        }
-                    }
-                    .background(Color.settingsRowBackground)
-                    .cornerRadius(14)
-                }
+                cellularRefreshShortcutsSection
 
                 // Section 5: MINIMUXER BACKEND
                 VStack(alignment: .leading, spacing: 8) {
@@ -743,20 +443,28 @@ struct UserCustomizationsView: View {
                 ActivityViewController(activityItems: [url])
             }
         }
-        .alert(item: $editDialog) { dialog in
-            TextField(dialog.placeholder, text: $editingValueText)
+        .alert(
+            editDialog?.title ?? "",
+            isPresented: Binding<Bool>(
+                get: { editDialog != nil },
+                set: { if !$0 { editDialog = nil } }
+            )
+        ) {
+            TextField(editDialog?.placeholder ?? "", text: $editingValueText)
                 #if !os(tvOS)
-                .keyboardType(dialog.keyboardType)
+                .keyboardType(editDialog?.keyboardType ?? .default)
                 #endif
             SwiftUI.Button("OK") {
-                dialog.onSave(editingValueText)
+                if let dialog = editDialog {
+                    dialog.onSave(editingValueText)
+                }
                 editDialog = nil
             }
             SwiftUI.Button("Cancel", role: .cancel) {
                 editDialog = nil
             }
-        } message: { dialog in
-            Text(dialog.message)
+        } message: {
+            Text(editDialog?.message ?? "")
         }
         .task {
             isFreeAccount = (try? await AuthManager.shared.getAuthenticatedTeam())?.type == .free
@@ -787,15 +495,16 @@ struct UserCustomizationsView: View {
         .frame(minHeight: 50)
     }
 
-    private func editableValueRow(
+    private func textFieldRow(
         title: String,
         subtitle: String? = nil,
+        placeholder: String,
         value: String,
         unit: String? = nil,
         onTap: @escaping () -> Void
     ) -> some View {
         SwiftUI.Button(action: onTap) {
-            HStack {
+            VStack(alignment: .leading, spacing: 6) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
                         .font(.system(size: 17, weight: .bold))
@@ -808,18 +517,352 @@ struct UserCustomizationsView: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-                Spacer()
-                HStack(spacing: 8) {
-                    Text(unit != nil ? "\(value) \(unit!)" : value)
-                        .font(.system(size: 16))
-                        .foregroundColor(Color(uiColor: ThemeManager.shared.primaryColor))
-                    Image(systemName: "pencil")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.4))
+
+                HStack {
+                    Text(value.isEmpty ? placeholder : (unit != nil ? "\(value) \(unit!)" : value))
+                        .font(.system(size: 15))
+                        .foregroundColor(value.isEmpty ? Color.white.opacity(0.3) : .white)
+                    Spacer()
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.white.opacity(0.08))
+                .cornerRadius(8)
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.vertical, 10)
+        }
+    }
+
+    @ViewBuilder
+    private var cellularRefreshShortcutsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("CELLULAR REFRESH SHORTCUTS")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(Color.white.opacity(0.6))
+                .padding(.horizontal, 16)
+
+            VStack(spacing: 0) {
+                textFieldRow(
+                    title: "Turn On Cellular Shortcut",
+                    subtitle: "Name of the shortcut in Apple Shortcuts app",
+                    placeholder: AppConstants.Shortcuts.defaultTurnOnDataShortcutName,
+                    value: turnOnDataShortcutName,
+                    onTap: openTurnOnShortcutDialog
+                )
+
+                divider
+
+                textFieldRow(
+                    title: "Turn Off Cellular Shortcut",
+                    subtitle: "Name of the shortcut in Apple Shortcuts app",
+                    placeholder: AppConstants.Shortcuts.defaultTurnOffDataShortcutName,
+                    value: turnOffDataShortcutName,
+                    onTap: openTurnOffShortcutDialog
+                )
+
+                divider
+
+                textFieldRow(
+                    title: "Turn On Base Delay",
+                    subtitle: "Base wait time after turning on data (seconds, ≥ 0)",
+                    placeholder: String(AppConstants.Shortcuts.defaultTurnOnDataBaseDelay),
+                    value: turnOnBaseDelayText,
+                    unit: "s",
+                    onTap: openTurnOnBaseDelayDialog
+                )
+
+                divider
+
+                textFieldRow(
+                    title: "Turn Off Base Delay",
+                    subtitle: "Base wait time after turning off data (seconds, ≥ 0)",
+                    placeholder: String(AppConstants.Shortcuts.defaultTurnOffDataBaseDelay),
+                    value: turnOffBaseDelayText,
+                    unit: "s",
+                    onTap: openTurnOffBaseDelayDialog
+                )
+
+                divider
+
+                SwiftUI.Button(action: resetCellularDefaults) {
+                    HStack {
+                        Spacer()
+                        Text("Reset to Defaults")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(.red)
+                        Spacer()
+                    }
+                    .padding(.vertical, 12)
+                }
+            }
+            .background(Color.settingsRowBackground)
+            .cornerRadius(14)
+        }
+    }
+
+    private func openTurnOnShortcutDialog() {
+        editingValueText = turnOnDataShortcutName
+        editDialog = EditDialogState(
+            title: "Turn On Cellular Shortcut",
+            message: "Name of the shortcut in Apple Shortcuts app",
+            placeholder: AppConstants.Shortcuts.defaultTurnOnDataShortcutName,
+            keyboardType: .default,
+            onSave: { newValue in
+                let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                let resolved = trimmed.isEmpty ? AppConstants.Shortcuts.defaultTurnOnDataShortcutName : trimmed
+                let sanitized = CellularRefreshManager.sanitizeShortcutName(resolved, fallback: AppConstants.Shortcuts.defaultTurnOnDataShortcutName)
+                turnOnDataShortcutName = sanitized
+                CellularRefreshManager.shared.setTurnOnDataShortcutName(sanitized)
+            }
+        )
+    }
+
+    private func openTurnOffShortcutDialog() {
+        editingValueText = turnOffDataShortcutName
+        editDialog = EditDialogState(
+            title: "Turn Off Cellular Shortcut",
+            message: "Name of the shortcut in Apple Shortcuts app",
+            placeholder: AppConstants.Shortcuts.defaultTurnOffDataShortcutName,
+            keyboardType: .default,
+            onSave: { newValue in
+                let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                let resolved = trimmed.isEmpty ? AppConstants.Shortcuts.defaultTurnOffDataShortcutName : trimmed
+                let sanitized = CellularRefreshManager.sanitizeShortcutName(resolved, fallback: AppConstants.Shortcuts.defaultTurnOffDataShortcutName)
+                turnOffDataShortcutName = sanitized
+                CellularRefreshManager.shared.setTurnOffDataShortcutName(sanitized)
+            }
+        )
+    }
+
+    private func openTurnOnBaseDelayDialog() {
+        editingValueText = turnOnBaseDelayText
+        editDialog = EditDialogState(
+            title: "Turn On Base Delay",
+            message: "Base wait time after turning on data (seconds, ≥ 0)",
+            placeholder: String(AppConstants.Shortcuts.defaultTurnOnDataBaseDelay),
+            keyboardType: .decimalPad,
+            onSave: { newValue in
+                let filtered = newValue.filter { "0123456789.".contains($0) }
+                if let delay = Double(filtered), delay >= 0 {
+                    turnOnBaseDelayText = String(delay)
+                    CellularRefreshManager.shared.setTurnOnDataBaseDelayOverride(delay)
+                } else {
+                    turnOnBaseDelayText = String(AppConstants.Shortcuts.defaultTurnOnDataBaseDelay)
+                    CellularRefreshManager.shared.setTurnOnDataBaseDelayOverride(nil)
+                }
+            }
+        )
+    }
+
+    private func openTurnOffBaseDelayDialog() {
+        editingValueText = turnOffBaseDelayText
+        editDialog = EditDialogState(
+            title: "Turn Off Base Delay",
+            message: "Base wait time after turning off data (seconds, ≥ 0)",
+            placeholder: String(AppConstants.Shortcuts.defaultTurnOffDataBaseDelay),
+            keyboardType: .decimalPad,
+            onSave: { newValue in
+                let filtered = newValue.filter { "0123456789.".contains($0) }
+                if let delay = Double(filtered), delay >= 0 {
+                    turnOffBaseDelayText = String(delay)
+                    CellularRefreshManager.shared.setTurnOffDataBaseDelayOverride(delay)
+                } else {
+                    turnOffBaseDelayText = String(AppConstants.Shortcuts.defaultTurnOffDataBaseDelay)
+                    CellularRefreshManager.shared.setTurnOffDataBaseDelayOverride(nil)
+                }
+            }
+        )
+    }
+
+    private func resetCellularDefaults() {
+        CellularRefreshManager.shared.resetToDefaults()
+        turnOnDataShortcutName = AppConstants.Shortcuts.defaultTurnOnDataShortcutName
+        turnOffDataShortcutName = AppConstants.Shortcuts.defaultTurnOffDataShortcutName
+        turnOnBaseDelayText = String(AppConstants.Shortcuts.defaultTurnOnDataBaseDelay)
+        turnOffBaseDelayText = String(AppConstants.Shortcuts.defaultTurnOffDataBaseDelay)
+    }
+
+    private var customizeAppExtensionsBinding: Binding<AppExtensionCustomization> {
+        Binding<AppExtensionCustomization>(
+            get: { customizeAppExtensions },
+            set: { newValue in
+                customizeAppExtensions = newValue
+                UserDefaults.standard.customizeAppExtensions = newValue
+            }
+        )
+    }
+
+    @ViewBuilder
+    private var generalSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("GENERAL")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(Color.white.opacity(0.6))
+                .padding(.horizontal, 16)
+            
+            VStack(spacing: 0) {
+                toggleRow(title: "Customize Info.plist", isOn: Binding(
+                    get: { customizeInfoPlist },
+                    set: { newValue in
+                        customizeInfoPlist = newValue
+                        UserDefaults.standard.customizeInfoPlist = newValue
+                    }
+                ))
+                
+                divider
+                
+                toggleRow(title: "Customize AppID", isOn: Binding(
+                    get: { customizeInfoPlist ? true : customizeAppId },
+                    set: { newValue in
+                        customizeAppId = newValue
+                        UserDefaults.standard.customizeAppId = newValue
+                    }
+                ))
+                .disabled(customizeInfoPlist)
+                .opacity(customizeInfoPlist ? 0.4 : 1.0)
+                
+                divider
+                
+                HStack {
+                    Text("Customize Extensions")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(.white)
+                    Spacer()
+                    Picker("", selection: customizeAppExtensionsBinding) {
+                        ForEach(AppExtensionCustomization.allCases) { (option: AppExtensionCustomization) in
+                            Text(option.displayName).tag(option)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .tint(Color.white.opacity(0.7))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .frame(minHeight: 50)
+                
+                divider
+                
+                toggleRow(title: "Customize Entitlements", isOn: Binding(
+                    get: { customizeEntitlements },
+                    set: { newValue in
+                        customizeEntitlements = newValue
+                        UserDefaults.standard.customizeEntitlements = newValue
+                    }
+                ))
+                
+                divider
+                
+                toggleRow(
+                    title: "Auto-Fix AppGroup IDs",
+                    subtitle: isFreeAccount ? "Required for free developer accounts" : "Automatically fix App Group casing mismatches",
+                    isOn: Binding(
+                        get: { isFreeAccount ? true : autoFixAppGroupIDs },
+                        set: { newValue in
+                            guard !isFreeAccount else { return }
+                            autoFixAppGroupIDs = newValue
+                            UserDefaults.standard.autoFixAppGroupIDs = newValue
+                        }
+                    )
+                )
+                .disabled(isFreeAccount)
+
+                divider
+
+                toggleRow(
+                    title: "Customize App Icon",
+                    subtitle: "Prompt to choose a custom icon before installing",
+                    isOn: Binding(
+                        get: { customizeAppIcon },
+                        set: { newValue in
+                            customizeAppIcon = newValue
+                            UserDefaults.standard.customizeAppIcon = newValue
+                        }
+                    )
+                )
+
+                divider
+
+                toggleRow(
+                    title: "Customize Provisioning Profile",
+                    subtitle: "Prompt to select a provisioning profile before installing",
+                    isOn: Binding(
+                        get: { customizeProvisioningProfile },
+                        set: { newValue in
+                            customizeProvisioningProfile = newValue
+                            UserDefaults.standard.customizeProvisioningProfile = newValue
+                        }
+                    )
+                )
+                
+                divider
+                
+                toggleRow(
+                    title: "Prefer Resigned IPA",
+                    subtitle: "Prefer IPA (speed) vs App (storage) efficiency",
+                    isOn: Binding(
+                        get: { preferResignedIPA },
+                        set: { newValue in
+                            pendingPreferIPAOngoing = newValue
+                            showPreferIPAToggleAlert = true
+                        }
+                    )
+                )
+                
+                divider
+                
+                toggleRow(title: "Export Resigned IPAs", isOn: Binding(
+                    get: { isExportResignedAppEnabled },
+                    set: { newValue in
+                        isExportResignedAppEnabled = newValue
+                        UserDefaults.standard.isExportResignedAppEnabled = newValue
+                    }
+                ))
+                
+                divider
+                
+                toggleRow(title: "Skip Uncopyable Backup Files", isOn: Binding(
+                    get: { skipNonCopyableFiles },
+                    set: { newValue in
+                        skipNonCopyableFiles = newValue
+                        UserDefaults.standard.skipNonCopyableBackupFiles = newValue
+                    }
+                ))
+                
+                divider
+                
+                toggleRow(
+                    title: "Prefer Sheet for Info.plist",
+                    subtitle: "Use sheet instead of dialog",
+                    isOn: Binding(
+                        get: { preferSheetForInfoPlistCustomization },
+                        set: { newValue in
+                            preferSheetForInfoPlistCustomization = newValue
+                            UserDefaults.standard.preferSheetForInfoPlistCustomization = newValue
+                        }
+                    )
+                )
+                .disabled(!customizeInfoPlist)
+                .opacity(!customizeInfoPlist ? 0.4 : 1.0)
+                
+                divider
+                
+                toggleRow(
+                    title: "Prefer Sheet for Entitlements",
+                    subtitle: "Use sheet instead of dialog",
+                    isOn: Binding(
+                        get: { preferSheetForEntitlementsCustomization },
+                        set: { newValue in
+                            preferSheetForEntitlementsCustomization = newValue
+                            UserDefaults.standard.preferSheetForEntitlementsCustomization = newValue
+                        }
+                    )
+                )
+                .disabled(!customizeEntitlements)
+                .opacity(!customizeEntitlements ? 0.4 : 1.0)
+            }
+            .background(Color.settingsRowBackground)
+            .cornerRadius(14)
         }
     }
 
