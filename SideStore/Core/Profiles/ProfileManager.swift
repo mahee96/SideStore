@@ -156,6 +156,34 @@ public final class ProfileManager: @unchecked Sendable {
         return s
     }
 
+    public func hasPrivateKey(for serialNumber: String, certData: Data? = nil) -> Bool {
+        if CertificateManager.shared.getSignableCertificate(for: serialNumber) != nil {
+            return true
+        }
+
+        let targetSerial = cleanSerial(serialNumber)
+        var allSignables = CertificateManager.shared.getAllLocalCertificates()
+        if let active = CertificateManager.shared.activeCertificate?.certificate {
+            if !allSignables.contains(where: { cleanSerial($0.serialNumber) == cleanSerial(active.serialNumber) }) {
+                allSignables.append(active)
+            }
+        }
+
+        for signable in allSignables {
+            if cleanSerial(signable.serialNumber) == targetSerial {
+                return true
+            }
+            if let cData = certData, let sData = signable.data, cData == sData {
+                return true
+            }
+        }
+        return false
+    }
+
+    public func hasPrivateKey(for cert: ALTX509Certificate) -> Bool {
+        return hasPrivateKey(for: cert.serialNumber, certData: cert.data)
+    }
+
     public func isProfileReadyToSign(_ profile: ALTProvisioningProfile) -> Bool {
         return getMatchingCertificate(for: profile) != nil && profile.expirationDate > Date()
     }
