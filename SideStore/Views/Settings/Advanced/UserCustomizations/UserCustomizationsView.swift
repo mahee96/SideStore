@@ -58,6 +58,18 @@ struct UserCustomizationsView: View {
 
     @State private var isFreeAccount: Bool = false
 
+    struct EditDialogState: Identifiable {
+        let id = UUID()
+        let title: String
+        let message: String
+        let placeholder: String
+        let keyboardType: UIKeyboardType
+        let onSave: (String) -> Void
+    }
+
+    @State private var editDialog: EditDialogState? = nil
+    @State private var editingValueText: String = ""
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
@@ -500,101 +512,103 @@ struct UserCustomizationsView: View {
                         .padding(.horizontal, 16)
 
                     VStack(spacing: 0) {
-                        textFieldRow(
+                        editableValueRow(
                             title: "Turn On Cellular Shortcut",
                             subtitle: "Name of the shortcut in Apple Shortcuts app",
-                            placeholder: "TurnOnData",
-                            text: Binding(
-                                get: { turnOnDataShortcutName },
-                                set: { newValue in
-                                    let sanitized = CellularRefreshManager.sanitizeShortcutName(newValue, fallback: "")
+                            value: turnOnDataShortcutName
+                        ) {
+                            editingValueText = turnOnDataShortcutName
+                            editDialog = EditDialogState(
+                                title: "Turn On Cellular Shortcut",
+                                message: "Name of the shortcut in Apple Shortcuts app",
+                                placeholder: AppConstants.Shortcuts.defaultTurnOnDataShortcutName,
+                                keyboardType: .default,
+                                onSave: { newValue in
+                                    let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    let resolved = trimmed.isEmpty ? AppConstants.Shortcuts.defaultTurnOnDataShortcutName : trimmed
+                                    let sanitized = CellularRefreshManager.sanitizeShortcutName(resolved, fallback: AppConstants.Shortcuts.defaultTurnOnDataShortcutName)
                                     turnOnDataShortcutName = sanitized
                                     CellularRefreshManager.shared.setTurnOnDataShortcutName(sanitized)
                                 }
-                            ),
-                            onEditingChanged: { isEditing in
-                                if !isEditing && turnOnDataShortcutName.trimmingCharacters(in: .whitespaces).isEmpty {
-                                    turnOnDataShortcutName = AppConstants.Shortcuts.defaultTurnOnDataShortcutName
-                                    CellularRefreshManager.shared.setTurnOnDataShortcutName(turnOnDataShortcutName)
-                                }
-                            }
-                        )
+                            )
+                        }
 
                         divider
 
-                        textFieldRow(
+                        editableValueRow(
                             title: "Turn Off Cellular Shortcut",
                             subtitle: "Name of the shortcut in Apple Shortcuts app",
-                            placeholder: "TurnOffData",
-                            text: Binding(
-                                get: { turnOffDataShortcutName },
-                                set: { newValue in
-                                    let sanitized = CellularRefreshManager.sanitizeShortcutName(newValue, fallback: "")
+                            value: turnOffDataShortcutName
+                        ) {
+                            editingValueText = turnOffDataShortcutName
+                            editDialog = EditDialogState(
+                                title: "Turn Off Cellular Shortcut",
+                                message: "Name of the shortcut in Apple Shortcuts app",
+                                placeholder: AppConstants.Shortcuts.defaultTurnOffDataShortcutName,
+                                keyboardType: .default,
+                                onSave: { newValue in
+                                    let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    let resolved = trimmed.isEmpty ? AppConstants.Shortcuts.defaultTurnOffDataShortcutName : trimmed
+                                    let sanitized = CellularRefreshManager.sanitizeShortcutName(resolved, fallback: AppConstants.Shortcuts.defaultTurnOffDataShortcutName)
                                     turnOffDataShortcutName = sanitized
                                     CellularRefreshManager.shared.setTurnOffDataShortcutName(sanitized)
                                 }
-                            ),
-                            onEditingChanged: { isEditing in
-                                if !isEditing && turnOffDataShortcutName.trimmingCharacters(in: .whitespaces).isEmpty {
-                                    turnOffDataShortcutName = AppConstants.Shortcuts.defaultTurnOffDataShortcutName
-                                    CellularRefreshManager.shared.setTurnOffDataShortcutName(turnOffDataShortcutName)
-                                }
-                            }
-                        )
+                            )
+                        }
 
                         divider
 
-                        textFieldRow(
+                        editableValueRow(
                             title: "Turn On Base Delay",
                             subtitle: "Base wait time after turning on data (seconds, ≥ 0)",
-                            placeholder: "Default (0.5s)",
-                            text: Binding(
-                                get: { turnOnBaseDelayText },
-                                set: { newValue in
+                            value: turnOnBaseDelayText,
+                            unit: "s"
+                        ) {
+                            editingValueText = turnOnBaseDelayText
+                            editDialog = EditDialogState(
+                                title: "Turn On Base Delay",
+                                message: "Base wait time after turning on data (seconds, ≥ 0)",
+                                placeholder: String(AppConstants.Shortcuts.defaultTurnOnDataBaseDelay),
+                                keyboardType: .decimalPad,
+                                onSave: { newValue in
                                     let filtered = newValue.filter { "0123456789.".contains($0) }
-                                    turnOnBaseDelayText = filtered
                                     if let delay = Double(filtered), delay >= 0 {
+                                        turnOnBaseDelayText = String(delay)
                                         CellularRefreshManager.shared.setTurnOnDataBaseDelayOverride(delay)
-                                    } else if filtered.isEmpty {
+                                    } else {
+                                        turnOnBaseDelayText = String(AppConstants.Shortcuts.defaultTurnOnDataBaseDelay)
                                         CellularRefreshManager.shared.setTurnOnDataBaseDelayOverride(nil)
                                     }
                                 }
-                            ),
-                            keyboardType: .decimalPad,
-                            onEditingChanged: { isEditing in
-                                if !isEditing && turnOnBaseDelayText.trimmingCharacters(in: .whitespaces).isEmpty {
-                                    turnOnBaseDelayText = String(AppConstants.Shortcuts.defaultTurnOnDataBaseDelay)
-                                    CellularRefreshManager.shared.setTurnOnDataBaseDelayOverride(nil)
-                                }
-                            }
-                        )
+                            )
+                        }
 
                         divider
 
-                        textFieldRow(
+                        editableValueRow(
                             title: "Turn Off Base Delay",
                             subtitle: "Base wait time after turning off data (seconds, ≥ 0)",
-                            placeholder: "Default (1.0s)",
-                            text: Binding(
-                                get: { turnOffBaseDelayText },
-                                set: { newValue in
+                            value: turnOffBaseDelayText,
+                            unit: "s"
+                        ) {
+                            editingValueText = turnOffBaseDelayText
+                            editDialog = EditDialogState(
+                                title: "Turn Off Base Delay",
+                                message: "Base wait time after turning off data (seconds, ≥ 0)",
+                                placeholder: String(AppConstants.Shortcuts.defaultTurnOffDataBaseDelay),
+                                keyboardType: .decimalPad,
+                                onSave: { newValue in
                                     let filtered = newValue.filter { "0123456789.".contains($0) }
-                                    turnOffBaseDelayText = filtered
                                     if let delay = Double(filtered), delay >= 0 {
+                                        turnOffBaseDelayText = String(delay)
                                         CellularRefreshManager.shared.setTurnOffDataBaseDelayOverride(delay)
-                                    } else if filtered.isEmpty {
+                                    } else {
+                                        turnOffBaseDelayText = String(AppConstants.Shortcuts.defaultTurnOffDataBaseDelay)
                                         CellularRefreshManager.shared.setTurnOffDataBaseDelayOverride(nil)
                                     }
                                 }
-                            ),
-                            keyboardType: .decimalPad,
-                            onEditingChanged: { isEditing in
-                                if !isEditing && turnOffBaseDelayText.trimmingCharacters(in: .whitespaces).isEmpty {
-                                    turnOffBaseDelayText = String(AppConstants.Shortcuts.defaultTurnOffDataBaseDelay)
-                                    CellularRefreshManager.shared.setTurnOffDataBaseDelayOverride(nil)
-                                }
-                            }
-                        )
+                            )
+                        }
 
                         divider
 
@@ -729,6 +743,21 @@ struct UserCustomizationsView: View {
                 ActivityViewController(activityItems: [url])
             }
         }
+        .alert(item: $editDialog) { dialog in
+            TextField(dialog.placeholder, text: $editingValueText)
+                #if !os(tvOS)
+                .keyboardType(dialog.keyboardType)
+                #endif
+            SwiftUI.Button("OK") {
+                dialog.onSave(editingValueText)
+                editDialog = nil
+            }
+            SwiftUI.Button("Cancel", role: .cancel) {
+                editDialog = nil
+            }
+        } message: { dialog in
+            Text(dialog.message)
+        }
         .task {
             isFreeAccount = (try? await AuthManager.shared.getAuthenticatedTeam())?.type == .free
         }
@@ -758,46 +787,43 @@ struct UserCustomizationsView: View {
         .frame(minHeight: 50)
     }
 
-    private func textFieldRow(
+    private func editableValueRow(
         title: String,
         subtitle: String? = nil,
-        placeholder: String,
-        text: Binding<String>,
-        keyboardType: UIKeyboardType = .default,
-        onEditingChanged: ((Bool) -> Void)? = nil
+        value: String,
+        unit: String? = nil,
+        onTap: @escaping () -> Void
     ) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundColor(.white)
-                    .fixedSize(horizontal: false, vertical: true)
-                if let subtitle = subtitle {
-                    Text(subtitle)
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundColor(Color.white.opacity(0.6))
+        SwiftUI.Button(action: onTap) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(.white)
                         .fixedSize(horizontal: false, vertical: true)
+                    if let subtitle = subtitle {
+                        Text(subtitle)
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundColor(Color.white.opacity(0.6))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                Spacer()
+                HStack(spacing: 8) {
+                    Text(unit != nil ? "\(value) \(unit!)" : value)
+                        .font(.system(size: 16))
+                        .foregroundColor(Color(uiColor: ThemeManager.shared.primaryColor))
+                    Image(systemName: "pencil")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.4))
                 }
             }
-
-            TextField(placeholder, text: text, onEditingChanged: { isEditing in
-                onEditingChanged?(isEditing)
-            })
-            .font(.system(size: 15))
-            .foregroundColor(.white)
-            .autocapitalization(.none)
-            .disableAutocorrection(true)
-            #if !os(tvOS)
-            .keyboardType(keyboardType)
-            #endif
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Color.white.opacity(0.08))
-            .cornerRadius(8)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
     }
+
+
 
     private var divider: some View {
         Rectangle()
