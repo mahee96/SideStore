@@ -32,11 +32,17 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
 
         let effectiveBundleId = self.context.targetBundleIdentifier
 
+        let appExtensions = self.context.installedApp.map { app in
+            targetAppBundle.appExtensions.filter { ext in
+                app.appExtensions.contains { $0.bundleIdentifier == ext.bundleIdentifier }
+            }
+        } ?? targetAppBundle.appExtensions
+
         if let overrideProfile = self.context.overrideProvisioningProfile {
             self.debugLog("[FetchProvisioningProfiles] Using override provisioning profile '\(overrideProfile.name)' (\(overrideProfile.uuid)) for \(effectiveBundleId)")
             var profiles = [effectiveBundleId: overrideProfile]
-            if !self.context.useMainProfile, !targetAppBundle.appExtensions.isEmpty {
-                for appExtension in targetAppBundle.appExtensions {
+            if !self.context.useMainProfile, !appExtensions.isEmpty {
+                for appExtension in appExtensions {
                     let updatedExtensionBundleId = appExtension.bundleIdentifier.replacingOccurrences(of: targetAppBundle.bundleIdentifier, with: effectiveBundleId)
                     profiles[updatedExtensionBundleId] = overrideProfile
                 }
@@ -57,16 +63,16 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
         
         var profiles = [effectiveBundleId: profile]
         
-        guard !self.context.useMainProfile, !targetAppBundle.appExtensions.isEmpty else {
+        guard !self.context.useMainProfile, !appExtensions.isEmpty else {
             self.setProgress(100)
             self.debugLog("[FetchProvisioningProfiles] Total profiles prepared: \(profiles.count) -> keys: \(Array(profiles.keys))")
             return profiles
         }
         
         self.setProgress(50)
-        self.debugLog("[FetchProvisioningProfiles] Preparing profiles for \(targetAppBundle.appExtensions.count) app extensions...")
+        self.debugLog("[FetchProvisioningProfiles] Preparing profiles for \(appExtensions.count) app extensions...")
         try await withThrowingTaskGroup(of: (String, ALTProvisioningProfile).self) { group in
-            for appExtension in targetAppBundle.appExtensions {
+            for appExtension in appExtensions {
                 group.addTask {
                     self.verboseLog("[FetchProvisioningProfiles] Preparing extension profile for \(appExtension.bundleIdentifier)...")
                     let extProfile = try await self.provisionAndFetchProfile(for: appExtension, parentAppBundle: targetAppBundle, team: team)
@@ -78,7 +84,7 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
             }
             
             var completedCount = 0
-            let totalExtensions = targetAppBundle.appExtensions.count
+            let totalExtensions = appExtensions.count
             let startProgress = self.progress.completedUnitCount
             let endProgress: Int64 = 100
             let range = endProgress - startProgress
