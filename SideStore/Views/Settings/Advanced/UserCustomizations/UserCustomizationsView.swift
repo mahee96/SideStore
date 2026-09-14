@@ -44,6 +44,7 @@ struct UserCustomizationsView: View {
     @State private var isChecksumVerificationEnabled: Bool = UserDefaults.standard.isChecksumVerificationEnabled
     @State private var isFileSizeVerificationEnabled: Bool = UserDefaults.standard.isFileSizeVerificationEnabled
     @State private var permissionCheckingDisabled: Bool = UserDefaults.standard.permissionCheckingDisabled
+    @State private var isCellularRefreshEnabled: Bool = UserDefaults.standard.isCellularRefreshEnabled
     @State private var turnOnDataShortcutName: String = UserDefaults.standard.turnOnDataShortcutName
     @State private var turnOffDataShortcutName: String = UserDefaults.standard.turnOffDataShortcutName
     @State private var turnOnBaseDelayText: String = {
@@ -330,7 +331,7 @@ struct UserCustomizationsView: View {
                     .cornerRadius(14)
                 }
 
-                // Section 4: CELLULAR REFRESH SHORTCUTS
+                // Section 4: CELLULAR REFRESH
                 cellularRefreshShortcutsSection
 
                 // Section 5: MINIMUXER BACKEND
@@ -537,12 +538,26 @@ struct UserCustomizationsView: View {
     @ViewBuilder
     private var cellularRefreshShortcutsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("CELLULAR REFRESH SHORTCUTS")
+            Text("CELLULAR REFRESH")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(Color.white.opacity(0.6))
                 .padding(.horizontal, 16)
 
             VStack(spacing: 0) {
+                toggleRow(
+                    title: "Cellular Refresh",
+                    subtitle: "Automatically toggle cellular data via Shortcuts during refresh",
+                    isOn: Binding(
+                        get: { isCellularRefreshEnabled },
+                        set: { newValue in
+                            isCellularRefreshEnabled = newValue
+                            CellularRefreshManager.shared.setEnabled(newValue)
+                        }
+                    )
+                )
+
+                divider
+
                 textFieldRow(
                     title: "Turn On Cellular Shortcut",
                     subtitle: "Name of the shortcut in Apple Shortcuts app",
