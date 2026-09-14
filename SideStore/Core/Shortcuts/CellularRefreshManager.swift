@@ -34,6 +34,11 @@ public final class CellularRefreshManager: @unchecked Sendable {
         return UserDefaults.standard.isCellularRefreshEnabled
     }
 
+    public var isCellularMode: Bool {
+        guard isSupported && isEnabled else { return false }
+        return !minimuxer.network.isWifiSatisfied
+    }
+
     public func setEnabled(_ enabled: Bool) {
         UserDefaults.standard.isCellularRefreshEnabled = enabled
     }

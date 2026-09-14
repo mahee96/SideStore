@@ -276,7 +276,7 @@ class InstallAppOperationContext: PipelineOperationContext
     var appexBundleIds: [String: String]?
     var useMainProfile = false
     var isFinished = false
-    var isGroupRefresh: Bool = false
+    var isCellularRefreshGroup: Bool = false
     var groupOperationsCount: Int = 1
 
     var overrideSigningCertificate: ALTCertificate?

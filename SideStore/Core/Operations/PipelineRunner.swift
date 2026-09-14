@@ -197,6 +197,9 @@ final class PipelineRunner: Sendable
         
         
         let operationsCount = operations.count
+        let isCellularRefreshGroup = (operationsCount >= 2 && CellularRefreshManager.shared.isCellularMode)
+        group.isCellularRefreshGroup = isCellularRefreshGroup
+
         // run the operation pipeline
         try await withThrowingTaskGroup(of: Void.self) { taskGroup in
             for operation in operations {
@@ -207,8 +210,8 @@ final class PipelineRunner: Sendable
             while let _ = try await taskGroup.next() {}
         }
 
-        // Run standalone batch profile injection if multiple apps were refreshed
-        if operationsCount > 1 && !group.sharedContext.pendingProfiles.isEmpty {
+        // Run standalone batch profile injection if cellular refresh group with at least 2 operations
+        if isCellularRefreshGroup && operationsCount >= 2 && !group.sharedContext.pendingProfiles.isEmpty {
             let injectContext = StandaloneOperationContext(steps: .injectBatchProfiles, dbBackgroundContext: group.dbContext)
             let injectOp = try InjectBatchProfilesOperation(
                 batches: Array(group.sharedContext.pendingProfiles.values),
@@ -318,7 +321,7 @@ final class PipelineRunner: Sendable
             additionalEntitlements: defaultEntitlements,
             activeSigningCertificate: CertificateManager.shared.activeCertificate?.certificate
         )
-        context.isGroupRefresh = (operationsCount > 1)
+        context.isCellularRefreshGroup = group.isCellularRefreshGroup
         context.groupOperationsCount = operationsCount
         
         if case .install(_, let customID) = operation { context.customBundleIdentifier  = customID }

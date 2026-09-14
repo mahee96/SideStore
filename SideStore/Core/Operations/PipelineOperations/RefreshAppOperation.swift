@@ -30,7 +30,7 @@ final class RefreshAppOperation: BasePipelineOperation<InstallAppOperationContex
         }
         self.setProgress(10)
         
-        if self.context.isGroupRefresh {
+        if self.context.isCellularRefreshGroup {
             self.context.sharedContext.addPendingProfileBatch(PendingProfileBatch(
                 bundleID: self.context.bundleIdentifier,
                 profiles: profiles.values.map { $0.data },
