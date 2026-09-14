@@ -59,6 +59,11 @@ enum AppGroupResolution: Sendable {
     case keepOriginal(String)
 }
 
+enum ProfileCustomizationChoice: Sendable {
+    case defaultProfile
+    case profile(ALTProvisioningProfile)
+}
+
 protocol UserCustomizationHandler: AnyObject, Sendable {
     func resolveBundleIDOverride(initialBundleID: String) async throws -> (customID: String, appendTeamID: Bool)?
     func resolveInfoPlistCustomization(
@@ -85,5 +90,7 @@ protocol UserCustomizationHandler: AnyObject, Sendable {
         teamType: ALTTeamType
     ) async throws -> [String: any Sendable]?
     func resolveAppGroupMismatch(originalGroup: String, correctedGroup: String) async throws -> AppGroupResolution
+    func resolveAppIconCustomization(appName: String) async throws -> URL?
+    func resolveProvisioningProfileCustomization(appName: String, bundleID: String) async throws -> ProfileCustomizationChoice?
 }
 

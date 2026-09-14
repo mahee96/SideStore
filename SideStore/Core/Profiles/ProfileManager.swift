@@ -8,6 +8,7 @@
 
 import Foundation
 import SideSign
+import CoreData
 
 public final class ProfileManager: @unchecked Sendable {
     public static let shared = ProfileManager()
@@ -208,7 +209,37 @@ public final class ProfileManager: @unchecked Sendable {
         saveAssignedProfilesDict(assignments)
     }
 
+    public func assignProfile(uuid: UUID, for bundleIdentifier: String) {
+        var assignments = getAssignedProfilesDict()
+        assignments[bundleIdentifier] = uuid.uuidString
+        saveAssignedProfilesDict(assignments)
+        debugLog("[ProfileManager] Assigned profile UUID '\(uuid)' to app '\(bundleIdentifier)'")
+    }
+
+    public func cleanupStaleAssignments() {
+        guard DatabaseManager.shared.isStarted else { return }
+        let context = DatabaseManager.shared.viewContext
+        context.performAndWait {
+            let request = InstalledApp.fetchRequest() as NSFetchRequest<InstalledApp>
+            guard let apps = try? context.fetch(request) else { return }
+
+            let validIDs = Set(apps.flatMap { [$0.bundleIdentifier, $0.resignedBundleIdentifier] })
+            var currentAssignments = getAssignedProfilesDict()
+            let originalCount = currentAssignments.count
+
+            currentAssignments = currentAssignments.filter { bundleID, _ in
+                validIDs.contains(bundleID)
+            }
+
+            if currentAssignments.count != originalCount {
+                saveAssignedProfilesDict(currentAssignments)
+                debugLog("[ProfileManager] Cleaned up \(originalCount - currentAssignments.count) stale profile assignments")
+            }
+        }
+    }
+
     public func getAppsUsingProfile(uuid: UUID) -> [String] {
+        cleanupStaleAssignments()
         let uuidStr = uuid.uuidString
         return getAssignedProfilesDict().compactMap { key, value in
             value == uuidStr ? key : nil

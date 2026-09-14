@@ -210,8 +210,31 @@ final class UserCustomizationOperation: BasePipelineOperation<InstallAppOperatio
             }
         }
 
+        if UserDefaults.standard.customizeAppIcon {
+            self.setProgress(85)
+            if let iconURL = try await handler.resolveAppIconCustomization(appName: targetAppBundle.name) {
+                context.alternateIconMode = .set(iconURL)
+            }
+        }
+
+        if UserDefaults.standard.customizeProvisioningProfile {
+            self.setProgress(95)
+            let effectiveBundleID = context.customBundleIdentifier ?? context.targetBundleIdentifier
+            let choice = try await handler.resolveProvisioningProfileCustomization(
+                appName: targetAppBundle.name,
+                bundleID: effectiveBundleID
+            )
+            switch choice {
+            case .profile(let profile):
+                context.overrideProvisioningProfile = profile
+                ProfileManager.shared.assignProfile(uuid: profile.uuid, for: effectiveBundleID)
+            case .defaultProfile, .none:
+                break
+            }
+        }
+
         self.setProgress(100)
-        if UserDefaults.standard.customizeInfoPlist || UserDefaults.standard.customizeAppId {
+        if UserDefaults.standard.customizeInfoPlist || UserDefaults.standard.customizeAppId || UserDefaults.standard.customizeAppIcon || UserDefaults.standard.customizeProvisioningProfile {
             return context.targetBundleIdentifier
         } else {
             return nil

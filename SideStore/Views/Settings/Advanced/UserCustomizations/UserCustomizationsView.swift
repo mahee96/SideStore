@@ -23,6 +23,8 @@ struct UserCustomizationsView: View {
     @State private var customizeEntitlements: Bool = UserDefaults.standard.customizeEntitlements
     @State private var preferSheetForEntitlementsCustomization: Bool = UserDefaults.standard.preferSheetForEntitlementsCustomization
     @State private var customizeAppId: Bool = UserDefaults.standard.customizeAppId
+    @State private var customizeAppIcon: Bool = UserDefaults.standard.customizeAppIcon
+    @State private var customizeProvisioningProfile: Bool = UserDefaults.standard.customizeProvisioningProfile
     @State private var customizeAppExtensions: AppExtensionCustomization = UserDefaults.standard.customizeAppExtensions
     @State private var autoFixAppGroupIDs: Bool = UserDefaults.standard.autoFixAppGroupIDs
     @State private var preferResignedIPA: Bool = UserDefaults.standard.preferResignedIPA
@@ -246,6 +248,34 @@ struct UserCustomizationsView: View {
                             )
                         )
                         .disabled(isFreeAccount)
+
+                        divider
+
+                        toggleRow(
+                            title: "Customize App Icon",
+                            subtitle: "Prompt to choose a custom icon before installing",
+                            isOn: Binding(
+                                get: { customizeAppIcon },
+                                set: { newValue in
+                                    customizeAppIcon = newValue
+                                    UserDefaults.standard.customizeAppIcon = newValue
+                                }
+                            )
+                        )
+
+                        divider
+
+                        toggleRow(
+                            title: "Customize Provisioning Profile",
+                            subtitle: "Prompt to select a provisioning profile before installing",
+                            isOn: Binding(
+                                get: { customizeProvisioningProfile },
+                                set: { newValue in
+                                    customizeProvisioningProfile = newValue
+                                    UserDefaults.standard.customizeProvisioningProfile = newValue
+                                }
+                            )
+                        )
                         
                         divider
                         

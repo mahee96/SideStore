@@ -270,6 +270,11 @@ final class InstallAppOperation: BasePipelineOperation<InstallAppOperationContex
                 case .preserve:
                     break
             }
+
+            if let overrideProfile = self.context.overrideProvisioningProfile {
+                ProfileManager.shared.assignProfile(uuid: overrideProfile.uuid, for: installedApp.bundleIdentifier)
+                self.debugLog("[InstallAppOperation] Assigned profile '\(overrideProfile.name)' to installed app '\(installedApp.bundleIdentifier)'")
+            }
         }
 
         return installedApp
