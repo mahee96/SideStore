@@ -196,15 +196,32 @@ final class PipelineRunner: Sendable
         }
         
         
+        let operationsCount = operations.count
         // run the operation pipeline
         try await withThrowingTaskGroup(of: Void.self) { taskGroup in
             for operation in operations {
                 taskGroup.addTask {
-                    try await self.performOperation(for: operation, handler: handler, group: group)
+                    try await self.performOperation(for: operation, handler: handler, group: group, operationsCount: operationsCount)
                 }
             }
             while let _ = try await taskGroup.next() {}
         }
+
+        // Run standalone batch profile injection if multiple apps were refreshed
+        if operationsCount > 1 && !group.sharedContext.pendingProfiles.isEmpty {
+            let injectContext = StandaloneOperationContext(steps: .injectBatchProfiles, dbBackgroundContext: group.dbContext)
+            let injectOp = try InjectBatchProfilesOperation(
+                batches: Array(group.sharedContext.pendingProfiles.values),
+                context: injectContext,
+                onAppCompleted: { [weak self] bundleID in
+                    if let op = operations.first(where: { $0.bundleIdentifier == bundleID }) {
+                        self?.progress.progress(for: op)?.completedUnitCount = 100
+                    }
+                }
+            )
+            try await injectOp.execute()
+        }
+
         await MainActor.run {
             group.completionHandler?(group.results)
         }
@@ -212,7 +229,7 @@ final class PipelineRunner: Sendable
         return group
     }
     
-    func performOperation(for operation: AppOperation, handler: PipelineExecutionHandler, group: RefreshGroup) async throws {
+    func performOperation(for operation: AppOperation, handler: PipelineExecutionHandler, group: RefreshGroup, operationsCount: Int = 1) async throws {
         debugLog("[AppManager] performOperation: Starting execution for app: \(operation.bundleIdentifier)")
         defer {
             // request update view context's in-mem coredata caches (coz we worked so far on bg context)
@@ -221,9 +238,11 @@ final class PipelineRunner: Sendable
             }
         }
         do {
-            let result = try await self.performPipeline(for: operation, handler: handler, group: group)
-            progress.set(nil, for: operation)
-            debugLog("[AppManager] performOperation: completed successfully. progress was reset for installedApp: \(result.bundleIdentifier)")
+            let result = try await self.performPipeline(for: operation, handler: handler, group: group, operationsCount: operationsCount)
+            if operationsCount <= 1 {
+                progress.set(nil, for: operation)
+                debugLog("[AppManager] performOperation: completed successfully. progress was reset for installedApp: \(result.bundleIdentifier)")
+            }
             
             // persist the result
             let bundleID = result.bundleIdentifier
@@ -287,7 +306,7 @@ final class PipelineRunner: Sendable
         }
     }
     
-    private func performPipeline(for operation: AppOperation, handler: PipelineExecutionHandler, group: RefreshGroup) async throws -> InstalledApp
+    private func performPipeline(for operation: AppOperation, handler: PipelineExecutionHandler, group: RefreshGroup, operationsCount: Int = 1) async throws -> InstalledApp
     {
         let pipelineSteps = PipelineStepDefinition.steps(for: operation)
         let context = InstallAppOperationContext(
@@ -299,6 +318,8 @@ final class PipelineRunner: Sendable
             additionalEntitlements: defaultEntitlements,
             activeSigningCertificate: CertificateManager.shared.activeCertificate?.certificate
         )
+        context.isGroupRefresh = (operationsCount > 1)
+        context.groupOperationsCount = operationsCount
         
         if case .install(_, let customID) = operation { context.customBundleIdentifier  = customID }
         if case .update(_,  let customID) = operation {

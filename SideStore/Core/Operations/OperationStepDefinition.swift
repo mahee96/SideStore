@@ -305,6 +305,10 @@ struct StandaloneStepDefinition {
     static let scheduleExpirationWarningNotification: [StandaloneExecutionStep] = [
         StandaloneExecutionStep(.scheduleExpirationWarningNotification, 100)
     ]
+
+    static let injectBatchProfiles: [StandaloneExecutionStep] = [
+        StandaloneExecutionStep(.injectBatchProfiles, 100)
+    ]
 }
 
 extension Array where Element == PipelineExecutionStep {
@@ -328,4 +332,5 @@ extension Array where Element == StandaloneExecutionStep {
     static var enableJIT:                             [StandaloneExecutionStep] { StandaloneStepDefinition.enableJIT                             }
     static var syncAppIDs:                            [StandaloneExecutionStep] { StandaloneStepDefinition.syncAppIDs                            }
     static var scheduleExpirationWarningNotification: [StandaloneExecutionStep] { StandaloneStepDefinition.scheduleExpirationWarningNotification }
+    static var injectBatchProfiles:                   [StandaloneExecutionStep] { StandaloneStepDefinition.injectBatchProfiles                   }
 }

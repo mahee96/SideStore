@@ -30,6 +30,20 @@ final class RefreshAppOperation: BasePipelineOperation<InstallAppOperationContex
         }
         self.setProgress(10)
         
+        if self.context.isGroupRefresh {
+            self.context.sharedContext.addPendingProfileBatch(PendingProfileBatch(
+                bundleID: self.context.bundleIdentifier,
+                profiles: profiles.values.map { $0.data },
+                app: self.context.installedApp,
+                certStatus: self.context.targetCertStatus
+            ))
+            self.setProgress(95)
+            guard let app = self.context.installedApp else {
+                throw OperationError.invalidParameters("RefreshAppOperation: context.installedApp is nil")
+            }
+            return app
+        }
+        
         do {
             await CellularRefreshManager.shared.turnOffDataIfNeeded()
             for p in profiles {

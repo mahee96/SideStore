@@ -97,6 +97,7 @@ enum StandaloneStep: OperationStep {
     case syncAppIDs
     case fetchSource
     case scheduleExpirationWarningNotification
+    case injectBatchProfiles
     case unknown
 
     fileprivate static let stepMap: [ObjectIdentifier: StandaloneStep] = [
@@ -108,6 +109,7 @@ enum StandaloneStep: OperationStep {
         ObjectIdentifier(SyncAppIDsOperation.self):                              .syncAppIDs,
         ObjectIdentifier(FetchSourceOperation.self):                             .fetchSource,
         ObjectIdentifier(ScheduleExpirationWarningNotificationOperation.self):   .scheduleExpirationWarningNotification,
+        ObjectIdentifier(InjectBatchProfilesOperation.self):                     .injectBatchProfiles,
     ]
 
     static func step(for type: Any.Type) -> StandaloneStep? {

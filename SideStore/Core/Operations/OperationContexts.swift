@@ -214,11 +214,31 @@ class PipelineOperationContext: OperationContext
     }
 }
 
+struct PendingProfileBatch {
+    let bundleID: String
+    let profiles: [Data]
+    let app: InstalledApp?
+    let certStatus: CertificateStatus?
+}
+
 final class SharedPipelineContext: @unchecked Sendable
 {
     private let lock = NSLock()
     private var rawAppIDs: [ALTAppID]?
     private var rawAppGroups: [ALTAppGroup]?
+
+    private var rawPendingProfiles: [String: PendingProfileBatch] = [:]
+    private var rawHasInjectedProfiles: Bool = false
+
+    var pendingProfiles: [String: PendingProfileBatch] {
+        get { lock.withLock { rawPendingProfiles } }
+        set { lock.withLock { rawPendingProfiles = newValue } }
+    }
+
+    var hasInjectedProfiles: Bool {
+        get { lock.withLock { rawHasInjectedProfiles } }
+        set { lock.withLock { rawHasInjectedProfiles = newValue } }
+    }
 
     var appIDs: [ALTAppID]? {
         get { lock.withLock { rawAppIDs } }
@@ -237,6 +257,10 @@ final class SharedPipelineContext: @unchecked Sendable
     func appendAppGroup(_ appGroup: ALTAppGroup) {
         lock.withLock { rawAppGroups = (rawAppGroups ?? []) + [appGroup] }
     }
+
+    func addPendingProfileBatch(_ batch: PendingProfileBatch) {
+        lock.withLock { rawPendingProfiles[batch.bundleID] = batch }
+    }
 }
 
 class InstallAppOperationContext: PipelineOperationContext
@@ -252,6 +276,8 @@ class InstallAppOperationContext: PipelineOperationContext
     var appexBundleIds: [String: String]?
     var useMainProfile = false
     var isFinished = false
+    var isGroupRefresh: Bool = false
+    var groupOperationsCount: Int = 1
 
     var overrideSigningCertificate: ALTCertificate?
     var overrideProvisioningProfile: ALTProvisioningProfile?
