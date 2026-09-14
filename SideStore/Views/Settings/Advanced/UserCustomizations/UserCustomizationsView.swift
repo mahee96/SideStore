@@ -47,16 +47,12 @@ struct UserCustomizationsView: View {
     @State private var turnOnDataShortcutName: String = UserDefaults.standard.turnOnDataShortcutName
     @State private var turnOffDataShortcutName: String = UserDefaults.standard.turnOffDataShortcutName
     @State private var turnOnBaseDelayText: String = {
-        if let delay = CellularRefreshManager.shared.turnOnDataBaseDelayOverride {
-            return String(delay)
-        }
-        return ""
+        let delay = CellularRefreshManager.shared.turnOnDataBaseDelayOverride ?? AppConstants.Shortcuts.defaultTurnOnDataBaseDelay
+        return String(delay)
     }()
     @State private var turnOffBaseDelayText: String = {
-        if let delay = CellularRefreshManager.shared.turnOffDataBaseDelayOverride {
-            return String(delay)
-        }
-        return ""
+        let delay = CellularRefreshManager.shared.turnOffDataBaseDelayOverride ?? AppConstants.Shortcuts.defaultTurnOffDataBaseDelay
+        return String(delay)
     }()
     @State private var wireGuardExportURL: URL? = nil
 
@@ -582,8 +578,8 @@ struct UserCustomizationsView: View {
                             CellularRefreshManager.shared.resetToDefaults()
                             turnOnDataShortcutName = AppConstants.Shortcuts.defaultTurnOnDataShortcutName
                             turnOffDataShortcutName = AppConstants.Shortcuts.defaultTurnOffDataShortcutName
-                            turnOnBaseDelayText = ""
-                            turnOffBaseDelayText = ""
+                            turnOnBaseDelayText = String(AppConstants.Shortcuts.defaultTurnOnDataBaseDelay)
+                            turnOffBaseDelayText = String(AppConstants.Shortcuts.defaultTurnOffDataBaseDelay)
                         }) {
                             HStack {
                                 Spacer()
