@@ -93,7 +93,7 @@ final class EnableJITOperation: BaseStandaloneOperation<StandaloneOperationConte
                 self.setProgress(percent)
                 do {
                     await CellularRefreshManager.shared.turnOffDataIfNeeded()
-                    try await debugApp(targetBundleId)
+                    try await safeDebugApp(targetBundleId)
                     await CellularRefreshManager.shared.turnOnDataIfNeeded()
                     return
                 } catch {
@@ -111,7 +111,7 @@ func enableJITSideJITServer(serverURL: URL, bundleIdentifier: String, appName: S
     let udid: String
     do {
         await CellularRefreshManager.shared.turnOffDataIfNeeded()
-        udid = try await fetchUDID()
+        udid = try await safeFetchUDID()
         await CellularRefreshManager.shared.turnOnDataIfNeeded()
     } catch {
         await CellularRefreshManager.shared.turnOnDataIfNeeded()

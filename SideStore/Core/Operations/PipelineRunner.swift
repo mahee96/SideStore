@@ -144,15 +144,9 @@ final class PipelineRunner: Sendable
         }
         
         /* Minimuxer Readiness Check */
-        var readinessError: OperationError?
-        if CellularRefreshManager.shared.isEnabled && UserDefaults.standard.enableEMPforWireguard {
-            readinessError = .invalidVPN(reason: "WireGuard VPN is not supported with Cellular Refresh because iOS pauses the WireGuard tunnel when cellular data is toggled off.")
-        } else if !CellularRefreshManager.shared.isEnabled,
-                  case .failure(let error) = await isMinimuxerReady() {
-            readinessError = error.asOperationError
-        }
-
-        if let opError = readinessError {
+        do {
+            try await ensureMinimuxerReady()
+        } catch let opError as OperationError {
             group.error = opError
             for operation in operations {
                 let elapsed = CFAbsoluteTimeGetCurrent() - group.operationStartTime
