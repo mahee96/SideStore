@@ -44,6 +44,8 @@ struct UserCustomizationsView: View {
     @State private var isChecksumVerificationEnabled: Bool = UserDefaults.standard.isChecksumVerificationEnabled
     @State private var isFileSizeVerificationEnabled: Bool = UserDefaults.standard.isFileSizeVerificationEnabled
     @State private var permissionCheckingDisabled: Bool = UserDefaults.standard.permissionCheckingDisabled
+    @State private var turnOnDataShortcutName: String = UserDefaults.standard.turnOnDataShortcutName
+    @State private var turnOffDataShortcutName: String = UserDefaults.standard.turnOffDataShortcutName
     @State private var wireGuardExportURL: URL? = nil
 
     @State private var isFreeAccount: Bool = false
@@ -482,6 +484,48 @@ struct UserCustomizationsView: View {
                     .cornerRadius(14)
                 }
 
+                // Section 4: CELLULAR REFRESH SHORTCUTS
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("CELLULAR REFRESH SHORTCUTS")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.6))
+                        .padding(.horizontal, 16)
+
+                    VStack(spacing: 0) {
+                        textFieldRow(
+                            title: "Turn On Cellular Shortcut",
+                            subtitle: "Name of the shortcut in Apple Shortcuts app",
+                            placeholder: "TurnOnData",
+                            text: Binding(
+                                get: { turnOnDataShortcutName },
+                                set: { newValue in
+                                    let sanitized = CellularRefreshManager.sanitizeShortcutName(newValue, fallback: "")
+                                    turnOnDataShortcutName = sanitized
+                                    CellularRefreshManager.shared.setTurnOnDataShortcutName(sanitized)
+                                }
+                            )
+                        )
+
+                        divider
+
+                        textFieldRow(
+                            title: "Turn Off Cellular Shortcut",
+                            subtitle: "Name of the shortcut in Apple Shortcuts app",
+                            placeholder: "TurnOffData",
+                            text: Binding(
+                                get: { turnOffDataShortcutName },
+                                set: { newValue in
+                                    let sanitized = CellularRefreshManager.sanitizeShortcutName(newValue, fallback: "")
+                                    turnOffDataShortcutName = sanitized
+                                    CellularRefreshManager.shared.setTurnOffDataShortcutName(sanitized)
+                                }
+                            )
+                        )
+                    }
+                    .background(Color.settingsRowBackground)
+                    .cornerRadius(14)
+                }
+
                 // Section 5: MINIMUXER BACKEND
                 VStack(alignment: .leading, spacing: 8) {
                     Text("MINIMUXER BACKEND")
@@ -619,6 +663,35 @@ struct UserCustomizationsView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .frame(minHeight: 50)
+    }
+
+    private func textFieldRow(title: String, subtitle: String? = nil, placeholder: String, text: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundColor(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let subtitle = subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundColor(Color.white.opacity(0.6))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            TextField(placeholder, text: text)
+                .font(.system(size: 15))
+                .foregroundColor(.white)
+                .autocapitalization(.none)
+                .disableAutocorrection(true)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.white.opacity(0.08))
+                .cornerRadius(8)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
     }
 
     private var divider: some View {

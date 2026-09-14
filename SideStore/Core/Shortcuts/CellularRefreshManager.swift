@@ -38,6 +38,48 @@ public final class CellularRefreshManager: @unchecked Sendable {
         UserDefaults.standard.isCellularRefreshEnabled = enabled
     }
 
+    public static func sanitizeShortcutName(_ name: String, fallback: String = "") -> String {
+        var sanitized = name.components(separatedBy: .controlCharacters).joined()
+        sanitized = sanitized.replacingOccurrences(of: "\n", with: "")
+        sanitized = sanitized.replacingOccurrences(of: "\r", with: "")
+        sanitized = sanitized.replacingOccurrences(of: "/", with: "")
+        sanitized = sanitized.replacingOccurrences(of: ":", with: "")
+        sanitized = sanitized.trimmingCharacters(in: .whitespacesAndNewlines)
+        if sanitized.count > 100 {
+            sanitized = String(sanitized.prefix(100)).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return sanitized.isEmpty ? fallback : sanitized
+    }
+
+    public var turnOffDataShortcutName: String {
+        let raw = UserDefaults.standard.turnOffDataShortcutName
+        return Self.sanitizeShortcutName(raw, fallback: AppConstants.Shortcuts.defaultTurnOffDataShortcutName)
+    }
+
+    public var turnOnDataShortcutName: String {
+        let raw = UserDefaults.standard.turnOnDataShortcutName
+        return Self.sanitizeShortcutName(raw, fallback: AppConstants.Shortcuts.defaultTurnOnDataShortcutName)
+    }
+
+    public func setTurnOffDataShortcutName(_ name: String) {
+        let sanitized = Self.sanitizeShortcutName(name, fallback: AppConstants.Shortcuts.defaultTurnOffDataShortcutName)
+        UserDefaults.standard.turnOffDataShortcutName = sanitized
+    }
+
+    public func setTurnOnDataShortcutName(_ name: String) {
+        let sanitized = Self.sanitizeShortcutName(name, fallback: AppConstants.Shortcuts.defaultTurnOnDataShortcutName)
+        UserDefaults.standard.turnOnDataShortcutName = sanitized
+    }
+
+    public func shortcutURL(for name: String, fallback: String) -> URL {
+        let sanitized = Self.sanitizeShortcutName(name, fallback: fallback)
+        var components = URLComponents()
+        components.scheme = "shortcuts"
+        components.host = "run-shortcut"
+        components.queryItems = [URLQueryItem(name: "name", value: sanitized)]
+        return components.url ?? URL(string: "shortcuts://run-shortcut?name=\(fallback)")!
+    }
+
     @MainActor
     private func openShortcut(url: URL) async -> Bool {
         debugLog("[CellularRefreshManager] Opening shortcut URL: \(url.absoluteString)")
@@ -48,16 +90,20 @@ public final class CellularRefreshManager: @unchecked Sendable {
 
     @discardableResult
     private func turnOffData() async -> Bool {
-        debugLog("[CellularRefreshManager] Executing TurnOffData shortcut...")
-        let success = await openShortcut(url: AppConstants.Shortcuts.turnOffDataURL)
+        let name = turnOffDataShortcutName
+        let url = shortcutURL(for: name, fallback: AppConstants.Shortcuts.defaultTurnOffDataShortcutName)
+        debugLog("[CellularRefreshManager] Executing TurnOffData shortcut '\(name)' (URL: \(url.absoluteString))...")
+        let success = await openShortcut(url: url)
         debugLog("[CellularRefreshManager] TurnOffData shortcut finished execution.")
         return success
     }
 
     @discardableResult
     private func turnOnData() async -> Bool {
-        debugLog("[CellularRefreshManager] Executing turnOnData shortcut...")
-        let success = await openShortcut(url: AppConstants.Shortcuts.turnOnDataURL)
+        let name = turnOnDataShortcutName
+        let url = shortcutURL(for: name, fallback: AppConstants.Shortcuts.defaultTurnOnDataShortcutName)
+        debugLog("[CellularRefreshManager] Executing turnOnData shortcut '\(name)' (URL: \(url.absoluteString))...")
+        let success = await openShortcut(url: url)
         debugLog("[CellularRefreshManager] turnOnData shortcut finished execution.")
         return success
     }

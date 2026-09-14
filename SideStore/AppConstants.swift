@@ -160,6 +160,9 @@ public enum AppConstants {
     }
 
     public enum Shortcuts {
+        public static let defaultTurnOffDataShortcutName = "TurnOffData"
+        public static let defaultTurnOnDataShortcutName  = "TurnOnData"
+
         public static let turnOffDataURL = URL(string: "shortcuts://run-shortcut?name=TurnOffData")!
         public static let turnOnDataURL  = URL(string: "shortcuts://run-shortcut?name=TurnOnData")!
     }
