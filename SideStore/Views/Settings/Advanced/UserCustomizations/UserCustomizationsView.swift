@@ -46,6 +46,18 @@ struct UserCustomizationsView: View {
     @State private var permissionCheckingDisabled: Bool = UserDefaults.standard.permissionCheckingDisabled
     @State private var turnOnDataShortcutName: String = UserDefaults.standard.turnOnDataShortcutName
     @State private var turnOffDataShortcutName: String = UserDefaults.standard.turnOffDataShortcutName
+    @State private var turnOnBaseDelayText: String = {
+        if let delay = CellularRefreshManager.shared.turnOnDataBaseDelayOverride {
+            return String(delay)
+        }
+        return ""
+    }()
+    @State private var turnOffBaseDelayText: String = {
+        if let delay = CellularRefreshManager.shared.turnOffDataBaseDelayOverride {
+            return String(delay)
+        }
+        return ""
+    }()
     @State private var wireGuardExportURL: URL? = nil
 
     @State private var isFreeAccount: Bool = false
@@ -521,6 +533,67 @@ struct UserCustomizationsView: View {
                                 }
                             )
                         )
+
+                        divider
+
+                        textFieldRow(
+                            title: "Turn On Base Delay",
+                            subtitle: "Base wait time after turning on data (seconds, ≥ 0)",
+                            placeholder: "Default (0.5s)",
+                            text: Binding(
+                                get: { turnOnBaseDelayText },
+                                set: { newValue in
+                                    let filtered = newValue.filter { "0123456789.".contains($0) }
+                                    turnOnBaseDelayText = filtered
+                                    if let delay = Double(filtered), delay >= 0 {
+                                        CellularRefreshManager.shared.setTurnOnDataBaseDelayOverride(delay)
+                                    } else if filtered.isEmpty {
+                                        CellularRefreshManager.shared.setTurnOnDataBaseDelayOverride(nil)
+                                    }
+                                }
+                            ),
+                            keyboardType: .decimalPad
+                        )
+
+                        divider
+
+                        textFieldRow(
+                            title: "Turn Off Base Delay",
+                            subtitle: "Base wait time after turning off data (seconds, ≥ 0)",
+                            placeholder: "Default (1.0s)",
+                            text: Binding(
+                                get: { turnOffBaseDelayText },
+                                set: { newValue in
+                                    let filtered = newValue.filter { "0123456789.".contains($0) }
+                                    turnOffBaseDelayText = filtered
+                                    if let delay = Double(filtered), delay >= 0 {
+                                        CellularRefreshManager.shared.setTurnOffDataBaseDelayOverride(delay)
+                                    } else if filtered.isEmpty {
+                                        CellularRefreshManager.shared.setTurnOffDataBaseDelayOverride(nil)
+                                    }
+                                }
+                            ),
+                            keyboardType: .decimalPad
+                        )
+
+                        divider
+
+                        SwiftUI.Button(action: {
+                            CellularRefreshManager.shared.resetToDefaults()
+                            turnOnDataShortcutName = AppConstants.Shortcuts.defaultTurnOnDataShortcutName
+                            turnOffDataShortcutName = AppConstants.Shortcuts.defaultTurnOffDataShortcutName
+                            turnOnBaseDelayText = ""
+                            turnOffBaseDelayText = ""
+                        }) {
+                            HStack {
+                                Spacer()
+                                Text("Reset to Defaults")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(.red)
+                                Spacer()
+                            }
+                            .padding(.vertical, 12)
+                        }
                     }
                     .background(Color.settingsRowBackground)
                     .cornerRadius(14)
@@ -665,7 +738,13 @@ struct UserCustomizationsView: View {
         .frame(minHeight: 50)
     }
 
-    private func textFieldRow(title: String, subtitle: String? = nil, placeholder: String, text: Binding<String>) -> some View {
+    private func textFieldRow(
+        title: String,
+        subtitle: String? = nil,
+        placeholder: String,
+        text: Binding<String>,
+        keyboardType: UIKeyboardType = .default
+    ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -685,6 +764,9 @@ struct UserCustomizationsView: View {
                 .foregroundColor(.white)
                 .autocapitalization(.none)
                 .disableAutocorrection(true)
+                #if !os(tvOS)
+                .keyboardType(keyboardType)
+                #endif
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .background(Color.white.opacity(0.08))

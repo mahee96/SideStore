@@ -108,6 +108,43 @@ public final class CellularRefreshManager: @unchecked Sendable {
         return success
     }
 
+    public var turnOffDataBaseDelayOverride: TimeInterval? {
+        guard let value = UserDefaults.standard.object(forKey: "turnOffDataBaseDelayOverride") as? Double else {
+            return nil
+        }
+        return max(0, value)
+    }
+
+    public var turnOnDataBaseDelayOverride: TimeInterval? {
+        guard let value = UserDefaults.standard.object(forKey: "turnOnDataBaseDelayOverride") as? Double else {
+            return nil
+        }
+        return max(0, value)
+    }
+
+    public func setTurnOffDataBaseDelayOverride(_ delay: TimeInterval?) {
+        if let delay = delay {
+            UserDefaults.standard.set(max(0, delay), forKey: "turnOffDataBaseDelayOverride")
+        } else {
+            UserDefaults.standard.removeObject(forKey: "turnOffDataBaseDelayOverride")
+        }
+    }
+
+    public func setTurnOnDataBaseDelayOverride(_ delay: TimeInterval?) {
+        if let delay = delay {
+            UserDefaults.standard.set(max(0, delay), forKey: "turnOnDataBaseDelayOverride")
+        } else {
+            UserDefaults.standard.removeObject(forKey: "turnOnDataBaseDelayOverride")
+        }
+    }
+
+    public func resetToDefaults() {
+        setTurnOffDataShortcutName(AppConstants.Shortcuts.defaultTurnOffDataShortcutName)
+        setTurnOnDataShortcutName(AppConstants.Shortcuts.defaultTurnOnDataShortcutName)
+        setTurnOffDataBaseDelayOverride(nil)
+        setTurnOnDataBaseDelayOverride(nil)
+    }
+
     private func sleep(baseDelay: TimeInterval, addOnDelay: TimeInterval = 0) async {
         let totalDelay = baseDelay + addOnDelay
         guard totalDelay > 0 else { return }
@@ -129,7 +166,8 @@ public final class CellularRefreshManager: @unchecked Sendable {
         let success = await turnOffData()
         if success {
             didTurnOffData = true
-            await sleep(baseDelay: 1.0, addOnDelay: addOnDelay)
+            let effectiveBaseDelay = turnOffDataBaseDelayOverride ?? AppConstants.Shortcuts.defaultTurnOffDataBaseDelay
+            await sleep(baseDelay: effectiveBaseDelay, addOnDelay: addOnDelay)
         }
         return success
     }
@@ -142,7 +180,8 @@ public final class CellularRefreshManager: @unchecked Sendable {
         if success {
             didTurnOffData = false
         }
-        await sleep(baseDelay: 0.5, addOnDelay: addOnDelay)
+        let effectiveBaseDelay = turnOnDataBaseDelayOverride ?? AppConstants.Shortcuts.defaultTurnOnDataBaseDelay
+        await sleep(baseDelay: effectiveBaseDelay, addOnDelay: addOnDelay)
         return success
     }
 }
