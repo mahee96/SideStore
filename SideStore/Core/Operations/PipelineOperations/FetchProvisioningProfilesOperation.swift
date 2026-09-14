@@ -24,15 +24,29 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
             self.debugLog("[FetchProvisioningProfiles] Context has pre-existing error: \(error.localizedDescription)")
             throw error
         }
-        
-        let team = try await AuthManager.shared.getAuthenticatedTeam()
-        
+
         guard let targetAppBundle = self.context.targetAppBundle else {
             self.debugLog("[FetchProvisioningProfiles] Target app bundle missing in context.")
             throw OperationError.invalidParameters("FetchProvisioningProfilesOperation: context.targetAppBundle is nil")
         }
-        
+
         let effectiveBundleId = self.context.targetBundleIdentifier
+
+        if let overrideProfile = self.context.overrideProvisioningProfile {
+            self.debugLog("[FetchProvisioningProfiles] Using override provisioning profile '\(overrideProfile.name)' (\(overrideProfile.uuid)) for \(effectiveBundleId)")
+            var profiles = [effectiveBundleId: overrideProfile]
+            if !self.context.useMainProfile, !targetAppBundle.appExtensions.isEmpty {
+                for appExtension in targetAppBundle.appExtensions {
+                    let updatedExtensionBundleId = appExtension.bundleIdentifier.replacingOccurrences(of: targetAppBundle.bundleIdentifier, with: effectiveBundleId)
+                    profiles[updatedExtensionBundleId] = overrideProfile
+                }
+            }
+            self.setProgress(100)
+            self.debugLog("[FetchProvisioningProfiles] Total override profiles prepared: \(profiles.count) -> keys: \(Array(profiles.keys))")
+            return profiles
+        }
+
+        let team = try await AuthManager.shared.getAuthenticatedTeam()
         self.debugLog("[FetchProvisioningProfiles] Executing for app \(targetAppBundle.bundleIdentifier), targetBundleID: \(effectiveBundleId), team: \(team.identifier), useMainProfile: \(self.context.useMainProfile)")
         
         self.setProgress(10)

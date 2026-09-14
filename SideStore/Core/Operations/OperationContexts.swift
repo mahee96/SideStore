@@ -254,6 +254,7 @@ class InstallAppOperationContext: PipelineOperationContext
     var isFinished = false
 
     var overrideSigningCertificate: ALTCertificate?
+    var overrideProvisioningProfile: ALTProvisioningProfile?
     let activeSigningCertificate: ALTCertificate?
 
     var targetSigningCertificate: ALTCertificate? {

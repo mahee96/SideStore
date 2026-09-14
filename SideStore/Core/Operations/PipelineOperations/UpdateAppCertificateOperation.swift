@@ -22,13 +22,26 @@ final class UpdateAppCertificateOperation: BasePipelineOperation<InstallAppOpera
         }
         try await super.executePreconditionCheck(parentProgress: parentProgress)
         
-        if let installedApp = self.context.installedApp, let serialNumber = installedApp.certificateSerialNumber {
-            debugLog("[UpdateAppCertificateOperation] InstalledApp '\(installedApp.name)' has custom certificate serial: '\(serialNumber)'")
-            if let customCert = CertificateManager.shared.getSignableCertificate(for: serialNumber) {
-                debugLog("[UpdateAppCertificateOperation] Loaded custom certificate '\(customCert.serialNumber)' for app '\(installedApp.name)'. Setting context.overrideSigningCertificate.")
-                self.context.overrideSigningCertificate = customCert
-            } else {
-                debugLog("[UpdateAppCertificateOperation] WARNING: Signable certificate with serial '\(serialNumber)' not found for app '\(installedApp.name)'.")
+        if let installedApp = self.context.installedApp {
+            if let assignedProfile = ProfileManager.shared.getAssignedProfile(for: installedApp.bundleIdentifier) {
+                debugLog("[UpdateAppCertificateOperation] InstalledApp '\(installedApp.name)' has assigned profile: '\(assignedProfile.name)' (\(assignedProfile.uuid))")
+                self.context.overrideProvisioningProfile = assignedProfile
+
+                if let matchingCert = ProfileManager.shared.getMatchingCertificate(for: assignedProfile) {
+                    debugLog("[UpdateAppCertificateOperation] Loaded matching certificate '\(matchingCert.serialNumber)' for assigned profile. Setting context.overrideSigningCertificate.")
+                    self.context.overrideSigningCertificate = matchingCert
+                } else if let serialNumber = installedApp.certificateSerialNumber,
+                          let customCert = CertificateManager.shared.getSignableCertificate(for: serialNumber) {
+                    self.context.overrideSigningCertificate = customCert
+                }
+            } else if let serialNumber = installedApp.certificateSerialNumber {
+                debugLog("[UpdateAppCertificateOperation] InstalledApp '\(installedApp.name)' has custom certificate serial: '\(serialNumber)'")
+                if let customCert = CertificateManager.shared.getSignableCertificate(for: serialNumber) {
+                    debugLog("[UpdateAppCertificateOperation] Loaded custom certificate '\(customCert.serialNumber)' for app '\(installedApp.name)'. Setting context.overrideSigningCertificate.")
+                    self.context.overrideSigningCertificate = customCert
+                } else {
+                    debugLog("[UpdateAppCertificateOperation] WARNING: Signable certificate with serial '\(serialNumber)' not found for app '\(installedApp.name)'.")
+                }
             }
         }
         

@@ -81,9 +81,10 @@ extension SettingsViewController
         case anisetteServers        // row 4 - Anisette Servers
         case connectionConfig       // row 5 - Connection Configuration
         case developerServices      // row 6 - Developer Portal Services
-        case certificateManagement  // row 7 - Certificate Management
-        case backupAndRestore       // row 8 - Backup & Restore
-        case userCustomizations     // row 9 - User Customizations
+        case profileManagement      // row 7 - Profile Management
+        case certificateManagement  // row 8 - Certificate Management
+        case backupAndRestore       // row 9 - Backup & Restore
+        case userCustomizations     // row 10 - User Customizations
 
         static var allCases: [AdvancedSettingsRow] {
             var rows: [AdvancedSettingsRow] = [.sendFeedback, .refreshAttempts, .refreshSideJITServer, .resetPairingFile]
@@ -93,6 +94,7 @@ extension SettingsViewController
             rows.append(contentsOf: [
                 .connectionConfig,
                 .developerServices,
+                .profileManagement,
                 .certificateManagement,
                 .backupAndRestore,
                 .userCustomizations
@@ -299,12 +301,13 @@ final class SettingsViewController: UITableViewController
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "anisetteServers" || segue.identifier == "developerServices" || segue.identifier == "certificateManagement" || segue.identifier == "diagnostics" {
+        if segue.identifier == "anisetteServers" || segue.identifier == "developerServices" || segue.identifier == "profileManagement" || segue.identifier == "certificateManagement" || segue.identifier == "diagnostics" {
             let controller = segue.destination
             
         #if !os(tvOS)
             if segue.identifier == "anisetteServers"        || 
                 segue.identifier == "developerServices"      ||
+                segue.identifier == "profileManagement"      ||
                 segue.identifier == "certificateManagement" || 
                 segue.identifier == "diagnostics"
             {
@@ -1334,6 +1337,11 @@ extension SettingsViewController
                 let developerServicesView = DeveloperServicesView(presentingViewController: self)
                 let vc = UIHostingController(rootView: developerServicesView)
                 self.prepare(for: UIStoryboardSegue(identifier: "developerServices", source: self, destination: vc), sender: nil)
+
+            case .profileManagement:
+                let profileManagementView = ProfileManagementView(presentingViewController: self)
+                let vc = UIHostingController(rootView: profileManagementView)
+                self.prepare(for: UIStoryboardSegue(identifier: "profileManagement", source: self, destination: vc), sender: nil)
 
             case .certificateManagement:
                 let certificateManagementView = CertificatesView(presentingViewController: self)

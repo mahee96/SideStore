@@ -2119,23 +2119,23 @@ extension MyAppsViewController
         
         let backupMenu = UIMenu(title: NSLocalizedString("Backup", comment: ""), image: UIImage(systemName: "archivebox"), children: backupSubmenuActions)
         
-        let setCertAction = UIAction(title: NSLocalizedString("Change Certificate", comment: ""), image: UIImage(systemName: "key.icloud")) { [weak self] _ in
-            self?.presentSetCertificateAlert(for: installedApp)
+        let setProfileAction = UIAction(title: NSLocalizedString("Change Provisioning Profile", comment: ""), image: UIImage(systemName: "doc.badge.gearshape")) { [weak self] _ in
+            self?.presentSetProfileAlert(for: installedApp)
         }
         
-        let resetCertAction = UIAction(title: NSLocalizedString("Reset Certificate", comment: ""), image: UIImage(systemName: "arrow.counterclockwise")) { [weak self] _ in
-            self?.resetCertificate(for: installedApp)
+        let resetProfileAction = UIAction(title: NSLocalizedString("Reset Provisioning Profile", comment: ""), image: UIImage(systemName: "arrow.counterclockwise")) { [weak self] _ in
+            self?.resetProfile(for: installedApp)
         }
         
-        var certSubmenuActions: [UIMenuElement] = [setCertAction]
-        if installedApp.certificateSerialNumber != nil {
-            certSubmenuActions.append(resetCertAction)
+        var profileSubmenuActions: [UIMenuElement] = [setProfileAction]
+        if ProfileManager.shared.getAssignedProfile(for: installedApp.bundleIdentifier) != nil || installedApp.certificateSerialNumber != nil {
+            profileSubmenuActions.append(resetProfileAction)
         }
-        let certificateMenu = UIMenu(title: NSLocalizedString("Certificate", comment: ""), image: UIImage(systemName: "key"), children: certSubmenuActions)
+        let profileMenu = UIMenu(title: NSLocalizedString("Provisioning Profile", comment: ""), image: UIImage(systemName: "doc.plaintext"), children: profileSubmenuActions)
         
         if installedApp.resignedBundleIdentifier.isAltStoreAppID
         {
-            actions = [refreshAction, resignAction, certificateMenu, changeIconMenu]
+            actions = [refreshAction, resignAction, profileMenu, changeIconMenu]
         }
         else
         {
@@ -2144,13 +2144,13 @@ extension MyAppsViewController
                 actions.append(openMenu)
                 actions.append(refreshAction)
                 actions.append(resignAction)
-                actions.append(certificateMenu)
+                actions.append(profileMenu)
             }
             else
             {
                 actions.append(activateAction)
                 actions.append(resignAction)
-                actions.append(certificateMenu)
+                actions.append(profileMenu)
             }
             
             if installedApp.isActive
@@ -2203,7 +2203,7 @@ extension MyAppsViewController
             openMenu,
             refreshAction,
             resignAction,
-            certificateMenu,
+            profileMenu,
             activateAction,
             jitAction,
             changeIconMenu,
@@ -2767,37 +2767,27 @@ extension MyAppsViewController: UIImagePickerControllerDelegate, UINavigationCon
 #endif
 
 extension MyAppsViewController {
-    private func presentSetCertificateAlert(for installedApp: InstalledApp) {
-        let picker = SignableCertificatesListViewController(installedApp: installedApp)
-        picker.onSelectCertificate = { [weak self] cert in
-            guard let self = self else { return }
-            
-            let binaryCert = CertificateManager.shared.getSigningCertificate(for: installedApp)
-            if let binaryCert = binaryCert, cert.serialNumber == binaryCert.serialNumber {
-                let alert = UIAlertController(
-                    title: NSLocalizedString("Same Certificate", comment: ""),
-                    message: NSLocalizedString("The selected certificate is already being used for this app. Please use the Resign option instead.", comment: ""),
-                    preferredStyle: .alert
-                )
-                alert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .default))
-                self.present(alert, animated: true)
-            } else {
-                self.setCertificate(cert, for: installedApp)
-            }
+    private func presentSetProfileAlert(for installedApp: InstalledApp) {
+        let picker = SelectProfileViewController(installedApp: installedApp)
+        picker.onSelectProfile = { [weak self] profile in
+            self?.setProfile(profile, for: installedApp)
         }
         picker.present(from: self)
     }
-    
-    private func setCertificate(_ cert: ALTCertificate, for installedApp: InstalledApp) {
+
+    private func setProfile(_ profile: ALTProvisioningProfile, for installedApp: InstalledApp) {
+        ProfileManager.shared.setAssignedProfile(profile, for: installedApp.bundleIdentifier)
+        let matchingCert = ProfileManager.shared.getMatchingCertificate(for: profile)
         let context = DatabaseManager.shared.viewContext
         context.performAndWait {
-            installedApp.certificateSerialNumber = cert.serialNumber
+            installedApp.certificateSerialNumber = matchingCert?.serialNumber
             try? context.save()
         }
         self.resign(installedApp)
     }
-    
-    private func resetCertificate(for installedApp: InstalledApp) {
+
+    private func resetProfile(for installedApp: InstalledApp) {
+        ProfileManager.shared.setAssignedProfile(nil, for: installedApp.bundleIdentifier)
         let context = DatabaseManager.shared.viewContext
         context.performAndWait {
             installedApp.certificateSerialNumber = nil
