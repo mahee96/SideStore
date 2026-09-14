@@ -70,6 +70,11 @@ final class AppManager: ObservableObject, @unchecked Sendable
     }
 
     func reconcileInstalledApps() async {
+        guard !self.isActivelyManagingAnyApp else {
+            debugLog("[AppManager] Skipping reconcileInstalledApps: operations in progress")
+            return
+        }
+
         let dbBackgroundContext = DatabaseManager.shared.persistentContainer.newBackgroundContext()
 
         do {
