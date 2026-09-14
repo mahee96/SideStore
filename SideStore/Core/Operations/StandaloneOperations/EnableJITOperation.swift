@@ -92,9 +92,12 @@ final class EnableJITOperation: BaseStandaloneOperation<StandaloneOperationConte
                 let percent = 30 + Int64(Double(retry) / Double(maxRetries) * 60.0)
                 self.setProgress(percent)
                 do {
+                    await CellularRefreshManager.shared.turnOffDataIfNeeded()
                     try await debugApp(targetBundleId)
+                    await CellularRefreshManager.shared.turnOnDataIfNeeded()
                     return
                 } catch {
+                    await CellularRefreshManager.shared.turnOnDataIfNeeded()
                     lastError = error
                 }
             }
@@ -105,7 +108,15 @@ final class EnableJITOperation: BaseStandaloneOperation<StandaloneOperationConte
 
 @available(iOS 17, *)
 func enableJITSideJITServer(serverURL: URL, bundleIdentifier: String, appName: String) async throws {
-    let udid = try await fetchUDID()
+    let udid: String
+    do {
+        await CellularRefreshManager.shared.turnOffDataIfNeeded()
+        udid = try await fetchUDID()
+        await CellularRefreshManager.shared.turnOnDataIfNeeded()
+    } catch {
+        await CellularRefreshManager.shared.turnOnDataIfNeeded()
+        throw error
+    }
 
     let serverURLWithUDID = serverURL.appendingPathComponent(udid)
     let fullURL = serverURLWithUDID.appendingPathComponent(bundleIdentifier)
