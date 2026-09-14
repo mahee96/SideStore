@@ -511,7 +511,13 @@ struct UserCustomizationsView: View {
                                     turnOnDataShortcutName = sanitized
                                     CellularRefreshManager.shared.setTurnOnDataShortcutName(sanitized)
                                 }
-                            )
+                            ),
+                            onEditingChanged: { isEditing in
+                                if !isEditing && turnOnDataShortcutName.trimmingCharacters(in: .whitespaces).isEmpty {
+                                    turnOnDataShortcutName = AppConstants.Shortcuts.defaultTurnOnDataShortcutName
+                                    CellularRefreshManager.shared.setTurnOnDataShortcutName(turnOnDataShortcutName)
+                                }
+                            }
                         )
 
                         divider
@@ -527,7 +533,13 @@ struct UserCustomizationsView: View {
                                     turnOffDataShortcutName = sanitized
                                     CellularRefreshManager.shared.setTurnOffDataShortcutName(sanitized)
                                 }
-                            )
+                            ),
+                            onEditingChanged: { isEditing in
+                                if !isEditing && turnOffDataShortcutName.trimmingCharacters(in: .whitespaces).isEmpty {
+                                    turnOffDataShortcutName = AppConstants.Shortcuts.defaultTurnOffDataShortcutName
+                                    CellularRefreshManager.shared.setTurnOffDataShortcutName(turnOffDataShortcutName)
+                                }
+                            }
                         )
 
                         divider
@@ -548,7 +560,13 @@ struct UserCustomizationsView: View {
                                     }
                                 }
                             ),
-                            keyboardType: .decimalPad
+                            keyboardType: .decimalPad,
+                            onEditingChanged: { isEditing in
+                                if !isEditing && turnOnBaseDelayText.trimmingCharacters(in: .whitespaces).isEmpty {
+                                    turnOnBaseDelayText = String(AppConstants.Shortcuts.defaultTurnOnDataBaseDelay)
+                                    CellularRefreshManager.shared.setTurnOnDataBaseDelayOverride(nil)
+                                }
+                            }
                         )
 
                         divider
@@ -569,7 +587,13 @@ struct UserCustomizationsView: View {
                                     }
                                 }
                             ),
-                            keyboardType: .decimalPad
+                            keyboardType: .decimalPad,
+                            onEditingChanged: { isEditing in
+                                if !isEditing && turnOffBaseDelayText.trimmingCharacters(in: .whitespaces).isEmpty {
+                                    turnOffBaseDelayText = String(AppConstants.Shortcuts.defaultTurnOffDataBaseDelay)
+                                    CellularRefreshManager.shared.setTurnOffDataBaseDelayOverride(nil)
+                                }
+                            }
                         )
 
                         divider
@@ -739,7 +763,8 @@ struct UserCustomizationsView: View {
         subtitle: String? = nil,
         placeholder: String,
         text: Binding<String>,
-        keyboardType: UIKeyboardType = .default
+        keyboardType: UIKeyboardType = .default,
+        onEditingChanged: ((Bool) -> Void)? = nil
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             VStack(alignment: .leading, spacing: 2) {
@@ -755,18 +780,20 @@ struct UserCustomizationsView: View {
                 }
             }
 
-            TextField(placeholder, text: text)
-                .font(.system(size: 15))
-                .foregroundColor(.white)
-                .autocapitalization(.none)
-                .disableAutocorrection(true)
-                #if !os(tvOS)
-                .keyboardType(keyboardType)
-                #endif
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color.white.opacity(0.08))
-                .cornerRadius(8)
+            TextField(placeholder, text: text, onEditingChanged: { isEditing in
+                onEditingChanged?(isEditing)
+            })
+            .font(.system(size: 15))
+            .foregroundColor(.white)
+            .autocapitalization(.none)
+            .disableAutocorrection(true)
+            #if !os(tvOS)
+            .keyboardType(keyboardType)
+            #endif
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Color.white.opacity(0.08))
+            .cornerRadius(8)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
