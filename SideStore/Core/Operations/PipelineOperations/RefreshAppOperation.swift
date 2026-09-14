@@ -37,7 +37,7 @@ final class RefreshAppOperation: BasePipelineOperation<InstallAppOperationContex
                 app: self.context.installedApp,
                 certStatus: self.context.targetCertStatus
             ))
-            self.setProgress(95)
+            self.setProgress(85)
             guard let app = self.context.installedApp else {
                 throw OperationError.invalidParameters("RefreshAppOperation: context.installedApp is nil")
             }
