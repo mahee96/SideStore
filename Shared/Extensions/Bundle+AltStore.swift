@@ -31,13 +31,9 @@ public extension Bundle
         public static let storeAppBundleIdentifier = Bundle.storeAppBundleIdentifier
         public static let appbundleIdentifier = Bundle.appbundleIdentifier
  
-        public static let deviceID = "ALTDeviceID"
-        public static let serverID = "ALTServerID"
         public static let certificateID = "ALTCertificateID"
         public static let appGroups = "ALTAppGroups"
-        public static let altBundleID = "ALTBundleIdentifier"
      
-        public static let devicePairingString = "ALTPairingFile"
         public static let urlTypes = "CFBundleURLTypes"
         public static let exportedUTIs = "UTExportedTypeDeclarations"
         public static let backgroundModes = "UIBackgroundModes"
