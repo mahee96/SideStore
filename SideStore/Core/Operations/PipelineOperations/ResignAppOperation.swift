@@ -157,8 +157,6 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         }
 
         if let appGroups = profile.entitlements[.appGroups] as? [String] {
-            infoDictionary[Bundle.Info.appGroups] = appGroups
-
             // To keep file providers working, remap the NSExtensionFileProviderDocumentGroup, if there is one.
             if var extensionInfo = infoDictionary["NSExtension"] as? [String: Any],
                 let appGroup = extensionInfo["NSExtensionFileProviderDocumentGroup"] as? String,

@@ -4,10 +4,6 @@
 <dict>
 	<key>ALTAnisetteURL</key>
 	<string>https://ani.sidestore.io</string>
-	<key>ALTAppGroups</key>
-	<array>
-		<string>group.$(APP_GROUP_IDENTIFIER)</string>
-	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDocumentTypes</key>
