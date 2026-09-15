@@ -241,9 +241,14 @@
 	<array>
 		<string>audio</string>
 		<string>fetch</string>
+		<string>location</string>
 		<string>remote-notification</string>
 		<string>processing</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>SideStore uses location updates to keep background operations active.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>SideStore uses location updates to keep background operations active.</string>
 	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
