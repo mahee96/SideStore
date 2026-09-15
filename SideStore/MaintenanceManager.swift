@@ -37,6 +37,20 @@ public final class MaintenanceManager {
 
     private init() {}
 
+    public func performDatabaseMigrationIfNeeded() async {
+        let current = completedCounter
+        guard current < Self.currentMaintenanceCounter else { return }
+
+        for pass in (current + 1)...Self.currentMaintenanceCounter {
+            switch pass {
+            case 4:
+                await migrateDatabaseFiles()
+            default:
+                break
+            }
+        }
+    }
+
     public func performMaintenanceIfNeeded() async {
         let current = completedCounter
         guard current < Self.currentMaintenanceCounter else { return }
@@ -62,9 +76,37 @@ public final class MaintenanceManager {
         completedCounter = Self.currentMaintenanceCounter
         debugLog("[MaintenanceManager] Maintenance up to counter \(Self.currentMaintenanceCounter) complete.")
     }
+
 }
 
 private extension MaintenanceManager {
+    func migrateDatabaseFiles() async {
+        let fileManager = FileManager.default
+        let dbDir = PersistentContainer.defaultDirectoryURL()
+
+        let extensions = ["", "-wal", "-shm"]
+        let legacyName = AppConstants.Database.legacyFileName
+        let targetName = AppConstants.Database.fileName
+
+        let legacyTargetURL = dbDir.appendingPathComponent(legacyName)
+        let newTargetURL = dbDir.appendingPathComponent(targetName)
+
+        if fileManager.fileExists(atPath: legacyTargetURL.path) && !fileManager.fileExists(atPath: newTargetURL.path) {
+            for ext in extensions {
+                let src = dbDir.appendingPathComponent("\(legacyName)\(ext)")
+                let dst = dbDir.appendingPathComponent("\(targetName)\(ext)")
+                if fileManager.fileExists(atPath: src.path) {
+                    do {
+                        try fileManager.moveItem(at: src, to: dst)
+                        debugLog("[MaintenanceManager] Migrated database file '\(src.lastPathComponent)' -> '\(dst.lastPathComponent)'")
+                    } catch {
+                        debugLog("[MaintenanceManager] Failed to move database file '\(src.lastPathComponent)': \(error)")
+                    }
+                }
+            }
+        }
+    }
+
     // added in v0.7.0
     func migrateLegacyCachedAppBundles() async {
         let context = DatabaseManager.shared.viewContext

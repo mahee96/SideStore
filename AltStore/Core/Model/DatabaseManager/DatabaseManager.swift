@@ -40,7 +40,7 @@ public class DatabaseManager: @unchecked Sendable
 
     private init()
     {
-        self.persistentContainer = PersistentContainer(name: "AltStore", bundle: Bundle(for: DatabaseManager.self))
+        self.persistentContainer = PersistentContainer(name: AppConstants.Database.name, bundle: Bundle(for: DatabaseManager.self))
         self.persistentContainer.preferredMergePolicy = MergePolicy()
         
         let observer = Unmanaged.passUnretained(self).toOpaque()
@@ -54,7 +54,7 @@ public class DatabaseManager: @unchecked Sendable
             let container = Self.shared.persistentContainer
             
             var databaseStore = container.persistentStoreCoordinator.persistentStores.first
-            let databaseStoreURL = databaseStore?.url ?? PersistentContainer.defaultDirectoryURL().appendingPathComponent("AltStore.sqlite")
+            let databaseStoreURL = databaseStore?.url ?? PersistentContainer.defaultDirectoryURL().appendingPathComponent(AppConstants.Database.fileName)
             
             // Reset the managed object context
             Self.shared.persistentContainer.viewContext.reset()
@@ -120,7 +120,6 @@ public class DatabaseManager: @unchecked Sendable
             CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), .willMigrateDatabase, nil, nil, true)
         }
 
-        try await self.migrateDatabaseToAppGroupIfNeeded()
         try await self.persistentContainer.loadPersistentStores()
         try await self.prepareDatabase()
     }
@@ -421,73 +420,6 @@ public class DatabaseManager: @unchecked Sendable
         if let provisioningProfile = localAppBundle.provisioningProfile {
             installedApp.refreshedDate = provisioningProfile.creationDate
             installedApp.expirationDate = provisioningProfile.expirationDate
-        }
-    }
-    
-    private func migrateDatabaseToAppGroupIfNeeded() async throws
-    {
-        // Only migrate if we haven't migrated yet and there's a valid AltStore app group.
-        guard UserDefaults.standard.requiresAppGroupMigration && Bundle.main.altstoreAppGroup != nil else { return }
-
-        let previousDatabaseURL = PersistentContainer.legacyDirectoryURL().appendingPathComponent("AltStore.sqlite")
-        let databaseURL = PersistentContainer.defaultDirectoryURL().appendingPathComponent("AltStore.sqlite")
-        
-        let previousAppsDirectoryURL = InstalledApp.legacyAppsDirectoryURL
-        let appsDirectoryURL = InstalledApp.appsDirectoryURL
-        
-        let databaseIntent = NSFileAccessIntent.writingIntent(with: databaseURL, options: [.forReplacing])
-        let appsIntent = NSFileAccessIntent.writingIntent(with: appsDirectoryURL, options: [.forReplacing])
-        
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            self.coordinator.coordinate(with: [databaseIntent, appsIntent], queue: self.coordinatorQueue) { (error) in
-                do
-                {
-                    if let error = error
-                    {
-                        throw error
-                    }
-                    
-                    let description = NSPersistentStoreDescription(url: previousDatabaseURL)
-                    
-                    // Disable WAL to remove extra files automatically during migration.
-                    description.setOption(["journal_mode": "DELETE"] as NSDictionary, forKey: NSSQLitePragmasOption)
-                    
-                    let persistentStoreCoordinator = NSPersistentStoreCoordinator(managedObjectModel: self.persistentContainer.managedObjectModel)
-                    
-                    // Migrate database
-                    if FileManager.default.fileExists(atPath: previousDatabaseURL.path)
-                    {
-                        if FileManager.default.fileExists(atPath: databaseURL.path, isDirectory: nil)
-                        {
-                            try FileManager.default.removeItem(at: databaseURL)
-                        }
-                        
-                        let previousDatabase = try persistentStoreCoordinator.addPersistentStore(ofType: description.type, configurationName: description.configuration, at: description.url, options: description.options)
-                        
-                        // Pass nil options to prevent later error due to self.persistentContainer using WAL.
-                        try persistentStoreCoordinator.migratePersistentStore(previousDatabase, to: databaseURL, options: nil, withType: NSSQLiteStoreType)
-                        
-                        try FileManager.default.removeItem(at: previousDatabaseURL)
-                    }
-                    
-                    // Migrate apps
-                    if FileManager.default.fileExists(atPath: previousAppsDirectoryURL.path, isDirectory: nil)
-                    {
-                        if(previousAppsDirectoryURL.path != appsDirectoryURL.path)
-                        {
-                            _ = try FileManager.default.replaceItemAt(appsDirectoryURL, withItemAt: previousAppsDirectoryURL)
-                        }
-                    }
-                    
-                    UserDefaults.standard.requiresAppGroupMigration = false
-                    continuation.resume()
-                }
-                catch
-                {
-                    debugLog("Failed to migrate database to app group: \(error)")
-                    continuation.resume(throwing: error)
-                }
-            }
         }
     }
     

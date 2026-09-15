@@ -173,6 +173,8 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         Task.detached(priority: .userInitiated) {
             do
             {
+                await MaintenanceManager.shared.performDatabaseMigrationIfNeeded()
+                
                 debugLog("Starting DatabaseManager...")
                 try await DatabaseManager.shared.start()
                 debugLog("Started DatabaseManager.")
@@ -201,8 +203,6 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         self.prepareImageCache()
 
         SecureValueTransformer.register()        
-        
-        UserDefaults.standard.preferredServerID = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.serverID) as? String
         
         #if DEBUG && targetEnvironment(simulator)
         UserDefaults.standard.isDebugModeEnabled = true

@@ -27,10 +27,6 @@ public extension UserDefaults
         get { self.string(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
     }
-    @objc var requiresAppGroupMigration: Bool {
-        get { self.bool(forKey: #function) }
-        set { self.set(newValue, forKey: #function) }
-    }
     @objc var textServer: Bool {
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
@@ -61,10 +57,6 @@ public extension UserDefaults
     }
     @objc var menuAnisetteServersList: [String] {
         get { self.stringArray(forKey: #function) ?? [] }
-        set { self.set(newValue, forKey: #function) }
-    }
-    @objc var preferredServerID: String? {
-        get { self.string(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
     }
     @objc var customAnisetteClientInfo: String? {
@@ -462,7 +454,6 @@ public extension UserDefaults
             #keyPath(UserDefaults.activeAppLimitIncludesExtensions): activeAppLimitIncludesExtensions,
             
             // still used on ios 15+
-            #keyPath(UserDefaults.requiresAppGroupMigration): true,
             #keyPath(UserDefaults.isAppLimitDisabled): false,
             #keyPath(UserDefaults.isCowExploitSupported): isMacDirtyCowSupported,
             #keyPath(UserDefaults._preferredAppSorting): preferredAppSorting.rawValue,
