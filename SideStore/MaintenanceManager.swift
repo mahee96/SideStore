@@ -14,7 +14,7 @@ public final class MaintenanceManager {
     public static let shared = MaintenanceManager()
 
     // Increment this counter whenever you want to trigger another maintenance pass in future updates
-    public static let currentMaintenanceCounter = 4
+    public static let currentMaintenanceCounter = 5
 
     public static let maintenanceCounterFileName = ".maintenance_counter"
 
@@ -68,6 +68,8 @@ public final class MaintenanceManager {
                 UserDefaults.standard.tunnelOverridePeerIp = nil
             case 4:
                 await migrateLegacyCachedAppBundles()
+            case 5:
+                await migrateLegacyCachedSigningCertificates()
             default:
                 break
             }
@@ -159,6 +161,38 @@ private extension MaintenanceManager {
 
             if didMutate {
                 try? context.save()
+            }
+        }
+    }
+
+    func migrateLegacyCachedSigningCertificates() async {
+        let context = DatabaseManager.shared.viewContext
+        await context.perform {
+            let fetchRequest: NSFetchRequest<InstalledApp> = InstalledApp.fetchRequest()
+            guard let installedApps = try? context.fetch(fetchRequest) else { return }
+            let fileManager = FileManager.default
+            let appsDir = InstalledApp.appsDirectoryURL
+
+            for app in installedApps {
+                guard app.bundleIdentifier != app.resignedBundleIdentifier else { continue }
+
+                let legacyCertURL = appsDir.appendingPathComponent(app.bundleIdentifier).appendingPathComponent("signing_certificate.der")
+                let targetCertURL = app.signingCertificateURL
+
+                guard fileManager.fileExists(atPath: legacyCertURL.path) else { continue }
+
+                do {
+                    if !fileManager.fileExists(atPath: targetCertURL.path) {
+                        let targetDir = targetCertURL.deletingLastPathComponent()
+                        try fileManager.createDirectory(at: targetDir, withIntermediateDirectories: true, attributes: nil)
+                        try fileManager.moveItem(at: legacyCertURL, to: targetCertURL)
+                    } else {
+                        try fileManager.removeItem(at: legacyCertURL)
+                    }
+                    debugLog("[MaintenanceManager] Migrated signing cert for '\(app.bundleIdentifier)' -> '\(app.resignedBundleIdentifier)'")
+                } catch {
+                    debugLog("[MaintenanceManager] Failed to migrate signing cert from '\(legacyCertURL.path)': \(error)")
+                }
             }
         }
     }
