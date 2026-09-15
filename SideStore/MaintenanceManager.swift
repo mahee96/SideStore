@@ -7,13 +7,14 @@
 //
 
 import Foundation
+import CoreData
 import SideSign
 
 public final class MaintenanceManager {
     public static let shared = MaintenanceManager()
 
     // Increment this counter whenever you want to trigger another maintenance pass in future updates
-    public static let currentMaintenanceCounter = 3
+    public static let currentMaintenanceCounter = 4
 
     public static let maintenanceCounterFileName = ".maintenance_counter"
 
@@ -51,6 +52,8 @@ public final class MaintenanceManager {
                 await AuthManager.shared.signOut(keepCertificate: true, keepAnisetteData: false)
             case 3:
                 UserDefaults.standard.tunnelOverridePeerIp = nil
+            case 4:
+                await migrateLegacyCachedAppBundles()
             default:
                 break
             }
@@ -58,5 +61,63 @@ public final class MaintenanceManager {
 
         completedCounter = Self.currentMaintenanceCounter
         debugLog("[MaintenanceManager] Maintenance up to counter \(Self.currentMaintenanceCounter) complete.")
+    }
+}
+
+private extension MaintenanceManager {
+    // added in v0.7.0
+    func migrateLegacyCachedAppBundles() async {
+        let context = DatabaseManager.shared.viewContext
+        await context.perform {
+            let fetchRequest: NSFetchRequest<InstalledApp> = InstalledApp.fetchRequest()
+            let installedApps = (try? context.fetch(fetchRequest)) ?? []
+            let appsByBundleID = Dictionary(installedApps.map { ($0.resignedBundleIdentifier, $0) }, uniquingKeysWith: { first, _ in first })
+
+            var didMutate = false
+            let appsDir = InstalledApp.appsDirectoryURL
+            guard let subdirectories = try? FileManager.default.contentsOfDirectory(
+                at: appsDir,
+                includingPropertiesForKeys: [.isDirectoryKey],
+                options: [.skipsHiddenFiles]
+            ) else {
+                return
+            }
+
+            for directory in subdirectories {
+                guard directory.lastPathComponent != "Payloads" else { continue }
+                let legacyAppURL = directory.appendingPathComponent("App.app")
+                guard FileManager.default.fileExists(atPath: legacyAppURL.path) else { continue }
+
+                guard let signature = AppBundleFingerprint.compute(for: legacyAppURL) else {
+                    debugLog("[MaintenanceManager] Failed to compute fingerprint for legacy app at '\(legacyAppURL.path)'")
+                    continue
+                }
+
+                let targetFileURL = InstalledApp.payloadURL(forSignature: signature)
+                let targetParentDir = targetFileURL.deletingLastPathComponent()
+
+                do {
+                    if !FileManager.default.fileExists(atPath: targetFileURL.path) {
+                        try FileManager.default.createDirectory(at: targetParentDir, withIntermediateDirectories: true, attributes: nil)
+                        try FileManager.default.moveItem(at: legacyAppURL, to: targetFileURL)
+                    } else {
+                        try FileManager.default.removeItem(at: legacyAppURL)
+                    }
+
+                    let bundleID = directory.lastPathComponent
+                    if let app = appsByBundleID[bundleID] {
+                        app.appBundleFingerprint = signature
+                        didMutate = true
+                    }
+                    debugLog("[MaintenanceManager] Migrated legacy app bundle '\(bundleID)' to payload '\(signature)'.")
+                } catch {
+                    debugLog("[MaintenanceManager] Failed to move legacy app bundle at '\(legacyAppURL.path)': \(error)")
+                }
+            }
+
+            if didMutate {
+                try? context.save()
+            }
+        }
     }
 }
