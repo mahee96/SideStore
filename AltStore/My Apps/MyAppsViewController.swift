@@ -1516,8 +1516,8 @@ private extension MyAppsViewController
         }
     }
     
-    func importBackup(for installedApp: InstalledApp){
-        ImportExport.importBackup(presentingViewController: self, for: installedApp) { result in
+    func importBackup(for installedApp: InstalledApp, isZip: Bool = false){
+        ImportExport.importBackup(presentingViewController: self, for: installedApp, isZip: isZip) { result in
             var toast: ToastView
             switch(result){
             case .failure(let error):
@@ -1599,12 +1599,26 @@ private extension MyAppsViewController
         }
     }
     
-    func exportBackup(for installedApp: InstalledApp)
+    func exportBackup(for installedApp: InstalledApp, asZip: Bool = false)
     {
         guard let backupURL = FileManager.default.backupDirectoryURL(for: installedApp) else { return }
         
         #if !os(tvOS)
-        let documentPicker = UIDocumentPickerViewController(forExporting: [backupURL], asCopy: true)
+        let exportURL: URL
+        if asZip {
+            let zipURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(installedApp.name) Backup.zip")
+            do {
+                try FileManager.default.zipDirectory(at: backupURL, to: zipURL)
+                exportURL = zipURL
+            } catch {
+                ToastView(error: error, opensLog: true).show(in: self)
+                return
+            }
+        } else {
+            exportURL = backupURL
+        }
+        
+        let documentPicker = UIDocumentPickerViewController(forExporting: [exportURL], asCopy: true)
         
         // Don't set delegate to avoid conflicting with import callbacks.
         // documentPicker.delegate = self
@@ -2069,13 +2083,25 @@ extension MyAppsViewController
             self.backup(installedApp)
         }
         
-        let exportBackupAction = UIAction(title: NSLocalizedString("Export Backup", comment: ""), image: UIImage(systemName: "arrow.up.doc")) { (action) in
-            self.exportBackup(for: installedApp)
+        let exportRawBackupAction = UIAction(title: NSLocalizedString("Export (Raw)", comment: ""), image: UIImage(systemName: "folder")) { (action) in
+            self.exportBackup(for: installedApp, asZip: false)
         }
         
-        let importBackupAction = UIAction(title: NSLocalizedString("Import Backup", comment: ""), image: UIImage(systemName: "arrow.down.doc")) { (action) in
-            self.importBackup(for: installedApp)
+        let exportZipBackupAction = UIAction(title: NSLocalizedString("Export (ZIP)", comment: ""), image: UIImage(systemName: "doc.zipper") ?? UIImage(systemName: "archivebox")) { (action) in
+            self.exportBackup(for: installedApp, asZip: true)
         }
+        
+        let exportBackupMenu = UIMenu(title: NSLocalizedString("Export Backup", comment: ""), image: UIImage(systemName: "arrow.up.doc"), children: [exportRawBackupAction, exportZipBackupAction])
+        
+        let importRawBackupAction = UIAction(title: NSLocalizedString("Import (Raw)", comment: ""), image: UIImage(systemName: "folder")) { (action) in
+            self.importBackup(for: installedApp, isZip: false)
+        }
+        
+        let importZipBackupAction = UIAction(title: NSLocalizedString("Import (ZIP)", comment: ""), image: UIImage(systemName: "doc.zipper") ?? UIImage(systemName: "archivebox")) { (action) in
+            self.importBackup(for: installedApp, isZip: true)
+        }
+        
+        let importBackupMenu = UIMenu(title: NSLocalizedString("Import Backup", comment: ""), image: UIImage(systemName: "arrow.down.doc"), children: [importRawBackupAction, importZipBackupAction])
         
         let restoreBackupAction = UIAction(title: NSLocalizedString("Restore Backup", comment: "Restores the last or current backup of this app"), image: UIImage(systemName: "arrow.down.doc")) { (action) in
             self.restore(installedApp)
@@ -2140,7 +2166,7 @@ extension MyAppsViewController
             
             if backupExists
             {
-                backupSubmenuActions.append(exportBackupAction)
+                backupSubmenuActions.append(exportBackupMenu)
                 
                 if installedApp.isActive
                 {
@@ -2158,7 +2184,7 @@ extension MyAppsViewController
         if installedApp.isActive
         {
             // import backup into shared backups dir is allowed
-            backupSubmenuActions.append(importBackupAction)
+            backupSubmenuActions.append(importBackupMenu)
         }
         
         // have an option to restore the n-1 backup

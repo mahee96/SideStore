@@ -62,15 +62,13 @@ public final class CacheManager {
     // MARK: - Size Calculations & Formatting
     
     public func calculateSize(of url: URL) -> Int64 {
-        let fileManager = FileManager.default
-        var isDir: ObjCBool = false
-        guard fileManager.fileExists(atPath: url.path, isDirectory: &isDir) else { return 0 }
+        guard let resourceValues = try? url.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey]) else { return 0 }
         
-        if !isDir.boolValue {
-            return (try? fileManager.attributesOfItem(atPath: url.path)[.size] as? Int64) ?? 0
+        if resourceValues.isDirectory == true {
+            return getDirectorySize(at: url)
         }
         
-        return getDirectorySize(at: url)
+        return Int64(resourceValues.fileSize ?? 0)
     }
     
     public func calculateCacheSize() -> Int64 {

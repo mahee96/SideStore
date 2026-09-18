@@ -173,8 +173,7 @@ final class DownloadAppOperation: BasePipelineOperation<InstallAppOperationConte
             }
         }
         
-        var isDirectory: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDirectory) else {
+        guard let resourceValues = try? fileURL.resourceValues(forKeys: [.isDirectoryKey]) else {
             throw OperationError.missingAppBundle(reason: "File does not exist at '\(fileURL.lastPathComponent)'")
         }
         
@@ -182,7 +181,7 @@ final class DownloadAppOperation: BasePipelineOperation<InstallAppOperationConte
         
         let appBundleURL: URL
         
-        if isDirectory.boolValue {
+        if resourceValues.isDirectory == true {
             // Directory, so assuming this is .app bundle.
             guard ALTApplication(fileURL: fileURL) != nil else {
                 throw OperationError.missingAppBundle(reason: "Directory at '\(fileURL.lastPathComponent)' is not a valid bundle directory")
