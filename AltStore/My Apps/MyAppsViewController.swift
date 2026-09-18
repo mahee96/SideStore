@@ -1188,6 +1188,38 @@ private extension MyAppsViewController
         }
     }
     
+    func reinstallFromSource(_ storeApp: StoreApp)
+    {
+        Task { @MainActor in
+            let previousProgress = AppManager.shared.installationProgress(for: storeApp)
+            guard previousProgress == nil else {
+                previousProgress?.cancel()
+                return
+            }
+            
+            _ = AppManager.shared.install(.app(storeApp), presentingViewController: self) { [weak self] (result) in
+                Task { @MainActor in
+                    switch result
+                    {
+                    case .failure(let error) where error is CancellationError:
+                        debugLog("Reinstall from source cancelled.")
+                        self?.reconfigureVisibleCells()
+                    case .failure(let error):
+                        debugLog("Failed to reinstall from source: \(error)")
+                        if let self {
+                            ToastView(error: error, opensLog: true).show(in: self)
+                        }
+                        self?.reconfigureVisibleCells()
+                    case .success(let app):
+                        debugLog("Successfully reinstalled app from source: \(app.name)")
+                        self?.reconfigureVisibleCells()
+                    }
+                }
+            }
+            self.reconfigureVisibleCells()
+        }
+    }
+    
     func activate(_ installedApp: InstalledApp)
     {
         Task { @MainActor in
@@ -1992,9 +2024,23 @@ extension MyAppsViewController
             self.refresh(installedApp)
         }
         
-        let resignAction = UIAction(title: NSLocalizedString("Resign", comment: ""), image: UIImage(systemName: "signature")) { (action) in
+//        let resignAction = UIAction(title: NSLocalizedString("Resign", comment: ""), image: UIImage(systemName: "signature")) { (action) in
+//            self.resign(installedApp)
+//        }
+        
+        let reinstallFromCacheAction = UIAction(title: NSLocalizedString("From Cache", comment: ""), image: UIImage(systemName: "signature")) { (action) in
             self.resign(installedApp)
         }
+        
+        var reinstallSubmenuActions: [UIMenuElement] = [reinstallFromCacheAction]
+        if let storeApp = installedApp.storeApp
+        {
+            let reinstallFromSourceAction = UIAction(title: NSLocalizedString("From Source", comment: ""), image: UIImage(systemName: "icloud.and.arrow.down")) { [weak self] (action) in
+                self?.reinstallFromSource(storeApp)
+            }
+            reinstallSubmenuActions.append(reinstallFromSourceAction)
+        }
+        let reinstallMenu = UIMenu(title: NSLocalizedString("Reinstall", comment: ""), image: UIImage(systemName: "arrow.triangle.2.circlepath"), children: reinstallSubmenuActions)
         
         let activateAction = UIAction(title: NSLocalizedString("Activate", comment: ""), image: UIImage(systemName: "checkmark.circle")) { (action) in
             self.activate(installedApp)
@@ -2135,7 +2181,7 @@ extension MyAppsViewController
         
         if installedApp.resignedBundleIdentifier.isAltStoreAppID
         {
-            actions = [refreshAction, resignAction, profileMenu, changeIconMenu]
+            actions = [refreshAction, reinstallMenu, profileMenu, changeIconMenu]
         }
         else
         {
@@ -2143,13 +2189,13 @@ extension MyAppsViewController
             {
                 actions.append(openMenu)
                 actions.append(refreshAction)
-                actions.append(resignAction)
+                actions.append(reinstallMenu)
                 actions.append(profileMenu)
             }
             else
             {
                 actions.append(activateAction)
-                actions.append(resignAction)
+                actions.append(reinstallMenu)
                 actions.append(profileMenu)
             }
             
@@ -2202,7 +2248,7 @@ extension MyAppsViewController
         let orderedActions = [
             openMenu,
             refreshAction,
-            resignAction,
+            reinstallMenu,
             profileMenu,
             activateAction,
             jitAction,
