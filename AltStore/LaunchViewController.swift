@@ -129,19 +129,28 @@ final class LaunchViewController: UIViewController {
 
     @MainActor
     private func parseLaunchErrorDetails(_ error: Error, retryCallback: (() async -> Void)?) -> (title: String, message: String, extraActions: [UIAlertAction]) {
-        if let dbError = error as? DatabaseError, case .databaseDowngradeDetected(let reason) = dbError {
-            let resetAction = UIAlertAction(title: NSLocalizedString("Reset Database", comment: ""), style: .destructive) { [weak self] _ in
-                DatabaseManager.recreateDatabase()
-                Task {
-                    await MainActor.run { self?.retries = 0 }
-                    await retryCallback?()
+        if let dbError = error as? DatabaseError {
+            switch dbError {
+            case .databaseDowngradeDetected(let reason):
+                let resetAction = UIAlertAction(title: NSLocalizedString("Reset Database", comment: ""), style: .destructive) { [weak self] _ in
+                    DatabaseManager.recreateDatabase()
+                    Task {
+                        await MainActor.run { self?.retries = 0 }
+                        await retryCallback?()
+                    }
                 }
+                return (
+                    title: dbError.errorDescription ?? NSLocalizedString("Database Downgrade Detected", comment: ""),
+                    message: reason,
+                    extraActions: [resetAction]
+                )
+            case .missingAppGroup(let reason), .migrationFailed(let reason):
+                return (
+                    title: dbError.errorDescription ?? NSLocalizedString("Database Error", comment: ""),
+                    message: reason,
+                    extraActions: []
+                )
             }
-            return (
-                title: dbError.errorDescription ?? NSLocalizedString("Database Downgrade Detected", comment: ""),
-                message: reason,
-                extraActions: [resetAction]
-            )
         }
 
         let nsError = error as NSError

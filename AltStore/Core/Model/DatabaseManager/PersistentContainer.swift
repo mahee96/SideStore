@@ -11,6 +11,7 @@ import CoreData
 public enum DatabaseError: LocalizedError, CustomNSError, Sendable, Equatable {
     case databaseDowngradeDetected(reason: String)
     case migrationFailed(reason: String)
+    case missingAppGroup(reason: String)
     
     public var errorDescription: String? {
         switch self {
@@ -18,13 +19,16 @@ public enum DatabaseError: LocalizedError, CustomNSError, Sendable, Equatable {
             return NSLocalizedString("Database Downgrade Detected", comment: "")
         case .migrationFailed:
             return NSLocalizedString("Database Migration Failed", comment: "")
+        case .missingAppGroup:
+            return NSLocalizedString("App Group Container Inaccessible", comment: "")
         }
     }
     
     public var failureReason: String? {
         switch self {
         case .databaseDowngradeDetected(let reason),
-             .migrationFailed(let reason):
+             .migrationFailed(let reason),
+             .missingAppGroup(let reason):
             return reason
         }
     }
@@ -39,12 +43,19 @@ public enum DatabaseError: LocalizedError, CustomNSError, Sendable, Equatable {
             return -1001
         case .migrationFailed:
             return -1002
+        case .missingAppGroup:
+            return -1003
         }
     }
 }
 
 open class PersistentContainer: NSPersistentContainer, @unchecked Sendable {
     open var isMigrationRequired: Bool {
+        #if !os(tvOS)
+        guard FileManager.default.altstoreSharedDirectory != nil else {
+            return false
+        }
+        #endif
         for description in self.persistentStoreDescriptions {
             guard let url = description.url,
                   let metadata = try? NSPersistentStoreCoordinator.metadataForPersistentStore(ofType: description.type, at: url, options: description.options) else {
@@ -64,12 +75,18 @@ open class PersistentContainer: NSPersistentContainer, @unchecked Sendable {
     private let pendingSaveParentBackgroundContexts = NSHashTable<NSManagedObjectContext>.weakObjects()
     
     open override class func defaultDirectoryURL() -> URL {
-        guard let sharedDirectoryURL = FileManager.default.altstoreSharedDirectory else { return super.defaultDirectoryURL() }
+        #if os(tvOS)
+        return FileManager.default.cachesDirectory
+        #else
+        guard let sharedDirectoryURL = FileManager.default.altstoreSharedDirectory else {
+            return FileManager.default.temporaryDirectory.appendingPathComponent("MissingAppGroupContainer")
+        }
         
         let databaseDirectoryURL = sharedDirectoryURL.appendingPathComponent("Database")
         try? FileManager.default.createDirectory(at: databaseDirectoryURL, withIntermediateDirectories: true, attributes: nil)
 
         return databaseDirectoryURL
+        #endif
     }
     
     public init(name: String, bundle: Bundle) {
@@ -93,6 +110,14 @@ open class PersistentContainer: NSPersistentContainer, @unchecked Sendable {
     }
     
     open func loadPersistentStores() async throws {
+        #if !os(tvOS)
+        guard FileManager.default.altstoreSharedDirectory != nil else {
+            throw DatabaseError.missingAppGroup(
+                reason: NSLocalizedString("Unable to access the shared App Group container. Refusing to create or use a private sandbox fallback database.", comment: "")
+            )
+        }
+        #endif
+
         for description in self.persistentStoreDescriptions {
             guard let url = description.url,
                   let metadata = try? NSPersistentStoreCoordinator.metadataForPersistentStore(ofType: description.type, at: url, options: description.options) else {
