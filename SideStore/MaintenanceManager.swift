@@ -14,7 +14,7 @@ public final class MaintenanceManager {
     public static let shared = MaintenanceManager()
 
     // Increment this counter whenever you want to trigger another maintenance pass in future updates
-    public static let currentMaintenanceCounter = 5
+    public static let currentMaintenanceCounter = 6
 
     public static let maintenanceCounterFileName = ".maintenance_counter"
 
@@ -70,6 +70,9 @@ public final class MaintenanceManager {
                 await migrateLegacyCachedAppBundles()
             case 5:
                 await migrateLegacyCachedSigningCertificates()
+            case 6:
+                AnisetteConfigManager.shared.resetToDefaults()
+                SideSignConfigManager.shared.resetToDefaults()
             default:
                 break
             }
