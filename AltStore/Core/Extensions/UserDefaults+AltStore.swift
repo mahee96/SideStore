@@ -133,6 +133,10 @@ public extension UserDefaults
         get { self.integer(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
     }
+    @objc var isAutoRetryRemotePairingPortEnabled: Bool {
+        get { self.bool(forKey: #function) }
+        set { self.set(newValue, forKey: #function) }
+    }
     @objc var deviceProbeTimeoutOverride: Int {
         get { self.integer(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
@@ -487,6 +491,7 @@ public extension UserDefaults
             #keyPath(UserDefaults.useOnDeviceAnisette): true,
             #keyPath(UserDefaults.useLocalVPN): true,
             #keyPath(UserDefaults.acceptIPv6ConnectionConfig): false,
+            #keyPath(UserDefaults.isAutoRetryRemotePairingPortEnabled): true,
             #keyPath(UserDefaults.enableEMPforWireguard): false,
             #keyPath(UserDefaults.skipNonCopyableBackupFiles): true,
             

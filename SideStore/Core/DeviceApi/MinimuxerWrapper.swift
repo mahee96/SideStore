@@ -15,7 +15,7 @@ public var remotePairingPortCache: UInt16 = AppConstants.Minimuxer.remotePairing
 public var deviceProbeTimeoutCache: Int = AppConstants.Minimuxer.defaultTCPProbeTimeoutMs
 
 public func syncMinimuxerBackendFromUserDefaults() {
-    let raw = UserDefaults.standard.minimuxerGatewayBackend
+    let raw = UserDefaults.standard.minimuxerGatewayBackend ?? ""
     selectedGatewayBackendCache = GatewayBackend(rawValue: raw) ?? .idevice
 
     let overridePort = UserDefaults.standard.remotePairingPortOverride
@@ -47,6 +47,9 @@ var minimuxer: any MinimuxerFacade {
 }
 
 private func resolveDiscoveredRemotePairingPort() async -> UInt16? {
+    guard UserDefaults.standard.isAutoRetryRemotePairingPortEnabled else {
+        return nil
+    }
     let overridePort = UserDefaults.standard.remotePairingPortOverride
     if overridePort > 0 && overridePort <= 65535 {
         return UInt16(overridePort)
@@ -115,8 +118,10 @@ private func withRemotePairingRetry<T>(_ operation: () async throws -> T) async 
     do {
         return try await operation()
     } catch {
-        guard minimuxer.gateway.pairingFileType == .rppairing,
-              isRetriableRemotePairingError(error) else {
+        guard UserDefaults.standard.isAutoRetryRemotePairingPortEnabled,
+              minimuxer.gateway.pairingFileType == .rppairing,
+              isRetriableRemotePairingError(error) else 
+        {
             throw error
         }
 
@@ -155,6 +160,9 @@ func bindConnectionConfig() async {
         setOverrideTunnelPeerReachable: { value in Task { @MainActor in config.overrideTunnelPeerReachable = value } },
         getConnectionMode: { config.useLocalVPN ? .localVPN : .remoteServer },
         resolveServicePort: { failed in
+            guard UserDefaults.standard.isAutoRetryRemotePairingPortEnabled else {
+                return failed
+            }
             switch failed.protocolType {
                 case .rppairing:
                     if let discovered = await resolveDiscoveredRemotePairingPort() {

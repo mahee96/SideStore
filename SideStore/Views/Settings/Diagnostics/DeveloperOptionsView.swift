@@ -33,6 +33,7 @@ struct DeveloperOptionsView: View {
     @State private var recreateDatabaseOnNextStart: Bool = UserDefaults.standard.recreateDatabaseOnNextStart
     @State private var alwaysShowWireGuardConfig: Bool = UserDefaults.standard.alwaysShowWireGuardConfig
     @State private var acceptIPv6ConnectionConfig: Bool = UserDefaults.standard.acceptIPv6ConnectionConfig
+    @State private var isAutoRetryRemotePairingPortEnabled: Bool = UserDefaults.standard.isAutoRetryRemotePairingPortEnabled
     @State private var tcpProbeTimeoutText: String = ""
     
     @State private var isExportingDB: Bool = false
@@ -466,6 +467,16 @@ struct DeveloperOptionsView: View {
                             set: { newValue in
                                 acceptIPv6ConnectionConfig = newValue
                                 UserDefaults.standard.acceptIPv6ConnectionConfig = newValue
+                            }
+                        ))
+                        
+                        divider
+                        
+                        toggleRow(title: "Auto Retry RemotePairing Port", isOn: Binding(
+                            get: { isAutoRetryRemotePairingPortEnabled },
+                            set: { newValue in
+                                isAutoRetryRemotePairingPortEnabled = newValue
+                                UserDefaults.standard.isAutoRetryRemotePairingPortEnabled = newValue
                             }
                         ))
                     }
