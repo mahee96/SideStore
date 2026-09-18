@@ -129,6 +129,10 @@ public extension UserDefaults
         get { self.integer(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
     }
+    @objc var lastDiscoveredRemotePairingPort: Int {
+        get { self.integer(forKey: #function) }
+        set { self.set(newValue, forKey: #function) }
+    }
     @objc var deviceProbeTimeoutOverride: Int {
         get { self.integer(forKey: #function) }
         set { self.set(newValue, forKey: #function) }

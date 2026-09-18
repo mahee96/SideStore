@@ -22,7 +22,12 @@ public func syncMinimuxerBackendFromUserDefaults() {
     if overridePort > 0 && overridePort <= 65535 {
         remotePairingPortCache = UInt16(overridePort)
     } else {
-        remotePairingPortCache = AppConstants.Minimuxer.remotePairingPort
+        let lastDiscovered = UserDefaults.standard.lastDiscoveredRemotePairingPort
+        if lastDiscovered > 0 && lastDiscovered <= 65535 {
+            remotePairingPortCache = UInt16(lastDiscovered)
+        } else {
+            remotePairingPortCache = AppConstants.Minimuxer.remotePairingPort
+        }
     }
 
     let overrideTimeout = UserDefaults.standard.deviceProbeTimeoutOverride
@@ -51,6 +56,7 @@ private func resolveDiscoveredRemotePairingPort() async -> UInt16? {
         timeout: AppConstants.Bonjour.defaultDiscoveryTimeout
     ) {
         debugLog("[SideStore] Discovered RemotePairing port via Bonjour: \(resolved.port)")
+        UserDefaults.standard.lastDiscoveredRemotePairingPort = Int(resolved.port)
         return resolved.port
     }
     return nil
