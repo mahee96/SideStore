@@ -1188,6 +1188,41 @@ private extension MyAppsViewController
         }
     }
     
+    func reinstallFromCache(_ installedApp: InstalledApp)
+    {
+        InstallAppDialog.present(installedApp: installedApp, from: self) { [weak self] in
+            guard let self else { return }
+            Task { @MainActor in
+                let previousProgress = AppManager.shared.installationProgress(for: installedApp)
+                guard previousProgress == nil else {
+                    previousProgress?.cancel()
+                    return
+                }
+                
+                AppManager.shared.reinstall(installedApp, presentingViewController: self) { [weak self] (result) in
+                    Task { @MainActor in
+                        switch result
+                        {
+                        case .failure(let error) where error is CancellationError:
+                            debugLog("Reinstall from cache cancelled.")
+                            self?.reconfigureVisibleCells()
+                        case .failure(let error):
+                            debugLog("Failed to reinstall from cache: \(error)")
+                            if let self {
+                                ToastView(error: error, opensLog: true).show(in: self)
+                            }
+                            self?.reconfigureVisibleCells()
+                        case .success(let app):
+                            debugLog("Successfully reinstalled app from cache: \(app.name)")
+                            self?.reconfigureVisibleCells()
+                        }
+                    }
+                }
+                self.reconfigureVisibleCells()
+            }
+        }
+    }
+    
     func reinstallFromSource(_ storeApp: StoreApp)
     {
         InstallAppDialog.present(storeApp: storeApp, from: self) { [weak self] in
@@ -2041,12 +2076,12 @@ extension MyAppsViewController
             self.refresh(installedApp)
         }
         
-//        let resignAction = UIAction(title: NSLocalizedString("Resign", comment: ""), image: UIImage(systemName: "signature")) { (action) in
-//            self.resign(installedApp)
-//        }
+        let resignAction = UIAction(title: NSLocalizedString("Resign", comment: ""), image: UIImage(systemName: "signature")) { (action) in
+            self.resign(installedApp)
+        }
         
         let reinstallFromCacheAction = UIAction(title: NSLocalizedString("From Cache", comment: ""), image: UIImage(systemName: "signature")) { (action) in
-            self.resign(installedApp)
+            self.reinstallFromCache(installedApp)
         }
         
         var reinstallSubmenuActions: [UIMenuElement] = [reinstallFromCacheAction]
@@ -2210,7 +2245,7 @@ extension MyAppsViewController
         
         if installedApp.resignedBundleIdentifier.isAltStoreAppID
         {
-            actions = [refreshAction, reinstallMenu, profileMenu, changeIconMenu]
+            actions = [refreshAction, resignAction, reinstallMenu, profileMenu, changeIconMenu]
         }
         else
         {
@@ -2218,12 +2253,14 @@ extension MyAppsViewController
             {
                 actions.append(openMenu)
                 actions.append(refreshAction)
+                actions.append(resignAction)
                 actions.append(reinstallMenu)
                 actions.append(profileMenu)
             }
             else
             {
                 actions.append(activateAction)
+                actions.append(resignAction)
                 actions.append(reinstallMenu)
                 actions.append(profileMenu)
             }
@@ -2277,6 +2314,7 @@ extension MyAppsViewController
         let orderedActions = [
             openMenu,
             refreshAction,
+            resignAction,
             reinstallMenu,
             profileMenu,
             activateAction,

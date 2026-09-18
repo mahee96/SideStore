@@ -159,6 +159,21 @@ public enum InstallAppDialog {
             onCancel: onCancel
         )
     }
+
+    public static func present(
+        installedApp: InstalledApp,
+        from presentingViewController: UIViewController? = nil,
+        onConfirm: @escaping () -> Void,
+        onCancel: @escaping () -> Void = {}
+    ) {
+        let message = String(format: NSLocalizedString("Do you want to continue? This will reinstall \"%@\".", comment: ""), installedApp.name)
+        self.presentConfirmation(
+            message: message,
+            from: presentingViewController,
+            onConfirm: onConfirm,
+            onCancel: onCancel
+        )
+    }
     
     private static func presentConfirmation(
         message: String,
