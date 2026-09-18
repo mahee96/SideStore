@@ -56,7 +56,10 @@ private func resolveDiscoveredRemotePairingPort() async -> UInt16? {
     }
     if let resolved = await BonjourDiscoveryManager.resolveFirstService(
         ofType: AppConstants.Minimuxer.remotePairingDaemonServiceType,
-        timeout: AppConstants.Bonjour.defaultDiscoveryTimeout
+        timeout: AppConstants.Bonjour.defaultDiscoveryTimeout,
+        isPreferredCandidate: { res in
+            res.interfaces.contains { $0.name == "lo0" || $0.name.hasPrefix("lo") }
+        }
     ) {
         debugLog("[SideStore] Discovered RemotePairing port via Bonjour: \(resolved.port)")
         UserDefaults.standard.lastDiscoveredRemotePairingPort = Int(resolved.port)
