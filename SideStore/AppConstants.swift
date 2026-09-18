@@ -155,6 +155,8 @@ public enum AppConstants {
         public static let remotePairingDaemonServiceType        = MinimuxerConstants.remotePairingDaemonServiceType
         public static let remotePairingPairableHostServiceType  = MinimuxerConstants.remotePairingPairableHostServiceType
         public static let remotePairingManualPairingServiceType = MinimuxerConstants.remotePairingManualPairingServiceType
+        public static let defaultRPPairingFileName              = MinimuxerConstants.defaultRPPairingFileName
+        public static let rpPairingFileSuffix                   = MinimuxerConstants.rpPairingFileSuffix
         public static let vpnHandshakeTimeoutNs                 = MinimuxerConstants.vpnHandshakeTimeoutNs
     }
 

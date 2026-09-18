@@ -535,11 +535,12 @@ public final class WirelessPairWrapper {
     
     public func start(
         outPath: String,
+        resolveFileName: (@Sendable (String, String) -> String)? = nil,
         completion: @escaping (Result<MinimuxerPairedDevice, Error>) -> Void
     ) {
         debugLog("[WirelessPairWrapper] start(outPath: '\(outPath)')")
         #if !targetEnvironment(simulator)
-        minimuxer.wirelessPair.start(outPath: outPath) { result in
+        minimuxer.wirelessPair.start(outPath: outPath, resolveFileName: resolveFileName) { result in
             debugLog("[WirelessPairWrapper] start callback received: result=\(result)")
             switch result {
             case .success(let device):
@@ -563,6 +564,7 @@ public final class WirelessPairWrapper {
         hostName: String = AppConstants.Minimuxer.defaultHostName,
         hostModel: String = AppConstants.Minimuxer.defaultHostModel,
         outPath: String,
+        resolveFileName: (@Sendable (String, String) -> String)? = nil,
         completion: @escaping (Result<MinimuxerPairedDevice, Error>) -> Void
     ) {
         debugLog("[WirelessPairWrapper] trigger(targetIp: '\(targetIp)', targetPort: \(targetPort), hostName: '\(hostName)', hostModel: '\(hostModel)', outPath: '\(outPath)')")
@@ -572,7 +574,8 @@ public final class WirelessPairWrapper {
             targetPort: targetPort,
             hostName: hostName,
             hostModel: hostModel,
-            outPath: outPath
+            outPath: outPath,
+            resolveFileName: resolveFileName
         ) { result in
             debugLog("[WirelessPairWrapper] trigger callback received: result=\(result)")
             switch result {
