@@ -8,6 +8,41 @@
 
 import CoreData
 
+public enum DatabaseError: LocalizedError, CustomNSError, Sendable, Equatable {
+    case databaseDowngradeDetected(reason: String)
+    case migrationFailed(reason: String)
+    
+    public var errorDescription: String? {
+        switch self {
+        case .databaseDowngradeDetected:
+            return NSLocalizedString("Database Downgrade Detected", comment: "")
+        case .migrationFailed:
+            return NSLocalizedString("Database Migration Failed", comment: "")
+        }
+    }
+    
+    public var failureReason: String? {
+        switch self {
+        case .databaseDowngradeDetected(let reason),
+             .migrationFailed(let reason):
+            return reason
+        }
+    }
+    
+    public static var errorDomain: String {
+        return "io.sidestore.DatabaseError"
+    }
+    
+    public var errorCode: Int {
+        switch self {
+        case .databaseDowngradeDetected:
+            return -1001
+        case .migrationFailed:
+            return -1002
+        }
+    }
+}
+
 open class PersistentContainer: NSPersistentContainer, @unchecked Sendable {
     open var isMigrationRequired: Bool {
         for description in self.persistentStoreDescriptions {
@@ -64,8 +99,12 @@ open class PersistentContainer: NSPersistentContainer, @unchecked Sendable {
                 continue
             }
             
-            if !self.managedObjectModel.isConfiguration(withName: nil, compatibleWithStoreMetadata: metadata) && description.shouldMigrateStoreAutomatically {
-                try await self.progressivelyMigratePersistentStore(to: self.managedObjectModel, configuration: description.configuration)
+            if !self.managedObjectModel.isConfiguration(withName: nil, compatibleWithStoreMetadata: metadata) {
+                try self.validateMigrationCompatibility(metadata: metadata, configuration: description.configuration)
+                
+                if description.shouldMigrateStoreAutomatically {
+                    try await self.progressivelyMigratePersistentStore(to: self.managedObjectModel, configuration: description.configuration)
+                }
             }
         }
         
@@ -82,6 +121,20 @@ open class PersistentContainer: NSPersistentContainer, @unchecked Sendable {
         }
     }
 
+    private func validateMigrationCompatibility(metadata: [String: Any], configuration: String?) throws {
+        guard let sourceModel = NSManagedObjectModel.mergedModel(from: Bundle.allBundles, forStoreMetadata: metadata) else {
+            throw DatabaseError.databaseDowngradeDetected(
+                reason: NSLocalizedString("The database on disk was created with a newer version of SideStore. Downgrading the database schema is not supported. Please update SideStore or reset your database.", comment: "")
+            )
+        }
+        
+        var mappingModel: NSMappingModel?
+        guard self.progressiveMigrationManager(forSourceModel: sourceModel, destinationModel: self.managedObjectModel, configuration: configuration, mappingModel: &mappingModel) != nil, mappingModel != nil else {
+            throw DatabaseError.databaseDowngradeDetected(
+                reason: NSLocalizedString("No valid migration path exists to downgrade this database. Please update SideStore or reset your database.", comment: "")
+            )
+        }
+    }
     
     open override func newBackgroundContext() -> NSManagedObjectContext {
         let context = super.newBackgroundContext()
@@ -132,7 +185,7 @@ open class PersistentContainer: NSPersistentContainer, @unchecked Sendable {
     
     private func _progressivelyMigratePersistentStore(to model: NSManagedObjectModel, configuration: String?) throws {
         guard let description = self.persistentStoreDescriptions.first, let url = description.url else {
-            throw NSError(domain: "io.sidestore.PersistentContainer", code: -25, userInfo: [NSLocalizedDescriptionKey: "Unable to find a persistent store."])
+            throw DatabaseError.migrationFailed(reason: "Unable to find a persistent store.")
         }
         
         let sourceMetadata = try NSPersistentStoreCoordinator.metadataForPersistentStore(ofType: description.type, at: url, options: description.options)
@@ -142,12 +195,16 @@ open class PersistentContainer: NSPersistentContainer, @unchecked Sendable {
         }
         
         guard let sourceModel = NSManagedObjectModel.mergedModel(from: Bundle.allBundles, forStoreMetadata: sourceMetadata) else {
-            throw NSError(domain: "io.sidestore.PersistentContainer", code: -23, userInfo: [NSLocalizedDescriptionKey: "Unable to find any managed object models."])
+            throw DatabaseError.databaseDowngradeDetected(
+                reason: NSLocalizedString("The database on disk was created with a newer version of SideStore. Downgrading the database schema is not supported. Please update SideStore or reset your database.", comment: "")
+            )
         }
         
         var mappingModel: NSMappingModel?
         guard let migrationManager = self.progressiveMigrationManager(forSourceModel: sourceModel, destinationModel: model, configuration: configuration, mappingModel: &mappingModel), let finalMappingModel = mappingModel else {
-            throw NSError(domain: "io.sidestore.PersistentContainer", code: -24, userInfo: [NSLocalizedDescriptionKey: "Unable to find a valid mapping model."])
+            throw DatabaseError.migrationFailed(
+                reason: NSLocalizedString("Unable to find a valid migration path for the database.", comment: "")
+            )
         }
         
         let temporaryFilename = UUID().uuidString + "." + url.pathExtension
