@@ -16,7 +16,7 @@ public final class CacheManager {
     // MARK: - Directory Locations
     
     public var internalAppsDirectory: URL {
-        return InstalledApp.appsDirectoryURL
+        return InstalledApp.appsDirectoryURL.appendingPathComponent("Payloads")
     }
     
     public var resignedAppsDirectory: URL {
@@ -28,10 +28,24 @@ public final class CacheManager {
     
     public func fetchInternalApps() -> [URL] {
         let fileManager = FileManager.default
-        guard let urls = try? fileManager.contentsOfDirectory(at: internalAppsDirectory, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]) else {
+        guard fileManager.fileExists(atPath: internalAppsDirectory.path) else {
             return []
         }
-        return urls.filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false }
+        guard let shaDirectories = try? fileManager.contentsOfDirectory(
+            at: internalAppsDirectory,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            return []
+        }
+        
+        return shaDirectories.filter { url in
+            guard (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true else {
+                return false
+            }
+            let appURL = url.appendingPathComponent("App.app")
+            return fileManager.fileExists(atPath: appURL.path)
+        }
     }
     
     public func fetchResignedApps() -> [URL] {
