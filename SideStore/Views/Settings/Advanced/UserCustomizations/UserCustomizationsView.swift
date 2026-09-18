@@ -30,6 +30,7 @@ struct UserCustomizationsView: View {
     @State private var customizeAppExtensions: AppExtensionCustomization = UserDefaults.standard.customizeAppExtensions
     @State private var appImportSourceMode: AppImportSourceMode = UserDefaults.standard.appImportSourceMode
     @State private var isInstallConfirmationEnabled: Bool = UserDefaults.standard.isInstallConfirmationEnabled
+    @State private var isClearCustomizationsOnUninstallEnabled: Bool = UserDefaults.standard.isClearCustomizationsOnUninstallEnabled
     @State private var autoFixAppGroupIDs: Bool = UserDefaults.standard.autoFixAppGroupIDs
     @State private var preferResignedIPA: Bool = UserDefaults.standard.preferResignedIPA
     @State private var pendingPreferIPAOngoing: Bool = false
@@ -852,6 +853,20 @@ struct UserCustomizationsView: View {
                         set: { newValue in
                             isInstallConfirmationEnabled = newValue
                             UserDefaults.standard.isInstallConfirmationEnabled = newValue
+                        }
+                    )
+                )
+                
+                divider
+
+                toggleRow(
+                    title: "Clear Customizations on Uninstall",
+                    subtitle: "Reset assigned profiles, custom certificates, and metadata when an app is deleted",
+                    isOn: Binding(
+                        get: { isClearCustomizationsOnUninstallEnabled },
+                        set: { newValue in
+                            isClearCustomizationsOnUninstallEnabled = newValue
+                            UserDefaults.standard.isClearCustomizationsOnUninstallEnabled = newValue
                         }
                     )
                 )

@@ -96,6 +96,7 @@ final class AppManager: ObservableObject, @unchecked Sendable
                     let isDeclared = UTType(app.installedAppUTI)?.isDeclared ?? false
                     guard !isDeclared, !legacyApps.contains(app.bundleIdentifier) else { continue }
 
+                    CacheResignedMetadataOperation.clearCustomizations(for: app)
                     dbBackgroundContext.delete(app)
                     if var patched = UserDefaults.standard.patchedApps {
                         patched.removeAll { $0 == app.bundleIdentifier }
