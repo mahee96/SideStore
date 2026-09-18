@@ -223,6 +223,19 @@ public extension UserDefaults
         get { self.string(forKey: "customizeAppExtensions") }
         set { self.set(newValue, forKey: "customizeAppExtensions") }
     }
+    var appImportSourceMode: AppImportSourceMode {
+        get {
+            let mode = _appImportSourceMode.flatMap { AppImportSourceMode(rawValue: $0) } ?? .prompt
+            return mode
+        }
+        set {
+            _appImportSourceMode = newValue.rawValue
+        }
+    }
+    @objc(appImportSourceMode) private var _appImportSourceMode: String? {
+        get { self.string(forKey: "appImportSourceMode") }
+        set { self.set(newValue, forKey: "appImportSourceMode") }
+    }
     var autoFixAppGroupIDs: Bool {
         get {
             if self.object(forKey: "autoFixAppGroupIDs") != nil {
@@ -504,6 +517,7 @@ public extension UserDefaults
             #keyPath(UserDefaults.customizeAppIcon): false,
             #keyPath(UserDefaults.customizeProvisioningProfile): false,
             #keyPath(UserDefaults._customizeAppExtensions): AppExtensionCustomization.promptUser.rawValue,
+            #keyPath(UserDefaults._appImportSourceMode): AppImportSourceMode.prompt.rawValue,
             #keyPath(UserDefaults.preferResignedIPA): true,
             #keyPath(UserDefaults.isExportResignedAppEnabled): false,
             #keyPath(UserDefaults.isVerboseOperationsLoggingEnabled): false,

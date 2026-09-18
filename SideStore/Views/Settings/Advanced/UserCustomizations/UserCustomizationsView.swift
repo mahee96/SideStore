@@ -28,6 +28,7 @@ struct UserCustomizationsView: View {
     @State private var customizeAppIcon: Bool = UserDefaults.standard.customizeAppIcon
     @State private var customizeProvisioningProfile: Bool = UserDefaults.standard.customizeProvisioningProfile
     @State private var customizeAppExtensions: AppExtensionCustomization = UserDefaults.standard.customizeAppExtensions
+    @State private var appImportSourceMode: AppImportSourceMode = UserDefaults.standard.appImportSourceMode
     @State private var autoFixAppGroupIDs: Bool = UserDefaults.standard.autoFixAppGroupIDs
     @State private var preferResignedIPA: Bool = UserDefaults.standard.preferResignedIPA
     @State private var pendingPreferIPAOngoing: Bool = false
@@ -763,6 +764,16 @@ struct UserCustomizationsView: View {
         )
     }
 
+    private var appImportSourceModeBinding: Binding<AppImportSourceMode> {
+        Binding<AppImportSourceMode>(
+            get: { appImportSourceMode },
+            set: { newValue in
+                appImportSourceMode = newValue
+                UserDefaults.standard.appImportSourceMode = newValue
+            }
+        )
+    }
+
     @ViewBuilder
     private var generalSection: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -801,6 +812,25 @@ struct UserCustomizationsView: View {
                     Spacer()
                     Picker("", selection: customizeAppExtensionsBinding) {
                         ForEach(AppExtensionCustomization.allCases) { (option: AppExtensionCustomization) in
+                            Text(option.displayName).tag(option)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .tint(Color.white.opacity(0.7))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .frame(minHeight: 50)
+                
+                divider
+                
+                HStack {
+                    Text("Default Import Mode")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(.white)
+                    Spacer()
+                    Picker("", selection: appImportSourceModeBinding) {
+                        ForEach(AppImportSourceMode.allCases) { (option: AppImportSourceMode) in
                             Text(option.displayName).tag(option)
                         }
                     }

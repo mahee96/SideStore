@@ -8,44 +8,77 @@
 
 import UIKit
 
+public enum AppImportSourceMode: String, CaseIterable, Identifiable, Sendable {
+    case prompt = "prompt"
+    case files  = "files"
+    case url    = "url"
+
+    public var id: String { rawValue }
+
+    public var displayName: String {
+        switch self {
+        case .prompt:
+            return "Prompt User"
+        case .files:
+            #if !os(tvOS)
+            return "Files App"
+            #else
+            return "Web Upload"
+            #endif
+        case .url:
+            return "URL"
+        }
+    }
+}
+
 @MainActor
 public enum InstallAppDialog {
     
     public static func presentSourceSelection(
         from presentingVC: UIViewController,
         barButtonItem: UIBarButtonItem? = nil,
+        mode: AppImportSourceMode = UserDefaults.standard.appImportSourceMode,
         onChooseFiles: @escaping () -> Void,
         onConfirm: @escaping (URL) -> Void
     ) {
-        #if !os(tvOS)
-        let alertController = UIAlertController(
-            title: NSLocalizedString("Install App", comment: ""),
-            message: nil,
-            preferredStyle: .actionSheet
-        )
-        if let popover = alertController.popoverPresentationController {
-            popover.barButtonItem = barButtonItem
-        }
-        alertController.addAction(UIAlertAction(title: NSLocalizedString("Choose from Files", comment: ""), style: .default) { _ in
+        switch mode {
+        case .prompt:
+            #if !os(tvOS)
+            let alertController = UIAlertController(
+                title: NSLocalizedString("Install App", comment: ""),
+                message: nil,
+                preferredStyle: .actionSheet
+            )
+            if let popover = alertController.popoverPresentationController {
+                popover.barButtonItem = barButtonItem
+            }
+            alertController.addAction(UIAlertAction(title: NSLocalizedString("Choose from Files", comment: ""), style: .default) { _ in
+                onChooseFiles()
+            })
+            #else
+            let alertController = UIAlertController(
+                title: NSLocalizedString("Install App", comment: ""),
+                message: NSLocalizedString("Choose an installation method:", comment: ""),
+                preferredStyle: .alert
+            )
+            alertController.addAction(UIAlertAction(title: NSLocalizedString("Upload via Web", comment: ""), style: .default) { _ in
+                onChooseFiles()
+            })
+            #endif
+            
+            alertController.addAction(UIAlertAction(title: NSLocalizedString("Install from URL", comment: ""), style: .default) { _ in
+                self.presentURLInputDialog(from: presentingVC, onConfirm: onConfirm)
+            })
+            alertController.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel))
+            
+            presentingVC.present(alertController, animated: true)
+
+        case .files:
             onChooseFiles()
-        })
-        #else
-        let alertController = UIAlertController(
-            title: NSLocalizedString("Install App", comment: ""),
-            message: NSLocalizedString("Choose an installation method:", comment: ""),
-            preferredStyle: .alert
-        )
-        alertController.addAction(UIAlertAction(title: NSLocalizedString("Upload via Web", comment: ""), style: .default) { _ in
-            onChooseFiles()
-        })
-        #endif
-        
-        alertController.addAction(UIAlertAction(title: NSLocalizedString("Install from URL", comment: ""), style: .default) { _ in
+
+        case .url:
             self.presentURLInputDialog(from: presentingVC, onConfirm: onConfirm)
-        })
-        alertController.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel))
-        
-        presentingVC.present(alertController, animated: true)
+        }
     }
     
     private static func presentURLInputDialog(
