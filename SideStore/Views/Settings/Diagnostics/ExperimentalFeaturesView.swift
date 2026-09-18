@@ -56,22 +56,6 @@ struct ExperimentalFeaturesView: View {
                             .padding(.horizontal, 16)
                             .frame(height: 50)
                         }
-
-                        divider
-
-                        NavigationLink(destination: BonjourDiscoveryView()) {
-                            HStack {
-                                Text("Network Discovery")
-                                    .font(.system(size: 17, weight: .bold))
-                                    .foregroundColor(.white)
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(Color.white.opacity(0.4))
-                            }
-                            .padding(.horizontal, 16)
-                            .frame(height: 50)
-                        }
                     }
                     .background(Color.settingsRowBackground)
                     .cornerRadius(14)

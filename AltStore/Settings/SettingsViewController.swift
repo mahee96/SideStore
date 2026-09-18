@@ -80,11 +80,12 @@ extension SettingsViewController
         case resetPairingFile       // row 3 - Reset Pairing File
         case anisetteServers        // row 4 - Anisette Servers
         case connectionConfig       // row 5 - Connection Configuration
-        case developerServices      // row 6 - Developer Portal Services
-        case profileManagement      // row 7 - Profile Management
-        case certificateManagement  // row 8 - Certificate Management
-        case backupAndRestore       // row 9 - Backup & Restore
-        case userCustomizations     // row 10 - User Customizations
+        case networkDiscovery       // row 6 - Network Discovery
+        case developerServices      // row 7 - Developer Portal Services
+        case profileManagement      // row 8 - Profile Management
+        case certificateManagement  // row 9 - Certificate Management
+        case backupAndRestore       // row 10 - Backup & Restore
+        case userCustomizations     // row 11 - User Customizations
 
         static var allCases: [AdvancedSettingsRow] {
             var rows: [AdvancedSettingsRow] = [.sendFeedback, .refreshAttempts, .refreshSideJITServer, .resetPairingFile]
@@ -93,6 +94,7 @@ extension SettingsViewController
             }
             rows.append(contentsOf: [
                 .connectionConfig,
+                .networkDiscovery,
                 .developerServices,
                 .profileManagement,
                 .certificateManagement,
@@ -1332,6 +1334,13 @@ extension SettingsViewController
                 #endif
 
                 navigationController?.pushViewController(vc, animated: true)
+
+            case .networkDiscovery:
+                let discoveryView = BonjourDiscoveryView()
+                let vc = UIHostingController(rootView: discoveryView)
+                vc.view.backgroundColor = .settingsBackground
+                vc.title = NSLocalizedString("Network Discovery", comment: "")
+                self.prepare(for: UIStoryboardSegue(identifier: "diagnostics", source: self, destination: vc), sender: nil)
 
             case .developerServices:
                 let developerServicesView = DeveloperServicesView(presentingViewController: self)
