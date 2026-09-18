@@ -1190,33 +1190,36 @@ private extension MyAppsViewController
     
     func reinstallFromSource(_ storeApp: StoreApp)
     {
-        Task { @MainActor in
-            let previousProgress = AppManager.shared.installationProgress(for: storeApp)
-            guard previousProgress == nil else {
-                previousProgress?.cancel()
-                return
-            }
-            
-            _ = AppManager.shared.install(.app(storeApp), presentingViewController: self) { [weak self] (result) in
-                Task { @MainActor in
-                    switch result
-                    {
-                    case .failure(let error) where error is CancellationError:
-                        debugLog("Reinstall from source cancelled.")
-                        self?.reconfigureVisibleCells()
-                    case .failure(let error):
-                        debugLog("Failed to reinstall from source: \(error)")
-                        if let self {
-                            ToastView(error: error, opensLog: true).show(in: self)
+        InstallAppDialog.present(storeApp: storeApp, from: self) { [weak self] in
+            guard let self else { return }
+            Task { @MainActor in
+                let previousProgress = AppManager.shared.installationProgress(for: storeApp)
+                guard previousProgress == nil else {
+                    previousProgress?.cancel()
+                    return
+                }
+                
+                _ = AppManager.shared.install(.app(storeApp), presentingViewController: self) { [weak self] (result) in
+                    Task { @MainActor in
+                        switch result
+                        {
+                        case .failure(let error) where error is CancellationError:
+                            debugLog("Reinstall from source cancelled.")
+                            self?.reconfigureVisibleCells()
+                        case .failure(let error):
+                            debugLog("Failed to reinstall from source: \(error)")
+                            if let self {
+                                ToastView(error: error, opensLog: true).show(in: self)
+                            }
+                            self?.reconfigureVisibleCells()
+                        case .success(let app):
+                            debugLog("Successfully reinstalled app from source: \(app.name)")
+                            self?.reconfigureVisibleCells()
                         }
-                        self?.reconfigureVisibleCells()
-                    case .success(let app):
-                        debugLog("Successfully reinstalled app from source: \(app.name)")
-                        self?.reconfigureVisibleCells()
                     }
                 }
+                self.reconfigureVisibleCells()
             }
-            self.reconfigureVisibleCells()
         }
     }
     

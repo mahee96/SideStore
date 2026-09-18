@@ -129,6 +129,43 @@ public enum InstallAppDialog {
         onConfirm: @escaping () -> Void,
         onCancel: @escaping () -> Void = {}
     ) {
+        let message: String
+        if ipaURL.isFileURL {
+            let appName = ipaURL.deletingPathExtension().lastPathComponent
+            message = String(format: NSLocalizedString("Do you want to continue? This will install \"%@\".", comment: ""), appName)
+        } else {
+            message = String(format: NSLocalizedString("Do you want to continue? This will download and install from:\n%@", comment: ""), ipaURL.absoluteString)
+        }
+        
+        self.presentConfirmation(
+            message: message,
+            from: presentingViewController,
+            onConfirm: onConfirm,
+            onCancel: onCancel
+        )
+    }
+    
+    public static func present(
+        storeApp: StoreApp,
+        from presentingViewController: UIViewController? = nil,
+        onConfirm: @escaping () -> Void,
+        onCancel: @escaping () -> Void = {}
+    ) {
+        let message = String(format: NSLocalizedString("Do you want to continue? This will install \"%@\".", comment: ""), storeApp.name)
+        self.presentConfirmation(
+            message: message,
+            from: presentingViewController,
+            onConfirm: onConfirm,
+            onCancel: onCancel
+        )
+    }
+    
+    private static func presentConfirmation(
+        message: String,
+        from presentingViewController: UIViewController?,
+        onConfirm: @escaping () -> Void,
+        onCancel: @escaping () -> Void
+    ) {
         guard UserDefaults.standard.isInstallConfirmationEnabled else {
             onConfirm()
             return
@@ -140,30 +177,18 @@ public enum InstallAppDialog {
             return
         }
         
-        let message: String
-        if ipaURL.isFileURL {
-            let appName = ipaURL.deletingPathExtension().lastPathComponent
-            message = String(format: NSLocalizedString("Do you want to continue? This will install \"%@\".", comment: ""), appName)
-        } else {
-            message = String(format: NSLocalizedString("Do you want to continue? This will download and install from:\n%@", comment: ""), ipaURL.absoluteString)
-        }
-        
         let alert = UIAlertController(
             title: NSLocalizedString("Install App", comment: ""),
             message: message,
             preferredStyle: .alert
         )
         
-        let installAction = UIAlertAction(title: NSLocalizedString("Install", comment: ""), style: .default) { _ in
+        alert.addAction(UIAlertAction(title: NSLocalizedString("Install", comment: ""), style: .default) { _ in
             onConfirm()
-        }
-        
-        let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { _ in
+        })
+        alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { _ in
             onCancel()
-        }
-        
-        alert.addAction(installAction)
-        alert.addAction(cancelAction)
+        })
         
         presentingVC.present(alert, animated: true)
     }
