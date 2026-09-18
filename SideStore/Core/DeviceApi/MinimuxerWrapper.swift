@@ -85,14 +85,37 @@ private func resolveDiscoveredRemotePairingPortThrottled() async -> UInt16? {
     return await task.value
 }
 
+private func isRetriableRemotePairingError(_ error: Error) -> Bool {
+    if let minErr = error as? MinimuxerError {
+        switch minErr {
+        case .noDevice, .notReachable:
+            return true
+        default:
+            return false
+        }
+    }
+    if let opErr = error as? OperationError {
+        switch opErr {
+        case .noDevice, .notReachable, .unknownUDID:
+            return true
+        default:
+            return false
+        }
+    }
+    return true
+}
+
 private func withRemotePairingRetry<T>(_ operation: () async throws -> T) async throws -> T {
     do {
         return try await operation()
     } catch {
-        guard minimuxer.gateway.pairingFileType == .rppairing else { throw error }
+        guard minimuxer.gateway.pairingFileType == .rppairing,
+              isRetriableRemotePairingError(error) else {
+            throw error
+        }
 
         if let newPort = await resolveDiscoveredRemotePairingPortThrottled(), newPort != remotePairingPortCache {
-            debugLog("[SideStore] Operation failed, updating RemotePairing port from \(remotePairingPortCache) -> \(newPort) and retrying...")
+            debugLog("[SideStore] Operation failed with retriable error (\(error)), updating RemotePairing port from \(remotePairingPortCache) -> \(newPort) and retrying...")
             remotePairingPortCache = newPort
             _ = Minimuxer.shared(backend: selectedGatewayBackendCache, remotePairingPort: newPort)
             return try await operation()
@@ -124,7 +147,21 @@ func bindConnectionConfig() async {
         setRemoteReachable: { value in Task { @MainActor in config.remoteReachable = value } },
         getOverrideTunnelPeerIp: { config.overrideTunnelPeerIp },
         setOverrideTunnelPeerReachable: { value in Task { @MainActor in config.overrideTunnelPeerReachable = value } },
-        getConnectionMode: { config.useLocalVPN ? .localVPN : .remoteServer }
+        getConnectionMode: { config.useLocalVPN ? .localVPN : .remoteServer },
+        resolveServicePort: { failed in
+            switch failed.protocolType {
+                case .rppairing:
+                    if let discovered = await resolveDiscoveredRemotePairingPort() {
+                        remotePairingPortCache = discovered
+                        return ServicePort(protocolType: .rppairing, port: discovered)
+                    }
+                    return failed
+                case .lockdown:
+                    return ServicePort(protocolType: .lockdown, port: AppConstants.Minimuxer.lockdowndPort)
+                case .unknown:
+                    return failed
+            }
+        }
     )
     await minimuxer.core.bindConnectionConfig(configBinding)
 }
@@ -144,9 +181,12 @@ public func ensureMinimuxerReady() async throws {
             reason: "WireGuard VPN is not supported with Cellular Refresh because iOS pauses the WireGuard tunnel when cellular data is toggled off."
         )
     }
-    if !CellularRefreshManager.shared.isEnabled,
-       case .failure(let error) = await isMinimuxerReady() {
-        throw error.asOperationError
+    if !CellularRefreshManager.shared.isEnabled {
+        try await withRemotePairingRetry {
+            if case .failure(let error) = await isMinimuxerReady() {
+                throw error.asOperationError
+            }
+        }
     }
 }
 
@@ -304,14 +344,13 @@ func fetchUDID(forceLive: Bool = false) async throws -> String {
         return cachedUDID
     }
     debugLog("[SideStore] fetchUDID() invoked (forceLive: \(forceLive))")
-    let result = try await withRemotePairingRetry {
-        try await minimuxer.core.fetchUDID()
+    return try await withRemotePairingRetry {
+        guard let udid = try await minimuxer.core.fetchUDID(), !udid.isEmpty else {
+            throw OperationError.unknownUDID(reason: "Minimuxer returned empty UDID.")
+        }
+        Keychain.shared.deviceUDID = udid
+        return udid
     }
-    guard let udid = result, !udid.isEmpty else {
-        throw OperationError.unknownUDID(reason: "Minimuxer returned empty UDID.")
-    }
-    Keychain.shared.deviceUDID = udid
-    return udid
     #endif
 }
 
