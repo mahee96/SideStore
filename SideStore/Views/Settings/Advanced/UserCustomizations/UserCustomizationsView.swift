@@ -29,6 +29,7 @@ struct UserCustomizationsView: View {
     @State private var customizeProvisioningProfile: Bool = UserDefaults.standard.customizeProvisioningProfile
     @State private var customizeAppExtensions: AppExtensionCustomization = UserDefaults.standard.customizeAppExtensions
     @State private var appImportSourceMode: AppImportSourceMode = UserDefaults.standard.appImportSourceMode
+    @State private var isInstallConfirmationEnabled: Bool = UserDefaults.standard.isInstallConfirmationEnabled
     @State private var autoFixAppGroupIDs: Bool = UserDefaults.standard.autoFixAppGroupIDs
     @State private var preferResignedIPA: Bool = UserDefaults.standard.preferResignedIPA
     @State private var pendingPreferIPAOngoing: Bool = false
@@ -840,6 +841,20 @@ struct UserCustomizationsView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
                 .frame(minHeight: 50)
+                
+                divider
+
+                toggleRow(
+                    title: "Confirm App Installation",
+                    subtitle: "Prompt for confirmation before installing or importing an app",
+                    isOn: Binding(
+                        get: { isInstallConfirmationEnabled },
+                        set: { newValue in
+                            isInstallConfirmationEnabled = newValue
+                            UserDefaults.standard.isInstallConfirmationEnabled = newValue
+                        }
+                    )
+                )
                 
                 divider
                 

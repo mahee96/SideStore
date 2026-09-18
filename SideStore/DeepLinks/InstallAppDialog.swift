@@ -129,6 +129,11 @@ public enum InstallAppDialog {
         onConfirm: @escaping () -> Void,
         onCancel: @escaping () -> Void = {}
     ) {
+        guard UserDefaults.standard.isInstallConfirmationEnabled else {
+            onConfirm()
+            return
+        }
+        
         let rootVC = presentingViewController ?? UIApplication.shared.topViewController()
         guard let presentingVC = rootVC else {
             onCancel()

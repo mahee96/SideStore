@@ -137,6 +137,13 @@ public extension UserDefaults
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
     }
+    @objc var isInstallConfirmationEnabled: Bool {
+        get {
+            guard self.object(forKey: #function) != nil else { return true }
+            return self.bool(forKey: #function)
+        }
+        set { self.set(newValue, forKey: #function) }
+    }
     @objc var deviceProbeTimeoutOverride: Int {
         get { self.integer(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
@@ -518,6 +525,7 @@ public extension UserDefaults
             #keyPath(UserDefaults.customizeProvisioningProfile): false,
             #keyPath(UserDefaults._customizeAppExtensions): AppExtensionCustomization.promptUser.rawValue,
             #keyPath(UserDefaults._appImportSourceMode): AppImportSourceMode.prompt.rawValue,
+            #keyPath(UserDefaults.isInstallConfirmationEnabled): true,
             #keyPath(UserDefaults.preferResignedIPA): true,
             #keyPath(UserDefaults.isExportResignedAppEnabled): false,
             #keyPath(UserDefaults.isVerboseOperationsLoggingEnabled): false,
