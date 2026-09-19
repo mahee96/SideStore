@@ -185,7 +185,7 @@ struct PairingFileManagementView: View {
         return VStack(alignment: .leading, spacing: 0) {
             if isInstalled {
                 NavigationLink(destination: PairingFileDetailView(mode: proto)) {
-                    installedCardHeader(for: proto, fileName: fileURL.lastPathComponent, isValid: isValid)
+                    installedCardHeader(for: proto, isValid: isValid)
                 }
                 .contextMenu {
                     if isValid {
@@ -221,6 +221,8 @@ struct PairingFileManagementView: View {
                 divider
 
                 VStack(spacing: 0) {
+                    infoRow(label: "File Name", value: fileURL.lastPathComponent, isMonospaced: true)
+                    divider
                     if proto == .rppairing {
                         if let id = rp?.identifier, !id.isEmpty {
                             identifierRow(label: "Identifier", value: id, fieldKey: "rp_identifier")
@@ -261,7 +263,11 @@ struct PairingFileManagementView: View {
                 SwiftUI.Button {
                     promptImport(for: proto)
                 } label: {
-                    missingCardHeader(for: proto, fileName: fileURL.lastPathComponent)
+                    VStack(spacing: 0) {
+                        missingCardHeader(for: proto)
+                        divider
+                        infoRow(label: "File Name", value: fileURL.lastPathComponent, isMonospaced: true)
+                    }
                 }
                 .buttonStyle(.plain)
                 .contextMenu {
@@ -277,21 +283,15 @@ struct PairingFileManagementView: View {
         .cornerRadius(14)
     }
 
-    private func installedCardHeader(for proto: PairingProtocol, fileName: String, isValid: Bool) -> some View {
+    private func installedCardHeader(for proto: PairingProtocol, isValid: Bool) -> some View {
         HStack(spacing: 12) {
             Image(systemName: proto == .rppairing ? "bolt.horizontal.circle.fill" : "lock.shield.fill")
                 .font(.system(size: 22))
                 .foregroundColor(proto == .rppairing ? .cyan : .green)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(proto == .rppairing ? "Remote Pairing File" : "Lockdown Pairing File")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.white)
-
-                Text(fileName)
-                    .font(.system(size: 12, design: .monospaced))
-                    .foregroundColor(Color.white.opacity(0.5))
-            }
+            Text(proto == .rppairing ? "Remote Pairing File" : "Lockdown Pairing File")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(.white)
 
             Spacer()
 
@@ -331,21 +331,15 @@ struct PairingFileManagementView: View {
         .frame(height: 56)
     }
 
-    private func missingCardHeader(for proto: PairingProtocol, fileName: String) -> some View {
+    private func missingCardHeader(for proto: PairingProtocol) -> some View {
         HStack(spacing: 12) {
             Image(systemName: proto == .rppairing ? "bolt.horizontal.circle" : "lock.shield")
                 .font(.system(size: 22))
                 .foregroundColor(Color.white.opacity(0.3))
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(proto == .rppairing ? "Remote Pairing File" : "Lockdown Pairing File")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(Color.white.opacity(0.8))
-
-                Text(fileName)
-                    .font(.system(size: 12, design: .monospaced))
-                    .foregroundColor(Color.white.opacity(0.4))
-            }
+            Text(proto == .rppairing ? "Remote Pairing File" : "Lockdown Pairing File")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(Color.white.opacity(0.8))
 
             Spacer()
 
@@ -390,15 +384,17 @@ struct PairingFileManagementView: View {
         .buttonStyle(.plain)
     }
 
-    private func infoRow(label: String, value: String) -> some View {
+    private func infoRow(label: String, value: String, isMonospaced: Bool = false) -> some View {
         HStack {
             Text(label)
                 .font(.system(size: 14))
                 .foregroundColor(Color.white.opacity(0.6))
             Spacer()
             Text(value)
-                .font(.system(size: 13, weight: .medium))
+                .font(.system(size: 13, weight: .medium, design: isMonospaced ? .monospaced : .default))
                 .foregroundColor(Color.white.opacity(0.85))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
         .padding(.horizontal, 16)
         .frame(height: 40)
@@ -490,11 +486,11 @@ struct PairingFileManagementView: View {
     private func activeProtocolTagText(for proto: PairingProtocol) -> String {
         switch proto {
         case .lockdown:
-            return ".lockdown"
+            return "lockdown"
         case .rppairing:
-            return ".rppairing"
+            return "rppairing"
         case .unknown:
-            return ".unknown"
+            return "unknown"
         }
     }
 
