@@ -43,6 +43,9 @@ struct DeveloperOptionsView: View {
     @State private var showExportPasswordPrompt: Bool = false
     @State private var exportCertPassword: String = ""
     @State private var showOnboardingSheet: Bool = false
+    @State private var isDumpingProfiles: Bool = false
+    @State private var showDumpProfilesAlert: Bool = false
+    @State private var dumpProfilesAlertMessage: String = ""
     
     var body: some View {
         ScrollView {
@@ -541,6 +544,40 @@ struct DeveloperOptionsView: View {
                 #endif
                 
                 VStack(alignment: .leading, spacing: 8) {
+                    Text("PROVISIONING PROFILES")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.6))
+                        .padding(.horizontal, 16)
+
+                    VStack(spacing: 0) {
+                        SwiftUI.Button(action: {
+                            Task {
+                                await dumpProvisioningProfiles()
+                            }
+                        }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "arrow.down.doc")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.white)
+                                Text("Dump Provisioning Profiles")
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(.white)
+                                Spacer()
+                                if isDumpingProfiles {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                            .frame(height: 50)
+                        }
+                        .disabled(isDumpingProfiles)
+                    }
+                    .background(Color.settingsRowBackground)
+                    .cornerRadius(14)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
                     Text("ONBOARDING")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.6))
@@ -641,8 +678,28 @@ struct DeveloperOptionsView: View {
         } message: {
             Text("Do you want to clear all keychain items related to this SideStore instance?")
         }
+        .alert("Dump Profiles", isPresented: $showDumpProfilesAlert) {
+            SwiftUI.Button("OK", role: .cancel) {}
+        } message: {
+            Text(dumpProfilesAlertMessage)
+        }
         .onAppear {
             tcpProbeTimeoutText = String(minimuxerGetDeviceProbeTimeout())
+        }
+    }
+    
+    private func dumpProvisioningProfiles() async {
+        guard let docsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+        isDumpingProfiles = true
+        defer { isDumpingProfiles = false }
+        do {
+            let zipPath = try await safeDumpProfiles(docsURL.path)
+            let fileName = URL(fileURLWithPath: zipPath).lastPathComponent
+            dumpProfilesAlertMessage = "Profiles saved to:\n\(fileName)"
+            showDumpProfilesAlert = true
+        } catch {
+            dumpProfilesAlertMessage = "Failed to dump profiles:\n\(error.localizedDescription)"
+            showDumpProfilesAlert = true
         }
     }
     

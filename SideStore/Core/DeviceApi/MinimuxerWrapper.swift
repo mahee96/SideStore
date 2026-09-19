@@ -415,7 +415,7 @@ func safeAttachDebugger(_ pid: UInt32) async throws {
     try await attachDebugger(pid)
 }
 
-func dumpProfiles(_ docsPath: String) async throws -> String {
+func dumpProfiles(_ docsPath: String, mode: ProfileDumpMode = .zip) async throws -> String {
     defer { debugLog("[SideStore] dumpProfiles(docsPath) completed") }
     #if targetEnvironment(simulator)
     debugLog("[SideStore] dumpProfiles(docsPath) is no-op on simulator")
@@ -423,14 +423,14 @@ func dumpProfiles(_ docsPath: String) async throws -> String {
     #else
     debugLog("[SideStore] dumpProfiles(docsPath) invoked")
     return try await withRemotePairingRetry {
-        try await minimuxer.core.dumpProfiles(docsPath: docsPath)
+        try await minimuxer.core.dumpProfiles(docsPath: docsPath, mode: mode)
     }
     #endif
 }
 
-func safeDumpProfiles(_ docsPath: String) async throws -> String {
+func safeDumpProfiles(_ docsPath: String, mode: ProfileDumpMode = .zip) async throws -> String {
     try await ensureMinimuxerReady()
-    return try await dumpProfiles(docsPath)
+    return try await dumpProfiles(docsPath, mode: mode)
 }
 
 func minimuxerSetLogging(_ enabled: Bool) {
