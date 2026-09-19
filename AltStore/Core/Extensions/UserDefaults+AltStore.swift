@@ -291,6 +291,10 @@ public extension UserDefaults
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
     }
+    @objc var isMinimuxerBackendHotswapEnabled: Bool {
+        get { self.bool(forKey: #function) }
+        set { self.set(newValue, forKey: #function) }
+    }
     @objc var keepSigningCertsAfterLogout: Bool {
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
@@ -545,6 +549,7 @@ public extension UserDefaults
             #keyPath(UserDefaults.isSideStoreVerboseLoggingEnabled): false,
             #keyPath(UserDefaults.isAltSignVerboseLoggingEnabled): false,
             #keyPath(UserDefaults.isMinimuxerVerboseLoggingEnabled): false,
+            #keyPath(UserDefaults.isMinimuxerBackendHotswapEnabled): false,
             #keyPath(UserDefaults.isRotateLogsOnStartupEnabled): true,
             #keyPath(UserDefaults.recreateDatabaseOnNextStart): false,
             #keyPath(UserDefaults.isCellularRefreshEnabled): false,
