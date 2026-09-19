@@ -37,9 +37,7 @@ final class PairingViewController: NSObject {
         })
         #if !os(tvOS)
         alert.addAction(UIAlertAction(title: NSLocalizedString("Select File", comment: ""), style: .default) { _ in
-            var types = AppConstants.Pairing.supportedExtensions.compactMap { UTType(filenameExtension: $0) }
-            types.append(contentsOf: [.propertyList, .xml])
-            let picker = UIDocumentPickerViewController(forOpeningContentTypes: types)
+            let picker = UIDocumentPickerViewController(forOpeningContentTypes: PairingFileManager.supportedContentTypes)
             picker.delegate = self
             picker.shouldShowFileExtensions = true
             vc.present(picker, animated: true)

@@ -197,7 +197,7 @@ private struct PairingFileStep: View {
     @State private var isShowingFilePicker = false
     @State private var errorMessage: String? = nil
 
-    private let contentTypes: [UTType] = [.propertyList, .xml, UTType(filenameExtension: AppConstants.Pairing.fileExtension)].compactMap { $0 }
+    private let contentTypes: [UTType] = PairingFileManager.supportedContentTypes
 
     var body: some View {
         VStack(spacing: 24) {

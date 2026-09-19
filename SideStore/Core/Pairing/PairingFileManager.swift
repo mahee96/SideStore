@@ -7,11 +7,18 @@
 //
 
 import Foundation
+import UniformTypeIdentifiers
 import MinimuxerCommon
 
 final class PairingFileManager: NSObject {
     static let shared = PairingFileManager()
     static let legacyPairingFileName = AppConstants.Pairing.legacyPairingFileName
+
+    static var supportedContentTypes: [UTType] {
+        var types = AppConstants.Pairing.supportedExtensions.compactMap { UTType(filenameExtension: $0) }
+        types.append(contentsOf: [.propertyList, .xml])
+        return types
+    }
 
     nonisolated var pairingUDID: String? {
         guard let contents = fetchPairingFile() else {

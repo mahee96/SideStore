@@ -39,9 +39,7 @@ struct PairingFileManagementView: View {
     }
 
     private var allowedPairingTypes: [UTType] {
-        var types = AppConstants.Pairing.supportedExtensions.compactMap { UTType(filenameExtension: $0) }
-        types.append(contentsOf: [.propertyList, .xml])
-        return types
+        PairingFileManager.supportedContentTypes
     }
 
     var body: some View {
@@ -81,8 +79,7 @@ struct PairingFileManagementView: View {
         #if !os(tvOS)
         .fileImporter(
             isPresented: $showFileImporter,
-            allowedContentTypes: allowedPairingTypes,
-            allowsMultipleSelection: false
+            allowedContentTypes: allowedPairingTypes
         ) { result in
             handleImportResult(result)
         }
