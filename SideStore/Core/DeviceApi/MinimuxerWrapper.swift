@@ -36,14 +36,16 @@ public func syncMinimuxerBackendFromUserDefaults() {
     } else {
         deviceProbeTimeoutCache = AppConstants.Minimuxer.defaultTCPProbeTimeoutMs
     }
-}
 
-var minimuxer: any MinimuxerFacade {
-    Minimuxer.shared(
+    minimuxer.set(MinimuxerParams(
         backend: selectedGatewayBackendCache,
         remotePairingPort: remotePairingPortCache,
         deviceProbeTimeout: deviceProbeTimeoutCache
-    )
+    ))
+}
+
+var minimuxer: any MinimuxerFacade {
+    Minimuxer.shared
 }
 
 private func resolveDiscoveredRemotePairingPort() async -> UInt16? {
@@ -131,7 +133,7 @@ private func withRemotePairingRetry<T>(_ operation: () async throws -> T) async 
         if let newPort = await resolveDiscoveredRemotePairingPortThrottled(), newPort != remotePairingPortCache {
             debugLog("[SideStore] Operation failed with retriable error (\(error)), updating RemotePairing port from \(remotePairingPortCache) -> \(newPort) and retrying...")
             remotePairingPortCache = newPort
-            _ = Minimuxer.shared(backend: selectedGatewayBackendCache, remotePairingPort: newPort)
+            minimuxer.set(MinimuxerParams(remotePairingPort: newPort))
             return try await operation()
         }
         throw error
@@ -170,6 +172,7 @@ func bindConnectionConfig() async {
                 case .rppairing:
                     if let discovered = await resolveDiscoveredRemotePairingPort() {
                         remotePairingPortCache = discovered
+                        minimuxer.set(MinimuxerParams(remotePairingPort: discovered))
                         return ServicePort(protocolType: .rppairing, port: discovered)
                     }
                     return failed
@@ -451,7 +454,7 @@ public func minimuxerSetDeviceProbeTimeout(_ timeoutMs: Int) {
     deviceProbeTimeoutCache = timeoutMs
     UserDefaults.standard.deviceProbeTimeoutOverride = (timeoutMs == AppConstants.Minimuxer.defaultTCPProbeTimeoutMs) ? 0 : timeoutMs
     #if !targetEnvironment(simulator)
-    minimuxer.core.setDeviceProbeTimeout(timeoutMs)
+    minimuxer.set(MinimuxerParams(deviceProbeTimeout: timeoutMs))
     #endif
 }
 
@@ -554,7 +557,7 @@ public final class WirelessPairWrapper {
             }
         }
         #else
-        completion(.failure(OperationError.invalidPairingFile(reason: "Wireless pairing is not supported on simulator.")))
+        completion(.failure(OperationError.invalidParameters("Wireless pairing is not supported on simulator.")))
         #endif
     }
 
@@ -590,7 +593,7 @@ public final class WirelessPairWrapper {
             }
         }
         #else
-        completion(.failure(OperationError.invalidPairingFile(reason: "Wireless pairing is not supported on simulator.")))
+        completion(.failure(OperationError.invalidParameters("Wireless pairing is not supported on simulator.")))
         #endif
     }
     

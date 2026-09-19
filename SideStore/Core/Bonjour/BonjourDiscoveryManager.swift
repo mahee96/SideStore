@@ -696,7 +696,7 @@ final class BonjourDiscoveryManager: NSObject, ObservableObject, NetServiceDeleg
     
     static func localInterfaceAddresses(matchingInterfaces: [NWInterface]? = nil) -> [String] {
         let targetNames: Set<String>? = matchingInterfaces.map { Set($0.map { $0.name.lowercased() }) }
-        let interfaces = Minimuxer.shared().network.activeInterfaces
+        let interfaces = Minimuxer.shared.network.activeInterfaces
         
         var addresses: [String] = []
         for iface in interfaces {

@@ -490,7 +490,7 @@ private struct LocalDevVPNStep: View {
     }
 
     private func checkStatus() {
-        let interfaces = Minimuxer.shared().network.activeInterfaces
+        let interfaces = Minimuxer.shared.network.activeInterfaces
         let hasVpnTunnel = interfaces.contains { info in
             info.name.lowercased().hasPrefix("utun") && info.ip.hasPrefix("10.7.")
         }
@@ -502,7 +502,7 @@ private struct LocalDevVPNStep: View {
         }
 
         let targetIp = ConnectionConfig.shared.tunnelPeerIp ?? "10.7.0.1"
-        if !targetIp.isEmpty, Minimuxer.shared().core.testDeviceConnection(ifaddr: targetIp, timeout: 200) {
+        if !targetIp.isEmpty, Minimuxer.shared.core.testDeviceConnection(ifaddr: targetIp, timeout: 200) {
             isConnected = true
             errorMessage = nil
         } else {

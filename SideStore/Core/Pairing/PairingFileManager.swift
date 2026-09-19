@@ -134,7 +134,7 @@ extension PairingFileManager: UIDocumentPickerDelegate {
                     if let url = url {
                         continuation.resume(returning: url)
                     } else {
-                        continuation.resume(throwing: OperationError.invalidPairingFile(reason: "URL is nil"))
+                        continuation.resume(throwing: OperationError.cancelled)
                     }
                 }
             }
@@ -243,7 +243,7 @@ extension PairingFileManager {
                     if let url = url {
                         continuation.resume(returning: url)
                     } else {
-                        continuation.resume(throwing: OperationError.invalidPairingFile(reason: "URL is nil"))
+                        continuation.resume(throwing: OperationError.cancelled)
                     }
                 }
             }
