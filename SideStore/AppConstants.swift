@@ -165,7 +165,7 @@ public enum AppConstants {
         public static let supportedExtensions       = ["mobiledevicepairing", "mobiledevicepair" , "plist", "xml"]
         public static let legacyPairingFileName     = "ALTPairingFile.mobiledevicepairing"
         public static let lockdownPairingFileName   = "PairingFile_Lockdown.plist"
-        public static let remotePairingFileName     = "PairingFile_RemotePairing.plist"
+        public static let remotePairingFileName     = "PairingFile_RemoteRP.plist"
         public static let documentationURL          = AppConstants.URLs.pairingDocumentation
     }
 
