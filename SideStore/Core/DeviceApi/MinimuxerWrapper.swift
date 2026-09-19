@@ -365,7 +365,8 @@ func fetchUDID(forceLive: Bool = false) async throws -> String {
     }
     debugLog("[SideStore] fetchUDID() invoked (forceLive: \(forceLive))")
     return try await withRemotePairingRetry {
-        guard let udid = try await minimuxer.core.fetchUDID(), !udid.isEmpty else {
+        let udid = try await minimuxer.core.fetchUDID()
+        guard !udid.isEmpty else {
             throw OperationError.unknownUDID(reason: "Minimuxer returned empty UDID.")
         }
         Keychain.shared.deviceUDID = udid
