@@ -209,7 +209,10 @@ private extension MaintenanceManager {
 
         let legacyURL = fileManager.documentsDirectory.appendingPathComponent(AppConstants.Pairing.legacyPairingFileName)
         guard fileManager.fileExists(atPath: legacyURL.path),
-              let content = try? String(contentsOf: legacyURL), !content.isEmpty else { return }
+              let content = try? String(contentsOf: legacyURL), !content.isEmpty else 
+        { 
+            return 
+        }
 
         let (rp, lockdown) = PairingFileManager.parsePairingTypes(content: content)
         if rp != nil && !fileManager.fileExists(atPath: remoteURL.path) {

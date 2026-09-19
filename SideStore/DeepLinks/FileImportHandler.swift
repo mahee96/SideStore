@@ -83,14 +83,8 @@ public final class FileImportHandler {
     }
 
     private func handlePairingFileImport(fileURL: URL) -> Bool {
-        guard let data = try? Data(contentsOf: fileURL),
-              let contents = String(data: data, encoding: .utf8) else {
-            debugLog("[FileImportHandler] Unable to read pairing file at \(fileURL.path)")
-            return false
-        }
-
         do {
-            try PairingFileManager.shared.savePairingFile(contents: contents)
+            try PairingFileManager.shared.importPairingFile(from: fileURL)
             debugLog("[FileImportHandler] Successfully saved imported pairing file")
             if let topVC = UIApplication.shared.topViewController() {
                 let toast = ToastView(text: NSLocalizedString("Pairing File Imported Successfully!", comment: ""), detailText: nil)

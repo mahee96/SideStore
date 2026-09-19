@@ -86,22 +86,9 @@ extension PairingViewController: UIDocumentPickerDelegate {
     @MainActor
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
         let url = urls[0]
-        let isSecuredURL = url.startAccessingSecurityScopedResource() == true
-        defer {
-            if isSecuredURL {
-                url.stopAccessingSecurityScopedResource()
-            }
-        }
-
         do {
             debugLog("[PairingFile] User picked pairing file from: \(url.path)")
-            let data = try Data(contentsOf: url)
-            guard let pairingString = String(data: data, encoding: .utf8) else {
-                debugLog("[PairingFile] Unable to read pairing file")
-                self.completion?(nil)
-                return
-            }
-            try PairingFileManager.shared.savePairingFile(contents: pairingString)
+            try PairingFileManager.shared.importPairingFile(from: url)
             self.completion?(url)
         } catch {
             debugLog("[PairingFile] Error importing pairing file: \(error)")
@@ -145,9 +132,9 @@ extension PairingViewController {
 
             do {
                 try PairingFileManager.shared.savePairingFile(contents: pairingString)
-                let documentsPath = FileManager.default.documentsDirectory.appendingPathComponent(AppConstants.Pairing.legacyPairingFileName)
+                let activeURL = PairingFileManager.shared.pairingFileURL(for: PairingFileManager.shared.activeProtocol)
                 if let completion = self.completion {
-                    completion(documentsPath)
+                    completion(activeURL)
                 } else {
                     Task.detached {
                         do {

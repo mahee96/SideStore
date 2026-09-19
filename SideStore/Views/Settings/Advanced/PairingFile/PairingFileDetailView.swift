@@ -40,24 +40,24 @@ struct PairingFileDetailView: View {
         fileURL.lastPathComponent
     }
 
-    private var fileAttrs: [FileAttributeKey: Any] {
-        (try? FileManager.default.attributesOfItem(atPath: fileURL.path)) ?? [:]
+    private var fileMetadata: PairingFileMetadata {
+        PairingFileManager.shared.metadata(for: mode)
     }
 
     private var isInstalled: Bool {
-        FileManager.default.fileExists(atPath: fileURL.path) && !rawContent.isEmpty
+        fileMetadata.exists && !rawContent.isEmpty
     }
 
     private var fileSize: Int64 {
-        (fileAttrs[.size] as? NSNumber)?.int64Value ?? 0
+        fileMetadata.size
     }
 
     private var creationDate: Date? {
-        (fileAttrs[.creationDate] as? Date) ?? (fileAttrs[.modificationDate] as? Date)
+        fileMetadata.creationDate
     }
 
     private var modificationDate: Date? {
-        fileAttrs[.modificationDate] as? Date
+        fileMetadata.modificationDate
     }
 
     private var currentSHA256: String {

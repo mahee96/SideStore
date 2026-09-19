@@ -35,7 +35,7 @@ struct PairingFileManagementView: View {
     private let supportedProtocols: [PairingProtocol] = [.lockdown, .rppairing]
 
     private var currentActiveProtocol: PairingProtocol {
-        UserDefaults.standard.activePairingFileType
+        PairingFileManager.shared.activeProtocol
     }
 
     private var allowedPairingTypes: [UTType] {
@@ -170,17 +170,17 @@ struct PairingFileManagementView: View {
 
     private func pairingFileCard(for proto: PairingProtocol) -> some View {
         let fileURL = PairingFileManager.shared.pairingFileURL(for: proto)
-        let isInstalled = FileManager.default.fileExists(atPath: fileURL.path)
+        let metadata = PairingFileManager.shared.metadata(for: proto)
+        let isInstalled = metadata.exists
         let content = isInstalled ? PairingFileManager.shared.fetchPairingFile(for: proto) : nil
 
         let lockdown = (proto == .lockdown && content != nil) ? PairingFileManager.parsePairingTypes(content: content!).lockdown : nil
         let rp = (proto == .rppairing && content != nil) ? PairingFileManager.parsePairingTypes(content: content!).rp : nil
         let isValid = (proto == .lockdown) ? (lockdown != nil) : (rp != nil)
 
-        let attrs = isInstalled ? ((try? FileManager.default.attributesOfItem(atPath: fileURL.path)) ?? [:]) : [:]
-        let fileSize = (attrs[.size] as? NSNumber)?.int64Value ?? 0
-        let creationDate = (attrs[.creationDate] as? Date) ?? (attrs[.modificationDate] as? Date)
-        let modDate = attrs[.modificationDate] as? Date
+        let fileSize = metadata.size
+        let creationDate = metadata.creationDate
+        let modDate = metadata.modificationDate
 
         return VStack(alignment: .leading, spacing: 0) {
             if isInstalled {
@@ -191,7 +191,7 @@ struct PairingFileManagementView: View {
                     if isValid {
                         if proto != currentActiveProtocol {
                             SwiftUI.Button {
-                                UserDefaults.standard.activePairingFileType = proto
+                                PairingFileManager.shared.activeProtocol = proto
                                 refreshView()
                             } label: {
                                 Label("Activate", systemImage: "bolt.fill")
@@ -525,25 +525,8 @@ struct PairingFileManagementView: View {
     private func handleImportResult(_ result: Result<URL, Error>) {
         switch result {
         case .success(let url):
-            let isSecured = url.startAccessingSecurityScopedResource()
-            defer {
-                if isSecured {
-                    url.stopAccessingSecurityScopedResource()
-                }
-            }
-            guard let data = try? Data(contentsOf: url),
-                  let content = String(data: data, encoding: .utf8) else {
-                importErrorMessage = "Could not read the selected pairing file."
-                showingImportErrorAlert = true
-                return
-            }
             do {
-                if let target = targetImportMode {
-                    try PairingFileManager.shared.savePairingFile(contents: content, for: target)
-                    UserDefaults.standard.activePairingFileType = target
-                } else {
-                    try PairingFileManager.shared.savePairingFile(contents: content)
-                }
+                try PairingFileManager.shared.importPairingFile(from: url, for: targetImportMode)
                 refreshView()
             } catch {
                 importErrorMessage = "Failed to import pairing file: \(error.localizedDescription)"
@@ -557,30 +540,11 @@ struct PairingFileManagementView: View {
 
     private func deletePairingFile(for mode: PairingProtocol) {
         PairingFileManager.shared.deletePairingFile(for: mode)
-        if mode == UserDefaults.standard.activePairingFileType {
-            let other: PairingProtocol = (mode == .rppairing) ? .lockdown : .rppairing
-            let otherPath = PairingFileManager.shared.pairingFileURL(for: other).path
-            if FileManager.default.fileExists(atPath: otherPath) {
-                UserDefaults.standard.activePairingFileType = other
-            }
-        }
         refreshView()
     }
 
     private func resetAllPairingFiles() {
-        let fm = FileManager.default
-        let files = [
-            AppConstants.Pairing.legacyPairingFileName,
-            AppConstants.Pairing.lockdownPairingFileName,
-            AppConstants.Pairing.remotePairingFileName
-        ]
-        for name in files {
-            let path = fm.documentsDirectory.appendingPathComponent(name)
-            if fm.fileExists(atPath: path.path) {
-                try? fm.removeItem(at: path)
-            }
-        }
-        UserDefaults.standard.isPairingReset = true
+        PairingFileManager.shared.resetAllPairingFiles()
         refreshView()
         showingResetCompletedAlert = true
     }
