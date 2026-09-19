@@ -8,6 +8,7 @@
 
 import Foundation
 import Minimuxer
+import MinimuxerCommon
 
 public extension UserDefaults
 {
@@ -295,6 +296,26 @@ public extension UserDefaults
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
     }
+    @objc var pairingFileEditSuppressedSHAs: [String: Bool] {
+        get { (self.dictionary(forKey: #function) as? [String: Bool]) ?? [:] }
+        set { self.set(newValue, forKey: #function) }
+    }
+    func isPairingFileEditSuppressed(forHash sha: String) -> Bool {
+        pairingFileEditSuppressedSHAs[sha] ?? false
+    }
+    func setPairingFileEditSuppressed(_ suppressed: Bool, forHash sha: String) {
+        var map = pairingFileEditSuppressedSHAs
+        map[sha] = suppressed
+        pairingFileEditSuppressedSHAs = map
+    }
+    @objc var activePairingProtocol: String {
+        get { self.string(forKey: #function) ?? PairingProtocol.rppairing.rawValue }
+        set { self.set(newValue, forKey: #function) }
+    }
+    var activePairingFileType: PairingProtocol {
+        get { PairingProtocol(rawValue: activePairingProtocol) ?? .rppairing }
+        set { activePairingProtocol = newValue.rawValue }
+    }
     @objc var keepSigningCertsAfterLogout: Bool {
         get { self.bool(forKey: #function) }
         set { self.set(newValue, forKey: #function) }
@@ -550,6 +571,8 @@ public extension UserDefaults
             #keyPath(UserDefaults.isAltSignVerboseLoggingEnabled): false,
             #keyPath(UserDefaults.isMinimuxerVerboseLoggingEnabled): false,
             #keyPath(UserDefaults.isMinimuxerBackendHotswapEnabled): false,
+            #keyPath(UserDefaults.pairingFileEditSuppressedSHAs): [String: Bool](),
+            #keyPath(UserDefaults.activePairingProtocol): PairingProtocol.rppairing.rawValue,
             #keyPath(UserDefaults.isRotateLogsOnStartupEnabled): true,
             #keyPath(UserDefaults.recreateDatabaseOnNextStart): false,
             #keyPath(UserDefaults.isCellularRefreshEnabled): false,

@@ -8,6 +8,7 @@
 import Foundation
 import Network
 import Minimuxer
+import MinimuxerCommon
 import Combine
 
 public var selectedGatewayBackendCache: GatewayBackend = .idevice
@@ -15,7 +16,7 @@ public var remotePairingPortCache: UInt16 = AppConstants.Minimuxer.remotePairing
 public var deviceProbeTimeoutCache: Int = AppConstants.Minimuxer.defaultTCPProbeTimeoutMs
 
 public func syncMinimuxerBackendFromUserDefaults() {
-    let raw = UserDefaults.standard.minimuxerGatewayBackend ?? ""
+    let raw = UserDefaults.standard.minimuxerGatewayBackend
     selectedGatewayBackendCache = GatewayBackend(rawValue: raw) ?? .idevice
 
     let overridePort = UserDefaults.standard.remotePairingPortOverride
@@ -46,6 +47,10 @@ public func syncMinimuxerBackendFromUserDefaults() {
 
 var minimuxer: any MinimuxerFacade {
     Minimuxer.shared
+}
+
+var activePairingProtocol: PairingProtocol {
+    minimuxer.core.pairingFileType
 }
 
 private func resolveDiscoveredRemotePairingPort() async -> UInt16? {

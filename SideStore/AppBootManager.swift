@@ -63,7 +63,7 @@ public final class AppBootManager {
         var isRetry = false
         while true {
             guard let selectedURL = await withCheckedContinuation({ (continuation: CheckedContinuation<URL?, Never>) in
-                PairingFileManager.shared.presentPairingFileAlert(on: vc, isRetry: isRetry) { selectedURL in
+                PairingViewController.shared.presentPairingFileAlert(on: vc, isRetry: isRetry) { selectedURL in
                     debugLog("[AppBootManager] promptForPairing: alert completed with selectedURL: \(selectedURL?.path ?? "nil")")
                     continuation.resume(returning: selectedURL)
                 }
