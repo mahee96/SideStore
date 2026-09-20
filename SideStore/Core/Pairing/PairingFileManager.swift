@@ -50,9 +50,14 @@ final class PairingFileManager: NSObject {
     }
 
     nonisolated func hasPairingFile() -> Bool {
-        guard !UserDefaults.standard.isPairingReset,
-              let mode = persistedActiveProtocol else { return false }
-        return hasPairingFile(for: mode)
+        guard !UserDefaults.standard.isPairingReset else { return false }
+        if let target = preferredProtocol, hasPairingFile(for: target) {
+            return true
+        }
+        if let mode = persistedActiveProtocol, hasPairingFile(for: mode) {
+            return true
+        }
+        return false
     }
 
     nonisolated func metadata(for mode: PairingProtocol) -> PairingFileMetadata {
@@ -82,8 +87,9 @@ final class PairingFileManager: NSObject {
 
     nonisolated func fetchPairingFile(preferred: PairingProtocol? = nil) -> String? {
         guard !UserDefaults.standard.isPairingReset else { return nil }
-        if let preferred {
-            return fetchPairingFile(for: preferred)
+        let targetPreferred = preferred ?? preferredProtocol
+        if let targetPreferred, let contents = fetchPairingFile(for: targetPreferred) {
+            return contents
         }
         if let persisted = persistedActiveProtocol {
             return fetchPairingFile(for: persisted)
@@ -110,7 +116,7 @@ final class PairingFileManager: NSObject {
         return parsed
     }
 
-    func importPairingFile(from url: URL, preferred: PairingProtocol? = nil) throws {
+    func inspectPairingFile(from url: URL) throws -> (content: String, file: any PairingFile) {
         let isSecured = url.startAccessingSecurityScopedResource()
         defer {
             if isSecured {
@@ -121,6 +127,12 @@ final class PairingFileManager: NSObject {
         guard let content = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) else {
             throw CocoaError(.fileReadInapplicableStringEncoding)
         }
+        let parsed = try parse(content: content, preferred: nil)
+        return (content, parsed)
+    }
+
+    func importPairingFile(from url: URL, preferred: PairingProtocol? = nil) throws {
+        let (content, _) = try inspectPairingFile(from: url)
         let parsed = try savePairingFile(contents: content, preferred: preferred)
         persistedActiveProtocol = parsed.mode
     }
@@ -131,9 +143,6 @@ final class PairingFileManager: NSObject {
         if fm.fileExists(atPath: fileURL.path) {
             try? fm.removeItem(at: fileURL)
             debugLog("[PairingFile] Deleted \(mode.rawValue) pairing file: \(fileURL.path)")
-        }
-        if mode == preferredProtocol {
-            preferredProtocol = nil
         }
         if mode == persistedActiveProtocol {
             persistedActiveProtocol = nil
@@ -154,7 +163,6 @@ final class PairingFileManager: NSObject {
             }
         }
         UserDefaults.standard.isPairingReset = true
-        preferredProtocol = nil
         persistedActiveProtocol = nil
         debugLog("[PairingFile] Reset all pairing files.")
     }

@@ -162,6 +162,15 @@ struct PairingFileManagementView: View {
                 }
                 .padding(.horizontal, 16)
                 .frame(height: 50)
+                .contextMenu {
+                    if viewModel.preferredProtocol != nil {
+                        SwiftUI.Button(role: .destructive) {
+                            viewModel.clearPreferred()
+                        } label: {
+                            Label("Clear Preferred Protocol", systemImage: "star.slash")
+                        }
+                    }
+                }
             }
             .background(Color.settingsRowBackground)
             .cornerRadius(14)
@@ -221,18 +230,17 @@ struct PairingFileManagementView: View {
                             } label: {
                                 Label("Set as Preferred", systemImage: "star.fill")
                             }
+                        } else {
+                            SwiftUI.Button {
+                                viewModel.clearPreferred()
+                            } label: {
+                                Label("Remove as Preferred", systemImage: "star.slash")
+                            }
                         }
 
                         if proto == viewModel.activeProtocol {
                             SwiftUI.Button { } label: {
                                 Label("Currently Active", systemImage: "checkmark.circle.fill")
-                            }
-                            .disabled(true)
-                        }
-
-                        if proto == viewModel.preferredProtocol {
-                            SwiftUI.Button { } label: {
-                                Label("Currently Preferred", systemImage: "star.leadinghalf.filled")
                             }
                             .disabled(true)
                         }
