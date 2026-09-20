@@ -50,8 +50,9 @@ final class PairingFileManager: NSObject {
     }
 
     nonisolated func hasPairingFile() -> Bool {
-        guard !UserDefaults.standard.isPairingReset else { return false }
-        return hasPairingFile(for: UserDefaults.standard.activePairingFileType)
+        guard !UserDefaults.standard.isPairingReset,
+              let mode = persistedActiveProtocol else { return false }
+        return hasPairingFile(for: mode)
     }
 
     nonisolated func metadata(for mode: PairingProtocol) -> PairingFileMetadata {
@@ -79,52 +80,32 @@ final class PairingFileManager: NSObject {
         return nil
     }
 
-    nonisolated func fetchPairingFile() -> String? {
+    nonisolated func fetchPairingFile(preferred: PairingProtocol? = nil) -> String? {
         guard !UserDefaults.standard.isPairingReset else { return nil }
-        let activeType = UserDefaults.standard.activePairingFileType
-        if let activeContent = fetchPairingFile(for: activeType), !activeContent.isEmpty 
-        {
-            return activeContent
+        if let preferred {
+            return fetchPairingFile(for: preferred)
+        }
+        if let persisted = persistedActiveProtocol {
+            return fetchPairingFile(for: persisted)
         }
         return nil
     }
 
-    nonisolated static func parsePairingTypes(content: String) -> (rp: RPPairingFile?, lockdown: LockdownPairingFile?) {
-        guard let data = content.data(using: .utf8),
-              let rawDict = (try? PropertyListSerialization.propertyList(from: data, options: [], format: nil)) as? [String: Any] else {
-            return (nil, nil)
-        }
-        let plist = ConcurrencyUtils.toSendableDictionary(rawDict)
-        let rp = try? RPPairingFile(content: content, plist: plist, data: data)
-        let lockdown = try? LockdownPairingFile(content: content, plist: plist, data: data)
-        return (rp, lockdown)
-    }
-
-    func savePairingFile(contents: String) throws {
-        let (rp, lockdown) = Self.parsePairingTypes(content: contents)
-        if rp != nil {
-            try contents.write(to: pairingFileURL(for: .rppairing), atomically: true, encoding: .utf8)
-        }
-        if lockdown != nil {
-            try contents.write(to: pairingFileURL(for: .lockdown), atomically: true, encoding: .utf8)
-        }
-
-        debugLog("[PairingFile] Successfully saved pairing file(s)")
-        UserDefaults.standard.isPairingReset = false
-    }
-
-    func savePairingFile(contents: String, for mode: PairingProtocol) throws {
-        let fileURL = pairingFileURL(for: mode)
+    @discardableResult
+    func savePairingFile(contents: String, preferred: PairingProtocol? = nil) throws -> any PairingFile {
+        let parsed = try PairingFileParser.parse(content: contents, preferred: preferred)
+        let destinationURL = pairingFileURL(for: parsed.mode)
         let fm = FileManager.default
-        if fm.fileExists(atPath: fileURL.path) {
-            try? fm.removeItem(at: fileURL)
+        if fm.fileExists(atPath: destinationURL.path) {
+            try? fm.removeItem(at: destinationURL)
         }
-        try contents.write(to: fileURL, atomically: true, encoding: .utf8)
-        debugLog("[PairingFile] Saved \(mode.rawValue) pairing file to: \(fileURL.path)")
+        try contents.write(to: destinationURL, atomically: true, encoding: .utf8)
+        debugLog("[PairingFile] Saved \(parsed.mode.rawValue) pairing file to: \(destinationURL.path)")
         UserDefaults.standard.isPairingReset = false
+        return parsed
     }
 
-    func importPairingFile(from url: URL, for mode: PairingProtocol? = nil) throws {
+    func importPairingFile(from url: URL, preferred: PairingProtocol? = nil) throws {
         let isSecured = url.startAccessingSecurityScopedResource()
         defer {
             if isSecured {
@@ -135,12 +116,8 @@ final class PairingFileManager: NSObject {
         guard let content = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) else {
             throw CocoaError(.fileReadInapplicableStringEncoding)
         }
-        if let mode = mode {
-            try savePairingFile(contents: content, for: mode)
-            activeProtocol = mode
-        } else {
-            try savePairingFile(contents: content)
-        }
+        let parsed = try savePairingFile(contents: content, preferred: preferred)
+        persistedActiveProtocol = parsed.mode
     }
 
     func deletePairingFile(for mode: PairingProtocol) {
@@ -150,11 +127,11 @@ final class PairingFileManager: NSObject {
             try? fm.removeItem(at: fileURL)
             debugLog("[PairingFile] Deleted \(mode.rawValue) pairing file: \(fileURL.path)")
         }
-        if mode == activeProtocol {
-            let other: PairingProtocol = (mode == .rppairing) ? .lockdown : .rppairing
-            if hasPairingFile(for: other) {
-                activeProtocol = other
-            }
+        if mode == preferredProtocol {
+            preferredProtocol = nil
+        }
+        if mode == persistedActiveProtocol {
+            persistedActiveProtocol = nil
         }
     }
 
@@ -172,6 +149,8 @@ final class PairingFileManager: NSObject {
             }
         }
         UserDefaults.standard.isPairingReset = true
+        preferredProtocol = nil
+        persistedActiveProtocol = nil
         debugLog("[PairingFile] Reset all pairing files.")
     }
 }
