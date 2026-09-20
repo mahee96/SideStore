@@ -255,7 +255,7 @@ extension PairingViewController {
 }
 #endif
 
-private extension UIAlertController {
+extension UIAlertController {
     func setMarkdownMessage(_ markdown: String) {
         let plainText = markdown
             .replacingOccurrences(of: "***", with: "")
@@ -271,13 +271,31 @@ private extension UIAlertController {
         paragraphStyle.lineSpacing = 3
 
         let baseFont = UIFont.preferredFont(forTextStyle: .footnote)
-        let baseAttributes: [NSAttributedString.Key: Any] = [
-            .font: baseFont,
-            .foregroundColor: UIColor.label,
-            .paragraphStyle: paragraphStyle
-        ]
+        let boldDescriptor = baseFont.fontDescriptor.withSymbolicTraits(.traitBold) ?? baseFont.fontDescriptor
+        let boldFont = UIFont(descriptor: boldDescriptor, size: baseFont.pointSize)
 
-        let attributedMessage = NSAttributedString(markdownRepresentation: markdown, attributes: baseAttributes)
-        self.setValue(attributedMessage, forKey: "attributedMessage")
+        if let attr = try? AttributedString(markdown: markdown, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
+            let mutable = NSMutableAttributedString(attr)
+            mutable.enumerateAttribute(.font, in: NSRange(location: 0, length: mutable.length), options: []) { value, range, _ in
+                if let font = value as? UIFont, font.fontDescriptor.symbolicTraits.contains(.traitBold) {
+                    mutable.addAttribute(.font, value: boldFont, range: range)
+                } else {
+                    mutable.addAttribute(.font, value: baseFont, range: range)
+                }
+            }
+            mutable.addAttributes([
+                .foregroundColor: UIColor.label,
+                .paragraphStyle: paragraphStyle
+            ], range: NSRange(location: 0, length: mutable.length))
+            self.setValue(mutable, forKey: "attributedMessage")
+        } else {
+            let baseAttributes: [NSAttributedString.Key: Any] = [
+                .font: baseFont,
+                .foregroundColor: UIColor.label,
+                .paragraphStyle: paragraphStyle
+            ]
+            let attributedMessage = NSAttributedString(string: plainText, attributes: baseAttributes)
+            self.setValue(attributedMessage, forKey: "attributedMessage")
+        }
     }
 }

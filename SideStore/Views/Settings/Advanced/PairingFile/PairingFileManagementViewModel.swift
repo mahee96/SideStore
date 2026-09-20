@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import UIKit
 import SwiftUI
 import Combine
 import UniformTypeIdentifiers
@@ -19,7 +20,6 @@ public final class PairingFileManagementViewModel: ObservableObject {
         case resetConfirmation
         case resetCompleted
         case importError(String)
-        case protocolMismatch(saved: PairingProtocol, provided: PairingProtocol, url: URL)
 
         public var id: String {
             switch self {
@@ -27,7 +27,6 @@ public final class PairingFileManagementViewModel: ObservableObject {
             case .resetConfirmation: return "reset"
             case .resetCompleted: return "resetCompleted"
             case .importError(let msg): return "importError_\(msg)"
-            case .protocolMismatch(let saved, let provided, _): return "mismatch_\(saved.rawValue)_\(provided.rawValue)"
             }
         }
     }
@@ -92,7 +91,7 @@ public final class PairingFileManagementViewModel: ObservableObject {
 
             let savedPref = preferredProtocol ?? targetImportMode
             if let saved = savedPref, parsed.mode != saved {
-                activeAlert = .protocolMismatch(saved: saved, provided: parsed.mode, url: url)
+                presentProtocolMismatchAlert(saved: saved, provided: parsed.mode, url: url)
                 return
             }
 
@@ -117,6 +116,62 @@ public final class PairingFileManagementViewModel: ObservableObject {
         } catch {
             activeAlert = .importError("Failed to import pairing file: \(error.localizedDescription)")
         }
+    }
+
+    public func importOnly(url: URL, mode: PairingProtocol) {
+        do {
+            try PairingFileManager.shared.importPairingFile(from: url, preferred: mode)
+            targetImportMode = nil
+            refresh()
+        } catch {
+            activeAlert = .importError("Failed to import pairing file: \(error.localizedDescription)")
+        }
+    }
+
+    @MainActor
+    public func presentProtocolMismatchAlert(
+        saved: PairingProtocol,
+        provided: PairingProtocol,
+        url: URL
+    ) {
+        guard let topVC = UIApplication.shared.topViewController() else { return }
+
+        let title = NSLocalizedString("Protocol Mismatch", comment: "")
+        let message = String(
+            format: NSLocalizedString(
+                "Your saved preference is **%@**, but the provided pairing file is **%@**.\n\nDo you want to switch and accept **%@** as your preferred protocol, or load it without changing your preference?",
+                comment: ""
+            ),
+            saved.rawValue,
+            provided.rawValue,
+            provided.rawValue
+        )
+
+        let alert = UIAlertController(title: title, message: nil, preferredStyle: .alert)
+        alert.setMarkdownMessage(message)
+
+        alert.addAction(UIAlertAction(
+            title: String(format: NSLocalizedString("Switch to %@", comment: ""), provided.rawValue),
+            style: .default
+        ) { [weak self] _ in
+            self?.confirmProtocolMismatch(url: url, newProtocol: provided)
+        })
+
+        alert.addAction(UIAlertAction(
+            title: NSLocalizedString("Load Only", comment: ""),
+            style: .default
+        ) { [weak self] _ in
+            self?.importOnly(url: url, mode: provided)
+        })
+
+        alert.addAction(UIAlertAction(
+            title: NSLocalizedString("Cancel", comment: ""),
+            style: .cancel
+        ) { [weak self] _ in
+            self?.targetImportMode = nil
+        })
+
+        topVC.present(alert, animated: true)
     }
 
     public func activate(proto: PairingProtocol) async {

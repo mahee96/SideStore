@@ -88,17 +88,6 @@ struct PairingFileManagementView: View {
                     message: Text(LocalizedStringKey(msg)),
                     dismissButton: .default(Text("OK"))
                 )
-            case .protocolMismatch(let saved, let provided, let url):
-                return Alert(
-                    title: Text("Protocol Mismatch"),
-                    message: Text(LocalizedStringKey("Your saved preference is **\(saved.rawValue)**, but the provided pairing file is **\(provided.rawValue)**.\n\nDo you want to switch and accept **\(provided.rawValue)** as your preferred protocol?")),
-                    primaryButton: .default(Text("Switch to \(provided.rawValue)")) {
-                        viewModel.confirmProtocolMismatch(url: url, newProtocol: provided)
-                    },
-                    secondaryButton: .cancel(Text("Cancel")) {
-                        viewModel.targetImportMode = nil
-                    }
-                )
             }
         }
     }
