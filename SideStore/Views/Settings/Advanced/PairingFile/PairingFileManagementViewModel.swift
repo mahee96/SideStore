@@ -19,6 +19,7 @@ public final class PairingFileManagementViewModel: ObservableObject {
         case resetConfirmation
         case resetCompleted
         case importError(String)
+        case protocolMismatch(saved: PairingProtocol, provided: PairingProtocol, url: URL)
 
         public var id: String {
             switch self {
@@ -26,6 +27,7 @@ public final class PairingFileManagementViewModel: ObservableObject {
             case .resetConfirmation: return "reset"
             case .resetCompleted: return "resetCompleted"
             case .importError(let msg): return "importError_\(msg)"
+            case .protocolMismatch(let saved, let provided, _): return "mismatch_\(saved.rawValue)_\(provided.rawValue)"
             }
         }
     }
@@ -77,8 +79,25 @@ public final class PairingFileManagementViewModel: ObservableObject {
     public func handleImportResult(_ result: Result<URL, Error>) {
         switch result {
         case .success(let url):
+            guard let (_, parsed) = try? PairingFileManager.shared.inspectPairingFile(from: url) else {
+                do {
+                    try PairingFileManager.shared.importPairingFile(from: url, preferred: targetImportMode)
+                    targetImportMode = nil
+                    refresh()
+                } catch {
+                    activeAlert = .importError("Failed to import pairing file: \(error.localizedDescription)")
+                }
+                return
+            }
+
+            let savedPref = preferredProtocol ?? targetImportMode
+            if let saved = savedPref, parsed.mode != saved {
+                activeAlert = .protocolMismatch(saved: saved, provided: parsed.mode, url: url)
+                return
+            }
+
             do {
-                try PairingFileManager.shared.importPairingFile(from: url, preferred: targetImportMode)
+                try PairingFileManager.shared.importPairingFile(from: url, preferred: parsed.mode)
                 targetImportMode = nil
                 refresh()
             } catch {
@@ -86,6 +105,17 @@ public final class PairingFileManagementViewModel: ObservableObject {
             }
         case .failure(let error):
             activeAlert = .importError(error.localizedDescription)
+        }
+    }
+
+    public func confirmProtocolMismatch(url: URL, newProtocol: PairingProtocol) {
+        do {
+            PairingFileManager.shared.preferredProtocol = newProtocol
+            try PairingFileManager.shared.importPairingFile(from: url, preferred: newProtocol)
+            targetImportMode = nil
+            refresh()
+        } catch {
+            activeAlert = .importError("Failed to import pairing file: \(error.localizedDescription)")
         }
     }
 
@@ -104,6 +134,11 @@ public final class PairingFileManagementViewModel: ObservableObject {
 
     public func setPreferred(proto: PairingProtocol) {
         PairingFileManager.shared.preferredProtocol = proto
+        refresh()
+    }
+
+    public func clearPreferred() {
+        PairingFileManager.shared.preferredProtocol = nil
         refresh()
     }
 

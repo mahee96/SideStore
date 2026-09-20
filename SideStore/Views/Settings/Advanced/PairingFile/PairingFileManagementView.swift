@@ -61,7 +61,7 @@ struct PairingFileManagementView: View {
             case .deleteConfirmation(let proto):
                 return Alert(
                     title: Text("Delete Pairing File?"),
-                    message: Text("Are you sure you want to delete this pairing file? This will remove the pairing credentials for \(proto.rawValue)."),
+                    message: Text(LocalizedStringKey("Are you sure you want to delete this pairing file? This will remove the pairing credentials for **\(proto.rawValue)**.")),
                     primaryButton: .destructive(Text("Delete")) {
                         viewModel.deletePairingFile(for: proto)
                     },
@@ -70,7 +70,7 @@ struct PairingFileManagementView: View {
             case .resetConfirmation:
                 return Alert(
                     title: Text("Reset Pairing Files?"),
-                    message: Text("This will delete all stored pairing files (both Lockdown and Remote Pairing). You will need to re-pair or re-import a pairing file and restart SideStore."),
+                    message: Text(LocalizedStringKey("This will delete all stored pairing files (both **Lockdown** and **Remote Pairing**). You will need to re-pair or re-import a pairing file and restart SideStore.")),
                     primaryButton: .destructive(Text("Delete and Reset")) {
                         viewModel.resetAllPairingFiles()
                     },
@@ -85,8 +85,19 @@ struct PairingFileManagementView: View {
             case .importError(let msg):
                 return Alert(
                     title: Text("Import Error"),
-                    message: Text(msg),
+                    message: Text(LocalizedStringKey(msg)),
                     dismissButton: .default(Text("OK"))
+                )
+            case .protocolMismatch(let saved, let provided, let url):
+                return Alert(
+                    title: Text("Protocol Mismatch"),
+                    message: Text(LocalizedStringKey("Your saved preference is **\(saved.rawValue)**, but the provided pairing file is **\(provided.rawValue)**.\n\nDo you want to switch and accept **\(provided.rawValue)** as your preferred protocol?")),
+                    primaryButton: .default(Text("Switch to \(provided.rawValue)")) {
+                        viewModel.confirmProtocolMismatch(url: url, newProtocol: provided)
+                    },
+                    secondaryButton: .cancel(Text("Cancel")) {
+                        viewModel.targetImportMode = nil
+                    }
                 )
             }
         }
@@ -204,7 +215,7 @@ struct PairingFileManagementView: View {
                             }
                         }
 
-                        if proto != viewModel.activeProtocol && proto != viewModel.preferredProtocol {
+                        if proto != viewModel.preferredProtocol {
                             SwiftUI.Button {
                                 viewModel.setPreferred(proto: proto)
                             } label: {
@@ -217,7 +228,9 @@ struct PairingFileManagementView: View {
                                 Label("Currently Active", systemImage: "checkmark.circle.fill")
                             }
                             .disabled(true)
-                        } else if proto == viewModel.preferredProtocol {
+                        }
+
+                        if proto == viewModel.preferredProtocol {
                             SwiftUI.Button { } label: {
                                 Label("Currently Preferred", systemImage: "star.leadinghalf.filled")
                             }
@@ -243,6 +256,10 @@ struct PairingFileManagementView: View {
                 VStack(spacing: 0) {
                     infoRow(label: "File Name", value: fileURL.lastPathComponent, isMonospaced: true)
                     divider
+                    if proto == viewModel.activeProtocol || proto == viewModel.preferredProtocol {
+                        protocolStatusRow(for: proto)
+                        divider
+                    }
                     if proto == .rppairing {
                         if let id = remoteRP?.identifier, !id.isEmpty {
                             identifierRow(label: "Identifier", value: id, fieldKey: "rp_identifier")
@@ -315,24 +332,6 @@ struct PairingFileManagementView: View {
 
             Spacer()
 
-            if proto == viewModel.activeProtocol {
-                Text("Active")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(ledColor(for: proto))
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 3)
-                    .background(ledColor(for: proto).opacity(0.18))
-                    .cornerRadius(6)
-            } else if let pref = viewModel.preferredProtocol, proto == pref {
-                Text("Preferred")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.yellow)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 3)
-                    .background(Color.yellow.opacity(0.18))
-                    .cornerRadius(6)
-            }
-
             if isValid {
                 Text("Configured")
                     .font(.system(size: 12, weight: .semibold))
@@ -402,9 +401,6 @@ struct PairingFileManagementView: View {
                 Text(displayValue)
                     .font(.system(size: 13, weight: .medium, design: isRevealed ? .monospaced : .default))
                     .foregroundColor(Color.white.opacity(0.9))
-                Image(systemName: isRevealed ? "eye.slash" : "eye")
-                    .font(.system(size: 11))
-                    .foregroundColor(Color.white.opacity(0.3))
             }
             .padding(.horizontal, 16)
             .frame(height: 40)
@@ -423,6 +419,53 @@ struct PairingFileManagementView: View {
                 .foregroundColor(Color.white.opacity(0.85))
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 40)
+    }
+
+    @ViewBuilder
+    private func protocolStatusRow(for proto: PairingProtocol) -> some View {
+        HStack {
+            Text("Status")
+                .font(.system(size: 14))
+                .foregroundColor(Color.white.opacity(0.6))
+
+            Spacer()
+
+            HStack(spacing: 8) {
+                if proto == viewModel.activeProtocol {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(ledColor(for: proto))
+                            .frame(width: 7, height: 7)
+                            .shadow(color: ledColor(for: proto).opacity(0.8), radius: 3)
+
+                        Text("Active")
+                            .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(Color.white.opacity(0.12)))
+                }
+
+                if proto == viewModel.preferredProtocol {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(Color.yellow)
+                            .frame(width: 7, height: 7)
+                            .shadow(color: Color.yellow.opacity(0.8), radius: 3)
+
+                        Text("Preferred")
+                            .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(Color.white.opacity(0.12)))
+                }
+            }
         }
         .padding(.horizontal, 16)
         .frame(height: 40)

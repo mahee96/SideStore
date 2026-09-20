@@ -26,7 +26,8 @@ final class PairingViewController: NSObject {
             ? NSLocalizedString("The selected pairing file is invalid or not usable. Please select a valid pairing file.", comment: "")
             : NSLocalizedString("Select the pairing file or select \"Help\" for help.", comment: "")
         
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        let alert = UIAlertController(title: title, message: nil, preferredStyle: .alert)
+        alert.setMarkdownMessage(message)
         alert.addAction(UIAlertAction(title: NSLocalizedString("Help", comment: ""), style: .default) { _ in
             UIApplication.shared.open(AppConstants.URLs.pairingDocumentation)
             if completion == nil {
@@ -59,9 +60,11 @@ final class PairingViewController: NSObject {
     func showPairingWarningAndProceed(on vc: UIViewController) {
         let warningAlert = UIAlertController(
             title: "⚠️ " + NSLocalizedString("Pairing Required", comment: ""),
-            message: NSLocalizedString("Without a valid pairing file, operations that require a pairing file (such as installing, refreshing, or resigning apps) will not function.", comment: ""),
+            message: nil,
             preferredStyle: .alert
         )
+        let warningMessage = NSLocalizedString("Without a valid pairing file, operations that require a pairing file (such as **installing**, **refreshing**, or **resigning** apps) will *not* function.", comment: "")
+        warningAlert.setMarkdownMessage(warningMessage)
         warningAlert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .default))
         vc.present(warningAlert, animated: true)
     }
@@ -77,13 +80,14 @@ final class PairingViewController: NSObject {
     ) {
         let title = NSLocalizedString("Protocol Mismatch", comment: "")
         let message = String(
-            format: NSLocalizedString("Your saved preference is %@, but the provided pairing file is %@. Do you want to switch and accept %@ as your current protocol?", comment: ""),
+            format: NSLocalizedString("Your saved preference is **%@**, but the provided pairing file is **%@**.\n\nDo you want to switch and accept **%@** as your current protocol?", comment: ""),
             savedPreference.rawValue,
             providedProtocol.rawValue,
             providedProtocol.rawValue
         )
         
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        let alert = UIAlertController(title: title, message: nil, preferredStyle: .alert)
+        alert.setMarkdownMessage(message)
         alert.addAction(UIAlertAction(title: String(format: NSLocalizedString("Switch to %@", comment: ""), providedProtocol.rawValue), style: .default) { _ in
             onSwitch()
         })
@@ -138,13 +142,8 @@ final class PairingViewController: NSObject {
             providedProtocol: parsed.mode
         )
     }
-}
-
-#if !os(tvOS)
-extension PairingViewController: UIDocumentPickerDelegate {
     @MainActor
-    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-        let url = urls[0]
+    private func finalizeImport(from url: URL) {
         do {
             debugLog("[PairingFile] User picked pairing file from: \(url.path)")
             try PairingFileManager.shared.importPairingFile(from: url)
@@ -153,8 +152,44 @@ extension PairingViewController: UIDocumentPickerDelegate {
             debugLog("[PairingFile] Error importing pairing file: \(error)")
             self.completion?(nil)
         }
+    }
+}
 
-        controller.dismiss(animated: true, completion: nil)
+#if !os(tvOS)
+extension PairingViewController: UIDocumentPickerDelegate {
+    @MainActor
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        guard let url = urls.first else {
+            self.completion?(nil)
+            controller.dismiss(animated: true, completion: nil)
+            return
+        }
+
+        let presentingVC = controller.presentingViewController
+
+        guard let (content, parsed) = try? PairingFileManager.shared.inspectPairingFile(from: url) else {
+            finalizeImport(from: url)
+            controller.dismiss(animated: true, completion: nil)
+            return
+        }
+
+        controller.dismiss(animated: true) { [weak self] in
+            guard let self = self else { return }
+            guard let presenting = presentingVC else {
+                self.finalizeImport(from: url)
+                return
+            }
+
+            Task { @MainActor in
+                if await self.handlePotentialProtocolMismatch(on: presenting, pairingContent: content) {
+                    self.finalizeImport(from: url)
+                } else if PairingFileManager.shared.preferredProtocol == parsed.mode || PairingFileManager.shared.preferredProtocol == nil {
+                    self.finalizeImport(from: url)
+                } else {
+                    self.presentPairingFileAlert(on: presenting, isRetry: true, completion: self.completion)
+                }
+            }
+        }
     }
 
     @MainActor
@@ -179,8 +214,7 @@ extension PairingViewController {
         ) { [weak self] tempURL in
             guard let self = self else { return }
             guard let tempURL = tempURL,
-                  let data = try? Data(contentsOf: tempURL),
-                  let pairingString = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) else {
+                  let (pairingString, _) = try? PairingFileManager.shared.inspectPairingFile(from: tempURL) else {
                 if let completion = self.completion {
                     completion(nil)
                 } else {
@@ -220,3 +254,30 @@ extension PairingViewController {
     }
 }
 #endif
+
+private extension UIAlertController {
+    func setMarkdownMessage(_ markdown: String) {
+        let plainText = markdown
+            .replacingOccurrences(of: "***", with: "")
+            .replacingOccurrences(of: "**", with: "")
+            .replacingOccurrences(of: "*", with: "")
+            .replacingOccurrences(of: "___", with: "")
+            .replacingOccurrences(of: "__", with: "")
+            .replacingOccurrences(of: "_", with: "")
+        self.message = plainText
+
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = .center
+        paragraphStyle.lineSpacing = 3
+
+        let baseFont = UIFont.preferredFont(forTextStyle: .footnote)
+        let baseAttributes: [NSAttributedString.Key: Any] = [
+            .font: baseFont,
+            .foregroundColor: UIColor.label,
+            .paragraphStyle: paragraphStyle
+        ]
+
+        let attributedMessage = NSAttributedString(markdownRepresentation: markdown, attributes: baseAttributes)
+        self.setValue(attributedMessage, forKey: "attributedMessage")
+    }
+}
