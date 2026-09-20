@@ -16,31 +16,7 @@ private extension Color {
 }
 
 struct PairingFileManagementView: View {
-    @State private var refreshID = UUID()
-    @State private var isGlobalHideActive: Bool = true
-    @State private var revealedFieldKeys: Set<String> = []
-    
-    @State private var showFileImporter = false
-    @State private var targetImportMode: PairingProtocol? = nil
-    
-    @State private var modeToDelete: PairingProtocol? = nil
-    @State private var showDeleteConfirmation = false
-    
-    @State private var showingResetAlert = false
-    @State private var showingResetCompletedAlert = false
-    
-    @State private var showingImportErrorAlert = false
-    @State private var importErrorMessage = ""
-
-    private let supportedProtocols: [PairingProtocol] = [.lockdown, .rppairing]
-
-    private var currentActiveProtocol: PairingProtocol {
-        PairingFileManager.shared.activeProtocol
-    }
-
-    private var allowedPairingTypes: [UTType] {
-        PairingFileManager.supportedContentTypes
-    }
+    @StateObject private var viewModel = PairingFileManagementViewModel()
 
     var body: some View {
         ScrollView {
@@ -54,7 +30,6 @@ struct PairingFileManagementView: View {
             .padding(.top, 16)
             .padding(.bottom, 32)
         }
-        .id(refreshID)
         .background(Color(uiColor: .settingsBackground).ignoresSafeArea())
         .navigationTitle("Pairing File Management")
         #if !os(tvOS)
@@ -63,58 +38,57 @@ struct PairingFileManagementView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 SwiftUI.Button {
-                    isGlobalHideActive.toggle()
-                    if isGlobalHideActive {
-                        revealedFieldKeys.removeAll()
-                    }
+                    viewModel.toggleGlobalHide()
                 } label: {
-                    Image(systemName: isGlobalHideActive ? "eye.slash" : "eye")
+                    Image(systemName: viewModel.isGlobalHideActive ? "eye.slash" : "eye")
                 }
                 .accessibilityLabel("Toggle Sensitive Information")
             }
         }
         .onAppear {
-            refreshView()
+            viewModel.refresh()
         }
         #if !os(tvOS)
         .fileImporter(
-            isPresented: $showFileImporter,
-            allowedContentTypes: allowedPairingTypes
+            isPresented: $viewModel.showFileImporter,
+            allowedContentTypes: viewModel.allowedPairingTypes
         ) { result in
-            handleImportResult(result)
+            viewModel.handleImportResult(result)
         }
         #endif
-        .alert(isPresented: $showDeleteConfirmation) {
-            Alert(
-                title: Text("Delete Pairing File?"),
-                message: Text("Are you sure you want to delete this pairing file? This will remove the pairing credentials for \(modeToDelete?.rawValue ?? "this mode")."),
-                primaryButton: .destructive(Text("Delete")) {
-                    if let target = modeToDelete {
-                        deletePairingFile(for: target)
-                    }
-                },
-                secondaryButton: .cancel()
-            )
-        }
-        .alert(isPresented: $showingResetAlert) {
-            Alert(
-                title: Text("Reset Pairing Files?"),
-                message: Text("This will delete all stored pairing files (both Lockdown and Remote Pairing). You will need to re-pair or re-import a pairing file and restart SideStore."),
-                primaryButton: .destructive(Text("Delete and Reset")) {
-                    resetAllPairingFiles()
-                },
-                secondaryButton: .cancel()
-            )
-        }
-        .alert("Pairing Files Reset", isPresented: $showingResetCompletedAlert) {
-            SwiftUI.Button("OK", role: .cancel) { }
-        } message: {
-            Text("All pairing files have been reset. Please restart SideStore.")
-        }
-        .alert("Import Error", isPresented: $showingImportErrorAlert) {
-            SwiftUI.Button("OK", role: .cancel) { }
-        } message: {
-            Text(importErrorMessage)
+        .alert(item: $viewModel.activeAlert) { alert in
+            switch alert {
+            case .deleteConfirmation(let proto):
+                return Alert(
+                    title: Text("Delete Pairing File?"),
+                    message: Text("Are you sure you want to delete this pairing file? This will remove the pairing credentials for \(proto.rawValue)."),
+                    primaryButton: .destructive(Text("Delete")) {
+                        viewModel.deletePairingFile(for: proto)
+                    },
+                    secondaryButton: .cancel()
+                )
+            case .resetConfirmation:
+                return Alert(
+                    title: Text("Reset Pairing Files?"),
+                    message: Text("This will delete all stored pairing files (both Lockdown and Remote Pairing). You will need to re-pair or re-import a pairing file and restart SideStore."),
+                    primaryButton: .destructive(Text("Delete and Reset")) {
+                        viewModel.resetAllPairingFiles()
+                    },
+                    secondaryButton: .cancel()
+                )
+            case .resetCompleted:
+                return Alert(
+                    title: Text("Pairing Files Reset"),
+                    message: Text("All pairing files have been reset. Please restart SideStore."),
+                    dismissButton: .default(Text("OK"))
+                )
+            case .importError(let msg):
+                return Alert(
+                    title: Text("Import Error"),
+                    message: Text(msg),
+                    dismissButton: .default(Text("OK"))
+                )
+            }
         }
     }
 
@@ -125,29 +99,59 @@ struct PairingFileManagementView: View {
                 .foregroundColor(Color.white.opacity(0.6))
                 .padding(.horizontal, 4)
 
-            HStack {
-                Text("Active Protocol")
-                    .font(.system(size: 16))
-                    .foregroundColor(.white)
-
-                Spacer()
-
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(ledColor(for: currentActiveProtocol))
-                        .frame(width: 7, height: 7)
-                        .shadow(color: ledColor(for: currentActiveProtocol).opacity(0.8), radius: 3)
-
-                    Text(activeProtocolTagText(for: currentActiveProtocol))
-                        .font(.system(size: 13, weight: .semibold, design: .monospaced))
+            VStack(spacing: 0) {
+                HStack {
+                    Text("Active Protocol")
+                        .font(.system(size: 16))
                         .foregroundColor(.white)
+
+                    Spacer()
+
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(ledColor(for: viewModel.activeProtocol))
+                            .frame(width: 7, height: 7)
+                            .shadow(color: ledColor(for: viewModel.activeProtocol).opacity(0.8), radius: 3)
+
+                        Text(activeProtocolTagText(for: viewModel.activeProtocol))
+                            .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(Color.white.opacity(0.12)))
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(Capsule().fill(Color.white.opacity(0.12)))
+                .padding(.horizontal, 16)
+                .frame(height: 50)
+
+                Divider()
+                    .background(Color.settingsDivider)
+                    .padding(.horizontal, 16)
+
+                HStack {
+                    Text("Preferred Protocol")
+                        .font(.system(size: 16))
+                        .foregroundColor(.white)
+
+                    Spacer()
+
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(viewModel.preferredProtocol != nil ? ledColor(for: viewModel.preferredProtocol!) : Color.gray)
+                            .frame(width: 7, height: 7)
+                            .shadow(color: (viewModel.preferredProtocol != nil ? ledColor(for: viewModel.preferredProtocol!) : Color.gray).opacity(0.8), radius: 3)
+
+                        Text(viewModel.preferredProtocol != nil ? activeProtocolTagText(for: viewModel.preferredProtocol!) : "None")
+                            .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(Color.white.opacity(0.12)))
+                }
+                .padding(.horizontal, 16)
+                .frame(height: 50)
             }
-            .padding(.horizontal, 16)
-            .frame(height: 50)
             .background(Color.settingsRowBackground)
             .cornerRadius(14)
         }
@@ -161,7 +165,7 @@ struct PairingFileManagementView: View {
                 .padding(.horizontal, 4)
 
             VStack(spacing: 12) {
-                ForEach(supportedProtocols, id: \.rawValue) { proto in
+                ForEach(viewModel.supportedProtocols, id: \.rawValue) { proto in
                     pairingFileCard(for: proto)
                 }
             }
@@ -189,30 +193,45 @@ struct PairingFileManagementView: View {
                 }
                 .contextMenu {
                     if isValid {
-                        if proto != currentActiveProtocol {
+                        if UserDefaults.standard.isMinimuxerBackendHotswapEnabled && proto != viewModel.activeProtocol {
                             SwiftUI.Button {
-                                PairingFileManager.shared.activeProtocol = proto
-                                refreshView()
+                                Task {
+                                    await viewModel.activate(proto: proto)
+                                }
                             } label: {
                                 Label("Activate", systemImage: "bolt.fill")
                             }
-                        } else {
+                        }
+
+                        if proto != viewModel.activeProtocol && proto != viewModel.preferredProtocol {
+                            SwiftUI.Button {
+                                viewModel.setPreferred(proto: proto)
+                            } label: {
+                                Label("Set as Preferred", systemImage: "star.fill")
+                            }
+                        }
+
+                        if proto == viewModel.activeProtocol {
                             SwiftUI.Button { } label: {
                                 Label("Currently Active", systemImage: "checkmark.circle.fill")
+                            }
+                            .disabled(true)
+                        } else if proto == viewModel.preferredProtocol {
+                            SwiftUI.Button { } label: {
+                                Label("Currently Preferred", systemImage: "star.leadinghalf.filled")
                             }
                             .disabled(true)
                         }
                     }
 
                     SwiftUI.Button {
-                        promptImport(for: proto)
+                        viewModel.promptImport(for: proto)
                     } label: {
                         Label("Import / Replace File", systemImage: "square.and.arrow.down")
                     }
 
                     SwiftUI.Button(role: .destructive) {
-                        modeToDelete = proto
-                        showDeleteConfirmation = true
+                        viewModel.confirmDelete(for: proto)
                     } label: {
                         Label("Delete Pairing File", systemImage: "trash")
                     }
@@ -261,7 +280,7 @@ struct PairingFileManagementView: View {
                 }
             } else {
                 SwiftUI.Button {
-                    promptImport(for: proto)
+                    viewModel.promptImport(for: proto)
                 } label: {
                     VStack(spacing: 0) {
                         missingCardHeader(for: proto)
@@ -272,7 +291,7 @@ struct PairingFileManagementView: View {
                 .buttonStyle(.plain)
                 .contextMenu {
                     SwiftUI.Button {
-                        promptImport(for: proto)
+                        viewModel.promptImport(for: proto)
                     } label: {
                         Label("Import Pairing File", systemImage: "square.and.arrow.down")
                     }
@@ -295,13 +314,21 @@ struct PairingFileManagementView: View {
 
             Spacer()
 
-            if proto == currentActiveProtocol {
+            if proto == viewModel.activeProtocol {
                 Text("Active")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(ledColor(for: proto))
                     .padding(.horizontal, 7)
                     .padding(.vertical, 3)
                     .background(ledColor(for: proto).opacity(0.18))
+                    .cornerRadius(6)
+            } else if let pref = viewModel.preferredProtocol, proto == pref {
+                Text("Preferred")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.yellow)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Color.yellow.opacity(0.18))
                     .cornerRadius(6)
             }
 
@@ -360,11 +387,11 @@ struct PairingFileManagementView: View {
     }
 
     private func identifierRow(label: String, value: String, fieldKey: String) -> some View {
-        let isRevealed = !isGlobalHideActive || revealedFieldKeys.contains(fieldKey)
+        let isRevealed = !viewModel.isGlobalHideActive || viewModel.revealedFieldKeys.contains(fieldKey)
         let displayValue = isRevealed ? value : "••••••••••••••••"
 
         return SwiftUI.Button {
-            toggleReveal(for: fieldKey)
+            viewModel.toggleReveal(for: fieldKey)
         } label: {
             HStack {
                 Text(label)
@@ -439,7 +466,7 @@ struct PairingFileManagementView: View {
 
             VStack(spacing: 0) {
                 SwiftUI.Button(action: {
-                    showingResetAlert = true
+                    viewModel.confirmReset()
                 }) {
                     HStack(spacing: 12) {
                         Image(systemName: "arrow.counterclockwise.circle")
@@ -494,54 +521,10 @@ struct PairingFileManagementView: View {
         }
     }
 
-    private func toggleReveal(for fieldKey: String) {
-        if revealedFieldKeys.contains(fieldKey) {
-            revealedFieldKeys.remove(fieldKey)
-        } else {
-            revealedFieldKeys.insert(fieldKey)
-        }
-    }
-
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter.string(from: date)
-    }
-
-    private func refreshView() {
-        refreshID = UUID()
-    }
-
-    private func promptImport(for mode: PairingProtocol) {
-        targetImportMode = mode
-        showFileImporter = true
-    }
-
-    private func handleImportResult(_ result: Result<URL, Error>) {
-        switch result {
-        case .success(let url):
-            do {
-                try PairingFileManager.shared.importPairingFile(from: url, for: targetImportMode)
-                refreshView()
-            } catch {
-                importErrorMessage = "Failed to import pairing file: \(error.localizedDescription)"
-                showingImportErrorAlert = true
-            }
-        case .failure(let error):
-            importErrorMessage = error.localizedDescription
-            showingImportErrorAlert = true
-        }
-    }
-
-    private func deletePairingFile(for mode: PairingProtocol) {
-        PairingFileManager.shared.deletePairingFile(for: mode)
-        refreshView()
-    }
-
-    private func resetAllPairingFiles() {
-        PairingFileManager.shared.resetAllPairingFiles()
-        refreshView()
-        showingResetCompletedAlert = true
     }
 }
