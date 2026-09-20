@@ -34,7 +34,6 @@ struct DeveloperOptionsView: View {
     @State private var alwaysShowWireGuardConfig: Bool = UserDefaults.standard.alwaysShowWireGuardConfig
     @State private var acceptIPv6ConnectionConfig: Bool = UserDefaults.standard.acceptIPv6ConnectionConfig
     @State private var isAutoRetryRemotePairingPortEnabled: Bool = UserDefaults.standard.isAutoRetryRemotePairingPortEnabled
-    @State private var isMinimuxerBackendHotswapEnabled: Bool = UserDefaults.standard.isMinimuxerBackendHotswapEnabled
     @State private var tcpProbeTimeoutText: String = ""
     
     @State private var isExportingDB: Bool = false
@@ -481,16 +480,6 @@ struct DeveloperOptionsView: View {
                             set: { newValue in
                                 isAutoRetryRemotePairingPortEnabled = newValue
                                 UserDefaults.standard.isAutoRetryRemotePairingPortEnabled = newValue
-                            }
-                        ))
-
-                        divider
-
-                        toggleRow(title: "Enable Minimuxer Backend Hotswap", isOn: Binding(
-                            get: { isMinimuxerBackendHotswapEnabled },
-                            set: { newValue in
-                                isMinimuxerBackendHotswapEnabled = newValue
-                                UserDefaults.standard.isMinimuxerBackendHotswapEnabled = newValue
                             }
                         ))
                     }
