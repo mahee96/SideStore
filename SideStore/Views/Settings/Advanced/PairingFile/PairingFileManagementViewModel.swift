@@ -78,7 +78,8 @@ public final class PairingFileManagementViewModel: ObservableObject {
         switch result {
         case .success(let url):
             do {
-                try PairingFileManager.shared.importPairingFile(from: url, for: targetImportMode)
+                try PairingFileManager.shared.importPairingFile(from: url, preferred: targetImportMode)
+                targetImportMode = nil
                 refresh()
             } catch {
                 activeAlert = .importError("Failed to import pairing file: \(error.localizedDescription)")

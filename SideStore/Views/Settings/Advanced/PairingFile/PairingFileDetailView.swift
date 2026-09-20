@@ -287,7 +287,7 @@ struct PairingFileDetailView: View {
         }
 
         do {
-            try PairingFileManager.shared.savePairingFile(contents: editedContent, for: mode)
+            try PairingFileManager.shared.savePairingFile(contents: editedContent, preferred: mode)
             rawContent = editedContent
             UserDefaults.standard.setPairingFileEditSuppressed(true, forHash: currentSHA256)
             isEditing = false

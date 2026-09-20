@@ -178,9 +178,10 @@ struct PairingFileManagementView: View {
         let isInstalled = metadata.exists
         let content = isInstalled ? PairingFileManager.shared.fetchPairingFile(for: proto) : nil
 
-        let lockdown = (proto == .lockdown && content != nil) ? PairingFileManager.parsePairingTypes(content: content!).lockdown : nil
-        let rp = (proto == .rppairing && content != nil) ? PairingFileManager.parsePairingTypes(content: content!).rp : nil
-        let isValid = (proto == .lockdown) ? (lockdown != nil) : (rp != nil)
+        let parsed = content != nil ? (try? PairingFileManager.shared.parse(content: content!, preferred: proto)) : nil
+        let remoteRP = parsed as? RPPairingFile
+        let lockdown = parsed as? LockdownPairingFile
+        let isValid = parsed != nil
 
         let fileSize = metadata.size
         let creationDate = metadata.creationDate
@@ -243,11 +244,11 @@ struct PairingFileManagementView: View {
                     infoRow(label: "File Name", value: fileURL.lastPathComponent, isMonospaced: true)
                     divider
                     if proto == .rppairing {
-                        if let id = rp?.identifier, !id.isEmpty {
+                        if let id = remoteRP?.identifier, !id.isEmpty {
                             identifierRow(label: "Identifier", value: id, fieldKey: "rp_identifier")
                             divider
                         }
-                        infoRow(label: "Key Material", value: (rp?.publicKey != nil && rp?.privateKey != nil) ? "Public & Private Keys OK" : "Incomplete Keys")
+                        infoRow(label: "Key Material", value: (remoteRP?.publicKey != nil && remoteRP?.privateKey != nil) ? "Public & Private Keys OK" : "Incomplete Keys")
                         divider
                     } else {
                         if let sysBUID = lockdown?.systemBUID, !sysBUID.isEmpty {

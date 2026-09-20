@@ -214,8 +214,9 @@ private extension MaintenanceManager {
             return 
         }
 
-        let (rp, lockdown) = PairingFileManager.parsePairingTypes(content: content)
-        if rp != nil && !fileManager.fileExists(atPath: remoteURL.path) {
+        let remoteRP = try? PairingFileManager.shared.parse(content: content, preferred: .rppairing)
+        let lockdown = try? PairingFileManager.shared.parse(content: content, preferred: .lockdown)
+        if remoteRP != nil && !fileManager.fileExists(atPath: remoteURL.path) {
             try? content.write(to: remoteURL, atomically: true, encoding: .utf8)
             debugLog("[MaintenanceManager] Migrated remote pairing file to '\(remoteURL.path)'.")
         }

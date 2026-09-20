@@ -90,10 +90,15 @@ final class PairingFileManager: NSObject {
         }
         return nil
     }
+    
+    @discardableResult
+    nonisolated func parse(content: String, preferred: PairingProtocol? = nil) throws -> any PairingFile {
+        try PairingFileParser.parse(content: content, preferred: preferred)
+    }
 
     @discardableResult
     func savePairingFile(contents: String, preferred: PairingProtocol? = nil) throws -> any PairingFile {
-        let parsed = try PairingFileParser.parse(content: contents, preferred: preferred)
+        let parsed = try parse(content: contents, preferred: preferred)
         let destinationURL = pairingFileURL(for: parsed.mode)
         let fm = FileManager.default
         if fm.fileExists(atPath: destinationURL.path) {

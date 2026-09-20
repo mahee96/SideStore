@@ -86,6 +86,19 @@ public final class AppBootManager {
                 break
             } catch {
                 debugLog("[AppBootManager] startMinimuxer failed with pairing file: \(error)")
+                let didSwitch = await PairingViewController.shared.handlePotentialProtocolMismatch(
+                    on: vc,
+                    pairingContent: pairingString
+                )
+                if didSwitch {
+                    do {
+                        try await self.startMinimuxer(pairingFile: pairingString)
+                        self.needsPairingPrompt = false
+                        break
+                    } catch {
+                        debugLog("[AppBootManager] startMinimuxer retry after protocol switch failed: \(error)")
+                    }
+                }
                 isRetry = true
             }
         }

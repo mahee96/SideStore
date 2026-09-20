@@ -66,18 +66,77 @@ final class PairingViewController: NSObject {
         vc.present(warningAlert, animated: true)
     }
 
-    func importPairingFile(presentingVC: UIViewController, title: String, message: String) async throws -> URL {
-        try await withCheckedThrowingContinuation { continuation in
-            Task { @MainActor in
-                self.presentPairingFileAlert(on: presentingVC, isRetry: false) { url in
-                    if let url = url {
-                        continuation.resume(returning: url)
-                    } else {
-                        continuation.resume(throwing: OperationError.cancelled)
-                    }
+    @MainActor
+    func presentProtocolMismatchAlert(
+        on vc: UIViewController,
+        savedPreference: PairingProtocol,
+        providedProtocol: PairingProtocol,
+        onSwitch: @escaping () -> Void,
+        onChooseOther: @escaping () -> Void,
+        onCancel: @escaping () -> Void
+    ) {
+        let title = NSLocalizedString("Protocol Mismatch", comment: "")
+        let message = String(
+            format: NSLocalizedString("Your saved preference is %@, but the provided pairing file is %@. Do you want to switch and accept %@ as your current protocol?", comment: ""),
+            savedPreference.rawValue,
+            providedProtocol.rawValue,
+            providedProtocol.rawValue
+        )
+        
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: String(format: NSLocalizedString("Switch to %@", comment: ""), providedProtocol.rawValue), style: .default) { _ in
+            onSwitch()
+        })
+        alert.addAction(UIAlertAction(title: NSLocalizedString("Choose Another File", comment: ""), style: .default) { _ in
+            onChooseOther()
+        })
+        alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { _ in
+            onCancel()
+        })
+        vc.present(alert, animated: true)
+    }
+
+    @MainActor
+    func confirmProtocolMismatchSwitch(
+        on vc: UIViewController,
+        savedPreference: PairingProtocol,
+        providedProtocol: PairingProtocol
+    ) async -> Bool {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Bool, Never>) in
+            presentProtocolMismatchAlert(
+                on: vc,
+                savedPreference: savedPreference,
+                providedProtocol: providedProtocol,
+                onSwitch: {
+                    PairingFileManager.shared.preferredProtocol = providedProtocol
+                    PairingFileManager.shared.persistedActiveProtocol = providedProtocol
+                    continuation.resume(returning: true)
+                },
+                onChooseOther: {
+                    continuation.resume(returning: false)
+                },
+                onCancel: {
+                    continuation.resume(returning: false)
                 }
-            }
+            )
         }
+    }
+
+    @MainActor
+    func handlePotentialProtocolMismatch(
+        on vc: UIViewController,
+        pairingContent: String
+    ) async -> Bool {
+        guard let saved = PairingFileManager.shared.preferredProtocol,
+              let parsed = try? PairingFileManager.shared.parse(content: pairingContent, preferred: nil),
+              parsed.mode != saved else {
+            return false
+        }
+        return await confirmProtocolMismatchSwitch(
+            on: vc,
+            savedPreference: saved,
+            providedProtocol: parsed.mode
+        )
     }
 }
 
@@ -136,11 +195,18 @@ extension PairingViewController {
                 if let completion = self.completion {
                     completion(activeURL)
                 } else {
-                    Task.detached {
+                    Task { @MainActor in
                         do {
                             try await AppBootManager.shared.startMinimuxer(pairingFile: pairingString)
                         } catch {
                             debugLog("[PairingFile] startMinimuxer failed: \(error)")
+                            if await self.handlePotentialProtocolMismatch(on: vc, pairingContent: pairingString) {
+                                do {
+                                    try await AppBootManager.shared.startMinimuxer(pairingFile: pairingString)
+                                } catch {
+                                    debugLog("[PairingFile] startMinimuxer retry after protocol switch failed: \(error)")
+                                }
+                            }
                         }
                     }
                 }
