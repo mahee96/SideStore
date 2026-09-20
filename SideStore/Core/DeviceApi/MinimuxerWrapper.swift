@@ -475,7 +475,6 @@ extension Result {
 func minimuxerSwitchPairingProtocol(to proto: PairingProtocol) async throws {
     defer { debugLog("[SideStore] minimuxerSwitchPairingProtocol(.\(proto)) completed") }
     debugLog("[SideStore] minimuxerSwitchPairingProtocol(.\(proto)) invoked")
-    PairingFileManager.shared.preferredProtocol = proto
     PairingFileManager.shared.persistedActiveProtocol = proto
     #if !targetEnvironment(simulator)
     try await withRemotePairingRetry {
