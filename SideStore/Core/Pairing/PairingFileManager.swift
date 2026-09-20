@@ -27,16 +27,17 @@ final class PairingFileManager: NSObject {
     }
 
     var activeProtocol: PairingProtocol {
-        get { UserDefaults.standard.activePairingFileType }
-        set { UserDefaults.standard.activePairingFileType = newValue }
+        minimuxerPairingProtocol()
     }
 
-    nonisolated var pairingUDID: String? {
-        guard let contents = fetchPairingFile() else {
-            debugLog("[PairingFile] pairingUDID: fetchPairingFile() returned nil")
-            return nil
-        }
-        return (try? PairingFileParser.parse(content: contents) as? LockdownPairingFile)?.udid
+    var persistedActiveProtocol: PairingProtocol? {
+        get { UserDefaults.standard.activePairingProtocol }
+        set { UserDefaults.standard.activePairingProtocol = newValue }
+    }
+
+    var preferredProtocol: PairingProtocol? {
+        get { UserDefaults.standard.preferredPairingProtocol }
+        set { UserDefaults.standard.preferredPairingProtocol = newValue }
     }
 
     nonisolated func pairingFileURL(for mode: PairingProtocol) -> URL {

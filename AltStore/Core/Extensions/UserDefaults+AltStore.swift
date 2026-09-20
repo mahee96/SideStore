@@ -243,9 +243,7 @@ public extension UserDefaults
         set { self.set(newValue, forKey: "customizeAppExtensions") }
     }
     var appImportSourceMode: AppImportSourceMode {
-        get {
-            let mode = _appImportSourceMode.flatMap { AppImportSourceMode(rawValue: $0) } ?? .prompt
-            return mode
+        get { _appImportSourceMode.flatMap { AppImportSourceMode(rawValue: $0) } ?? .prompt
         }
         set {
             _appImportSourceMode = newValue.rawValue
@@ -308,13 +306,23 @@ public extension UserDefaults
         map[sha] = suppressed
         pairingFileEditSuppressedSHAs = map
     }
-    @objc var activePairingProtocol: String {
-        get { self.string(forKey: #function) ?? PairingProtocol.rppairing.rawValue }
-        set { self.set(newValue, forKey: #function) }
+
+    var activePairingProtocol: PairingProtocol? {
+        get { _activePairingProtocol.flatMap { PairingProtocol(rawValue: $0) } }
+        set { _activePairingProtocol = newValue?.rawValue }
     }
-    var activePairingFileType: PairingProtocol {
-        get { PairingProtocol(rawValue: activePairingProtocol) ?? .rppairing }
-        set { activePairingProtocol = newValue.rawValue }
+    @objc(activePairingProtocol) private var _activePairingProtocol: String? {
+        get { self.string(forKey: "activePairingProtocol") }
+        set { self.set(newValue, forKey: "activePairingProtocol") }
+    }
+
+    var preferredPairingProtocol: PairingProtocol? {
+        get { _preferredPairingProtocol.flatMap { PairingProtocol(rawValue: $0) } }
+        set { _preferredPairingProtocol = newValue?.rawValue }
+    }
+    @objc(preferredPairingProtocol) private var _preferredPairingProtocol: String? {
+        get { self.string(forKey: "preferredPairingProtocol") }
+        set { self.set(newValue, forKey: "preferredPairingProtocol") }
     }
     @objc var keepSigningCertsAfterLogout: Bool {
         get { self.bool(forKey: #function) }
@@ -572,7 +580,6 @@ public extension UserDefaults
             #keyPath(UserDefaults.isMinimuxerVerboseLoggingEnabled): false,
             #keyPath(UserDefaults.isMinimuxerBackendHotswapEnabled): false,
             #keyPath(UserDefaults.pairingFileEditSuppressedSHAs): [String: Bool](),
-            #keyPath(UserDefaults.activePairingProtocol): PairingProtocol.rppairing.rawValue,
             #keyPath(UserDefaults.isRotateLogsOnStartupEnabled): true,
             #keyPath(UserDefaults.recreateDatabaseOnNextStart): false,
             #keyPath(UserDefaults.isCellularRefreshEnabled): false,
